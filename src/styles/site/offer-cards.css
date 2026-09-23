@@ -1,0 +1,89 @@
+/* Functional offer cards, styled after the supplied campaign reference. */
+.desktop-product-panel{display:none}
+/* Compact purchase cards on phones and narrow browser windows. */
+.visually-hidden{position:absolute!important;width:0.0625rem;height:0.0625rem;padding:0;margin:-0.0625rem;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+.catalog-grid{display:block}
+.catalog-gallery{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:2.25rem;align-items:start}
+.catalog-gallery .mobile-gallery-label{display:flex;grid-column:1/-1;grid-row:1;margin:0 0 0.625rem}
+.catalog-main-photo{grid-column:1;grid-row:3}
+.catalog-choice-title{grid-column:1;grid-row:4}
+.catalog-thumbnails{grid-column:1;grid-row:5}
+.catalog-gallery .hero-featured-video{grid-column:2;grid-row:3/6;margin:0;align-self:stretch;align-content:center;grid-template-columns:1fr;padding:1.5rem}
+.catalog-gallery .hero-featured-video video{width:auto;max-width:100%;max-height:28.75rem;margin:1rem auto}
+.catalog-gallery .hero-video-copy h2{font-size:1.875rem}
+.catalog-gallery .hero-video-copy p{font-size:1rem}
+.catalog-gallery .hero-video-copy .eyebrow{font-size:0.75rem}
+.offers .price-card{scroll-margin-top:5.625rem}
+@media(max-width:56.25rem){.catalog-gallery{display:block;max-width:40rem;margin:auto}.catalog-gallery .mobile-gallery-label{margin-bottom:0.625rem}.catalog-gallery .hero-featured-video{display:grid;grid-template-columns:minmax(0,1fr) minmax(7.5rem,43%);margin-top:1.25rem;padding:1rem}.catalog-gallery .hero-featured-video video{width:100%;margin:0}.catalog-gallery .hero-video-copy h2{font-size:1.375rem}.catalog-gallery .hero-video-copy p{font-size:0.875rem}.catalog-gallery .hero-video-copy .eyebrow{font-size:0.75rem}.hero-shipping-seal{margin-bottom:1.125rem}.hero-shipping-seal img{width:9.0625rem}}
+.offers .price-grid{max-width:67.5rem;align-items:start;gap:1.75rem}
+.offers .price-card{padding:0;overflow:hidden;background:#fff;border:0.125rem solid #77bddd;border-radius:1.625rem;box-shadow:0 1.125rem 3rem #001c3966;text-align:center}
+.offers .price-card.is-selected{border-color:#008eff;box-shadow:0 0 0 0.125rem #38c7ff40,0 0 2rem #00a5ff30,0 1.125rem 3rem #001c3966}
+.offers .price-header{min-height:6.875rem;padding:1.125rem 0.75rem 1rem;background:radial-gradient(ellipse at 50% -80%,#087ed5,transparent 80%),#032b55;gap:0.625rem}
+.offers .price-header h3{font-size:clamp(1.5rem,2.7vw,2rem);line-height:1.15;color:#fff;letter-spacing:-.035em}
+.offers .offer-card-tag{padding:0.4375rem 1.125rem;min-height:2rem;border:0.0625rem solid #46dfff;border-radius:62.4375rem;background:linear-gradient(#047aaf,#064e92);box-shadow:inset 0 0 0.625rem #32d9ff70;color:#fff;font-size:0.75rem;letter-spacing:.025em}
+.offers .kit-card .offer-card-tag{background:#ffe063;border-color:#ffed9e;color:#063451;box-shadow:none}
+.offers .packshot{height:auto;aspect-ratio:1.5;margin:0;padding:0.75rem 1.25rem 2.3125rem;background-position:center}
+.offers .packshot.single .unit-product{width:96%;max-width:96%;height:100%;filter:drop-shadow(0 0.75rem 0.75rem #001b55a6)}
+.offers .packshot-caption{padding:0.625rem 0.375rem;font-size:1rem;letter-spacing:-.015em;background:#03254ae8}
+.offers .packshot.kit-campaign{height:auto;aspect-ratio:1.5;padding:0.75rem 1rem 2.3125rem}
+.offers .offer-card-body{padding:1.25rem 1.25rem 1rem;background:linear-gradient(115deg,#fff,#f8fcff 50%,#fff)}
+.offer-included{color:#054b95;font-size:1.25rem;line-height:1.25;font-weight:900;margin:0 0 1.125rem;text-wrap:balance}
+.offers .offer-benefits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border:0;margin:0 0 1.25rem;padding:0}
+.offers .offer-benefits li{display:flex;flex-direction:column;align-items:center;gap:0.5rem;min-width:0;padding:0 0.3125rem;font-size:0.875rem;line-height:1.25;color:#123b62;font-weight:700}
+.offers .offer-benefits li+li{border-left:0.0625rem solid #cddde9}
+.offer-benefit-photo{position:relative;display:grid;place-items:center;width:min(100%,6.25rem);height:5.125rem;overflow:hidden;border-radius:0.875rem;background:radial-gradient(ellipse,#fff,#e2f4ff);border:0.0625rem solid #d3e7f1}
+.offer-benefit-photo>img{display:block;width:100%;height:100%;object-fit:contain;padding:0.1875rem;filter:drop-shadow(0 0.1875rem 0.1875rem #143b5022)}
+.offer-benefit-photo.light-detail>img{position:absolute;width:16.5625rem;height:16.5625rem;max-width:none;left:-3.3125rem;top:-1.75rem;padding:0;object-fit:contain}
+.offers .color-choice,.offers .kit-color-row{border:0;border-radius:1.125rem;background:#f0f7fd;padding:0.875rem 0.75rem;gap:0.875rem;min-height:0}
+.offers .color-choice>span{font-size:1.125rem;line-height:1.2;color:#123b62}
+.offers .color-choice strong{color:#0069d9}
+.offers .swatches:has(.color-product-choice){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;gap:0.625rem;flex-shrink:1}
+.offers .color-product-choice,.offers .kit-color-row .color-product-choice{position:relative;width:100%;min-width:0;min-height:6.125rem;padding:0.4375rem 0.25rem 0.5rem;gap:0.1875rem;border:0.0625rem solid #b8cbdf;border-radius:0.875rem;background:#fff;outline:none;overflow:visible;transition:border-color .15s,box-shadow .15s,background .15s}
+.offers .color-product-choice>img{width:100%;height:3.875rem;object-fit:contain}
+.offers .color-product-choice>span{font-size:0.875rem;font-weight:800;color:#123b62}
+.offers .color-product-choice[aria-pressed=true]{border:0.125rem solid #0081ff;padding:0.375rem 0.1875rem 0.4375rem;background:#e0f4ff;box-shadow:0 0 0 0.0625rem #0081ff}
+.offers .color-product-choice[aria-pressed=true]:after{content:'✓';display:grid;place-items:center;color:#fff;font-size:1.125rem;font-weight:900;line-height:1;position:absolute;right:-0.375rem;top:-0.5rem;width:1.5625rem;height:1.5625rem;border:0.125rem solid #fff;border-radius:50%;background:#0081ff;box-shadow:0 0.125rem 0.375rem #004e9d33}
+.offers .color-product-choice:focus-visible{outline:0.1875rem solid #034eaa;outline-offset:0.25rem}
+.offers .kit-color-selectors{min-height:0;gap:0.75rem}
+.offers .kit-color-row{flex-wrap:wrap;border:0.0625rem solid #b4dff2;border-left:0.25rem solid #159bd5}
+.offers .kit-color-row:nth-child(2){background:linear-gradient(115deg,#fff1df,#fffaf4);border-color:#f4d2a7;border-left-color:#efad54}
+.offers .kit-color-row:nth-child(2) .choice-row-label>b{background:#ffb52e;color:var(--navy)}
+.offers .kit-color-row .choice-row-label{gap:0.5rem}
+.offers .choice-row-label>span{font-size:0.875rem}
+.offers .choice-row-label small{display:block;margin:0.1875rem 0 0;font-size:0.75rem}
+.offers .choice-row-label>b{width:1.625rem;height:1.625rem;font-size:0.875rem}
+.offer-shipping{display:flex;align-items:center;justify-content:center;gap:0.75rem;margin-top:1.125rem;padding:0.75rem 0.625rem;border-radius:1rem;background:#def4ff;text-align:left;color:#07559c}
+.offer-shipping-seal{flex-direction:column;gap:0.3125rem;text-align:center;background:radial-gradient(ellipse at center,#d5f3ff,#f1faff)}
+.offer-shipping-seal>img{display:block;width:10.625rem;max-width:80%;height:auto;object-fit:contain}
+.offer-shipping-seal>span{font-size:0.8125rem;line-height:1.4;color:#315d79}
+.offers .packshot.kit-matching{background:#0877b2 url('/offer-water-stage.webp') center/cover no-repeat;gap:0}
+.offers .kit-matching>img{width:52%;max-width:52%;height:100%;object-fit:contain;margin:0;filter:drop-shadow(0 0.75rem 0.75rem #001b55a6)}
+.offers .kit-matching>img+img{margin-left:-4%}
+.delivery-ticker{min-height:3.375rem;background:linear-gradient(110deg,#00482b,#008746 55%,#005b35);border-block:0.0625rem solid #3cd088;box-shadow:inset 0 0.0625rem 0 #b4ffcf26;color:#fff}
+.ticker-group{display:flex;align-items:center;flex-shrink:0;gap:2rem;padding:0.5rem 1rem}
+.ticker-message{display:flex;align-items:center;gap:0.625rem;white-space:nowrap;font-size:0.875rem;line-height:1.3}
+.ticker-message>span:last-child{display:flex;align-items:center;gap:0.3125rem}
+.ticker-track strong{font-style:normal;letter-spacing:0;font-weight:900}
+.ticker-icon{display:grid;place-items:center;width:2.125rem;height:2.125rem;flex-shrink:0;border:0.0625rem solid #97ffb967;border-radius:0.625rem;background:linear-gradient(145deg,#cfffaf26,#fff1);box-shadow:inset 0 0.0625rem 0 #ffffff38}
+.ticker-icon img{width:1.4375rem;height:1.4375rem;filter:brightness(0) invert(1)}
+.ticker-full{padding:0.1875rem 0.5rem;background:#e4ff72;color:#00432c;border-radius:0.3125rem;box-shadow:0 0.125rem 0.4375rem #002d2455}
+.delivery-ticker:focus-visible{outline:0.1875rem solid #003e29;outline-offset:-0.1875rem}
+@media(max-width:42.5rem){.ticker-group{gap:1.375rem;padding:0.4375rem 0.75rem}.ticker-message{font-size:0.875rem}.delivery-ticker{min-height:3.125rem}.ticker-icon{width:2rem;height:2rem}.offer-benefit-photo{height:4.5rem}.offer-benefit-photo.light-detail>img{width:14.6875rem;height:14.6875rem;left:-2.9375rem;top:-1.5625rem}.offer-shipping-seal>img{width:9.6875rem}}
+@media(prefers-reduced-motion:reduce){.ticker-track{width:100%;animation:none}.ticker-group{flex-wrap:wrap;justify-content:center;width:100%;gap:0.5rem 1rem}.ticker-group[aria-hidden=true]{display:none}.ticker-message{white-space:normal}.ticker-message>span:last-child{flex-wrap:wrap}.ticker-icon{width:1.75rem;height:1.75rem}.ticker-icon img{width:1.25rem;height:1.25rem}}
+.offer-shipping>.icon{width:1.9375rem;height:1.9375rem;filter:invert(25%) sepia(93%) saturate(1757%) hue-rotate(182deg) brightness(87%)}
+.offer-shipping strong{display:block;font-size:1rem;line-height:1.3}
+.offer-shipping small{display:block;font-size:0.8125rem;line-height:1.4;color:#315d79}
+.offers .offer-price-line{margin:0;padding:1rem 0 0.75rem;gap:0.125rem}
+.offers .offer-price-line>.price{font-size:clamp(3.625rem,6vw,4.75rem);line-height:1.05;color:#0070dd;letter-spacing:-.06em;font-variant-numeric:lining-nums}
+.offers .offer-price-line>.price small,.offers .offer-price-line>.price span{font-size:.47em;letter-spacing:-.035em}
+.offers .offer-price-line>span{font-size:0.875rem;min-height:1.375rem;color:#527088}
+.offer-reassurance{display:flex;align-items:center;justify-content:center;gap:0.875rem;padding:0 0 1rem;color:#31516d}
+.offer-reassurance>span{display:flex;align-items:center;justify-content:center;gap:0.3125rem;font-size:0.75rem;line-height:1.3}
+.offer-reassurance>span+span{border-left:0.0625rem solid #d3e0e9;padding-left:0.875rem}
+.offer-reassurance .icon{flex-shrink:0;width:1.25rem;height:1.25rem;filter:invert(35%) sepia(79%) saturate(797%) hue-rotate(104deg) brightness(80%)}
+.offers .price-card .button{min-height:4.125rem;font-size:1.3125rem;font-weight:900;gap:0.75rem;padding:0.75rem;border-radius:1.125rem;background:linear-gradient(165deg,#08ae42,#008831 65%,#00732d);box-shadow:inset 0 0.125rem 0.125rem #79e99280,0 0.25rem 0 #00632c,0 0.625rem 1.25rem #078d3126;text-shadow:0 0.0625rem 0.0625rem #00602540}
+.offers .price-card .button:hover{background:linear-gradient(165deg,#08ba48,#00782d);box-shadow:inset 0 0.125rem 0.125rem #79e99280,0 0.25rem 0 #00632c,0 0.75rem 1.5rem #078d3138}
+.offer-cart-icon{width:1.625rem;height:1.625rem;flex-shrink:0}
+.offer-checkout-note{margin:0.875rem 0 0;font-size:0.75rem;line-height:1.4;color:#60748b}
+@media(max-width:42.5rem){.offers .price-grid{gap:1.625rem}.offers .price-card{border-radius:1.375rem}.offers .price-header{min-height:6.25rem}.offers .price-header h3{font-size:1.5625rem}.offers .offer-card-body{padding:1.0625rem 0.8125rem 0.875rem}.offers .packshot,.offers .packshot.kit-campaign{aspect-ratio:1.4}.offers .packshot-caption{font-size:0.875rem}.offer-included{font-size:1.125rem}.offers .offer-benefits{margin-bottom:1.125rem}.offers .color-choice,.offers .kit-color-row{padding:0.8125rem 0.625rem}.offers .color-product-choice,.offers .kit-color-row .color-product-choice{min-height:5.5625rem}.offers .color-product-choice>img{height:3.25rem}.offers .price-card .button{font-size:1.1875rem;min-height:3.875rem}.offers .offer-price-line>.price{font-size:4rem}}
+@media(max-width:22.5rem){.offers .price-header h3{font-size:1.375rem}.offers .offer-card-body{padding-inline:0.625rem}.offers .offer-benefits li{font-size:0.75rem;padding-inline:0.1875rem}.offers .swatches:has(.color-product-choice){gap:0.5rem}.offers .color-product-choice>span{font-size:0.75rem}.offers .color-product-choice>img{height:2.75rem}.offers .color-product-choice,.offers .kit-color-row .color-product-choice{min-height:5.125rem}.offers .price-card .button{font-size:1.0625rem}.offer-reassurance{gap:0.5rem}.offer-reassurance>span+span{padding-left:0.5rem}}

@@ -1,0 +1,47 @@
+/* Delivery reassurance uses the same line-icon language as the header. */
+.desktop-shipping .tracking-reassurance{display:flex;align-items:center;gap:.375rem;margin:.25rem 0 0;color:var(--navy);font-size:.875rem;line-height:1.35}
+.tracking-reassurance img{width:1.125rem;height:1.125rem;flex-shrink:0}
+/* Compact only the desktop hero; keep the rest of the page unchanged. */
+@media(min-width:56.3125rem) and (max-height:58rem){
+  .nav-inner{min-height:4.25rem}
+  .nav-inner nav a{padding-block:1rem}
+  .catalog-grid{padding-top:1rem}
+  .desktop-product-panel{gap:.4375rem}
+  .desktop-product-heading h2{font-size:clamp(1.5625rem,2.1vw,1.875rem);line-height:1.1}
+  .desktop-review-summary{min-height:1.75rem;margin-top:0}
+  .desktop-product-panel .desktop-price-band{padding:.5rem .875rem;margin-top:0}
+  .desktop-product-panel .desktop-price{font-size:2.125rem}
+  .desktop-product-panel .card-installments{margin-top:.125rem}
+  .desktop-shipping{padding:.25rem 0;grid-template-columns:4.5rem minmax(0,1fr);gap:.625rem}
+  .desktop-delivery-content{gap:.625rem}
+  .desktop-delivery-content>img{width:5rem}
+  .desktop-details-row{grid-template-columns:4.5rem minmax(0,1fr);gap:.625rem}
+  .desktop-product-features img{width:1.75rem;height:1.875rem}
+  .desktop-field-label{margin-bottom:.25rem}
+  .desktop-packages{padding:.375rem;gap:.5rem}
+  .desktop-packages button,.desktop-packages button[aria-pressed=true]{min-height:3.5rem;padding:.25rem .875rem}
+  .desktop-package-art,.desktop-package-art>img,.desktop-package-art.is-pair>img{height:2.625rem}
+  .desktop-color-selection{min-height:3.625rem}
+  .desktop-product-panel .color-product-choice{min-height:3.5rem;padding:.125rem .25rem}
+  .desktop-product-panel .color-product-choice img{height:2rem}
+  .desktop-product-panel .color-product-choice>span{font-size:.875rem}
+  .desktop-kit-color{padding:.375rem}
+  .desktop-kit-color .desktop-field-label{font-size:.875rem;line-height:1.25;margin-bottom:.25rem}
+  .desktop-buy{min-height:2.875rem;padding-block:.5rem}
+  .desktop-checkout-note{margin:0;line-height:1.3}
+}
+@media(min-width:56.3125rem) and (max-height:45rem){
+  .announcement-inner{min-height:1.875rem}
+  .nav-inner{min-height:3.75rem}
+  .delivery-ticker .ticker-track>span{padding-block:.25rem}
+  .catalog-grid{padding-top:.625rem}
+  .desktop-product-panel{gap:.3125rem}
+  .desktop-product-heading h2{font-size:1.5625rem}
+  .desktop-product-panel .desktop-price-band{padding:.375rem .75rem}
+  .desktop-product-panel .desktop-price{font-size:1.875rem}
+  .desktop-product-features li{flex-direction:row;align-items:center;font-size:.875rem}
+  .desktop-product-features img{width:1.375rem;height:1.5rem}
+  /* On short screens, purchase choices stay above secondary delivery details. */
+  .desktop-shipping{order:1}
+  .desktop-details-row{order:2}
+}

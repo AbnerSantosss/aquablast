@@ -1,0 +1,113 @@
+# AquaBlast — stack para Portainer / docker compose.
+#
+# Variáveis: crie um .env ao lado (copie de .env.example). No Portainer, cole as mesmas
+# variáveis em "Environment variables" da stack — elas alimentam os ${...} abaixo.
+# DATABASE_URL não precisa estar no .env: é montada aqui apontando para o serviço `db`.
+#
+# Subir tudo:            docker compose up -d --build
+# Só o banco (dev local): docker compose up -d db
+
+name: aquablast
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aquablast
+      POSTGRES_USER: aquablast
+      # Use só letras e números na senha: ela entra na DATABASE_URL abaixo sem escape.
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env / variáveis da stack}"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aquablast -d aquablast"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    # Para acessar o banco da sua máquina (pgAdmin, drizzle studio) descomente:
+    # ports:
+    #   - "127.0.0.1:5432:5432"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # O domínio entra no HTML estático no build (canonical, og:image, sitemap). Trocou o
+      # APP_URL? Rebuild da imagem, não só restart.
+      args:
+        APP_URL: "${APP_URL:?defina APP_URL, ex. https://loja.seudominio.com.br}"
+    # Alternativa: usar uma imagem já publicada em vez de buildar na stack
+    # (nesse caso builde com --build-arg APP_URL=https://seu-dominio):
+    # image: ghcr.io/SEU-USUARIO/aquablast:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+      DATABASE_URL: "postgres://aquablast:${POSTGRES_PASSWORD}@db:5432/aquablast"
+      APP_URL: "${APP_URL:?defina APP_URL, ex. https://loja.seudominio.com.br}"
+      SESSION_SECRET: "${SESSION_SECRET:?defina SESSION_SECRET}"
+      APP_ENCRYPTION_KEY: "${APP_ENCRYPTION_KEY:?defina APP_ENCRYPTION_KEY}"
+      CHECKOUT_WEBHOOK_TOKEN: "${CHECKOUT_WEBHOOK_TOKEN:?defina CHECKOUT_WEBHOOK_TOKEN}"
+      CRON_SECRET: "${CRON_SECRET:?defina CRON_SECRET}"
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: "${SMTP_PORT:-465}"
+      SMTP_SECURE: "${SMTP_SECURE:-true}"
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-AquaBlast}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
+      TRACKING_17TRACK_API_KEY: ${TRACKING_17TRACK_API_KEY:-}
+    # Com Cloudflare Tunnel você pode remover `ports` inteiro e apontar o túnel para
+    # http://app:3000 (o serviço cloudflared abaixo fica na mesma rede da stack).
+    ports:
+      - "3000:3000"
+
+  # Dispara os crons da aplicação. Sem cron do host, sem dependência externa:
+  # a cada SCHEDULER_INTERVAL_SECONDS (padrão 900 = 15 min) chama os dois endpoints.
+  # A cadência real é decidida pela app (tracking.syncIntervalMinutes e email.pixReminder.*).
+  scheduler:
+    image: curlimages/curl:latest
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_started
+    environment:
+      CRON_SECRET: "${CRON_SECRET:?defina CRON_SECRET}"
+      SCHEDULER_INTERVAL_SECONDS: "${SCHEDULER_INTERVAL_SECONDS:-900}"
+      APP_INTERNAL_URL: http://app:3000
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "scheduler: intervalo de $${SCHEDULER_INTERVAL_SECONDS}s"
+        sleep 30
+        while true; do
+          for ep in tracking-sync reminders; do
+            code=$$(curl -sS -m 120 -o /dev/null -w '%{http_code}' \
+              -H "Authorization: Bearer $${CRON_SECRET}" \
+              "$${APP_INTERNAL_URL}/api/cron/$${ep}" || echo "000")
+            echo "$$(date -u +%FT%TZ) cron $${ep} -> HTTP $${code}"
+          done
+          sleep "$${SCHEDULER_INTERVAL_SECONDS}"
+        done
+
+  # Opcional: expõe a app pela internet sem abrir porta no roteador (Cloudflare Zero Trust).
+  # 1) Zero Trust → Networks → Tunnels → criar túnel → copie o token para CLOUDFLARE_TUNNEL_TOKEN.
+  # 2) Public hostname: seu domínio → Service: HTTP → URL: app:3000
+  # 3) Descomente o bloco abaixo e remova `ports` do serviço app.
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   restart: unless-stopped
+  #   command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+  #   depends_on:
+  #     - app
+
+volumes:
+  db-data:

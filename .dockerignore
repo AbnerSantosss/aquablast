@@ -1,0 +1,23 @@
+# Nunca copiar para a imagem
+node_modules
+.next
+out
+build
+coverage
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+docs
+README.md
+AGENTS.md
+CLAUDE.md
+Dockerfile
+docker-compose.yml
+.dockerignore
+tsconfig.tsbuildinfo
+npm-debug.log*
+.DS_Store
+.vscode
+.idea

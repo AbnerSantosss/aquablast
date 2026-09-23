@@ -1,0 +1,5 @@
+[
+  {"id": "em-acao", "src": "videos/video1.mp4", "poster": "videos/video1-poster.jpg", "captions": null},
+  {"id": "detalhes", "src": "videos/video2.mp4", "poster": "videos/video2-poster.jpg", "captions": null},
+  {"id": "em-familia", "src": "videos/video3.mp4", "poster": "videos/video3-poster.jpg", "captions": null}
+]
