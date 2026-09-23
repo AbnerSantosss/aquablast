@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import type { MouseEvent, ReactNode } from "react";
-import { CHECKOUT_URL, COLOR_LABELS, PRICES } from "@/lib/site/constants";
+import { checkoutUrl, COLOR_LABELS, PRICES } from "@/lib/site/constants";
 import type { Pack } from "@/lib/site/types";
 import { KitSwatches, UnitSwatches } from "./ColorSwatches";
 import { useSelection } from "./SelectionProvider";
@@ -45,6 +45,7 @@ function OfferBenefits() {
 }
 
 function OfferFooter({ pack, buy }: { pack: Pack; buy: string }) {
+  const { color, kitColors } = useSelection();
   const price = PRICES[pack];
   return (
     <>
@@ -73,7 +74,7 @@ function OfferFooter({ pack, buy }: { pack: Pack; buy: string }) {
           Atendimento humano
         </span>
       </div>
-      <a className="button button-green full-width" data-purchase={pack} href={CHECKOUT_URL}>
+      <a className="button button-green full-width" data-purchase={pack} href={checkoutUrl(pack, color, kitColors)}>
         <svg
           className="offer-cart-icon"
           viewBox="0 0 24 24"
