@@ -1,11 +1,11 @@
-# AquaBlast — stack para Portainer / docker compose.
+# AquaBlast — stack de produção (Portainer → Stacks → Repository, compose path docker-compose.yml).
 #
-# Variáveis: crie um .env ao lado (copie de .env.example). No Portainer, cole as mesmas
-# variáveis em "Environment variables" da stack — elas alimentam os ${...} abaixo.
-# DATABASE_URL não precisa estar no .env: é montada aqui apontando para o serviço `db`.
+# Variáveis: em "Environment variables" da stack (ou .env ao lado; modelo em .env.example).
+# Elas alimentam os ${...} abaixo. DATABASE_URL não precisa: é montada aqui apontando para `db`.
 #
-# Subir tudo:            docker compose up -d --build
-# Só o banco (dev local): docker compose up -d db
+# O site sai para a internet só pelo Cloudflare Tunnel (serviço cloudflared): nenhuma porta
+# é publicada no servidor. Teste local da stack inteira, com porta e sem túnel:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
 
 name: aquablast
 
@@ -65,10 +65,7 @@ services:
       EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-AquaBlast}
       EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
       TRACKING_17TRACK_API_KEY: ${TRACKING_17TRACK_API_KEY:-}
-    # Com Cloudflare Tunnel você pode remover `ports` inteiro e apontar o túnel para
-    # http://app:3000 (o serviço cloudflared abaixo fica na mesma rede da stack).
-    ports:
-      - "3000:3000"
+    # Sem `ports`: o cloudflared alcança http://app:3000 pela rede interna da stack.
 
   # Dispara os crons da aplicação. Sem cron do host, sem dependência externa:
   # a cada SCHEDULER_INTERVAL_SECONDS (padrão 900 = 15 min) chama os dois endpoints.
@@ -98,16 +95,18 @@ services:
           sleep "$${SCHEDULER_INTERVAL_SECONDS}"
         done
 
-  # Opcional: expõe a app pela internet sem abrir porta no roteador (Cloudflare Zero Trust).
-  # 1) Zero Trust → Networks → Tunnels → criar túnel → copie o token para CLOUDFLARE_TUNNEL_TOKEN.
+  # Publica o site pela Cloudflare sem abrir porta no servidor.
+  # 1) Zero Trust → Networks → Tunnels → criar túnel (Cloudflared) → copie o token.
   # 2) Public hostname: seu domínio → Service: HTTP → URL: app:3000
-  # 3) Descomente o bloco abaixo e remova `ports` do serviço app.
-  # cloudflared:
-  #   image: cloudflare/cloudflared:latest
-  #   restart: unless-stopped
-  #   command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
-  #   depends_on:
-  #     - app
+  # O token vai por variável de ambiente, não na linha de comando (não aparece no `ps`).
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: "${CLOUDFLARE_TUNNEL_TOKEN:?defina CLOUDFLARE_TUNNEL_TOKEN (token do túnel no Cloudflare Zero Trust)}"
+    depends_on:
+      - app
 
 volumes:
   db-data:
