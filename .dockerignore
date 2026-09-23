@@ -16,6 +16,7 @@ CLAUDE.md
 Dockerfile
 docker-compose.yml
 docker-compose.*.yml
+.github
 .dockerignore
 tsconfig.tsbuildinfo
 npm-debug.log*

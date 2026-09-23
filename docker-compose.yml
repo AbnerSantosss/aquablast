@@ -3,16 +3,26 @@
 # Variáveis: em "Environment variables" da stack (ou .env ao lado; modelo em .env.example).
 # Elas alimentam os ${...} abaixo. DATABASE_URL não precisa: é montada aqui apontando para `db`.
 #
+# A imagem da app NÃO é buildada aqui: o GitHub Actions (.github/workflows/build.yml) builda a
+# cada push na main e publica no GHCR; a stack só puxa (pull_policy: always, então todo
+# redeploy pega a imagem mais nova).
+#
 # O site sai para a internet só pelo Cloudflare Tunnel (serviço cloudflared): nenhuma porta
-# é publicada no servidor. Teste local da stack inteira, com porta e sem túnel:
+# é publicada no servidor. Teste local da stack inteira, buildando aqui, com porta e sem túnel:
 #   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
 
 name: aquablast
+
+# Logs com teto: a VPS roda ~40 containers e log sem limite enche o disco.
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }
 
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    logging: *logging
     environment:
       POSTGRES_DB: aquablast
       POSTGRES_USER: aquablast
@@ -31,17 +41,13 @@ services:
     #   - "127.0.0.1:5432:5432"
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      # O domínio entra no HTML estático no build (canonical, og:image, sitemap). Trocou o
-      # APP_URL? Rebuild da imagem, não só restart.
-      args:
-        APP_URL: "${APP_URL:?defina APP_URL, ex. https://loja.seudominio.com.br}"
-    # Alternativa: usar uma imagem já publicada em vez de buildar na stack
-    # (nesse caso builde com --build-arg APP_URL=https://seu-dominio):
-    # image: ghcr.io/SEU-USUARIO/aquablast:latest
+    # O domínio entra no HTML estático no build (canonical, og:image, sitemap), pela variável
+    # APP_URL do repositório no GitHub. Trocou o domínio? Mude a variável lá E o APP_URL daqui,
+    # rode o workflow e faça o redeploy. Só trocar aqui deixa o SEO com o domínio antigo.
+    image: ghcr.io/abnersantosss/aquablast:latest
+    pull_policy: always
     restart: unless-stopped
+    logging: *logging
     depends_on:
       db:
         condition: service_healthy
@@ -73,6 +79,7 @@ services:
   scheduler:
     image: curlimages/curl:latest
     restart: unless-stopped
+    logging: *logging
     depends_on:
       app:
         condition: service_started
@@ -102,6 +109,7 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
+    logging: *logging
     command: tunnel --no-autoupdate run
     environment:
       TUNNEL_TOKEN: "${CLOUDFLARE_TUNNEL_TOKEN:?defina CLOUDFLARE_TUNNEL_TOKEN (token do túnel no Cloudflare Zero Trust)}"

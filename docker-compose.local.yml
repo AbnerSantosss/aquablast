@@ -1,9 +1,16 @@
 # Só para testar a stack inteira na sua máquina (não usar no Portainer):
 #   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
-# Publica a app em 127.0.0.1:3000 e deixa o túnel desligado. CLOUDFLARE_TUNNEL_TOKEN ainda
-# precisa ter algum valor no .env (o compose valida o arquivo inteiro); qualquer texto serve.
+# Builda a imagem aqui (em produção ela vem pronta do GHCR), publica a app em 127.0.0.1:3000 e
+# deixa o túnel desligado. CLOUDFLARE_TUNNEL_TOKEN ainda precisa ter algum valor no .env (o
+# compose valida o arquivo inteiro); qualquer texto serve.
 services:
   app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP_URL: "${APP_URL:?defina APP_URL}"
+    pull_policy: build
     ports:
       - "127.0.0.1:${LOCAL_APP_PORT:-3000}:3000"
 

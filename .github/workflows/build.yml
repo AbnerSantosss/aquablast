@@ -1,0 +1,59 @@
+# Builda a imagem de produção fora da VPS e publica no GHCR a cada push na main.
+# A VPS (6,4 GB para ~40 containers) só puxa a imagem pronta: o docker-compose.yml usa
+# ghcr.io/abnersantosss/aquablast:latest com pull_policy: always.
+#
+# O domínio entra no build (home, robots e sitemap são estáticos): variável APP_URL do
+# repositório (Settings → Secrets and variables → Actions → Variables). Trocou o domínio?
+# Atualize a variável, rode este workflow (Actions → build → Run workflow) e faça o redeploy.
+name: build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: build
+  cancel-in-progress: true
+
+jobs:
+  imagem:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      # Sem APP_URL o site sairia com http://localhost:3000 no canonical, sitemap e JSON-LD.
+      - name: Conferir APP_URL
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          case "$APP_URL" in
+            https://*) echo "Build para $APP_URL" ;;
+            *) echo "::error::Defina a variavel APP_URL do repositorio (https://...)"; exit 1 ;;
+          esac
+
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Nome da imagem em minúsculas: o GHCR recusa "AbnerSantosss".
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          build-args: |
+            APP_URL=${{ vars.APP_URL }}
+          tags: |
+            ghcr.io/abnersantosss/aquablast:latest
+            ghcr.io/abnersantosss/aquablast:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/AbnerSantosss/aquablast
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
