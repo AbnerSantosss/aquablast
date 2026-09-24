@@ -1,7 +1,32 @@
 import type { Color, Pack } from "@/lib/site/types";
 
-export const CHECKOUT_URL =
-  "https://seguro.elefantol-oficial.store/api/public/shopify?product=1869756463162&store=18697";
+// Checkout Zedy: loja 38320, dominio seguro.aquablastbrasil.com.br.
+// Um link por variante (cada cor da unidade e cada combinacao do kit), para que
+// a escolha feita no site chegue ao pagamento. Os codigos vem do admin da Zedy,
+// "Copiar link de Compra" de cada variante (produtos 26555142 e 26555165).
+const CHECKOUT_BASE = "https://seguro.aquablastbrasil.com.br/api/public/shopify";
+const CHECKOUT_STORE = "38320";
+
+const UNIT_CHECKOUT: Record<Color, string> = {
+  azul: "3832091532428",
+  vermelho: "3832089171556",
+  preto: "3832073618985",
+};
+
+// [primeiro brinquedo][segundo brinquedo]
+const KIT_CHECKOUT: Record<Color, Record<Color, string>> = {
+  azul: { azul: "3832082498171", vermelho: "3832061937543", preto: "3832042128844" },
+  vermelho: { azul: "3832056938296", vermelho: "3832034987449", preto: "3832058556951" },
+  preto: { azul: "3832083966525", vermelho: "3832088592283", preto: "3832017287217" },
+};
+
+export function checkoutUrl(pack: Pack, color: Color, kitColors: readonly [Color, Color]): string {
+  const product = pack === "kit" ? KIT_CHECKOUT[kitColors[0]][kitColors[1]] : UNIT_CHECKOUT[color];
+  return `${CHECKOUT_BASE}?product=${product}&store=${CHECKOUT_STORE}`;
+}
+
+/** Pixel "Pixel Plano B" (conta PLANO-0B-PIX). O mesmo ID esta cadastrado na Zedy para o Purchase. */
+export const META_PIXEL_ID = "1119943063690657";
 
 export const BRAND_NAME = "AquaBlast";
 

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { MetaPixel } from "@/components/site/MetaPixel";
 import { SITE_ICON } from "@/lib/site/constants";
 // Mesma ordem do <head> do index.html original.
 import "@/styles/site/style.css";
@@ -35,6 +36,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       <link rel="preload" href="/video-moldura.webp" as="image" />
       <link rel="preload" href="/fonts/nunito-900.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
       {children}
+      <MetaPixel />
     </>
   );
 }

@@ -1,7 +1,7 @@
 import { faq } from "@/data/faq";
 import { reviews } from "@/data/reviews";
 import { BASE_URL } from "@/lib/site/base-url";
-import { BRAND_NAME, CHECKOUT_URL, PRICES } from "@/lib/site/constants";
+import { BRAND_NAME, checkoutUrl, PRICES } from "@/lib/site/constants";
 import { reviewSummary } from "@/lib/site/reviews-summary";
 
 const summary = reviewSummary(reviews);
@@ -32,7 +32,7 @@ const product = {
       priceCurrency: "BRL",
       availability: "https://schema.org/InStock",
       itemCondition: "https://schema.org/NewCondition",
-      url: CHECKOUT_URL,
+      url: checkoutUrl("unit", "azul", ["azul", "preto"]),
       eligibleQuantity: { "@type": "QuantitativeValue", value: 1, unitText: "unidade" },
     },
     {
@@ -42,7 +42,7 @@ const product = {
       priceCurrency: "BRL",
       availability: "https://schema.org/InStock",
       itemCondition: "https://schema.org/NewCondition",
-      url: CHECKOUT_URL,
+      url: checkoutUrl("kit", "azul", ["azul", "preto"]),
       eligibleQuantity: { "@type": "QuantitativeValue", value: 2, unitText: "unidades" },
     },
   ],

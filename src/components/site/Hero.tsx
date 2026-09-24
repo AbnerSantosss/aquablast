@@ -3,7 +3,7 @@
 
 import { useEffect, type ReactNode } from "react";
 import { reviews } from "@/data/reviews";
-import { CHECKOUT_URL, COLOR_LABELS, HERO_PHOTOS, MOBILE_QUERY, PRICES } from "@/lib/site/constants";
+import { checkoutUrl, COLOR_LABELS, HERO_PHOTOS, MOBILE_QUERY, PRICES } from "@/lib/site/constants";
 import { reviewSummary } from "@/lib/site/reviews-summary";
 import { HeroFeaturedVideo } from "./HeroFeaturedVideo";
 import { KitSwatches, UnitSwatches } from "./ColorSwatches";
@@ -117,7 +117,7 @@ function CatalogGallery({ children }: { children: ReactNode }) {
 }
 
 function DesktopProductPanel() {
-  const { pack, color, colorTouched, selectPack } = useSelection();
+  const { pack, color, kitColors, colorTouched, selectPack } = useSelection();
   const price = PRICES[pack];
   const unitAlt = colorTouched ? `AquaBlast ${COLOR_LABELS[color].toLowerCase()}` : "";
 
@@ -266,7 +266,7 @@ function DesktopProductPanel() {
           <KitSwatches index={1} label="Cor do 2º AquaBlast no desktop" />
         </div>
       </div>
-      <a className="button button-green desktop-buy" href={CHECKOUT_URL}>
+      <a className="button button-green desktop-buy" data-purchase={pack} href={checkoutUrl(pack, color, kitColors)}>
         {pack === "kit" ? "Comprar kit com 2" : "Comprar 1 unidade"}
       </a>
       <p className="desktop-checkout-note">Confira cor, quantidade e valor no checkout.</p>
