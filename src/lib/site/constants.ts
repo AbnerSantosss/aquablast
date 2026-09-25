@@ -39,8 +39,8 @@ export const COLOR_LABELS: Record<Color, string> = {
 export const COLOR_KEYS = Object.keys(COLOR_LABELS) as Color[];
 
 export const PRICES: Record<Pack, { pix: string; installments: string; amount: number }> = {
-  unit: { pix: "R$ 159,90", installments: "ou 12x de R$ 14,16 no cartão", amount: 159.9 },
-  kit: { pix: "R$ 239,90", installments: "ou 12x de R$ 22,49 no cartão", amount: 239.9 },
+  unit: { pix: "R$ 159,90", installments: "ou em até 12x sem juros no cartão", amount: 159.9 },
+  kit: { pix: "R$ 239,90", installments: "ou em até 12x sem juros no cartão", amount: 239.9 },
 };
 
 export type HeroPhotoKind = "photo" | "art" | "campaign" | "scene";
