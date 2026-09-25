@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Accessories } from "@/components/site/Accessories";
-import { Announcement, DeliveryTicker, SkipLink } from "@/components/site/Announcement";
+import { DeliveryTicker, SkipLink } from "@/components/site/Announcement";
 import { Faq } from "@/components/site/Faq";
 import { Footer } from "@/components/site/Footer";
 import { Gifting } from "@/components/site/Gifting";
@@ -66,7 +66,6 @@ export default function HomePage() {
       <JsonLd />
       <div className="aquablast-home">
         <SkipLink />
-        <Announcement />
         <DeliveryTicker />
         <Header />
         <SelectionProvider>

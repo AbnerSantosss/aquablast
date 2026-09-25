@@ -2,10 +2,11 @@
 /* eslint-disable @next/next/no-img-element */
 
 import type { MouseEvent, ReactNode } from "react";
-import { checkoutUrl, COLOR_LABELS, PRICES } from "@/lib/site/constants";
+import { COLOR_LABELS, PRICES } from "@/lib/site/constants";
 import type { Pack } from "@/lib/site/types";
 import { KitSwatches, UnitSwatches } from "./ColorSwatches";
 import { useSelection } from "./SelectionProvider";
+import { PurchaseLink } from "./PurchaseLink";
 
 function OfferBenefits() {
   return (
@@ -45,7 +46,6 @@ function OfferBenefits() {
 }
 
 function OfferFooter({ pack, buy }: { pack: Pack; buy: string }) {
-  const { color, kitColors } = useSelection();
   const price = PRICES[pack];
   return (
     <>
@@ -74,23 +74,9 @@ function OfferFooter({ pack, buy }: { pack: Pack; buy: string }) {
           Atendimento humano
         </span>
       </div>
-      <a className="button button-green full-width" data-purchase={pack} href={checkoutUrl(pack, color, kitColors)}>
-        <svg
-          className="offer-cart-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <circle cx="9" cy="21" r="1" />
-          <circle cx="20" cy="21" r="1" />
-          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-        </svg>
+      <PurchaseLink className="button button-green full-width" pack={pack}>
         {buy}
-      </a>
+      </PurchaseLink>
       <p className="offer-checkout-note">Confira cor, quantidade e valor no checkout.</p>
     </>
   );
@@ -130,8 +116,10 @@ export function Offers() {
               <h3>1 unidade AquaBlast</h3>
               <span className="offer-card-tag">IDEAL PARA PRESENTEAR</span>
             </div>
-            <div className="packshot single">
-              <img className="unit-product" src={`/produto-${color}.webp`} alt={`AquaBlast ${colorLabel.toLowerCase()}`} loading="lazy" />
+            <div className="packshot single unit-campaign-art">
+              <div className="unit-art-scene">
+                <img className="unit-product" src={`/produto-${color}.webp`} alt={`AquaBlast ${colorLabel.toLowerCase()}`} loading="lazy" />
+              </div>
               <span className="packshot-caption">Uma surpresa. Muitos sorrisos.</span>
             </div>
             <div className="offer-card-body">

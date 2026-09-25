@@ -60,7 +60,7 @@ export const productPhoto = (color: Color): HeroPhoto => ({
 });
 
 export const KIT_PHOTO: HeroPhoto = {
-  src: "/kit-azul-preto-v40.webp",
+  src: "/campanha-kit-azul-preto.webp",
   title: "Kit AquaBlast azul + preto",
   alt: "Arte do kit com um AquaBlast azul e um preto inteiros",
   kind: "art",

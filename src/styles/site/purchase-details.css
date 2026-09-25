@@ -27,7 +27,7 @@
 .mobile-pix-line .mobile-price{color:var(--green);font-size:1.125rem;white-space:nowrap}
 .mobile-pix-line>small{font-size:.6875rem;font-weight:700;white-space:nowrap}
 .reviews-intro{margin:0;color:var(--navy);font:800 clamp(1.125rem,2.2vw,1.625rem)/1.3 Nunito,Arial,sans-serif;max-width:26rem}
-#ofertas .kit-emotion-tag{display:flex;flex-direction:column;gap:.125rem;border-radius:.75rem;text-transform:none;letter-spacing:0;padding:.3125rem .875rem;background:#FA4503;border-color:#FA4503;color:#022039}
+#ofertas .kit-emotion-tag{display:flex;flex-direction:column;gap:.125rem;border-radius:.75rem;text-transform:none;letter-spacing:0;padding:.3125rem .875rem;background:#ffe063;border-color:#ffed9e;color:#063451}
 .kit-emotion-tag strong{font-size:.875rem;line-height:1.2;font-weight:900}
 .kit-emotion-tag small{font-size:.6875rem;line-height:1.2;font-weight:700}
 @media(min-width:42.5625rem){#ofertas .price-header{min-height:5.5rem}}

@@ -10,6 +10,7 @@ interface SelectionState {
   color: Color;
   pack: Pack;
   kitColors: [Color, Color];
+  kitConfirmed: [boolean, boolean];
   heroPhoto: number;
   /** true enquanto o vídeo de destaque ocupa a galeria (estado inicial do app.js). */
   videoActive: boolean;
@@ -23,6 +24,7 @@ interface SelectionState {
 
 export interface SelectionContextValue extends SelectionState {
   isCustomKit: boolean;
+  kitReady: boolean;
   kitName: string;
   kitAlt: string;
   chooseColor: (color: Color) => void;
@@ -37,6 +39,7 @@ const initialState: SelectionState = {
   color: "azul",
   pack: "unit",
   kitColors: ["azul", "preto"],
+  kitConfirmed: [false, false],
   heroPhoto: 0,
   videoActive: true,
   videoRequest: 0,
@@ -94,7 +97,9 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
       commit((previous) => {
         const kitColors: [Color, Color] = [previous.kitColors[0], previous.kitColors[1]];
         kitColors[index] = color;
-        return withHeroPhoto({ ...previous, kitColors, pack: "kit" }, 1);
+        const kitConfirmed: [boolean, boolean] = [...previous.kitConfirmed];
+        kitConfirmed[index] = true;
+        return withHeroPhoto({ ...previous, kitColors, kitConfirmed, pack: "kit" }, 1);
       });
     },
     [commit],
@@ -141,6 +146,7 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
     const [first, second] = state.kitColors;
     return {
       ...state,
+      kitReady: state.kitConfirmed.every(Boolean),
       isCustomKit: first !== "azul" || second !== "preto",
       kitName: `Kit ${state.kitColors.map((c) => COLOR_LABELS[c]).join(" + ")}`,
       kitAlt: `Kit com dois AquaBlast: ${state.kitColors.map((c) => COLOR_LABELS[c]).join(" e ")}`,

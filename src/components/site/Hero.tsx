@@ -3,7 +3,9 @@
 
 import { useEffect, type ReactNode } from "react";
 import { reviews } from "@/data/reviews";
-import { checkoutUrl, COLOR_LABELS, HERO_PHOTOS, MOBILE_QUERY, PRICES } from "@/lib/site/constants";
+import { heroVideo } from "@/data/videos";
+import { CAMPAIGN_PHOTO, COLOR_LABELS, HERO_PHOTOS, KIT_PHOTO, MOBILE_QUERY, PRICES } from "@/lib/site/constants";
+import { PurchaseLink } from "./PurchaseLink";
 import { reviewSummary } from "@/lib/site/reviews-summary";
 import { HeroFeaturedVideo } from "./HeroFeaturedVideo";
 import { KitSwatches, UnitSwatches } from "./ColorSwatches";
@@ -77,7 +79,7 @@ function CatalogGallery({ children }: { children: ReactNode }) {
         </span>
       </button>
       <h2 className="catalog-choice-title" id="catalog-choice-title">
-        Selecione seu kit
+        <a className="catalog-choice-link" href="#ofertas">Selecione seu kit</a>
       </h2>
       <div className="catalog-thumbnails" role="group" aria-labelledby="catalog-choice-title">
         <button
@@ -87,8 +89,11 @@ function CatalogGallery({ children }: { children: ReactNode }) {
           aria-pressed={videoActive}
           onClick={onVideoThumb}
         >
-          <img src="/produto-preto.webp" alt="AquaBlast preto — assistir ao vídeo" />
-          <span>▶ Ver vídeo</span>
+          <span className="video-thumb-preview" aria-hidden="true">
+            <img className="video-thumb-frame" src="/video-moldura.webp" alt="" width={1254} height={1254} />
+            <img className="video-thumb-poster" src={heroVideo.poster} alt="" />
+          </span>
+          <span className="video-thumb-label">▶ Ver vídeo</span>
         </button>
         <button
           className="art-thumb"
@@ -97,7 +102,7 @@ function CatalogGallery({ children }: { children: ReactNode }) {
           aria-pressed={isPressed(0)}
           onClick={() => selectHeroOption(0)}
         >
-          <img src="/campanha-abertura.webp" alt="" />
+          <img src={CAMPAIGN_PHOTO.src} alt="" width={1254} height={1254} />
           <span>1 unidade</span>
         </button>
         <button
@@ -107,7 +112,7 @@ function CatalogGallery({ children }: { children: ReactNode }) {
           aria-pressed={isPressed(1)}
           onClick={() => selectHeroOption(1)}
         >
-          <img className="kit-thumb-art" src="/kit-azul-preto-v40.webp" alt="Arte ilustrativa: AquaBlast azul e preto" />
+          <img className="kit-thumb-art" src={KIT_PHOTO.src} alt={KIT_PHOTO.alt} width={1254} height={1254} />
           <span>Kit com 2</span>
         </button>
       </div>
@@ -117,7 +122,7 @@ function CatalogGallery({ children }: { children: ReactNode }) {
 }
 
 function DesktopProductPanel() {
-  const { pack, color, kitColors, colorTouched, selectPack } = useSelection();
+  const { pack, color, colorTouched, selectPack } = useSelection();
   const price = PRICES[pack];
   const unitAlt = colorTouched ? `AquaBlast ${COLOR_LABELS[color].toLowerCase()}` : "";
 
@@ -266,9 +271,9 @@ function DesktopProductPanel() {
           <KitSwatches index={1} label="Cor do 2º AquaBlast no desktop" />
         </div>
       </div>
-      <a className="button button-green desktop-buy" data-purchase={pack} href={checkoutUrl(pack, color, kitColors)}>
+      <PurchaseLink className="button button-green desktop-buy" pack={pack}>
         {pack === "kit" ? "Comprar kit com 2" : "Comprar 1 unidade"}
-      </a>
+      </PurchaseLink>
       <p className="desktop-checkout-note">Confira cor, quantidade e valor no checkout.</p>
     </div>
   );

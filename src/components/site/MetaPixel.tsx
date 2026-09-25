@@ -38,7 +38,7 @@ export function MetaPixel() {
     const onClick = (event: MouseEvent) => {
       if (!(event.target instanceof Element)) return;
       const link = event.target.closest<HTMLAnchorElement>("a[data-purchase]");
-      if (!link) return;
+      if (!link || !link.hasAttribute("href") || link.getAttribute("aria-disabled") === "true") return;
       const pack: Pack = link.dataset.purchase === "kit" ? "kit" : "unit";
       track("InitiateCheckout", {
         content_name: CONTENT[pack].name,
