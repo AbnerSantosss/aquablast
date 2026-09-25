@@ -64,27 +64,29 @@ export default function HomePage() {
   return (
     <>
       <JsonLd />
-      <SkipLink />
-      <Announcement />
-      <DeliveryTicker />
-      <Header />
-      <SelectionProvider>
-        <ReviewViewerProvider>
-          <main id="conteudo">
-            <Hero />
-            <Moments />
-            <Accessories />
-            <Offers />
-            <Reviews />
-            <Gifting />
-            <Faq />
-          </main>
-          <Footer />
-          <MobileBuy />
-          <ReviewViewer />
-        </ReviewViewerProvider>
-      </SelectionProvider>
-      <SiteBehavior />
+      <div className="aquablast-home">
+        <SkipLink />
+        <Announcement />
+        <DeliveryTicker />
+        <Header />
+        <SelectionProvider>
+          <ReviewViewerProvider>
+            <main id="conteudo">
+              <Hero />
+              <Moments />
+              <Gifting />
+              <Accessories />
+              <Offers />
+              <Reviews />
+              <Faq />
+            </main>
+            <Footer />
+            <MobileBuy />
+            <ReviewViewer />
+          </ReviewViewerProvider>
+        </SelectionProvider>
+        <SiteBehavior />
+      </div>
     </>
   );
 }
