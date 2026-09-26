@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { preload } from "react-dom";
+import { GoogleTagManager, GoogleTagManagerNoScript } from "@/components/site/GoogleTagManager";
 import { MetaPixel } from "@/components/site/MetaPixel";
 // Mesma ordem do <head> do index.html original.
 import "@/styles/site/style.css";
@@ -44,6 +45,8 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
   preload("/fonts/nunito-900.ttf", { as: "font", type: "font/ttf", crossOrigin: "anonymous" });
   return (
     <>
+      <GoogleTagManagerNoScript />
+      <GoogleTagManager />
       {children}
       <MetaPixel />
     </>

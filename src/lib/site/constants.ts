@@ -28,6 +28,9 @@ export function checkoutUrl(pack: Pack, color: Color, kitColors: readonly [Color
 /** Pixel "Pixel Plano B" (conta PLANO-0B-PIX). O mesmo ID esta cadastrado na Zedy para o Purchase. */
 export const META_PIXEL_ID = "1119943063690657";
 
+/** Container do Google Tag Manager do site publico (o painel /admin nao carrega). */
+export const GTM_ID = "GTM-594998R9";
+
 export const BRAND_NAME = "AquaBlast";
 
 // E-mail publico de contato da loja, confirmado pelo dono em 2026-09-26
