@@ -25,10 +25,11 @@ export function checkoutUrl(pack: Pack, color: Color, kitColors: readonly [Color
   return `${CHECKOUT_BASE}?product=${product}&store=${CHECKOUT_STORE}`;
 }
 
-/** Pixel "Pixel Plano B" (conta PLANO-0B-PIX). O mesmo ID esta cadastrado na Zedy para o Purchase. */
-export const META_PIXEL_ID = "1119943063690657";
-
-/** Container do Google Tag Manager do site publico (o painel /admin nao carrega). */
+/**
+ * Container do Google Tag Manager do site publico (o painel /admin nao carrega).
+ * O Pixel da Meta (e o GA4) moram DENTRO do GTM, com o ID na variavel "CONST - Meta Pixel ID".
+ * Nao reinstalar o Pixel no codigo: os eventos contariam em dobro.
+ */
 export const GTM_ID = "GTM-594998R9";
 
 export const BRAND_NAME = "AquaBlast";
