@@ -242,7 +242,32 @@ export const adminUsers = pgTable("admin_users", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
   disabledAt: timestamp("disabled_at", { withTimezone: true }),
+  /**
+   * Última troca/redefinição de senha. Sessões (JWT) emitidas antes disso são recusadas por
+   * getActiveAdminSession: trocar a senha derruba todas as sessões abertas, inclusive as de 30 dias.
+   */
+  passwordChangedAt: timestamp("password_changed_at", { withTimezone: true }),
 });
+
+/**
+ * Links de "Esqueci minha senha" do painel. Só o SHA-256 (hex) do token fica no banco;
+ * o token em claro existe apenas no link do e-mail. Uso único (used_at) e validade curta (expires_at).
+ */
+export const adminPasswordResets = pgTable(
+  "admin_password_resets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    adminUserId: uuid("admin_user_id")
+      .references(() => adminUsers.id, { onDelete: "cascade" })
+      .notNull(),
+    tokenHash: text("token_hash").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    requestedIp: text("requested_ip"),
+  },
+  (t) => [uniqueIndex("admin_password_resets_token_hash_idx").on(t.tokenHash), index("admin_password_resets_user_idx").on(t.adminUserId)],
+);
 
 export const rateLimits = pgTable("rate_limits", {
   key: text("key").primaryKey(),
@@ -272,3 +297,4 @@ export type PaymentStatus = Order["paymentStatus"];
 export type WebhookDelivery = typeof webhookDeliveries.$inferSelect;
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type AdminUser = typeof adminUsers.$inferSelect;
+export type AdminPasswordReset = typeof adminPasswordResets.$inferSelect;

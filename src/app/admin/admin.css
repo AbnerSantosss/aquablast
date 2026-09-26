@@ -618,7 +618,9 @@
   gap: 0.3rem;
   min-width: 0;
 }
-.field > span:first-child {
+/* .field-label: rótulo em <label htmlFor> separado do campo (usado com o PasswordInput, que não pode ficar dentro de <label>). */
+.field > span:first-child,
+.field-label {
   font-size: 0.8rem;
   font-weight: 800;
   color: var(--navy);
@@ -664,6 +666,55 @@
 }
 .admin fieldset:disabled {
   opacity: 0.65;
+}
+/* Campo de senha com o olho (PasswordInput): botão dentro do campo, à direita. */
+.pw-input {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+/* [type] sobe a especificidade acima da regra geral de input (0,3,1) sem depender da ordem. */
+.admin .pw-input > input.pw-field[type] {
+  padding-right: 2.9rem;
+}
+/* Edge desenha o próprio olho em type="password": sem isto aparecem dois. */
+.pw-input input::-ms-reveal,
+.pw-input input::-ms-clear {
+  display: none;
+}
+.pw-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: color 0.15s;
+}
+.pw-toggle:hover {
+  color: var(--navy);
+}
+/* Anel por dentro da área de 44 px, para caber na altura do campo. */
+.pw-toggle:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: -4px;
+  color: var(--navy);
+}
+.pw-toggle:disabled {
+  cursor: not-allowed;
+}
+.pw-toggle svg {
+  display: block;
+  flex: none;
 }
 .check {
   display: flex;
@@ -1039,9 +1090,14 @@
   color: var(--muted);
   margin-bottom: 1.5rem;
 }
+/* .login-form é o <fieldset> do formulário (desabilita tudo enquanto envia): sem borda nem recuo de fieldset. */
 .login-form {
   display: grid;
   gap: 1rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 .login-form .af-result {
   margin-top: 0;
@@ -1051,6 +1107,51 @@
   text-align: center;
   font-size: 0.8rem;
   color: var(--muted);
+}
+/* "Lembrar de mim" + ajuda à esquerda, "Esqueci minha senha" à direita; quebra em duas linhas se faltar espaço. */
+.login-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+.login-remember {
+  display: flex;
+  flex: 1 1 10rem;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.login-remember .check {
+  margin: 0;
+}
+/* Sem a margem lateral padrão do navegador no checkbox, o recuo da ajuda abaixo fica exato. */
+.login-remember .check input {
+  margin-inline: 0;
+}
+/* Recuo = checkbox (1rem) + gap do .check (0.5rem): alinha a ajuda com o texto "Lembrar de mim". */
+.login-remember .hint {
+  padding-left: 1.5rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+/* Mesma fonte e altura de linha do .check: o texto fica na linha do "Lembrar de mim". O padding de baixo leva a área de toque a 24 px. */
+.login-link {
+  display: inline-block;
+  padding-bottom: 0.25rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+/* Aviso no cartão (senha redefinida, link enviado, link inválido): .admin p zera a margem do .af-result. */
+.login-card .login-notice {
+  margin: 0 0 1rem;
+}
+.login-account {
+  color: var(--navy);
+  font-weight: 800;
+  overflow-wrap: anywhere;
 }
 @media (max-width: 480px) {
   .login-card {

@@ -1,14 +1,14 @@
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { Shell } from "@/components/admin/Shell";
-import { getAdminSession } from "@/lib/auth/session";
-import { ensureBootstrap } from "@/lib/bootstrap";
+import { getActiveAdminSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function PainelLayout({ children }: { children: ReactNode }) {
-  const session = await getAdminSession();
+  // Checa no banco (conta existe, ativa, sessão emitida depois da última troca de senha).
+  // getActiveAdminSession já roda o ensureBootstrap antes da consulta.
+  const session = await getActiveAdminSession();
   if (!session) redirect("/admin/login");
-  await ensureBootstrap();
   return <Shell admin={{ name: session.name, email: session.email }}>{children}</Shell>;
 }
