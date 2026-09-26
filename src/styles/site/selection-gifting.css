@@ -17,7 +17,8 @@
 
 /* The actual product photo stays intact and follows the selected color. */
 #ofertas .packshot.single.unit-campaign-art{display:block;height:auto;min-height:0;aspect-ratio:auto;padding:0;background:#042849;overflow:hidden}
-.unit-art-scene{position:relative;aspect-ratio:3/2;background:#042849 url('/oferta-unidade-cenario.webp') center/cover no-repeat;isolation:isolate}
+.unit-art-scene{position:relative;aspect-ratio:3/2;background:#042849 url('/thumbs/oferta-unidade-cenario-1020.webp') center/cover no-repeat;isolation:isolate}
+@media(max-width:42.5rem){.unit-art-scene{background-image:url('/thumbs/oferta-unidade-cenario-720.webp')}}
 #ofertas .packshot.single.unit-campaign-art .unit-product{position:absolute;inset:4% 13%;width:74%;max-width:74%;height:92%;margin:0;object-fit:contain;object-position:center;filter:drop-shadow(0 .4rem .6rem #00193288)}
 #ofertas .unit-campaign-art>.packshot-caption{position:static;display:block;padding:.375rem .5rem;background:#052b47;line-height:1.3}
 

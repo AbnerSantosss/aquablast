@@ -361,3 +361,6 @@
   .hero-video-controls{--hero-control-hit:2.75rem;--hero-control-disc:1.5rem}
   .hero-featured-video:fullscreen .hero-video-actions{gap:.5rem;bottom:max(1rem,env(safe-area-inset-bottom))}
 }
+@media(max-width:42.5rem){
+  .catalog-gallery .hero-featured-video:not(:fullscreen){background-image:url('/thumbs/video-moldura-760.webp')}
+}

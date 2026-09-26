@@ -28,12 +28,15 @@ function ReviewMediaLink({ review, item, index }: { review: Review; item: Review
     event.preventDefault();
     open(review.author, review.media?.items ?? [], index, event.currentTarget);
   };
+  // O selo do vídeo mostra "▶ 0:13"; a duração entra no rótulo para o nome conter o texto visível
+  // (evita o "label-content-name-mismatch" do Lighthouse).
+  const label = item.kind === "video" && item.duration ? `${item.ariaLabel} (${item.duration})` : item.ariaLabel;
   return (
     <a
       href={item.href}
       data-review-media={item.kind}
       data-poster={item.poster}
-      aria-label={item.ariaLabel}
+      aria-label={label}
       onClick={onClick}
     >
       <img
@@ -67,9 +70,9 @@ function ReviewArticle({ review, hidden }: { review: Review; hidden: boolean }) 
         {review.avatar}
       </span>
       <div className="review-content">
-        <h3 id={`${review.id}-name`} className="review-author">
+        <div id={`${review.id}-name`} className="review-author">
           {review.author}
-        </h3>
+        </div>
         <span className="review-stars" role="img" aria-label={`${review.score} de 5 estrelas`}>
           {STARS.slice(0, review.score)}
         </span>
@@ -172,7 +175,7 @@ export function Reviews() {
             disabled={state.page === 1}
             onClick={() => goTo(state.page - 1)}
           >
-            <img src="/icons/chevron-left.svg" alt="" />
+            <img src="/icons/chevron-left.svg" alt="" loading="lazy" decoding="async" />
           </button>
           <div className="reviews-page-numbers" data-reviews-pages="">
             {state.numbers.map((number, index) =>
@@ -203,7 +206,7 @@ export function Reviews() {
             disabled={state.page === state.pageCount}
             onClick={() => goTo(state.page + 1)}
           >
-            <img src="/icons/chevron-right.svg" alt="" />
+            <img src="/icons/chevron-right.svg" alt="" loading="lazy" decoding="async" />
           </button>
         </nav>
         <p className="reviews-page-summary" data-reviews-page-summary="">

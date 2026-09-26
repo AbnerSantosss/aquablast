@@ -101,6 +101,9 @@ export async function getSetting<K extends SettingKey>(key: K): Promise<Settings
       return DEFAULTS[key];
     }
   }
+  // O Drizzle aplica JSON.parse de novo no jsonb: texto só de dígitos (ex.: o WhatsApp
+  // "5581999999999") volta como número, e escapeHtml() dos e-mails quebraria com número.
+  if (typeof DEFAULTS[key] === "string" && typeof row.value === "number") return String(row.value) as SettingsMap[K];
   return row.value as SettingsMap[K];
 }
 

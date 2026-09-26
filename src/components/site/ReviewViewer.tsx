@@ -128,7 +128,7 @@ export function ReviewViewer() {
         <header className="review-viewer-heading">
           <h2 id="review-viewer-title">{request ? `Avaliação de ${author}` : "Fotos da avaliação"}</h2>
           <button type="button" data-review-close="" aria-label="Fechar mídia ampliada" autoFocus ref={closeRef} onClick={() => dialogRef.current?.close()}>
-            <img src="/icons/x.svg" alt="" />
+            <img src="/icons/x.svg" alt="" loading="lazy" decoding="async" />
           </button>
         </header>
         <div className="review-viewer-stage">
@@ -157,13 +157,13 @@ export function ReviewViewer() {
         </div>
         <footer className="review-viewer-navigation">
           <button type="button" data-review-step="-1" aria-label="Mídia anterior" disabled={Boolean(request) && count < 2} onClick={() => showMedia(index - 1)}>
-            <img src="/icons/chevron-left.svg" alt="" />
+            <img src="/icons/chevron-left.svg" alt="" loading="lazy" decoding="async" />
           </button>
           <p id="review-viewer-position" aria-live="polite">
             {item ? `${isVideo ? "Vídeo" : "Foto"} ${index + 1} de ${count}` : ""}
           </p>
           <button type="button" data-review-step="1" aria-label="Próxima mídia" disabled={Boolean(request) && count < 2} onClick={() => showMedia(index + 1)}>
-            <img src="/icons/chevron-right.svg" alt="" />
+            <img src="/icons/chevron-right.svg" alt="" loading="lazy" decoding="async" />
           </button>
         </footer>
       </div>

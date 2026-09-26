@@ -15,7 +15,7 @@ export function Faq() {
           </h2>
           <p>Veja os detalhes para escolher com tranquilidade.</p>
           <a className="text-link" href="#contato">
-            <img className="icon" src="/icons/headphones.svg" alt="" /> Falar com o atendimento
+            <img className="icon" src="/icons/headphones.svg" alt="" loading="lazy" decoding="async" /> Falar com o atendimento
           </a>
         </div>
         <div className="faq-list">
@@ -23,7 +23,7 @@ export function Faq() {
             <details key={item.question}>
               <summary>
                 {item.question}
-                <img className="icon" src="/icons/plus.svg" alt="" />
+                <img className="icon" src="/icons/plus.svg" alt="" loading="lazy" decoding="async" />
               </summary>
               <p>{item.answer}</p>
             </details>

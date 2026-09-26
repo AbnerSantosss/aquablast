@@ -7,7 +7,7 @@ main>section{height:auto;min-height:0;scroll-margin-top:0}
 .catalog-thumbnails .desktop-video-thumb>img{object-fit:contain;padding:.25rem;background:#054b70 url('/offer-water-stage.webp') center/cover}
 .nav-inner nav .tracking-nav{display:flex;align-items:center;gap:.375rem;color:var(--blue);white-space:nowrap}
 .tracking-nav img{width:1.25rem;height:1.25rem;flex-shrink:0}
-.desktop-packages button[data-desktop-pack="kit"],.desktop-packages button[data-desktop-pack="kit"]:hover,.desktop-packages button[data-desktop-pack="kit"][aria-pressed="true"]{background:#063760 url('/kit-background-v40.webp') center/cover;color:white;border-color:#4ccdf3}
+.desktop-packages button[data-desktop-pack="kit"],.desktop-packages button[data-desktop-pack="kit"]:hover,.desktop-packages button[data-desktop-pack="kit"][aria-pressed="true"]{background:#063760 url('/thumbs/kit-background-v40-500.webp') center/cover;color:white;border-color:#4ccdf3}
 .desktop-packages button[data-desktop-pack="kit"] .desktop-package-art{filter:drop-shadow(0 0 .25rem #d7f8ff)}
 .desktop-packages button[data-desktop-pack="kit"][aria-pressed="true"]{border-color:#ffb451;box-shadow:0 0 0 .125rem #ffb45155}
 .catalog-thumbnails .art-thumb .kit-thumb-art{object-fit:contain;background:#063760}
@@ -19,6 +19,12 @@ main>section{height:auto;min-height:0;scroll-margin-top:0}
 .accessories-grid article:nth-child(2){background:#032b4a url('/battery-background-v40.webp') center top/100% auto no-repeat}
 .accessories-grid article:nth-child(3){background:#032b4a url('/drum-background-v40.webp') center top/100% auto no-repeat}
 .accessories-grid article:nth-child(4){background:#032b4a url('/scope-background-v40.webp') center top/100% auto no-repeat}
+@media(max-width:42.5rem){
+ .accessories-grid article:nth-child(1){background-image:url('/thumbs/usb-background-v40-370.webp')}
+ .accessories-grid article:nth-child(2){background-image:url('/thumbs/battery-background-v40-370.webp')}
+ .accessories-grid article:nth-child(3){background-image:url('/thumbs/drum-background-v40-370.webp')}
+ .accessories-grid article:nth-child(4){background-image:url('/thumbs/scope-background-v40-370.webp')}
+}
 .nav-inner nav .tracking-nav:focus-visible{outline:.1875rem solid var(--blue);outline-offset:.25rem;border-radius:.25rem}
 .desktop-buy,#ofertas .price-card .button{position:relative;isolation:isolate;animation:aqua-buy-pulse 2.4s ease-in-out infinite!important;box-shadow:0 0 .875rem #0be86366,0 .25rem .75rem #087e3a33;overflow:visible}
 .desktop-buy::before,#ofertas .price-card .button::before{content:'';position:absolute;inset:.125rem;z-index:-1;pointer-events:none;border-radius:inherit;background:#10e76a;filter:blur(.625rem);opacity:.5;animation:aqua-buy-halo 2.4s ease-in-out infinite}

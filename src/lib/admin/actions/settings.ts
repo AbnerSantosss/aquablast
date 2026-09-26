@@ -5,13 +5,16 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { adminUsers } from "@/db/schema";
-import { requireAdmin } from "@/lib/auth/session";
+import { invalidateOpenPasswordResets } from "@/lib/auth/password-reset";
+import { createAdminSession, requireAdmin } from "@/lib/auth/session";
 import { ensureBootstrap } from "@/lib/bootstrap";
 import { sendTestEmail } from "@/lib/email/send";
 import { isSecretKey, setSetting, type SettingKey, type SettingsMap } from "@/lib/settings";
+import { getStoredSupportWhatsapp } from "@/lib/site/support-contact";
 import { CARRIERS } from "@/lib/tracking/provider";
 import { actorOf, audit } from "@/lib/admin/audit";
 import { bool, int, isEmail, parseFieldMap, str } from "@/lib/admin/form";
+import { changePasswordSchema, fieldErrors } from "@/lib/admin/schemas/auth";
 import { fail, ok, type ActionResult } from "@/lib/admin/types";
 
 type Patch = Partial<SettingsMap>;
@@ -43,12 +46,20 @@ export async function saveStoreSettings(_prev: ActionResult, fd: FormData): Prom
   if (supportEmail && !isEmail(supportEmail)) return fail("E-mail de suporte inválido.");
   const tracking = str(fd, "store.trackingPageUrl", 500) || "/rastrear";
   if (!tracking.startsWith("/") && !/^https?:\/\//i.test(tracking)) return fail("A página de rastreio deve começar com / ou http(s)://");
-  await apply(actor, "store", {
+  const whatsapp = str(fd, "store.supportWhatsapp", 30).replace(/\D/g, "");
+  if (whatsapp && !/^\d{10,15}$/.test(whatsapp)) return fail("WhatsApp de suporte: use só números, com DDI e DDD (ex.: 5581999999999).");
+  const patch: Patch = {
     "store.name": name,
-    "store.supportWhatsapp": str(fd, "store.supportWhatsapp", 30).replace(/\D/g, ""),
     "store.supportEmail": supportEmail,
     "store.trackingPageUrl": tracking,
-  });
+  };
+  // Campo vazio e nenhuma linha gravada: não grava a chave, para os e-mails seguirem
+  // exatamente como antes. Com linha gravada, vazio = o dono apagou (grava "").
+  if (whatsapp || (await getStoredSupportWhatsapp()).exists) patch["store.supportWhatsapp"] = whatsapp;
+  await apply(actor, "store", patch);
+  // Home e /trocas-e-devolucoes mostram o WhatsApp (ISR): refletem na próxima visita.
+  revalidatePath("/");
+  revalidatePath("/trocas-e-devolucoes");
   return ok("Dados da loja salvos.");
 }
 
@@ -134,18 +145,42 @@ export async function testEmailDelivery(_prev: ActionResult, fd: FormData): Prom
 
 // ---------- Administradores ----------
 
+/**
+ * "Alterar minha senha". Campos: `currentPassword`, `newPassword`, `confirmPassword` (changePasswordSchema).
+ * Grava password_changed_at, o que derruba as outras sessões abertas (inclusive as de 30 dias), invalida
+ * links de redefinição abertos e reemite a sessão atual (mantendo o "Lembrar de mim") para quem trocou não cair.
+ */
 export async function changeOwnPassword(_prev: ActionResult, fd: FormData): Promise<ActionResult> {
   const { session, actor } = await begin();
-  const current = str(fd, "currentPassword", 200);
-  const next = str(fd, "newPassword", 200);
-  const confirm = str(fd, "confirmPassword", 200);
-  if (next.length < 10) return fail("A nova senha precisa ter pelo menos 10 caracteres.");
-  if (next !== confirm) return fail("A confirmação não confere.");
+  const parsed = changePasswordSchema.safeParse({
+    currentPassword: rawField(fd, "currentPassword"),
+    newPassword: rawField(fd, "newPassword"),
+    confirmPassword: rawField(fd, "confirmPassword"),
+  });
+  if (!parsed.success) {
+    return fail(parsed.error.issues[0]?.message ?? "Confira os campos.", { fields: fieldErrors(parsed.error) });
+  }
+  const { currentPassword, newPassword } = parsed.data;
   const user = await db.query.adminUsers.findFirst({ where: eq(adminUsers.id, session.sub) });
-  if (!user || !(await compare(current, user.passwordHash))) return fail("Senha atual incorreta.");
-  await db.update(adminUsers).set({ passwordHash: await hash(next, 12) }).where(eq(adminUsers.id, user.id));
+  if (!user || !(await compare(currentPassword, user.passwordHash))) {
+    return fail("Senha atual incorreta.", { fields: { currentPassword: "Senha atual incorreta." } });
+  }
+  const passwordHash = await hash(newPassword, 12);
+  // Relógio da aplicação: o JWT reemitido abaixo tem iat >= floor(passwordChangedAt / 1000).
+  const now = new Date();
+  await db.transaction(async (tx) => {
+    await tx.update(adminUsers).set({ passwordHash, passwordChangedAt: now }).where(eq(adminUsers.id, user.id));
+    await invalidateOpenPasswordResets(tx, user.id, now);
+  });
+  await createAdminSession({ id: user.id, email: user.email, name: user.name }, { remember: session.rem === true });
   await audit(actor, "admin.password.change", { type: "admin_user", id: user.id });
   return ok("Senha alterada.");
+}
+
+/** Valor cru do FormData para os campos de senha (o schema faz trim e confere o tamanho). */
+function rawField(fd: FormData, name: string): string {
+  const v = fd.get(name);
+  return typeof v === "string" ? v : "";
 }
 
 export async function addAdminUser(_prev: ActionResult, fd: FormData): Promise<ActionResult> {

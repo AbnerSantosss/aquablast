@@ -36,7 +36,7 @@ export function Header() {
             Dúvidas
           </a>
           <Link className="tracking-nav" href="/rastrear" onClick={close}>
-            <img src="/icons/package-tracking.svg" alt="" />
+            <img src="/icons/package-tracking.svg" alt="" loading="lazy" decoding="async" />
             Rastrear pedido
           </Link>
         </nav>

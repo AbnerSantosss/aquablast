@@ -6,9 +6,9 @@
   #inicio .mobile-gallery-label{margin-bottom:.625rem}
   #inicio .catalog-choice-title{margin:.5rem 0 .375rem}
   #inicio .catalog-thumbnails{gap:.625rem}
-  .desktop-packages button[data-desktop-pack="unit"],.desktop-packages button[data-desktop-pack="unit"]:hover,.desktop-packages button[data-desktop-pack="unit"][aria-pressed="true"]{background:linear-gradient(100deg,#00365322,#02253c88),#063760 url('/kit-background-v40.webp') left center/cover;color:#fff;border-color:#4ccdf3}
+  .desktop-packages button[data-desktop-pack="unit"],.desktop-packages button[data-desktop-pack="unit"]:hover,.desktop-packages button[data-desktop-pack="unit"][aria-pressed="true"]{background:linear-gradient(100deg,#00365322,#02253c88),#063760 url('/thumbs/kit-background-v40-500.webp') left center/cover;color:#fff;border-color:#4ccdf3}
   .desktop-packages button[data-desktop-pack="unit"][aria-pressed="true"]{border-color:#00aaff;box-shadow:0 0 0 .125rem #00aaff77,inset 0 0 1rem #4ee1ff33}
-  .desktop-product-panel .color-product-choice,.desktop-product-panel .color-product-choice:hover,.desktop-product-panel .color-product-choice[aria-pressed="true"]{background:linear-gradient(180deg,#eafaff80,#dff5ffeb),#aee7fb url('/kit-background-v40.webp') center/cover;color:#062c48;border-color:#71b9d9;text-shadow:0 1px 2px #fff}
+  .desktop-product-panel .color-product-choice,.desktop-product-panel .color-product-choice:hover,.desktop-product-panel .color-product-choice[aria-pressed="true"]{background:linear-gradient(180deg,#eafaff80,#dff5ffeb),#aee7fb url('/thumbs/kit-background-v40-500.webp') center/cover;color:#062c48;border-color:#71b9d9;text-shadow:0 1px 2px #fff}
   .desktop-product-panel .color-product-choice img{filter:drop-shadow(0 .125rem .125rem #fff)}
   .desktop-product-panel .color-product-choice:hover{border-color:#0077bc}
   .desktop-product-panel .color-product-choice[aria-pressed="true"]{border-color:#0089ff;box-shadow:0 0 0 .125rem #0089ff,inset 0 0 .75rem #ffffff99}

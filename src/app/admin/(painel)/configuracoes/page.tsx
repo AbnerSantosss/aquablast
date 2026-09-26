@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { Tone } from "@/components/admin/Badge";
+import { ChangePasswordForm } from "@/components/admin/ChangePasswordForm";
 import { CopyButton } from "@/components/admin/CopyButton";
+import { PasswordInput } from "@/components/admin/PasswordInput";
 import { requireAdmin } from "@/lib/auth/session";
 import { env } from "@/lib/env";
 import { describeSecret, getSettings } from "@/lib/settings";
+import { getStoredSupportWhatsapp } from "@/lib/site/support-contact";
 import { CARRIERS } from "@/lib/tracking/provider";
+import { PASSWORD_MAX, PASSWORD_MIN } from "@/lib/admin/schemas/auth";
 import {
   addAdminUser,
-  changeOwnPassword,
   saveAccessCodeSettings,
   saveCheckoutSettings,
   saveEmailSettings,
@@ -59,7 +62,6 @@ export default async function SettingsPage() {
   const session = await requireAdmin();
   const s = await getSettings([
     "store.name",
-    "store.supportWhatsapp",
     "store.supportEmail",
     "store.trackingPageUrl",
     "email.provider",
@@ -80,13 +82,16 @@ export default async function SettingsPage() {
     "checkout.signatureHeader",
     "accessCode.validityDays",
   ] as const);
-  const [smtpPass, resendKey, brevoKey, trackKey, whSecret, admins] = await Promise.all([
+  // WhatsApp: só o que está gravado (vazio sem linha). getSettings() devolveria o
+  // DEFAULT do código, e salvar "Loja" gravaria esse número não confirmado, que iria ao site.
+  const [smtpPass, resendKey, brevoKey, trackKey, whSecret, admins, storedWhatsapp] = await Promise.all([
     describeSecret("email.smtp.pass"),
     describeSecret("email.resend.apiKey"),
     describeSecret("email.brevo.apiKey"),
     describeSecret("tracking.17track.apiKey"),
     describeSecret("checkout.webhookSecret"),
     listAdmins(),
+    getStoredSupportWhatsapp(),
   ]);
   const e = env();
   const base = e.APP_URL.replace(/\/$/, "");
@@ -115,7 +120,7 @@ export default async function SettingsPage() {
       <section className="card" id="loja">
         <div className="card-head">
           <h2>Loja</h2>
-          <p className="muted small">Usado nos e-mails e na página de rastreio.</p>
+          <p className="muted small">Usado nos e-mails, na página de rastreio e no site.</p>
         </div>
         <ActionForm action={saveStoreSettings}>
           <div className="grid-2">
@@ -125,7 +130,11 @@ export default async function SettingsPage() {
             </label>
             <label className="field">
               <span>WhatsApp de suporte (só números, com DDI)</span>
-              <input name="store.supportWhatsapp" defaultValue={s["store.supportWhatsapp"]} inputMode="numeric" maxLength={30} placeholder="5581999999999" />
+              <input name="store.supportWhatsapp" defaultValue={storedWhatsapp.value} inputMode="numeric" maxLength={30} placeholder="5581999999999" />
+              <span className="hint">
+                Preenchido, o número aparece no site (rodapé, página de trocas e dados para o Google) e nos e-mails. Vazio, o
+                site não mostra WhatsApp.
+              </span>
             </label>
             <label className="field">
               <span>E-mail de suporte</span>
@@ -430,27 +439,7 @@ export default async function SettingsPage() {
         <div className="cols-2" style={{ marginTop: "1.25rem" }}>
           <div>
             <h3 className="section-title">Trocar minha senha</h3>
-            <ActionForm action={changeOwnPassword}>
-              <div className="stack" style={{ gap: "0.75rem" }}>
-                <label className="field">
-                  <span>Senha atual</span>
-                  <input name="currentPassword" type="password" autoComplete="current-password" required maxLength={200} />
-                </label>
-                <label className="field">
-                  <span>Nova senha (mín. 10 caracteres)</span>
-                  <input name="newPassword" type="password" autoComplete="new-password" required minLength={10} maxLength={200} />
-                </label>
-                <label className="field">
-                  <span>Confirmar nova senha</span>
-                  <input name="confirmPassword" type="password" autoComplete="new-password" required minLength={10} maxLength={200} />
-                </label>
-              </div>
-              <div className="actions tight">
-                <button type="submit" className="btn btn-ghost">
-                  Alterar senha
-                </button>
-              </div>
-            </ActionForm>
+            <ChangePasswordForm email={session.email} />
           </div>
           <div>
             <h3 className="section-title">Adicionar administrador</h3>
@@ -464,10 +453,13 @@ export default async function SettingsPage() {
                   <span>E-mail</span>
                   <input name="email" type="email" required maxLength={254} autoComplete="off" />
                 </label>
-                <label className="field">
-                  <span>Senha inicial (mín. 10 caracteres)</span>
-                  <input name="password" type="password" required minLength={10} maxLength={200} autoComplete="new-password" />
-                </label>
+                {/* <div> + <label htmlFor>, não <label> envolvente: senão o nome acessível do campo levaria o "Mostrar senha" do olho. */}
+                <div className="field">
+                  <label htmlFor="new-admin-password" className="field-label">
+                    Senha inicial (mín. {PASSWORD_MIN} caracteres)
+                  </label>
+                  <PasswordInput id="new-admin-password" name="password" required minLength={PASSWORD_MIN} maxLength={PASSWORD_MAX} autoComplete="new-password" />
+                </div>
               </div>
               <div className="actions tight">
                 <button type="submit" className="btn btn-ghost">

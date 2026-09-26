@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { preload } from "react-dom";
 import { MetaPixel } from "@/components/site/MetaPixel";
-import { SITE_ICON } from "@/lib/site/constants";
 // Mesma ordem do <head> do index.html original.
 import "@/styles/site/style.css";
 import "@/styles/site/offer-cards.css";
@@ -19,7 +19,14 @@ export const metadata: Metadata = {
   description:
     "Presenteie com mais brincadeira, risadas e tempo juntos. Conheça o AquaBlast e escolha uma unidade ou o kit para compartilhar a diversão.",
   applicationName: "AquaBlast",
-  icons: { icon: [{ url: SITE_ICON, type: "image/svg+xml" }] },
+  // Arquivos reais em public/ (a mesma gota de SITE_ICON): o Google Search não usa favicon em data: URI.
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export const viewport: Viewport = {
@@ -32,10 +39,11 @@ export const viewport: Viewport = {
  * renderiza o próprio header/footer, como no site original.
  */
 export default function SiteLayout({ children }: { children: ReactNode }) {
+  // preload() do React em vez de <link> no JSX: o <link> saía duplicado no HTML.
+  // O preload do LCP (fundo do vídeo) fica só na home, em page.tsx.
+  preload("/fonts/nunito-900.ttf", { as: "font", type: "font/ttf", crossOrigin: "anonymous" });
   return (
     <>
-      <link rel="preload" href="/video-moldura.webp" as="image" />
-      <link rel="preload" href="/fonts/nunito-900.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
       {children}
       <MetaPixel />
     </>

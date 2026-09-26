@@ -3,7 +3,6 @@
 
 import { useEffect, type ReactNode } from "react";
 import { reviews } from "@/data/reviews";
-import { heroVideo } from "@/data/videos";
 import { CAMPAIGN_PHOTO, COLOR_LABELS, HERO_PHOTOS, KIT_PHOTO, MOBILE_QUERY, PRICES } from "@/lib/site/constants";
 import { PurchaseLink } from "./PurchaseLink";
 import { reviewSummary } from "@/lib/site/reviews-summary";
@@ -48,10 +47,10 @@ function CatalogGallery({ children }: { children: ReactNode }) {
   return (
     <div className={videoActive ? "catalog-gallery desktop-video-active" : "catalog-gallery"}>
       <h1 id="hero-title" className="visually-hidden">
-        AquaBlast — Escolha uma unidade ou kit com 2
+        AquaBlast: pistola de água elétrica — escolha 1 unidade ou o kit com 2
       </h1>
       <div className="catalog-gift-label mobile-gallery-label">
-        <img src="/gift.webp" alt="" width={34} height={34} />
+        <img src="/thumbs/gift-60.webp" alt="" width={34} height={34} />
         <span className="hero-gift-copy">
           <strong>“Lembrei de você.”</strong>
           <span>É isso que um presente diz</span>
@@ -66,13 +65,25 @@ function CatalogGallery({ children }: { children: ReactNode }) {
           Aqua<b>Blast</b>
           <small>DIVERSÃO QUE APROXIMA</small>
         </span>
-        <img id="hero-product-photo" src={item.src} alt={alt} width={1254} height={1254} fetchPriority="high" hidden={pair} />
+        <img id="hero-product-photo" src={item.src} alt={alt} width={1254} height={1254} hidden={pair} />
         <span className="catalog-kit-preview" hidden={!pair}>
-          <img data-kit-image="0" src={`/produto-${kitColors[0]}.webp`} alt={`AquaBlast ${COLOR_LABELS[kitColors[0]].toLowerCase()}`} />
-          <img data-kit-image="1" src={`/produto-${kitColors[1]}.webp`} alt={`AquaBlast ${COLOR_LABELS[kitColors[1]].toLowerCase()}`} />
+          <img
+            data-kit-image="0"
+            src={`/thumbs/produto-${kitColors[0]}-610.webp`}
+            alt={`AquaBlast ${COLOR_LABELS[kitColors[0]].toLowerCase()}`}
+            loading="lazy"
+            decoding="async"
+          />
+          <img
+            data-kit-image="1"
+            src={`/thumbs/produto-${kitColors[1]}-610.webp`}
+            alt={`AquaBlast ${COLOR_LABELS[kitColors[1]].toLowerCase()}`}
+            loading="lazy"
+            decoding="async"
+          />
         </span>
         <span className="catalog-zoom-icon">
-          <img className="icon" src="/icons/arrow-up-right.svg" alt="" />
+          <img className="icon" src="/icons/arrow-up-right.svg" alt="" loading="lazy" decoding="async" />
         </span>
         <span className="catalog-photo-label" id="hero-photo-label">
           {label}
@@ -90,8 +101,8 @@ function CatalogGallery({ children }: { children: ReactNode }) {
           onClick={onVideoThumb}
         >
           <span className="video-thumb-preview" aria-hidden="true">
-            <img className="video-thumb-frame" src="/video-moldura.webp" alt="" width={1254} height={1254} />
-            <img className="video-thumb-poster" src={heroVideo.poster} alt="" />
+            <img className="video-thumb-frame" src="/thumbs/video-moldura-270.webp" alt="" width={1254} height={1254} />
+            <img className="video-thumb-poster" src="/thumbs/video-destaque-poster-108.webp" alt="" />
           </span>
           <span className="video-thumb-label">▶ Ver vídeo</span>
         </button>
@@ -112,7 +123,7 @@ function CatalogGallery({ children }: { children: ReactNode }) {
           aria-pressed={isPressed(1)}
           onClick={() => selectHeroOption(1)}
         >
-          <img className="kit-thumb-art" src={KIT_PHOTO.src} alt={KIT_PHOTO.alt} width={1254} height={1254} />
+          <img className="kit-thumb-art" src="/thumbs/campanha-kit-azul-preto-270.webp" alt={KIT_PHOTO.alt} width={1254} height={1254} />
           <span>Kit com 2</span>
         </button>
       </div>
@@ -131,24 +142,25 @@ function DesktopProductPanel() {
       <div className="desktop-product-heading">
         <h2 id="desktop-product-title">Pistola de água elétrica com efeito luminoso</h2>
       </div>
-      <a
-        className="desktop-review-summary"
-        href="#avaliacoes"
-        aria-label={`Nota ${summary.averageText} de 5. Leia as ${summary.countText} do produto.`}
-      >
+      {/* Sem aria-label: o nome vem do conteúdo (texto visível + trechos visually-hidden) e continua
+          "Nota 4,9 de 5. Leia as 66 avaliações do produto.", sem o "label-content-name-mismatch". */}
+      <a className="desktop-review-summary" href="#avaliacoes">
+        <span className="visually-hidden">Nota </span>
         <strong data-hero-review-average="">{summary.averageText}</strong>
+        <span className="visually-hidden"> de 5. Leia as </span>
         <span className="desktop-review-stars" aria-hidden="true">
           ★★★★★
         </span>
         <span className="desktop-review-count" data-hero-review-count="">
           {summary.countText}
         </span>
+        <span className="visually-hidden"> do produto.</span>
       </a>
       <div className="desktop-price-band">
         <div>
           <span className="desktop-pack-label">{pack === "kit" ? "Kit com 2 AquaBlast" : "1 unidade AquaBlast"}</span>
           <div className="pix-price-row">
-            <img className="pix-icon" src="/icons/pix.svg" alt="" />
+            <img className="pix-icon" src="/icons/pix.svg" alt="" loading="lazy" decoding="async" />
             <strong className="desktop-price" aria-live="polite">
               {price.pix}
             </strong>
@@ -167,7 +179,14 @@ function DesktopProductPanel() {
       <div className="desktop-shipping">
         <span className="desktop-detail-label">Entrega</span>
         <div className="desktop-delivery-content">
-          <img src="/envio.webp" alt="Dia das Crianças: envio rápido e postagem ágil" width={1672} height={941} />
+          <img
+            src="/thumbs/envio-375.webp"
+            alt="Dia das Crianças: envio rápido e postagem ágil"
+            width={1672}
+            height={941}
+            loading="lazy"
+            decoding="async"
+          />
           <div>
             <strong>
               Envio{" "}
@@ -180,7 +199,7 @@ function DesktopProductPanel() {
               para todo o Brasil
             </strong>
             <span className="tracking-reassurance">
-              <img src="/icons/package-tracking.svg" alt="" />
+              <img src="/icons/package-tracking.svg" alt="" loading="lazy" decoding="async" />
               Com código de rastreamento
             </span>
           </div>
@@ -190,15 +209,15 @@ function DesktopProductPanel() {
         <span className="desktop-detail-label">Detalhes</span>
         <ul className="desktop-product-features">
           <li>
-            <img src="/efeito-luz.webp" alt="" />
+            <img src="/thumbs/efeito-luz-280.webp" alt="" loading="lazy" decoding="async" />
             Efeito luminoso
           </li>
           <li>
-            <img src="/acessorio-bateria.webp" alt="" />
+            <img src="/thumbs/acessorio-bateria-90.webp" alt="" loading="lazy" decoding="async" />
             Recarregável
           </li>
           <li>
-            <img src="/acessorio-tambor.webp" alt="" />
+            <img src="/thumbs/acessorio-tambor-90.webp" alt="" loading="lazy" decoding="async" />
             Tambor de água
           </li>
         </ul>
@@ -223,10 +242,10 @@ function DesktopProductPanel() {
             onClick={() => selectPack("unit")}
           >
             <span className="desktop-choice-indicator" aria-hidden="true">
-              <img src="/icons/check.svg" alt="" />
+              <img src="/icons/check.svg" alt="" loading="lazy" decoding="async" />
             </span>
             <span className="desktop-package-art">
-              <img className="unit-product" src={`/produto-${color}.webp`} alt={unitAlt} />
+              <img className="unit-product" src={`/thumbs/produto-${color}-110.webp`} alt={unitAlt} loading="lazy" decoding="async" />
             </span>
             <span className="desktop-package-copy">
               <strong>1 unidade</strong>
@@ -239,11 +258,11 @@ function DesktopProductPanel() {
             onClick={() => selectPack("kit")}
           >
             <span className="desktop-choice-indicator" aria-hidden="true">
-              <img src="/icons/check.svg" alt="" />
+              <img src="/icons/check.svg" alt="" loading="lazy" decoding="async" />
             </span>
             <span className="desktop-package-art is-pair">
-              <img src="/produto-azul.webp" alt="" />
-              <img src="/produto-preto.webp" alt="" />
+              <img src="/thumbs/produto-azul-110.webp" alt="" loading="lazy" decoding="async" />
+              <img src="/thumbs/produto-preto-110.webp" alt="" loading="lazy" decoding="async" />
             </span>
             <span className="desktop-package-copy">
               <strong>Kit com 2</strong>

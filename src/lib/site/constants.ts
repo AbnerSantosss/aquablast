@@ -30,6 +30,13 @@ export const META_PIXEL_ID = "1119943063690657";
 
 export const BRAND_NAME = "AquaBlast";
 
+// E-mail publico de contato da loja, confirmado pelo dono em 2026-09-26
+// (substitui o endereco antigo, que era de outro dominio).
+export const CONTACT_EMAIL = "contato.aquablastbr@gmail.com";
+
+// Pagina da politica de trocas e devolucoes (src/app/(site)/trocas-e-devolucoes).
+export const RETURNS_PATH = "/trocas-e-devolucoes";
+
 export const COLOR_LABELS: Record<Color, string> = {
   azul: "Azul",
   vermelho: "Vermelho",

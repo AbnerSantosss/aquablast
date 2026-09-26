@@ -13,7 +13,7 @@ function OfferBenefits() {
     <ul className="offer-benefits" aria-label="Benefícios incluídos">
       <li>
         <span className="offer-benefit-photo light-detail">
-          <img src="/efeito-luz.webp" alt="Detalhe do cano luminoso" loading="lazy" />
+          <img src="/thumbs/efeito-luz-280.webp" alt="Detalhe do cano luminoso" loading="lazy" decoding="async" />
         </span>
         <span>
           Efeito
@@ -23,7 +23,7 @@ function OfferBenefits() {
       </li>
       <li>
         <span className="offer-benefit-photo">
-          <img src="/acessorio-bateria.webp" alt="Bateria recarregável do AquaBlast" loading="lazy" />
+          <img src="/thumbs/acessorio-bateria-90.webp" alt="Bateria recarregável do AquaBlast" loading="lazy" decoding="async" />
         </span>
         <span>
           Bateria
@@ -33,7 +33,7 @@ function OfferBenefits() {
       </li>
       <li>
         <span className="offer-benefit-photo">
-          <img src="/acessorio-tambor.webp" alt="Reservatório em tambor do AquaBlast" loading="lazy" />
+          <img src="/thumbs/acessorio-tambor-90.webp" alt="Reservatório em tambor do AquaBlast" loading="lazy" decoding="async" />
         </span>
         <span>
           Reservatório
@@ -50,7 +50,7 @@ function OfferFooter({ pack, buy }: { pack: Pack; buy: string }) {
   return (
     <>
       <div className="offer-shipping offer-shipping-seal">
-        <img src="/envio.webp" alt="Dia das Crianças: envio rápido e postagem ágil" width={1672} height={941} loading="lazy" />
+        <img src="/thumbs/envio-375.webp" alt="Dia das Crianças: envio rápido e postagem ágil" width={1672} height={941} loading="lazy" decoding="async" />
         <span>Consulte o prazo para seu CEP</span>
       </div>
       <div className="offer-price-line">
@@ -59,18 +59,18 @@ function OfferFooter({ pack, buy }: { pack: Pack; buy: string }) {
             <strong className="pix-amount">{price.pix}</strong>
           </span>
           <span className="pix-label">
-            no Pix <img className="pix-icon" src="/icons/pix.svg" alt="" />
+            no Pix <img className="pix-icon" src="/icons/pix.svg" alt="" loading="lazy" decoding="async" />
           </span>
         </div>
         <p className="card-installments">{price.installments}</p>
       </div>
       <div className="offer-reassurance">
         <span>
-          <img className="icon" src="/icons/check.svg" alt="" />
+          <img className="icon" src="/icons/check.svg" alt="" loading="lazy" decoding="async" />
           Cores à sua escolha
         </span>
         <span>
-          <img className="icon" src="/icons/headphones.svg" alt="" />
+          <img className="icon" src="/icons/headphones.svg" alt="" loading="lazy" decoding="async" />
           Atendimento humano
         </span>
       </div>
@@ -118,7 +118,7 @@ export function Offers() {
             </div>
             <div className="packshot single unit-campaign-art">
               <div className="unit-art-scene">
-                <img className="unit-product" src={`/produto-${color}.webp`} alt={`AquaBlast ${colorLabel.toLowerCase()}`} loading="lazy" />
+                <img className="unit-product" src={`/thumbs/produto-${color}-610.webp`} alt={`AquaBlast ${colorLabel.toLowerCase()}`} loading="lazy" decoding="async" />
               </div>
               <span className="packshot-caption">Uma surpresa. Muitos sorrisos.</span>
             </div>
@@ -145,11 +145,14 @@ export function Offers() {
             <div className="packshot pair kit-matching kit-artwork kit-family-art">
               <img
                 className="kit-family-photo"
-                src="/kit-familia-v45.webp"
+                src="/thumbs/kit-familia-v45-1020.webp"
+                srcSet="/thumbs/kit-familia-v45-720.webp 720w, /thumbs/kit-familia-v45-1020.webp 1020w"
+                sizes="(max-width: 42.5rem) calc(100vw - 2.25rem), 31rem"
                 width={1500}
                 height={500}
                 alt="Imagem ilustrativa de pai e filho brincando com AquaBlast preto e azul no jardim"
                 loading="lazy"
+                decoding="async"
               />
               <span className="packshot-caption">Diversão em dobro. Escolha suas cores abaixo.</span>
             </div>

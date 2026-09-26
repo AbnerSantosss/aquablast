@@ -19,10 +19,13 @@ export function Gifting() {
         <img
           className="gifting-photo"
           src="/presente-diversao-familia.webp"
+          srcSet="/thumbs/presente-diversao-familia-720.webp 720w, /presente-diversao-familia.webp 1536w"
+          sizes="(max-width: 42.5rem) calc(100vw - 2.25rem), (max-width: 56.25rem) calc(100vw - 3rem), 36.1rem"
           width={1536}
           height={1024}
           alt="Cena ilustrativa de uma família brincando com AquaBlast no jardim, ao lado de uma caixa de presente aberta"
           loading="lazy"
+          decoding="async"
         />
         <a className="button button-green gift-cta" href="#ofertas">Quero dar diversão de presente</a>
       </div>
