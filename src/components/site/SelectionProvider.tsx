@@ -11,6 +11,8 @@ interface SelectionState {
   pack: Pack;
   kitColors: [Color, Color];
   kitConfirmed: [boolean, boolean];
+  /** Passo do kit reaberto por "Trocar" (so um passo expandido por vez); null = segue a ordem. */
+  kitReopened: 0 | 1 | null;
   heroPhoto: number;
   /** true enquanto o vídeo de destaque ocupa a galeria (estado inicial do app.js). */
   videoActive: boolean;
@@ -25,11 +27,14 @@ interface SelectionState {
 export interface SelectionContextValue extends SelectionState {
   isCustomKit: boolean;
   kitReady: boolean;
+  /** Passo do kit expandido: o reaberto, senao o primeiro sem cor confirmada; null = os dois prontos. */
+  kitStep: 0 | 1 | null;
   kitName: string;
   kitAlt: string;
   chooseColor: (color: Color) => void;
   selectPack: (pack: Pack) => void;
   selectKitColor: (index: 0 | 1, color: Color) => void;
+  reopenKitStep: (index: 0 | 1 | null) => void;
   selectHeroOption: (index: number) => void;
   selectHeroVideo: () => void;
   selectOffer: () => void;
@@ -40,6 +45,7 @@ const initialState: SelectionState = {
   pack: "unit",
   kitColors: ["azul", "preto"],
   kitConfirmed: [false, false],
+  kitReopened: null,
   heroPhoto: 0,
   videoActive: true,
   videoRequest: 0,
@@ -49,11 +55,40 @@ const initialState: SelectionState = {
 
 const SelectionContext = createContext<SelectionContextValue | null>(null);
 
+/**
+ * Foca sem pulo de rolagem; so rola (o minimo, respeitando reduced-motion) se o alvo estiver fora da
+ * area visivel. O topo desconta o scroll-padding-top do html (header fixo).
+ */
+export function revealFocus(target: HTMLElement) {
+  target.focus({ preventScroll: true });
+  const bounds = target.getBoundingClientRect();
+  const top = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+  if (bounds.top < top || bounds.bottom > window.innerHeight) {
+    target.scrollIntoView({ behavior: scrollBehavior(), block: "nearest" });
+  }
+}
+
+/** Controle operavel do passo atual do kit dentro de `root`: o swatch pressionado ou o primeiro. */
+export function kitFocusTarget(root: ParentNode | null | undefined): HTMLElement | null {
+  const step = root?.querySelector<HTMLElement>('.kit-step[data-step-state="current"]');
+  if (!step) return null;
+  return (
+    step.querySelector<HTMLElement>('button[aria-pressed="true"]') ?? step.querySelector<HTMLElement>("button")
+  );
+}
+
+/** Onde o foco vai ao chegar nas escolhas: kit -> passo atual (ou o 1o controle); unidade -> cor pressionada. */
+function choiceFocusTarget(root: ParentNode | null, pack: Pack): HTMLElement | null {
+  if (!root) return null;
+  if (pack === "kit") return kitFocusTarget(root) ?? root.querySelector<HTMLElement>(".kit-step button");
+  return root.querySelector<HTMLElement>('button[aria-pressed="true"]');
+}
+
 function scrollToCard(pack: Pack) {
   const card = document.querySelector<HTMLElement>(`[data-price-card="${pack}"]`);
   if (!card) return;
   card.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
-  card.querySelector<HTMLElement>('button[aria-pressed="true"]')?.focus({ preventScroll: true });
+  choiceFocusTarget(card, pack)?.focus({ preventScroll: true });
 }
 
 export function SelectionProvider({ children }: { children: ReactNode }) {
@@ -74,6 +109,16 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
     heroTouched: true,
   });
 
+  /**
+   * Foto que representa "1 unidade": campanha (0) enquanto a pessoa nao escolheu uma cor de forma
+   * explicita (colorTouched), produto-<cor> depois. E exatamente o que a miniatura 0 mostra
+   * (Hero.tsx), entao selectPack("unit") tem de usar esta foto em vez de saltar direto para o
+   * produto - senao a pessoa clica na miniatura com a arte de campanha e o destaque troca para
+   * outra imagem (armadilha de 26/09, pedido do dono).
+   */
+  const unitPhotoIndex = (previous: SelectionState): number =>
+    previous.colorTouched ? productPhotoIndex(previous.color) : 0;
+
   const chooseColor = useCallback(
     (color: Color) => {
       commit((previous) =>
@@ -86,7 +131,7 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
   const selectPack = useCallback(
     (pack: Pack) => {
       commit((previous) =>
-        withHeroPhoto({ ...previous, pack }, pack === "kit" ? 1 : productPhotoIndex(previous.color)),
+        withHeroPhoto({ ...previous, pack }, pack === "kit" ? 1 : unitPhotoIndex(previous)),
       );
     },
     [commit],
@@ -99,8 +144,18 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
         kitColors[index] = color;
         const kitConfirmed: [boolean, boolean] = [...previous.kitConfirmed];
         kitConfirmed[index] = true;
-        return withHeroPhoto({ ...previous, kitColors, kitConfirmed, pack: "kit" }, 1);
+        return withHeroPhoto({ ...previous, kitColors, kitConfirmed, kitReopened: null, pack: "kit" }, 1);
       });
+    },
+    [commit],
+  );
+
+  /** "Trocar" reabre um passo ja confirmado; null fecha o reaberto e volta para a ordem 1o -> 2o. */
+  const reopenKitStep = useCallback(
+    (index: 0 | 1 | null) => {
+      if (index !== null && !stateRef.current.kitConfirmed[index]) return;
+      if (stateRef.current.kitReopened === index) return;
+      commit((previous) => ({ ...previous, kitReopened: index }));
     },
     [commit],
   );
@@ -118,9 +173,9 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
         if (bounds.top < 70 || bounds.bottom > window.innerHeight) {
           panel.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
         }
-        document
-          .querySelector<HTMLElement>(`[data-desktop-colors="${pack}"] button[aria-pressed="true"]`)
-          ?.focus({ preventScroll: true });
+        choiceFocusTarget(document.querySelector(`[data-desktop-colors="${pack}"]`), pack)?.focus({
+          preventScroll: true,
+        });
         return;
       }
       scrollToCard(pack);
@@ -144,20 +199,23 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<SelectionContextValue>(() => {
     const [first, second] = state.kitColors;
+    const firstMissing = state.kitConfirmed.indexOf(false);
     return {
       ...state,
       kitReady: state.kitConfirmed.every(Boolean),
+      kitStep: state.kitReopened ?? (firstMissing === 0 || firstMissing === 1 ? firstMissing : null),
       isCustomKit: first !== "azul" || second !== "preto",
       kitName: `Kit ${state.kitColors.map((c) => COLOR_LABELS[c]).join(" + ")}`,
       kitAlt: `Kit com dois AquaBlast: ${state.kitColors.map((c) => COLOR_LABELS[c]).join(" e ")}`,
       chooseColor,
       selectPack,
       selectKitColor,
+      reopenKitStep,
       selectHeroOption,
       selectHeroVideo,
       selectOffer,
     };
-  }, [state, chooseColor, selectPack, selectKitColor, selectHeroOption, selectHeroVideo, selectOffer]);
+  }, [state, chooseColor, selectPack, selectKitColor, reopenKitStep, selectHeroOption, selectHeroVideo, selectOffer]);
 
   return <SelectionContext.Provider value={value}>{children}</SelectionContext.Provider>;
 }

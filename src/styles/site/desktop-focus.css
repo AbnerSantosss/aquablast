@@ -19,7 +19,12 @@
   #inicio .catalog-gallery{grid-template-columns:minmax(0,1.12fr) 5.25rem minmax(0,1fr);grid-template-rows:auto auto;column-gap:1rem}
   #inicio .desktop-product-panel{grid-column:3;grid-row:1/3}
   #inicio .catalog-main-photo,#inicio .hero-featured-video:not(:fullscreen){max-width:min(100%,36rem,max(19rem,calc(100svh - 15rem)))}
-  #inicio .catalog-choice-title{grid-column:2;grid-row:1;align-self:end;margin:0 0 .625rem;padding:.375rem .25rem;font-size:.8125rem;text-align:center}
+  /* A pilula "Selecione seu kit" saiu da coluna de miniaturas (Item 1, offer-restyle.css: agora fica
+     no painel desktop, e o h2 da galeria vira display:none aqui). A regra antiga que a espremia em
+     grid-column:2/grid-row:1 (86px, 2 linhas) foi removida. A linha 1 da coluna 2 fica vazia (sem
+     empurrar nada: a altura da linha 1 passa a ser so a do rotulo-presente da coluna 1) e as
+     miniaturas continuam na linha 2, que ja e a mesma linha da foto grande (.catalog-main-photo,
+     grid-row:2 em desktop-product.css) — alinhamento ja correto, sem precisar mudar o grid-row aqui. */
   #inicio .catalog-thumbnails{grid-column:2;grid-row:2;flex-direction:column;align-items:stretch;justify-content:flex-start}
   #inicio .catalog-thumbnails>button{width:100%;flex:0 0 auto}
 }

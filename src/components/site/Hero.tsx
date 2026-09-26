@@ -1,13 +1,14 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, type MouseEvent, type ReactNode } from "react";
 import { reviews } from "@/data/reviews";
 import { CAMPAIGN_PHOTO, COLOR_LABELS, HERO_PHOTOS, KIT_PHOTO, MOBILE_QUERY, PRICES } from "@/lib/site/constants";
 import { PurchaseLink } from "./PurchaseLink";
 import { reviewSummary } from "@/lib/site/reviews-summary";
 import { HeroFeaturedVideo } from "./HeroFeaturedVideo";
-import { KitSwatches, UnitSwatches } from "./ColorSwatches";
+import { UnitSwatches } from "./ColorSwatches";
+import { KitColorSteps } from "./KitColorSteps";
 import { scrollBehavior } from "./media-query";
 import { useSelection } from "./SelectionProvider";
 
@@ -15,8 +16,19 @@ const summary = reviewSummary(reviews);
 
 // No HTML original, o painel de produto e o vídeo em destaque ficam DENTRO de .catalog-gallery.
 function CatalogGallery({ children }: { children: ReactNode }) {
-  const { heroPhoto, heroTouched, videoActive, isCustomKit, kitColors, kitName, kitAlt, selectHeroOption, selectHeroVideo } =
-    useSelection();
+  const {
+    color,
+    heroPhoto,
+    heroTouched,
+    colorTouched,
+    videoActive,
+    isCustomKit,
+    kitColors,
+    kitName,
+    kitAlt,
+    selectHeroOption,
+    selectHeroVideo,
+  } = useSelection();
 
   const item = HERO_PHOTOS[heroPhoto];
   const pair = heroPhoto === 1 && isCustomKit;
@@ -36,6 +48,11 @@ function CatalogGallery({ children }: { children: ReactNode }) {
     : "1 UNIDADE AQUABLAST";
   const pressedPhoto = heroPhoto === 1 ? 1 : 0;
   const isPressed = (index: number) => !videoActive && index === pressedPhoto;
+  // A miniatura "1 unidade" espelha o destaque: campanha ate a pessoa escolher uma cor de forma
+  // explicita (colorTouched), produto-<cor> depois. selectPack("unit") usa a mesma regra
+  // (unitPhotoIndex no SelectionProvider), entao clicar aqui sempre mostra a mesma imagem no destaque.
+  const colorName = COLOR_LABELS[color].toLowerCase();
+  const kitPairName = `${COLOR_LABELS[kitColors[0]].toLowerCase()} e ${COLOR_LABELS[kitColors[1]].toLowerCase()}`;
 
   const onVideoThumb = () => {
     selectHeroVideo();
@@ -109,21 +126,41 @@ function CatalogGallery({ children }: { children: ReactNode }) {
         <button
           className="art-thumb"
           data-hero-photo="0"
-          aria-label="Escolher 1 unidade AquaBlast"
+          aria-label={colorTouched ? `Escolher 1 unidade AquaBlast ${colorName}` : "Escolher 1 unidade AquaBlast"}
           aria-pressed={isPressed(0)}
           onClick={() => selectHeroOption(0)}
         >
-          <img src={CAMPAIGN_PHOTO.src} alt="" width={1254} height={1254} />
+          {colorTouched ? (
+            <img
+              className="unit-thumb-product"
+              src={`/thumbs/produto-${color}-110.webp`}
+              srcSet={`/thumbs/produto-${color}-110.webp 110w, /thumbs/produto-${color}-610.webp 610w`}
+              sizes="(max-width: 56.25rem) 7rem, 6.625rem"
+              alt=""
+              width={110}
+              height={110}
+              decoding="async"
+            />
+          ) : (
+            <img src={CAMPAIGN_PHOTO.src} alt="" width={1254} height={1254} />
+          )}
           <span>1 unidade</span>
         </button>
         <button
           className="art-thumb"
           data-hero-photo="1"
-          aria-label="Escolher kit com 2 — arte azul e preto"
+          aria-label={isCustomKit ? `Escolher kit com 2 — ${kitPairName}` : "Escolher kit com 2 — arte azul e preto"}
           aria-pressed={isPressed(1)}
           onClick={() => selectHeroOption(1)}
         >
-          <img className="kit-thumb-art" src="/thumbs/campanha-kit-azul-preto-270.webp" alt={KIT_PHOTO.alt} width={1254} height={1254} />
+          {isCustomKit ? (
+            <span className="kit-thumb-pair" aria-hidden="true">
+              <img src={`/thumbs/produto-${kitColors[0]}-110.webp`} alt="" width={110} height={110} decoding="async" />
+              <img src={`/thumbs/produto-${kitColors[1]}-110.webp`} alt="" width={110} height={110} decoding="async" />
+            </span>
+          ) : (
+            <img className="kit-thumb-art" src="/thumbs/campanha-kit-azul-preto-270.webp" alt={KIT_PHOTO.alt} width={1254} height={1254} />
+          )}
           <span>Kit com 2</span>
         </button>
       </div>
@@ -136,6 +173,19 @@ function DesktopProductPanel() {
   const { pack, color, colorTouched, selectPack } = useSelection();
   const price = PRICES[pack];
   const unitAlt = colorTouched ? `AquaBlast ${COLOR_LABELS[color].toLowerCase()}` : "";
+
+  // A pilula do painel nao leva a #ofertas (tiraria a pessoa do painel onde ja esta escolhendo):
+  // foca o pacote ja pressionado e da um destaque curto no grupo, so com CSS (sem scroll).
+  const handlePillClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    const group = document.getElementById("desktop-packages");
+    if (!group) return;
+    const pressed = group.querySelector<HTMLButtonElement>('button[aria-pressed="true"]');
+    const target = pressed ?? group.querySelector<HTMLButtonElement>("button");
+    target?.focus({ preventScroll: true });
+    group.classList.add("desktop-packages-highlight");
+    window.setTimeout(() => group.classList.remove("desktop-packages-highlight"), 1200);
+  };
 
   return (
     <div className="desktop-product-panel" aria-labelledby="desktop-product-title">
@@ -223,14 +273,19 @@ function DesktopProductPanel() {
         </ul>
       </div>
       <div className="desktop-package-choice">
-        <span className="desktop-field-label">
-          Escolha seu presente{" "}
+        <div className="desktop-choice-row">
+          <h3 className="desktop-choice-title" id="desktop-choice-title">
+            <a className="catalog-choice-link" href="#desktop-packages" onClick={handlePillClick}>
+              Selecione seu kit
+            </a>
+          </h3>
           <span id="desktop-choice-hint" className="desktop-choice-hint">
             Clique para escolher
           </span>
-        </span>
+        </div>
         <div
           className="desktop-packages"
+          id="desktop-packages"
           role="group"
           aria-label="Escolha a quantidade de AquaBlast"
           aria-describedby="desktop-choice-hint"
@@ -276,20 +331,7 @@ function DesktopProductPanel() {
         </span>
         <UnitSwatches label="Cor da unidade no desktop" />
       </div>
-      <div className="desktop-kit-selection" data-desktop-colors="kit" hidden={pack !== "kit"}>
-        <div className="desktop-kit-color">
-          <span className="desktop-field-label">
-            <b>1</b> Primeiro brinquedo
-          </span>
-          <KitSwatches index={0} label="Cor do 1º AquaBlast no desktop" />
-        </div>
-        <div className="desktop-kit-color">
-          <span className="desktop-field-label">
-            <b>2</b> Segundo brinquedo
-          </span>
-          <KitSwatches index={1} label="Cor do 2º AquaBlast no desktop" />
-        </div>
-      </div>
+      <KitColorSteps context="desktop" />
       <PurchaseLink className="button button-green desktop-buy" pack={pack}>
         {pack === "kit" ? "Comprar kit com 2" : "Comprar 1 unidade"}
       </PurchaseLink>

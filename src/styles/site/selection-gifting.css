@@ -13,7 +13,12 @@
 .catalog-choice-link:focus-visible{outline:3px solid #063760;outline-offset:4px}
 @keyframes choice-border-flow{to{background-position:0 0,300% 0}}
 @keyframes choice-soft-pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 #008bef00}50%{transform:scale(1.025);box-shadow:0 0 .75rem .125rem #008bef25}}
-@media(min-width:75rem){.catalog-choice-link{padding:.375rem .25rem}}
+/* A regra `@media(min-width:75rem){.catalog-choice-link{padding:.375rem .25rem}}` que existia aqui
+   foi removida (Item 1, pedido 2026-09-26): ela espremia a pilula da galeria na coluna de 5.25rem
+   das miniaturas. Como a classe .catalog-choice-link e generica (sem escopo de onde ela vive), essa
+   regra tambem encolheria a nova pilula do painel desktop (offer-restyle.css) sem necessidade — a
+   pilula da galeria agora fica display:none em >=56.3125rem (offer-restyle.css) e nao precisa mais
+   de ajuste de padding especifico para telas largas. */
 
 /* The actual product photo stays intact and follows the selected color. */
 #ofertas .packshot.single.unit-campaign-art{display:block;height:auto;min-height:0;aspect-ratio:auto;padding:0;background:#042849;overflow:hidden}

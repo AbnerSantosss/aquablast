@@ -13,6 +13,7 @@ import "@/styles/site/viewport-tracking.css";
 import "@/styles/site/visual-refresh.css";
 import "@/styles/site/desktop-focus.css";
 import "@/styles/site/selection-gifting.css";
+import "@/styles/site/offer-restyle.css";
 
 export const metadata: Metadata = {
   title: "AquaBlast — O presente que vira uma boa lembrança",

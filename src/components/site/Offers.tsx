@@ -4,7 +4,8 @@
 import type { MouseEvent, ReactNode } from "react";
 import { COLOR_LABELS, PRICES } from "@/lib/site/constants";
 import type { Pack } from "@/lib/site/types";
-import { KitSwatches, UnitSwatches } from "./ColorSwatches";
+import { UnitSwatches } from "./ColorSwatches";
+import { KitColorSteps } from "./KitColorSteps";
 import { useSelection } from "./SelectionProvider";
 import { PurchaseLink } from "./PurchaseLink";
 
@@ -159,26 +160,7 @@ export function Offers() {
             <div className="offer-card-body">
               <p className="offer-included">2 AquaBlast com cores à sua escolha</p>
               <OfferBenefits />
-              <div className="kit-color-selectors">
-                <div className="kit-color-row">
-                  <span className="choice-row-label">
-                    <b>1</b>
-                    <span>
-                      Primeiro brinquedo<small>Escolha a cor</small>
-                    </span>
-                  </span>
-                  <KitSwatches index={0} label="Cor do 1º AquaBlast do kit na oferta" />
-                </div>
-                <div className="kit-color-row">
-                  <span className="choice-row-label">
-                    <b>2</b>
-                    <span>
-                      Segundo brinquedo<small>Escolha a cor</small>
-                    </span>
-                  </span>
-                  <KitSwatches index={1} label="Cor do 2º AquaBlast do kit na oferta" />
-                </div>
-              </div>
+              <KitColorSteps context="offer" />
               <OfferFooter pack="kit" buy="Comprar kit com 2" />
             </div>
           </PriceCard>

@@ -1,0 +1,132 @@
+"use client";
+/* eslint-disable @next/next/no-img-element */
+
+import { useRef, type ReactNode } from "react";
+import { COLOR_LABELS } from "@/lib/site/constants";
+import { KitSwatches } from "./ColorSwatches";
+import { kitFocusTarget, revealFocus, useSelection } from "./SelectionProvider";
+
+type StepsContext = "desktop" | "offer";
+type StepState = "current" | "done" | "pending";
+
+const STEPS = [0, 1] as const;
+const ORDINAL = ["primeiro", "segundo"] as const;
+const TITLE = ["Primeiro brinquedo", "Segundo brinquedo"] as const;
+const SHORT = ["Primeiro", "Segundo"] as const;
+const SWATCH_LABEL: Record<StepsContext, readonly [string, string]> = {
+  desktop: ["Cor do 1º AquaBlast no desktop", "Cor do 2º AquaBlast no desktop"],
+  offer: ["Cor do 1º AquaBlast do kit na oferta", "Cor do 2º AquaBlast do kit na oferta"],
+};
+
+/**
+ * Escolha das duas cores do kit em passos: so o passo atual fica aberto (3 cores); o passo feito vira
+ * um resumo com "Trocar"; o passo seguinte fica pendente ate o anterior ter cor. O estado (qual passo
+ * esta aberto) vem do SelectionProvider, entao painel desktop e card de oferta ficam sempre iguais;
+ * o foco so se move na instancia em que a pessoa clicou.
+ */
+export function KitColorSteps({ context }: { context: StepsContext }) {
+  const { pack, kitColors, kitConfirmed, kitReady, kitStep, reopenKitStep } = useSelection();
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // O botao clicado some (o passo fecha): o foco vai ao proximo passo ou, com o kit pronto, ao Comprar.
+  const focusAfterPick = () => {
+    const root = rootRef.current;
+    if (!root) return;
+    const target =
+      kitFocusTarget(root) ??
+      root.closest(".price-card, .desktop-product-panel")?.querySelector<HTMLElement>('[data-purchase="kit"]');
+    if (target) revealFocus(target);
+  };
+
+  // "Trocar" some junto com o resumo: o foco vai a cor escolhida do passo reaberto.
+  const reopen = (index: 0 | 1) => {
+    reopenKitStep(index);
+    const target = kitFocusTarget(rootRef.current);
+    if (target) revealFocus(target);
+  };
+
+  const stateOf = (index: 0 | 1): StepState =>
+    kitStep === index ? "current" : kitConfirmed[index] ? "done" : "pending";
+
+  const steps = STEPS.map((index) => {
+    const state = stateOf(index);
+    const number = <b aria-hidden={state === "done" || undefined}>{state === "done" ? "✓" : index + 1}</b>;
+
+    let body: ReactNode;
+    if (state === "current") {
+      body = (
+        <div className={context === "desktop" ? "desktop-kit-color kit-step-body" : "kit-color-row kit-step-body"}>
+          <span className={context === "desktop" ? "desktop-field-label" : "choice-row-label"}>
+            {number}
+            <span>
+              {TITLE[index]}
+              <small>Escolha a cor</small>
+            </span>
+          </span>
+          <KitSwatches index={index} label={SWATCH_LABEL[context][index]} onPick={focusAfterPick} />
+        </div>
+      );
+    } else if (state === "done") {
+      const colorLabel = COLOR_LABELS[kitColors[index]];
+      body = (
+        <div className="kit-step-summary">
+          {number}
+          <img
+            className="kit-step-thumb"
+            src={`/thumbs/produto-${kitColors[index]}-110.webp`}
+            alt=""
+            width={110}
+            height={110}
+            decoding="async"
+          />
+          <span className="kit-step-text">
+            {SHORT[index]}: <strong>{colorLabel}</strong>
+          </span>
+          <button
+            type="button"
+            className="kit-step-change"
+            aria-label={`Trocar a cor do ${ORDINAL[index]} brinquedo (${colorLabel})`}
+            onClick={() => reopen(index)}
+          >
+            Trocar
+          </button>
+        </div>
+      );
+    } else {
+      body = (
+        <div className="kit-step-summary">
+          {number}
+          <span className="kit-step-text">
+            {TITLE[index]}
+            <small>Escolha depois do primeiro</small>
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <div key={index} className="kit-step" data-kit-step={index} data-step-state={state}>
+        {body}
+      </div>
+    );
+  });
+
+  if (context === "desktop") {
+    return (
+      <div
+        ref={rootRef}
+        className="desktop-kit-selection kit-steps"
+        data-desktop-colors="kit"
+        data-kit-ready={kitReady || undefined}
+        hidden={pack !== "kit"}
+      >
+        {steps}
+      </div>
+    );
+  }
+  return (
+    <div ref={rootRef} className="kit-color-selectors kit-steps" data-kit-ready={kitReady || undefined}>
+      {steps}
+    </div>
+  );
+}

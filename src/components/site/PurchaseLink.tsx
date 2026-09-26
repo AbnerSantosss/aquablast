@@ -3,11 +3,11 @@
 import { useId, type ReactNode } from "react";
 import { checkoutUrl } from "@/lib/site/constants";
 import type { Pack } from "@/lib/site/types";
-import { useSelection } from "./SelectionProvider";
+import { kitFocusTarget, revealFocus, useSelection } from "./SelectionProvider";
 
 /** No checkout URL exists until both kit colors have been explicitly chosen. */
 export function PurchaseLink({ pack, className, children }: { pack: Pack; className: string; children: ReactNode }) {
-  const { color, kitColors, kitConfirmed, kitReady } = useSelection();
+  const { color, kitColors, kitConfirmed, kitReady, reopenKitStep } = useSelection();
   const hintId = useId();
   const blocked = pack === "kit" && !kitReady;
   const missing = kitConfirmed[0] ? 1 : 0;
@@ -15,10 +15,14 @@ export function PurchaseLink({ pack, className, children }: { pack: Pack; classN
     ? "Escolha a cor do primeiro e do segundo brinquedo para continuar."
     : `Falta escolher a cor do ${missing === 0 ? "primeiro" : "segundo"} brinquedo.`;
 
+  /** Kit incompleto: fecha um "Trocar" aberto e leva o foco ao passo que falta (so rola se estiver fora da tela). */
   const focusMissingChoice = (link: HTMLAnchorElement) => {
-    link.closest(".price-card, .desktop-product-panel")
-      ?.querySelector<HTMLButtonElement>(`button[data-kit-index="${missing}"]`)
-      ?.focus();
+    reopenKitStep(null);
+    const container = link.closest(".price-card, .desktop-product-panel");
+    const target =
+      kitFocusTarget(container) ??
+      container?.querySelector<HTMLButtonElement>(`button[data-kit-index="${missing}"]`);
+    if (target) revealFocus(target);
   };
 
   return (

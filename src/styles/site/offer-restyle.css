@@ -1,0 +1,413 @@
+/* Pedido 2026-09-26 "UX dos cards de preco e do seletor de kits" (subagente B, itens 2 e 3).
+   Importado por ultimo no layout: vence as camadas antigas sem !important.
+   Nenhum HEX novo: todas as cores abaixo ja existiam em src/styles/site/ (conferido por grep). */
+
+/* == Item 2: miniatura "1 unidade" espelha a foto em destaque == */
+/* Depois da primeira escolha a miniatura mostra o produto na cor atual; o fundo e o mesmo gradiente
+   do quadro principal (.catalog-main-photo, style.css) para parecer a mesma foto em tamanho menor. */
+#inicio .catalog-thumbnails>.art-thumb>img.unit-thumb-product{
+  padding:.5rem;
+  object-fit:contain;
+  background:radial-gradient(ellipse at 58% 48%,#147da2 0%,#084766 42%,#032c47 78%);
+}
+/* Kit com par personalizado: as duas cores escolhidas, no mesmo fundo do quadro principal nesse estado
+   (.catalog-main-photo.is-art:not(.is-campaign), visual-refresh.css; a imagem ja esta em cache).
+   aspect-ratio 1 alinha a altura com a miniatura "1 unidade" (desktop-product.css usava 1.35/1.2). */
+#inicio .catalog-thumbnails>.art-thumb>.kit-thumb-pair{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  height:auto;
+  aspect-ratio:1;
+  padding:.375rem;
+  background:#063760 url('/kit-background-v40.webp') center/cover;
+}
+#inicio .catalog-thumbnails>.art-thumb>.kit-thumb-pair>img{width:50%;height:100%;object-fit:contain}
+
+/* == Item 3: kit em passos (KitColorSteps, painel desktop e card #ofertas) == */
+/* Passos empilhados em largura cheia: substitui o grid 1fr 1fr de desktop-product.css (.desktop-kit-selection
+   e .offers .kit-color-selectors) e a altura fixa de 6.5rem do card no desktop. */
+.kit-steps{display:grid;grid-template-columns:minmax(0,1fr);gap:.5rem}
+.desktop-kit-selection.kit-steps{grid-template-columns:minmax(0,1fr);gap:.4375rem}
+#ofertas .kit-color-selectors.kit-steps{grid-template-columns:minmax(0,1fr);gap:.5rem;height:auto;min-height:0}
+.kit-step{min-width:0}
+
+/* Passo FEITO e PENDENTE: uma linha compacta. */
+.kit-step-summary{
+  display:flex;
+  align-items:center;
+  gap:.625rem;
+  min-height:2.75rem;
+  padding:.125rem .125rem .125rem .625rem;
+  border:.0625rem solid #b8cbdf;
+  border-radius:.75rem;
+  background:#fff;
+  text-align:left;
+}
+.kit-step-summary>b{
+  flex:0 0 auto;
+  display:grid;
+  place-items:center;
+  width:1.375rem;
+  height:1.375rem;
+  border-radius:50%;
+  font-size:.8125rem;
+  font-weight:900;
+  line-height:1;
+  color:#fff;
+  background:var(--green);
+}
+.kit-step-thumb{flex:0 0 auto;width:2.25rem;height:2.25rem;object-fit:contain}
+.kit-step-text{flex:1 1 auto;min-width:0;font-size:.875rem;font-weight:800;line-height:1.25;color:var(--text)}
+.kit-step-text strong{font-weight:900;color:var(--navy)}
+.kit-step-text small{display:block;margin-top:.0625rem;font-size:.8125rem;font-weight:700;color:var(--muted)}
+.kit-step-change{
+  flex:0 0 auto;
+  min-width:2.75rem;
+  min-height:2.75rem;
+  padding:.25rem .875rem;
+  border:.0625rem solid #b8cbdf;
+  border-radius:.625rem;
+  background:#f0f7fd;
+  color:var(--navy);
+  font-size:.875rem;
+  font-weight:800;
+  line-height:1.2;
+}
+.kit-step-change:hover{border-color:#0081ff;background:#e0f4ff}
+.offers .kit-step-change:focus-visible{outline:.1875rem solid #034eaa;outline-offset:.125rem}
+.desktop-product-panel .kit-step-change:focus-visible{outline:.1875rem solid #063c78;outline-offset:.125rem}
+
+/* PENDENTE: atenuado por cor (sem opacity, para manter o contraste AA) e borda tracejada. */
+.kit-step[data-step-state="pending"] .kit-step-summary{background:#f0f7fd;border-style:dashed}
+.kit-step[data-step-state="pending"] .kit-step-summary>b{background:#b8cbdf;color:var(--text)}
+.kit-step[data-step-state="pending"] .kit-step-text{font-weight:700}
+
+/* ATUAL, 2o passo: o acento laranja claro que o card ja usava em .kit-color-row:nth-child(2)
+   (offer-cards.css). O nth-child deixou de casar porque cada passo agora tem seu proprio wrapper. */
+.offers .kit-step[data-kit-step="1"] .kit-color-row,
+.desktop-product-panel .kit-step[data-kit-step="1"] .desktop-kit-color{
+  background:linear-gradient(115deg,#fff1df,#fffaf4);
+  border-color:#f4d2a7;
+}
+.offers .kit-step[data-kit-step="1"] .kit-color-row{border-left-color:#efad54}
+.offers .kit-step[data-kit-step="1"] .choice-row-label>b,
+.desktop-product-panel .kit-step[data-kit-step="1"] .desktop-field-label>b{background:#ffb52e;color:var(--navy)}
+
+/* ATUAL no painel desktop: rotulo a esquerda, 3 cores a direita (ganha altura para o Comprar). */
+.desktop-product-panel .kit-step-body.desktop-kit-color{
+  display:grid;
+  grid-template-columns:8.5rem minmax(0,1fr);
+  align-items:center;
+  gap:.625rem;
+  padding:.375rem .5rem;
+}
+.desktop-product-panel .kit-step-body .desktop-field-label{display:flex;align-items:center;gap:.375rem;margin:0;font-size:.875rem;line-height:1.25}
+.desktop-product-panel .kit-step-body .desktop-field-label>b{flex:0 0 auto}
+.desktop-product-panel .kit-step-body .desktop-field-label small{display:block;font-size:.8125rem;font-weight:700;color:var(--muted)}
+@media(min-width:56.3125rem) and (max-width:71.875rem){
+  .desktop-product-panel .kit-step-body.desktop-kit-color{grid-template-columns:7rem minmax(0,1fr);gap:.5rem}
+}
+
+/* ATUAL no card: mobile ja usa grid 4.125rem + cores (mobile-offers.css); no desktop o card usava
+   rotulo em cima e cores embaixo, lado a lado com o 2o passo. Agora rotulo a esquerda, cores a direita. */
+#ofertas .kit-step .choice-row-label>span{font-size:.8125rem;line-height:1.2}
+#ofertas .kit-step .choice-row-label small{display:block;margin:.125rem 0 0;font-size:.8125rem;font-weight:700;color:var(--muted)}
+@media(min-width:56.3125rem){
+  #ofertas .kit-step-body.kit-color-row{
+    display:grid;
+    grid-template-columns:7.5rem minmax(0,1fr);
+    align-items:center;
+    gap:.5rem;
+  }
+  #ofertas .kit-step-body .choice-row-label{flex:none;justify-content:flex-start;text-align:left}
+}
+
+/* Troca de passo: entrada curta, desligada com reduced-motion. */
+@keyframes kit-step-in{from{opacity:0;transform:translateY(.25rem)}to{opacity:1;transform:none}}
+.kit-step-summary,.kit-step-body{animation:kit-step-in .18s ease-out}
+@media(prefers-reduced-motion:reduce){
+  .kit-step-summary,.kit-step-body{animation:none}
+}
+
+/* == Item 1: pilula "Selecione seu kit" no painel desktop (subagente C) == */
+/* Hoje o h2#catalog-choice-title (CatalogGallery, Hero.tsx) rotula .catalog-thumbnails e, em
+   >=75rem, cai na coluna de 5.25rem das miniaturas (desktop-focus.css) virando uma pilula de 86px
+   em 2 linhas. Decisao do orquestrador: no desktop essa pilula deixa de existir na galeria e passa a
+   ser o cabecalho de .desktop-package-choice, no painel (DesktopProductPanel), acima dos botoes
+   "1 unidade"/"Kit com 2". O h2 da galeria fica display:none aqui (nao so visualmente escondido) para
+   nao duplicar leitura por leitor de tela; ele continua no DOM porque .catalog-thumbnails usa
+   aria-labelledby="catalog-choice-title" e um elemento display:none referenciado por aria-labelledby
+   ainda entra no calculo do nome acessivel (accname), entao o grupo de miniaturas continua rotulado.
+   No mobile (<=56.25rem) nada muda: o painel inteiro ja e display:none (offer-cards.css) e a pilula
+   da galeria continua visivel, com href="#ofertas". */
+@media(min-width:56.3125rem){
+  #inicio .catalog-choice-title{display:none}
+}
+
+/* Cabecalho da escolha de kit no painel: pilula + dica "Clique para escolher" em uma linha só.
+   O link da pilula reaproveita a classe .catalog-choice-link (selection-gifting.css): como esse h3
+   tambem fica dentro de #inicio, ganha de graca o mesmo visual animado (fundo verde, borda fluindo
+   choice-border-flow, pulso, foco visivel) sem nenhum CSS novo de cor. Usamos um id novo
+   (desktop-choice-title) porque o painel ja tem h2#desktop-product-title e a classe
+   .catalog-choice-title (desktop-product.css/desktop-focus.css/visual-refresh.css) carrega regras de
+   grid e badge feitas para o h2 da galeria, que bagunçariam esse h3 se reaproveitada. */
+.desktop-product-panel .desktop-choice-row{
+  display:flex;
+  align-items:center;
+  flex-wrap:nowrap;
+  justify-content:space-between;
+  gap:.75rem;
+  margin:0 0 .5rem;
+}
+.desktop-product-panel .desktop-choice-title{margin:0;min-width:0;flex:0 1 auto}
+.desktop-product-panel .desktop-choice-title .catalog-choice-link{
+  min-height:2.75rem;
+  padding:.375rem 1.125rem;
+  font-size:.9375rem;
+  font-weight:800;
+  white-space:nowrap;
+}
+.desktop-product-panel .desktop-choice-hint{flex:0 0 auto;white-space:nowrap}
+
+/* Clique na pilula do painel: nao pula para #ofertas (tiraria a pessoa do painel onde ja esta
+   escolhendo). O href="#desktop-packages" e so o fallback sem JS; com JS (handlePillClick em
+   Hero.tsx) o clique foca o botao de pacote ja pressionado e da um destaque curto (~1,2s) no grupo,
+   so com box-shadow nas cores ciano/azul que .desktop-packages ja usa (desktop-focus.css). Sem
+   keyframes: e uma troca de box-shadow com transition curta, cortada em prefers-reduced-motion. */
+.desktop-packages.desktop-packages-highlight{
+  border-radius:1rem;
+  box-shadow:0 0 0 .1875rem #63e1ff,0 0 0 .375rem #39c6ff55;
+  transition:box-shadow .2s ease-out;
+}
+@media(prefers-reduced-motion:reduce){
+  .desktop-packages.desktop-packages-highlight{transition:none}
+}
+
+/* == Item 4: destaque de borda permanente no card "Kit com 2" (subagente C) == */
+/* #ofertas .price-card.kit-card ganha uma borda em gradiente SEMPRE visivel (mesmo sem is-selected),
+   no espirito da pilula: border transparente + fundo em 2 camadas (padding-box = fundo branco atual
+   do card, border-box = gradiente dourado/ciano), reaproveitando o keyframe choice-border-flow ja
+   usado por .catalog-choice-link (selection-gifting.css). O card "1 unidade" nao muda.
+   Especificidade: #ofertas + 2 classes bate .offers.price-card.is-selected (offer-cards.css, so
+   classes), entao quando o kit tambem esta is-selected essa borda gradiente continua por cima da
+   border-color solida azul do is-selected — mas o anel de selecao dele (box-shadow, nao alterado
+   aqui) continua aparecendo por fora da borda, distinguindo selecionado de nao selecionado. */
+#ofertas .price-card.kit-card{
+  border:.1875rem solid transparent;
+  background:
+    linear-gradient(#fff,#fff) padding-box,
+    linear-gradient(100deg,#ffb52e,#ffe063,#63e1ff,#39c6ff,#063760,#ffb52e) border-box;
+  background-size:100% 100%,300% 100%;
+  animation:choice-border-flow 6s linear infinite;
+}
+@media(max-width:42.5rem){
+  #ofertas .price-card.kit-card{border-width:.15625rem}
+}
+@media(prefers-reduced-motion:reduce){
+  #ofertas .price-card.kit-card{animation:none}
+}
+
+/* == Item 5 (mobile) == */
+/* Pedido 2026-09-26, subagente D. Ate 56.25rem o corpo do card vira UMA coluna, na ordem do DOM:
+   incluso -> beneficios -> cor/passos -> selo -> preco -> garantias -> Comprar -> dica/nota.
+   O selo fica ANTES do preco de proposito: assim o preco encosta no Comprar (valor lido logo antes da
+   acao) e a ordem e a mesma do desktop, sem mexer no JSX. Substitui o grid 1fr 1fr / .8fr 1.2fr de
+   mobile-offers.css e visual-refresh.css, que espremia o preco (clamp 1.25-1.5rem) ao lado do selo.
+   Prefixo #ofertas.offers: vence as regras #ofertas/.offers antigas sem !important.
+   Sem cor nova: so tamanhos, espacos e ordem. */
+@media(max-width:56.25rem){
+  #ofertas.offers{--offer-img-h-m:clamp(9rem,calc((100vw - 2.25rem) / 2.4),11rem)}
+  #ofertas.offers .offer-title .eyebrow{font-size:.75rem}
+  #ofertas.offers .price-header .offer-card-tag{font-size:.8125rem}
+  #ofertas.offers .kit-emotion-tag>strong{font-size:.9375rem}
+  #ofertas.offers .kit-emotion-tag>small{font-size:.8125rem}
+
+  /* R2 no mobile: as duas imagens com a mesma altura (>= 9rem). O kit (3:1) vira cover com foco no
+     centro: saem so as pontas do jato de agua; pai, filho e os dois brinquedos ficam inteiros. */
+  #ofertas.offers .packshot.single.unit-campaign-art,
+  #ofertas.offers .packshot.kit-family-art{height:auto;min-height:0;aspect-ratio:auto;padding:0}
+  #ofertas.offers .unit-art-scene{width:100%;height:var(--offer-img-h-m);aspect-ratio:auto}
+  #ofertas.offers .packshot.kit-family-art>.kit-family-photo{width:100%;height:var(--offer-img-h-m);aspect-ratio:auto;object-fit:cover;object-position:50% 40%}
+  #ofertas.offers .packshot>.packshot-caption{font-size:.8125rem;line-height:1.3}
+
+  #ofertas.offers .offer-card-body{display:flex;flex-direction:column;align-items:stretch;gap:.75rem;padding:.875rem .875rem 1rem}
+  #ofertas.offers .offer-card-body>*{margin:0;min-width:0}
+  #ofertas.offers .offer-included{font-size:1rem;line-height:1.3;text-align:center}
+
+  #ofertas.offers .offer-benefits li{font-size:.8125rem;line-height:1.25;gap:.375rem}
+  #ofertas.offers .offer-benefit-photo{width:2.75rem;flex:0 0 auto;height:2.5rem}
+
+  /* Cor: rotulo >= .8125rem e amostras de 3.5rem (alvo de toque folgado). */
+  #ofertas.offers .color-choice{padding:.75rem .625rem;gap:.5rem}
+  #ofertas.offers .color-choice>span{font-size:.9375rem}
+  #ofertas.offers .color-product-choice,
+  #ofertas.offers .kit-color-row .color-product-choice{min-height:3.5rem;gap:.125rem}
+  #ofertas.offers .color-product-choice>img{height:2rem}
+  #ofertas.offers .color-product-choice>span,
+  #ofertas.offers .kit-color-row .color-product-choice>span{font-size:.8125rem;line-height:1.25}
+  #ofertas.offers .kit-step-body.kit-color-row{grid-template-columns:5rem minmax(0,1fr)}
+  #ofertas.offers .kit-step .choice-row-label{justify-content:flex-start;text-align:left}
+
+  /* Selo em uma linha (imagem + "Consulte o prazo..."), preco grande e centralizado logo abaixo. */
+  #ofertas.offers .offer-shipping-seal{flex-direction:row;align-items:center;justify-content:center;gap:.625rem;padding:.375rem .625rem}
+  #ofertas.offers .offer-shipping-seal>img{width:5.5rem;max-width:40%}
+  #ofertas.offers .offer-shipping-seal>span{font-size:.8125rem;line-height:1.3;text-align:left}
+  #ofertas.offers .offer-price-line{display:flex;flex-direction:column;align-items:center;gap:.125rem;padding:0;text-align:center}
+  #ofertas.offers .offer-price-line>.pix-price-row{align-items:baseline;justify-content:center;gap:.25rem .5rem}
+  #ofertas.offers .pix-amount{font-size:2.375rem;line-height:1.1}
+  #ofertas.offers .offer-price-line .pix-label{font-size:.875rem}
+  #ofertas.offers .offer-price-line .pix-label .pix-icon{width:.875rem;height:.875rem}
+  #ofertas.offers .offer-price-line .card-installments{margin:0;font-size:.875rem;line-height:1.35}
+
+  #ofertas.offers .offer-reassurance{flex-wrap:wrap;gap:.25rem .75rem}
+  #ofertas.offers .offer-reassurance>span{font-size:.8125rem}
+  #ofertas.offers .price-card .button{width:100%;min-height:3.375rem;font-size:1.125rem}
+  #ofertas.offers .kit-selection-hint{font-size:.8125rem;line-height:1.4}
+  #ofertas.offers .offer-checkout-note{font-size:.8125rem;line-height:1.35}
+}
+@media(max-width:22.5rem){
+  #ofertas.offers .offer-card-body{padding-inline:.75rem}
+  #ofertas.offers .kit-step-body.kit-color-row{grid-template-columns:4.5rem minmax(0,1fr)}
+}
+
+/* == Item 6 (desktop) == */
+/* Pedido 2026-09-26, subagente D (item 6 + adendos R1/R2/R3; os adendos prevalecem).
+   - R3: dois cards de 25rem com 1.75rem de vao (grid de 51.75rem <= 54rem), centralizados, mesmo
+     tamanho e a MESMA sequencia de linhas. O .price-grid ganha 10 linhas e cada card usa
+     grid-template-rows:subgrid; o .offer-card-body vira display:contents, entao header, imagem,
+     incluso, beneficios, cor, selo+preco, garantias, Comprar, dica e nota de um card ficam
+     exatamente na altura das linhas do outro (preco e Comprar na mesma linha: R2).
+     A linha da cor e a mais alta do kit (2 passos); a caixa de cor da unidade estica ate ela.
+   - Selo e preco dividem a linha 6 (selo a esquerda, preco a direita): mesma ordem de leitura e ~50px
+     a menos por card, o que paga o R1 nas telas de 730-800px de altura.
+   - R2: .unit-art-scene e .kit-family-photo com a mesma caixa: largura do card x --offer-img-h.
+     A borda da unidade passa a .1875rem (igual a do kit) para as larguras baterem.
+   - R1: --offer-img-h sai da altura da tela (svh) com piso e teto; em telas ate 48rem de altura some a
+     legenda da imagem e os respiros encolhem. Preco, Comprar, nota e cor nunca somem. */
+@media(min-width:56.3125rem){
+  #ofertas.offers{--offer-img-h:clamp(7.25rem,calc(100svh - 41rem),10rem);--offer-gap:.4375rem;--offer-pad:.875rem}
+  #ofertas.offers .price-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,25rem));
+    grid-template-rows:repeat(10,auto);
+    justify-content:center;
+    align-items:stretch;
+    gap:0 1.75rem;
+    max-width:54rem;
+    margin-inline:auto;
+  }
+  #ofertas.offers .price-grid>.price-card{
+    grid-row:1/span 10;
+    display:grid;
+    grid-template-rows:subgrid;
+    grid-template-columns:auto minmax(0,1fr);
+    row-gap:var(--offer-gap);
+    width:auto;
+    max-width:none;
+    height:auto;
+    margin:0;
+    padding:0 0 .75rem;
+    border-width:.1875rem;
+  }
+  #ofertas.offers .price-grid>[data-price-card="unit"]{grid-column:1}
+  #ofertas.offers .price-grid>[data-price-card="kit"]{grid-column:2}
+  #ofertas.offers .price-card>*{grid-column:1/-1;min-width:0}
+  #ofertas.offers .price-card>.offer-card-body{display:contents}
+  #ofertas.offers .offer-card-body>*{grid-column:1/-1;min-width:0;margin:0 var(--offer-pad)}
+
+  /* 1. Cabecalho numa linha so (titulo + selo de destaque); quebra centralizado se nao couber. */
+  #ofertas.offers .price-card>.price-header{grid-row:1;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;gap:.25rem .625rem;min-height:0;padding:.5rem}
+  #ofertas.offers .price-header h3{font-size:1.125rem;line-height:1.15}
+  #ofertas.offers .price-header .offer-card-tag{min-height:0;padding:.25rem .5rem;font-size:.8125rem;letter-spacing:.02em}
+  #ofertas.offers .kit-emotion-tag{padding:.1875rem .75rem}
+  #ofertas.offers .kit-emotion-tag>strong{font-size:.875rem;line-height:1.2}
+  #ofertas.offers .kit-emotion-tag>small{font-size:.8125rem;line-height:1.2}
+
+  /* 2. Imagem: mesma caixa nos dois cards, dimensionada pela altura da tela. */
+  #ofertas.offers .price-card>.packshot{grid-row:2;align-self:start}
+  #ofertas.offers .price-card>.packshot.unit-campaign-art,
+  #ofertas.offers .price-card>.packshot.kit-family-art{height:auto;min-height:0;aspect-ratio:auto;padding:0}
+  #ofertas.offers .unit-art-scene{width:100%;height:var(--offer-img-h);aspect-ratio:auto}
+  #ofertas.offers .packshot.kit-family-art>.kit-family-photo{width:100%;height:var(--offer-img-h);aspect-ratio:auto;object-fit:cover;object-position:50% 30%}
+  #ofertas.offers .packshot>.packshot-caption{font-size:.8125rem;padding:.25rem .5rem;line-height:1.3}
+
+  /* 3-5. Incluso, beneficios e cor. */
+  #ofertas.offers .offer-card-body>.offer-included{grid-row:3;align-self:center;font-size:1rem;line-height:1.25;text-align:center}
+  #ofertas.offers .offer-card-body>.offer-benefits{grid-row:4}
+  #ofertas.offers .offer-benefits li{font-size:.8125rem;line-height:1.2;gap:.375rem}
+  #ofertas.offers .offer-benefit-photo{width:2.25rem;flex:0 0 2.25rem;height:2.25rem}
+  #ofertas.offers .offer-card-body>.color-choice,
+  #ofertas.offers .offer-card-body>.kit-color-selectors{grid-row:5;align-self:stretch;height:auto;min-height:0}
+  #ofertas.offers .color-choice{flex-direction:column;justify-content:center;align-items:center;gap:.375rem;padding:.5rem .625rem}
+  #ofertas.offers .color-choice>span{min-width:0;font-size:.9375rem}
+  #ofertas.offers .color-choice .swatches{width:100%;max-width:15rem}
+  #ofertas.offers .color-product-choice,
+  #ofertas.offers .kit-color-row .color-product-choice{min-height:3.25rem;padding:.1875rem;gap:.0625rem}
+  #ofertas.offers .color-product-choice>img{height:1.875rem}
+  #ofertas.offers .color-product-choice>span,
+  #ofertas.offers .kit-color-row .color-product-choice>span{font-size:.8125rem;line-height:1.2}
+  #ofertas.offers .kit-step-body.kit-color-row{padding:.375rem .5rem}
+
+  /* 6. Selo (esquerda) + preco (direita). */
+  #ofertas.offers .offer-card-body>.offer-shipping-seal{grid-row:6;grid-column:1;align-self:center;margin:0 0 0 var(--offer-pad);padding:0}
+  #ofertas.offers .offer-shipping-seal>img{width:5.25rem;max-width:none}
+  #ofertas.offers .offer-card-body>.offer-price-line{grid-row:6;grid-column:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;margin:0 var(--offer-pad) 0 .5rem;padding:0}
+  #ofertas.offers .offer-price-line>.pix-price-row{align-items:baseline;gap:.25rem .5rem}
+  #ofertas.offers .pix-amount{font-size:2.5rem;line-height:1.05}
+  #ofertas.offers .offer-price-line .pix-label{font-size:.875rem}
+  #ofertas.offers .offer-price-line .pix-label .pix-icon{width:.875rem;height:.875rem}
+  #ofertas.offers .offer-price-line .card-installments{margin:.125rem 0 0;font-size:.875rem;line-height:1.3}
+
+  /* 7-10. Garantias, Comprar, dica (so no kit) e nota. */
+  #ofertas.offers .offer-card-body>.offer-reassurance{grid-row:7;align-self:center;padding:0;min-height:0}
+  #ofertas.offers .offer-reassurance>span{font-size:.8125rem}
+  #ofertas.offers .offer-card-body>.button{grid-row:8;width:auto;min-height:3rem;margin:0 var(--offer-pad);font-size:1.0625rem}
+  #ofertas.offers .offer-card-body>.kit-selection-hint{grid-row:9;font-size:.8125rem;line-height:1.35}
+  #ofertas.offers .offer-card-body>.offer-checkout-note{grid-row:10;align-self:start;font-size:.8125rem;line-height:1.3}
+  /* Na unidade nao ha dica: a nota sobe para logo abaixo do Comprar (linhas 9-10). */
+  #ofertas.offers .price-card:not(.kit-card)>.offer-card-body>.offer-checkout-note{grid-row:9/11}
+}
+/* Telas de ate 53.125rem (850px) de altura: respiros e amostras um pouco menores. */
+@media(min-width:56.3125rem) and (max-height:53.125rem){
+  #ofertas.offers{--offer-gap:.3125rem}
+  #ofertas.offers .color-product-choice,
+  #ofertas.offers .kit-color-row .color-product-choice{min-height:3rem}
+}
+/* Telas de ate 48rem (768px) de altura: legenda da imagem some e os respiros encolhem. */
+@media(min-width:56.3125rem) and (max-height:48rem){
+  #ofertas.offers .packshot>.packshot-caption{display:none}
+  #ofertas.offers .offer-title .eyebrow{margin:0}
+  #ofertas.offers .price-card>.price-header{padding-block:.375rem}
+  #ofertas.offers .offer-benefit-photo{width:2rem;flex-basis:2rem;height:2rem}
+  #ofertas.offers .color-product-choice,
+  #ofertas.offers .kit-color-row .color-product-choice{min-height:2.875rem}
+  #ofertas.offers .color-product-choice>img{height:1.625rem}
+  #ofertas.offers .color-choice{gap:.25rem;padding-block:.375rem}
+  #ofertas.offers .pix-amount{font-size:2.25rem}
+  #ofertas.offers .offer-card-body>.button{min-height:2.875rem}
+}
+/* R1 no #inicio (telas desktop de ate 48rem = 768px de altura): foto grande + painel com o fluxo do kit
+   e o Comprar do painel precisam caber em scrollY=0 no estado mais alto (kit + 1a cor escolhida).
+   1) Em >=75rem o painel ocupa as linhas 1-2 da galeria; sendo mais alto que rotulo+foto, o grid
+      repartia a sobra entre as duas linhas e a linha 1 inchava (~128px para um rotulo de 50px),
+      empurrando a foto para baixo da dobra. Com a linha 2 em 1fr a sobra fica toda abaixo da foto,
+      que sobe para logo depois do rotulo. So o eixo das linhas muda: colunas, miniaturas e a pilula
+      "Selecione seu kit" (Item 1) ficam como estao.
+   2) O painel reaproveita a compactacao que viewport-tracking.css ja aplica ate 45rem (respiro,
+      titulo e faixa de preco menores), sem reordenar blocos nem mexer nos passos do kit. */
+@media(min-width:75rem) and (max-height:48rem){
+  #inicio .catalog-gallery{grid-template-rows:auto minmax(0,1fr)}
+}
+@media(min-width:56.3125rem) and (max-height:48rem){
+  #inicio .desktop-product-panel{gap:.3125rem}
+  #inicio .desktop-product-heading h2{font-size:1.5625rem}
+  #inicio .desktop-product-panel .desktop-price-band{padding:.375rem .75rem}
+  #inicio .desktop-product-panel .desktop-price{font-size:1.875rem}
+}
+/* Ate 46rem (736px) de altura (ex.: 1536x730) sobravam so ~5px abaixo do Comprar: mais um aperto leve. */
+@media(min-width:56.3125rem) and (max-height:46rem){
+  #inicio .desktop-product-panel{gap:.25rem}
+  #inicio .desktop-product-panel .desktop-price-band{padding-block:.25rem}
+}

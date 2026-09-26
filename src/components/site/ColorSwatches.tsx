@@ -27,8 +27,19 @@ export function UnitSwatches({ label }: { label: string }) {
   );
 }
 
-/** Botões `[data-kit-color]`: escolhem a cor de um dos dois AquaBlast do kit. */
-export function KitSwatches({ index, label }: { index: 0 | 1; label: string }) {
+/**
+ * Botões `[data-kit-color]`: escolhem a cor de um dos dois AquaBlast do kit.
+ * `onPick` roda depois do commit (flushSync), com o DOM ja atualizado, para mover o foco.
+ */
+export function KitSwatches({
+  index,
+  label,
+  onPick,
+}: {
+  index: 0 | 1;
+  label: string;
+  onPick?: (color: Color) => void;
+}) {
   const { kitColors, kitConfirmed, selectKitColor } = useSelection();
   return (
     <div className="swatches" role="group" aria-label={label}>
@@ -40,7 +51,10 @@ export function KitSwatches({ index, label }: { index: 0 | 1; label: string }) {
           data-kit-color={key}
           aria-label={COLOR_LABELS[key]}
           aria-pressed={kitConfirmed[index] && kitColors[index] === key}
-          onClick={() => selectKitColor(index, key)}
+          onClick={() => {
+            selectKitColor(index, key);
+            onPick?.(key);
+          }}
         >
           <img src={`/thumbs/produto-${key}-110.webp`} alt="" loading="lazy" decoding="async" />
           <span>{COLOR_LABELS[key]}</span>

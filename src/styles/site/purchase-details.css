@@ -17,11 +17,9 @@
 .desktop-packages button[data-desktop-pack="kit"]{background:#FA4503;border-color:#FA4503;color:#022039}
 .desktop-packages button[data-desktop-pack="kit"]:hover{background:#FA4503;border-color:#022039}
 .desktop-packages button[data-desktop-pack="kit"][aria-pressed="true"]{background:#FA4503;border-color:#39c6ff;box-shadow:0 0 0 .125rem #39c6ff55}
-@media(min-width:56.3125rem){
-  .desktop-kit-color:nth-child(2){background:#E56E13;border-color:#E56E13}
-  .desktop-kit-color:nth-child(2) .desktop-field-label{color:var(--deep)}
-  .desktop-kit-color:nth-child(2) .desktop-field-label b{background:var(--deep);color:white}
-}
+/* 2026-09-26: removido o fundo laranja #E56E13 do 2o grupo do kit no painel. Com os passos (KitColorSteps)
+   cada grupo tem wrapper proprio e o nth-child(2) nao casava mais; o acento do 2o passo agora e o laranja
+   claro do card de oferta, em offer-restyle.css (item 3). */
 .mobile-pix-line{display:flex;align-items:center;gap:.25rem;color:var(--green)}
 .mobile-pix-line .pix-icon{width:.875rem;height:.875rem}
 .mobile-pix-line .mobile-price{color:var(--green);font-size:1.125rem;white-space:nowrap}
