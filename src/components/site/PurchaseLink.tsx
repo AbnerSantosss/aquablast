@@ -1,12 +1,49 @@
 "use client";
 
-import { useId, useState, type ReactNode } from "react";
-import { COLOR_LABELS, checkoutUrl } from "@/lib/site/constants";
+import { useEffect, useId, useState, type ReactNode } from "react";
+import { COLOR_LABELS, checkoutUrl, ownCheckoutPath } from "@/lib/site/constants";
 import type { Pack } from "@/lib/site/types";
 import { kitFocusTarget, revealFocus, useSelection } from "./SelectionProvider";
 
 /** Rotulo do Comprar quando a escolha esta completa (e o botao pulsa). */
 const READY_LABEL: Record<Pack, string> = { unit: "Quero 1 unidade", kit: "Quero o kit com 2" };
+
+/**
+ * Modo do checkout ("proprio" | "zedy"), plano 8.9. PurchaseLink é "use client" e Hero/Offers/page.tsx
+ * (que o usam) não fazem parte do escopo deste agente para virar server component e repassar a
+ * configuração por prop — por isso o modo é lido aqui mesmo, uma única vez por carregamento de página,
+ * de GET /api/checkout/config (pública, já cacheia no client via este módulo). Enquanto não chega
+ * resposta (ou se falhar) o link continua indo para a Zedy, o comportamento atual — sem regressão.
+ */
+let modeRequest: Promise<"proprio" | "zedy"> | null = null;
+
+function getCheckoutMode(): Promise<"proprio" | "zedy"> {
+  if (!modeRequest) {
+    modeRequest = fetch("/api/checkout/config", { credentials: "omit" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { mode?: string } | null) => (data?.mode === "proprio" ? "proprio" : "zedy"))
+      .catch(() => "zedy" as const);
+  }
+  return modeRequest;
+}
+
+/** utm_*, fbclid e gclid da URL atual, para anexar ao link do checkout próprio (o Zedy já os lê sozinho). */
+function adParamsFromLocation(): string {
+  if (typeof window === "undefined") return "";
+  let params: URLSearchParams;
+  try {
+    params = new URLSearchParams(window.location.search);
+  } catch {
+    return "";
+  }
+  const out = new URLSearchParams();
+  params.forEach((value, key) => {
+    const k = key.trim().toLowerCase();
+    if (k === "fbclid" || k === "gclid" || /^utm_[a-z_]{1,30}$/.test(k)) out.set(key, value);
+  });
+  const qs = out.toString();
+  return qs ? `&${qs}` : "";
+}
 
 /**
  * Comprar nunca trava (pedido do dono, 26/09): sempre tem link para o checkout. Com a escolha incompleta
@@ -17,6 +54,10 @@ export function PurchaseLink({ pack, className, children }: { pack: Pack; classN
   const { color, colorTouched, kitColors, kitConfirmed, kitReady, reopenKitStep } = useSelection();
   const hintId = useId();
   const [warned, setWarned] = useState(false);
+  const [mode, setMode] = useState<"proprio" | "zedy">("zedy");
+  useEffect(() => {
+    getCheckoutMode().then(setMode);
+  }, []);
   const incomplete = pack === "kit" ? !kitReady : !colorTouched;
   const missing = kitConfirmed[0] ? 1 : 0;
   const fallback = pack === "kit" ? kitColors.map((c) => COLOR_LABELS[c]).join(" + ") : COLOR_LABELS[color];
@@ -49,7 +90,7 @@ export function PurchaseLink({ pack, className, children }: { pack: Pack; classN
         className={className}
         data-purchase={pack}
         data-incomplete={incomplete || undefined}
-        href={checkoutUrl(pack, color, kitColors)}
+        href={mode === "proprio" ? `${ownCheckoutPath(pack, color, kitColors)}${adParamsFromLocation()}` : checkoutUrl(pack, color, kitColors)}
         aria-describedby={hintId}
         onClick={(event) => {
           if (!incomplete || warned) return;

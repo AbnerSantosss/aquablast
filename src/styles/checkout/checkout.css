@@ -1,0 +1,1900 @@
+/*
+ * CSS do checkout próprio (Fase 8.1/8.2 do plano). Portado de
+ * ORIGEM/app/globals.css (linhas 26-153, o bloco ".ck" — layout estilo Yever/Brutus) SEM mudar nenhum
+ * valor (cor, tamanho, espaçamento). Só três adaptações estruturais, documentadas abaixo, porque este
+ * projeto não usa Tailwind nem Radix/shadcn:
+ *
+ * 1) Tokens: na origem o bloco de variáveis (--c-primary, --c-button, ...) e o reset de layout ficavam
+ *    no seletor ".ck". Aqui foram movidos para ".ck-root" (mesma ideia de renomear ":root" pedida no
+ *    plano 8.2), porque a página de descadastro de e-mail (fase 10, agente emails-abandono) usa só
+ *    ".ck-root"/".ck-card"/".ck-main", sem ".ck". O componente principal (Checkout.tsx) aplica as duas
+ *    classes juntas ("ck ck-root") no elemento raiz, então todo seletor ".ck ..." da origem continua
+ *    valendo sem alterar nenhuma regra.
+ *
+ * 2) Radix -> controles nativos (tabela do plano 8.2), mesmo resultado visual:
+ *    - RadioGroup/RadioGroupItem -> <input type="radio">. Regra origem:
+ *      ".ck [data-slot=radio-group-item]" / "[data-state=checked]" / "[data-slot=radio-group-indicator]"
+ *      -> aqui: ".ck input[type=radio]" / ":checked" (mesmas cores/medidas; só ganhou border-radius:50%,
+ *      que no Radix já vinha do componente shadcn e não aparecia neste arquivo).
+ *    - Checkbox (bump-choice) -> <input type="checkbox"> real (acessível) + <span class="ck-checkbox">
+ *      decorativo por cima, com o ícone <Check> do lucide-react (mesma lib já usada na origem) desenhado
+ *      só quando marcado. Regra origem ".ck .bump-choice button[role=checkbox]" / "[data-state=checked]"
+ *      -> aqui ".ck .bump-choice .ck-checkbox" / ".is-checked" (mesmas cores/medidas).
+ *    - Select/SelectTrigger -> <select class="ck-select ...">. Regra origem
+ *      ".ck .field .ck-select[data-placeholder]" -> aqui ".ck .field .ck-select.is-placeholder"
+ *      (classe aplicada via JS quando o valor está vazio, já que <select> nativo não tem
+ *      "data-placeholder"). Ganhou "appearance:none" para tirar o contorno padrão do navegador.
+ *
+ * 3) Utilitário Tailwind usado no JSX da origem: só "sr-only" (não havia nenhum outro utilitário tipo
+ *    "flex"/"gap-2" no JSX — todo o resto já eram classes ".ck-*" próprias, definidas aqui mesmo).
+ *    Substituído por uma classe própria "ck-u-sr-only" com a definição padrão de texto só para leitor de
+ *    tela, escopada em ".ck-root" (ver bloco de reset abaixo).
+ */
+
+/* ---------- Reset mínimo equivalente ao Tailwind global da origem, escopado em .ck-root ---------- */
+.ck-root,
+.ck-root *,
+.ck-root *::before,
+.ck-root *::after {
+  box-sizing: border-box;
+}
+.ck-root {
+  margin: 0;
+  font-family: var(--font-text), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.ck-root button,
+.ck-root a,
+.ck-root input,
+.ck-root select {
+  -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
+}
+.ck-root button,
+.ck-root a {
+  touch-action: manipulation;
+}
+.ck-root button {
+  cursor: pointer;
+}
+.ck-root button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.ck-root a {
+  color: inherit;
+  text-decoration: none;
+}
+.ck-root h1,
+.ck-root h2,
+.ck-root h3,
+.ck-root h4,
+.ck-root p {
+  margin: 0;
+}
+.ck-root button:focus-visible,
+.ck-root a:focus-visible {
+  outline: 3px solid #00aef0;
+  outline-offset: 4px;
+}
+.ck-root .container {
+  max-width: 1152px;
+  padding: 0 28px;
+  margin: auto;
+}
+@media (max-width: 760px) {
+  .ck-root .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ck-root * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+/* Equivalente ao utilitário Tailwind "sr-only" usado no JSX da origem (ver nota 3 acima). */
+.ck-root .ck-u-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ===== Layout estilo Yever/Brutus (checkout), portado de ORIGEM/app/globals.css linhas 26-153 ===== */
+.ck-root {
+  --c-primary: #063760;
+  --c-button: #06a64a;
+  --c-button-hover: #058a3e;
+  --c-accent: #00aef0;
+  --c-timer: #d92d20;
+  --c-bg: #f4f5f7;
+  --c-on-button: #fff;
+  --c-on-primary: #fff;
+  --c-on-timer: #fff;
+  --c-text: #15283b;
+  --c-muted: #5a6978;
+  --c-line: #e3e7ec;
+  --c-ok: #067a38;
+  --c-ok-bg: #e8f6ee;
+  min-height: 100vh;
+  background: var(--c-bg);
+  color: var(--c-text);
+  overflow-x: clip;
+}
+.ck :focus-visible {
+  outline: 3px solid var(--c-accent);
+  outline-offset: 2px;
+}
+.ck [tabindex="-1"]:focus {
+  outline: none;
+}
+.ck .ship-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  padding: 6px 16px;
+  background: color-mix(in srgb, var(--c-button), #000 26%);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.3;
+  text-align: center;
+}
+.ck .ship-bar strong {
+  font-weight: 800;
+}
+.ck .ship-bar i {
+  font-style: normal;
+  opacity: 0.75;
+}
+.ck .ship-bar svg {
+  flex-shrink: 0;
+}
+.ck-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 16px 0;
+}
+.ck-top .brand {
+  font-size: 24px;
+}
+.ck-top .brand svg {
+  width: 26px;
+  height: 26px;
+}
+.ck-timer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 7px;
+  min-height: 34px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: var(--c-timer);
+  color: var(--c-on-timer);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--c-timer) 22%, transparent);
+}
+.ck-timer b {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.ck-timer.is-pending {
+  visibility: hidden;
+}
+.ck-main {
+  padding-top: 18px;
+  padding-bottom: 36px;
+}
+.ck .campaign {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 172px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #061a3a;
+  color: #fff;
+  isolation: isolate;
+  box-shadow: 0 6px 20px #06193514;
+}
+.ck .campaign-photo {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  height: 100%;
+  aspect-ratio: 3/1;
+  z-index: -1;
+}
+.ck .campaign-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ck .campaign-photo:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #061a3a 0, #061a3a00 32%);
+}
+.ck .campaign-copy {
+  padding: 18px 36px;
+  max-width: 50%;
+  text-shadow: 0 2px 12px #001e3580;
+}
+.ck .campaign-copy > span {
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 1.8px;
+  color: #8ce0ff;
+}
+.ck .campaign h1 {
+  font-family: var(--font-display), var(--font-text), sans-serif;
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -1px;
+  margin-top: 6px;
+}
+.ck .campaign h1 em {
+  font-style: normal;
+  color: #8ee5ff;
+}
+.ck .campaign p {
+  font-size: 14px;
+  color: #d5effc;
+  margin-top: 6px;
+}
+.ck .notice {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fff3f2;
+  border: 1px solid #f6d7d2;
+  color: #8f2f2f;
+  font-size: 14px;
+}
+.ck .notice button {
+  font-weight: 700;
+  text-decoration: underline;
+  min-height: 44px;
+  padding: 0 6px;
+}
+.ck-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 390px;
+  grid-template-areas: "flow sum" "seals sum";
+  gap: 18px 24px;
+  margin-top: 20px;
+  align-items: start;
+}
+.ck-card {
+  background: #fff;
+  border: 1px solid #e5e8ed;
+  border-radius: 14px;
+  box-shadow: 0 1px 2px #1018280a, 0 10px 28px #1018280d;
+}
+.ck-flow {
+  grid-area: flow;
+  padding: 28px 32px;
+  min-width: 0;
+  scroll-margin-top: 12px;
+}
+/* Timeline vertical das etapas */
+.ck-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ck-step {
+  position: relative;
+  padding: 0 0 18px 48px;
+}
+.ck-step:last-child {
+  padding-bottom: 0;
+}
+.ck-step:not(:last-child):before,
+.ck-step.is-current:before {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: 40px;
+  bottom: 2px;
+  width: 2px;
+  border-radius: 2px;
+  background: #dfe3e8;
+}
+.ck-step.is-current:before {
+  left: 14px;
+  width: 4px;
+  background: var(--c-primary);
+}
+.ck-step.is-done:not(:last-child):before {
+  left: 14px;
+  width: 4px;
+  bottom: -6px;
+  background: var(--c-primary);
+}
+.ck-step-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  flex-wrap: wrap;
+}
+.ck-step-head h3 {
+  font-family: var(--font-display), var(--font-text), sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.3px;
+  color: var(--c-text);
+}
+.ck-step.is-todo h3 {
+  color: #667381;
+  font-weight: 600;
+}
+.ck-dot {
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display), sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  background: #e7eaee;
+  color: #5b6876;
+}
+.is-current .ck-dot {
+  background: var(--c-primary);
+  color: var(--c-on-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--c-primary) 14%, transparent);
+}
+.is-done .ck-dot {
+  background: var(--c-button);
+  color: var(--c-on-button);
+}
+/* Etapa atual: o número pulsa com um brilho desfocado na cor principal. */
+.is-current .ck-dot {
+  animation: ck-dot-pulse 1.8s ease-in-out infinite;
+}
+@keyframes ck-dot-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 20%, transparent), 0 0 4px 0 color-mix(in srgb, var(--c-primary) 30%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--c-primary) 10%, transparent), 0 0 18px 6px color-mix(in srgb, var(--c-primary) 50%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .is-current .ck-dot {
+    animation: none;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--c-primary) 16%, transparent), 0 0 12px 3px color-mix(in srgb, var(--c-primary) 35%, transparent);
+  }
+}
+.ck-badge {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: var(--c-timer);
+  color: var(--c-on-timer);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+}
+/* Etapa concluída: cartão com o resumo e "EDITAR" à direita */
+.ck-done {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 16px 8px 16px 22px;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  background: #fff;
+}
+.ck-done-info {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--c-muted);
+}
+.ck-done-info > span {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 7px;
+  overflow-wrap: anywhere;
+}
+.ck-nw {
+  white-space: nowrap;
+}
+.ck-done-info svg {
+  flex-shrink: 0;
+}
+.ck-done-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--c-text);
+  overflow-wrap: anywhere;
+}
+.ck-done-title svg {
+  color: var(--c-primary);
+}
+.ck-ship-tag {
+  justify-self: start;
+  margin-top: 4px;
+  padding: 3px 8px;
+  border: 1px solid var(--c-ok);
+  border-radius: 5px;
+  color: var(--c-ok);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+}
+.ck-edit {
+  flex-shrink: 0;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: var(--c-text);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+}
+.ck-edit:hover {
+  background: #eef3f8;
+}
+.ck-step-body {
+  padding-top: 14px;
+}
+.ck .form-fields {
+  display: grid;
+  gap: 14px;
+}
+.ck .field-row {
+  gap: 14px;
+}
+/* Campos: rótulo pequeno em maiúsculas dentro da caixa */
+.ck .field {
+  position: relative;
+  gap: 3px;
+  min-height: 58px;
+  padding: 9px 14px 8px;
+  border: 1px solid #d2d8df;
+  border-radius: 9px;
+  background: #fff;
+  cursor: text;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  display: flex;
+  flex-direction: column;
+}
+.ck .field:hover {
+  border-color: #b7c1cc;
+}
+.ck .field > span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: #3b4a59;
+}
+.ck .field small {
+  font-size: 11px;
+  color: var(--c-muted);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  margin-left: 0;
+}
+.ck .field input,
+.ck .field input:focus {
+  width: 100%;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  font-size: 16px;
+  color: var(--c-text);
+}
+.ck .field input::placeholder {
+  color: #8593a1;
+}
+.ck .field input:disabled {
+  opacity: 0.6;
+}
+.ck .field:focus-within {
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-accent) 22%, transparent);
+}
+.ck .field .ck-select {
+  width: 100%;
+  height: 24px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 16px;
+  color: var(--c-text);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.ck .field .ck-select:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+.ck .field .ck-select.is-placeholder {
+  color: #8593a1;
+}
+.ck .inline-help {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--c-muted);
+}
+/* Campo bloqueado até o CEP ser buscado e check dos campos válidos */
+.ck .field.is-disabled,
+.ck .field.is-disabled:hover {
+  background: #f1f3f5;
+  border-color: #dfe3e8;
+  cursor: not-allowed;
+}
+.ck .field.is-disabled input {
+  opacity: 1;
+  cursor: not-allowed;
+}
+.ck .field.is-ok {
+  padding-right: 44px;
+}
+.ck .field-ok {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  translate: 0 -50%;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--c-ok-bg);
+  color: var(--c-ok);
+}
+.ck .field.has-icon {
+  padding-left: 48px;
+}
+.ck .field-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  translate: 0 -50%;
+  color: var(--c-muted);
+}
+/* Entrega: CEP estreito com cidade ao lado */
+.ck .cep-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 14px;
+  align-items: center;
+}
+.ck .cep-city {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--c-text);
+  overflow-wrap: anywhere;
+}
+.ck .cep-manual {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: #eef6fc;
+  border: 1px solid #cfe6f5;
+  color: #123f5e;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.ck .cep-manual svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.ck .num-row {
+  grid-template-columns: 1fr 2fr;
+}
+.ck .ship-options {
+  margin-top: 22px;
+}
+.ck .ship-options h4 {
+  font-family: var(--font-display), var(--font-text), sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+}
+.ck .ship-options > p {
+  font-size: 14px;
+  color: var(--c-muted);
+  margin-top: 2px;
+}
+.ck .ship-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+.ck .ship-opt {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 64px;
+  padding: 12px 16px;
+  border: 1px solid #d2d8df;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+.ck .ship-opt.is-selected {
+  border: 2px solid var(--c-primary);
+  padding: 11px 15px;
+}
+.ck .ship-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ck .ship-name strong {
+  font-size: 15px;
+}
+.ck .ship-name small,
+.ck .ship-price small {
+  font-size: 13px;
+  color: var(--c-muted);
+}
+.ck .ship-price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+.ck .ship-price b {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: var(--c-ok);
+}
+/* Rádios: anel cinza; marcado vira anel grosso na cor principal (ver nota 2 no topo do arquivo). */
+.ck input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid #b7c1cc;
+  background: #fff;
+  box-shadow: none;
+  cursor: pointer;
+}
+.ck input[type="radio"]:checked {
+  border: 6px solid var(--c-primary);
+}
+.ck input[type="radio"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.ck .error {
+  margin-top: 14px;
+  font-size: 14px;
+}
+/* Botões */
+.ck .primary-button {
+  width: 100%;
+  min-height: 54px;
+  height: auto;
+  margin-top: 18px;
+  padding: 8px 24px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--c-button);
+  color: var(--c-on-button);
+  font-family: var(--font-display), var(--font-text), sans-serif;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  line-height: 1.15;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--c-button) 22%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.ck .primary-button:hover:not(:disabled) {
+  background: var(--c-button-hover);
+  transform: none;
+}
+.ck-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 22px;
+}
+.ck-actions .primary-button {
+  width: auto;
+  min-width: 260px;
+  margin: 0;
+}
+/* Pagamento */
+.ck-testmode {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 14px;
+  border: 1px solid #f0d27a;
+  border-radius: 10px;
+  background: #fff8e1;
+  color: #5c4300;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.ck-testmode svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.ck .payment-content > .ck-testmode {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+/* Acordeão de formas de pagamento: só a escolhida abre, abaixo de um divisor */
+.ck .pay-acc {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+.ck .pay-item {
+  border: 1px solid #d2d8df;
+  border-radius: 10px;
+  background: #fff;
+}
+.ck .pay-item.is-open {
+  border-color: #b7c1cc;
+}
+.ck .pay-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 12px 20px;
+  cursor: pointer;
+}
+.ck .pay-head > svg {
+  color: var(--c-primary);
+  flex-shrink: 0;
+}
+.ck .pay-item.is-open .pay-head {
+  border-bottom: 1px solid var(--c-line);
+}
+.ck .pay-label {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+}
+.ck .pay-label strong {
+  font-size: 16px;
+  font-weight: 600;
+}
+.ck .pay-label small {
+  font-size: 13px;
+  color: var(--c-muted);
+}
+.ck .pay-body {
+  padding: 20px;
+}
+/* A última etapa não tem linha abaixo e o pagamento avança sobre a coluna da timeline, ganhando largura. */
+.ck-step.is-current:last-child:before {
+  display: none;
+}
+.ck .payment-content {
+  margin-left: -32px;
+}
+.ck-payseals {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  color: var(--c-muted);
+}
+.ck-payseals li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  line-height: 1.2;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.ck-payseals li > span {
+  display: flex;
+  flex-direction: column;
+}
+.ck-payseals b {
+  font-weight: 800;
+  color: var(--c-text);
+}
+.ck-payseals svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+.ck-payseals .ck-payseals-brand {
+  font-family: var(--font-display), var(--font-text), sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  text-transform: none;
+  color: var(--c-primary);
+}
+.ck-payseals-brand svg {
+  color: var(--c-accent);
+}
+/* Order bump */
+.ck .order-bump {
+  margin-top: 16px;
+  border: 2px dashed #d99a00;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+.ck .order-bump.added {
+  border-color: var(--c-button);
+}
+.ck .bump-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 50px;
+  padding: 10px 14px;
+  background: #fff4cc;
+  color: #3f2f00;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+}
+.ck .order-bump.added .bump-choice {
+  background: var(--c-ok-bg);
+  color: var(--c-ok);
+}
+/* Checkbox nativo do bump (ver nota 2 no topo do arquivo). */
+.ck .bump-choice .ck-checkbox {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #8a6a00;
+  background: #fff;
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+.ck .bump-choice .ck-checkbox.is-checked {
+  border-color: var(--c-button);
+  background: var(--c-button);
+  color: #fff;
+}
+.ck .bump-choice .ck-checkbox svg {
+  width: 15px;
+  height: 15px;
+}
+.ck .bump-choice input[type="checkbox"] {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.ck .bump-product {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+}
+.ck .bump-product img {
+  width: 92px;
+  height: 92px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--c-line);
+}
+.ck .bump-product > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+.ck .bump-tag {
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: #c2410c;
+  color: #fff;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+}
+.ck .bump-product h4 {
+  font-size: 15px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+.ck .bump-price {
+  font-family: var(--font-display), sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--c-text);
+}
+.ck .bump-product small {
+  font-size: 13px;
+  color: var(--c-ok);
+  font-weight: 600;
+}
+.ck-pix-start > p {
+  font-size: 15px;
+  line-height: 1.45;
+}
+.ck-pix-start > .ck-pix-value {
+  margin-top: 12px;
+  font-size: 16px;
+}
+.ck-pix-value b {
+  font-family: var(--font-display), sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--c-ok);
+}
+.ck-pix-start > .ck-pix-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--c-muted);
+}
+.ck-pix-note svg {
+  flex-shrink: 0;
+}
+.ck-pix {
+  display: grid;
+  grid-template-columns: 196px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+  margin-top: 0;
+  padding: 18px;
+  border: 1px solid var(--c-line);
+  border-radius: 12px;
+  background: #fafbfc;
+}
+.ck-qr {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.ck-qr svg,
+.ck-qr img {
+  display: block;
+  width: 100%;
+  max-width: 196px;
+  height: auto;
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  background: #fff;
+}
+.ck-qr figcaption {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-muted);
+  text-align: center;
+}
+.ck-qr.is-dim svg,
+.ck-qr.is-dim img {
+  opacity: 0.25;
+}
+.ck-pix-info {
+  min-width: 0;
+}
+.ck-pix-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  font-size: 15px;
+}
+.ck-pix-head strong {
+  font-family: var(--font-display), sans-serif;
+  font-size: 20px;
+}
+.ck-pix-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fdecea;
+  color: #9b1c13;
+  font-size: 13px;
+  font-weight: 600;
+}
+.ck-pix-timer b {
+  font-variant-numeric: tabular-nums;
+}
+.ck-copy-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.ck-copy-row .field {
+  flex: 1;
+}
+.ck-copy-row .field input {
+  font-size: 14px;
+  text-overflow: ellipsis;
+}
+.ck-copy {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 58px;
+  padding: 0 14px;
+  border: 2px solid var(--c-primary);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--c-primary);
+  font-size: 14px;
+  font-weight: 800;
+}
+.ck-copy:hover {
+  background: #eef3f8;
+}
+.ck-copied {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--c-ok);
+}
+.ck-pix-steps {
+  list-style: none;
+  counter-reset: pix;
+  margin: 14px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+}
+.ck-pix-steps li {
+  counter-increment: pix;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ck-pix-steps li:before {
+  content: counter(pix);
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #e7edf3;
+  color: var(--c-primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+.ck-pix-expired strong {
+  font-family: var(--font-display), sans-serif;
+  font-size: 20px;
+  color: #9b1c13;
+}
+.ck-pix-expired p {
+  font-size: 14px;
+  color: var(--c-muted);
+  margin-top: 4px;
+}
+.ck-cardform {
+  margin-top: 0;
+}
+.ck-card-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: #eef6fc;
+  border: 1px solid #cfe6f5;
+  color: #123f5e;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.ck-card-warn svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.ck-brand {
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--c-primary);
+}
+/* Tela de sucesso */
+.ck-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-bottom: 24px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--c-line);
+}
+.ck-success-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--c-button);
+  color: var(--c-on-button);
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--c-button) 16%, transparent);
+}
+.ck-success h2 {
+  font-family: var(--font-display), sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  margin-top: 18px;
+}
+.ck-success-order {
+  font-size: 15px;
+  color: var(--c-muted);
+  margin: 4px 0 14px;
+}
+.ck-success-order strong {
+  color: var(--c-text);
+  font-variant-numeric: tabular-nums;
+}
+.ck-success-list {
+  width: 100%;
+  margin: 16px 0 0;
+  text-align: left;
+  display: grid;
+  border: 1px solid var(--c-line);
+  border-radius: 10px;
+}
+.ck-success-list > div {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 12px;
+  padding: 11px 14px;
+  border-top: 1px solid var(--c-line);
+}
+.ck-success-list > div:first-child {
+  border-top: 0;
+}
+.ck-success-list dt {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-muted);
+}
+.ck-success-list dd {
+  margin: 0;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  overflow-wrap: anywhere;
+}
+.ck-success-list small {
+  font-size: 13px;
+  color: var(--c-ok);
+  font-weight: 600;
+}
+.ck-steps.is-complete .ck-step {
+  padding-bottom: 10px;
+}
+.ck-steps.is-complete .ck-step:last-child {
+  padding-bottom: 0;
+}
+/* Resumo do pedido */
+.ck .order-summary {
+  grid-area: sum;
+  position: sticky;
+  top: 16px;
+  padding: 24px;
+}
+.ck-sum-title {
+  font-family: var(--font-display), sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--c-line);
+}
+.ck .selected-product {
+  display: flex;
+  gap: 14px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--c-line);
+}
+.ck .selected-product img {
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--c-line);
+}
+.ck .selected-product > div {
+  min-width: 0;
+}
+.ck .selected-product h4 {
+  font-size: 15px;
+  font-weight: 700;
+}
+.ck .selected-product p {
+  font-size: 13px;
+  color: var(--c-muted);
+}
+.ck .offer {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.ck .offer s {
+  font-size: 13px;
+  color: var(--c-muted);
+}
+.ck .offer b {
+  font-family: var(--font-display), sans-serif;
+  font-size: 19px;
+  font-weight: 800;
+}
+.ck .save-tag {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: var(--c-ok-bg);
+  color: var(--c-ok);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+.ck .bump-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--c-line);
+  font-size: 14px;
+}
+.ck .bump-summary span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--c-ok);
+  font-weight: 600;
+}
+.ck .price-details {
+  margin: 0;
+  padding: 14px 0;
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--c-line);
+}
+.ck .price-details > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ck .price-details dt {
+  color: var(--c-muted);
+}
+.ck .price-details dd {
+  margin: 0;
+  font-weight: 600;
+}
+.ck .price-details .green {
+  color: var(--c-ok);
+  font-weight: 700;
+}
+.ck .total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 10px;
+  padding-top: 14px;
+}
+.ck .total > span {
+  font-size: 16px;
+  font-weight: 700;
+}
+.ck .total > strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--c-ok);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  line-height: 1.2;
+}
+.ck .total > strong b {
+  font-family: var(--font-display), sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+}
+.ck .total small {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-muted);
+}
+.ck .total.is-pix small {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: var(--c-ok);
+}
+.ck-sum-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: #f4f7fa;
+  font-size: 13px;
+  color: var(--c-muted);
+}
+.ck-sum-note svg {
+  color: var(--c-ok);
+  flex-shrink: 0;
+}
+/* Selos e rodapé */
+.ck .trust-seals {
+  grid-area: seals;
+  padding: 14px 16px;
+  border: 1px solid #e5e8ed;
+  border-radius: 12px;
+  background: #ffffffb3;
+}
+.ck .trust-seals ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+.ck .trust-seals li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.ck .trust-seals li > svg {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 7px;
+  border-radius: 50%;
+  background: var(--c-ok-bg);
+  color: var(--c-ok);
+}
+.ck .trust-seals strong {
+  display: block;
+  font-size: 12.5px;
+  line-height: 1.25;
+}
+.ck .trust-seals small {
+  display: block;
+  font-size: 11.5px;
+  line-height: 1.3;
+  color: var(--c-muted);
+}
+.ck .pay-methods {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--c-line);
+  font-size: 12.5px;
+  color: var(--c-muted);
+}
+.ck .pay-methods em {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border: 1px solid var(--c-line);
+  border-radius: 6px;
+  background: #fff;
+  font-style: normal;
+  font-weight: 650;
+  color: var(--c-text);
+}
+.ck .pay-methods em svg {
+  color: var(--c-primary);
+}
+.ck-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 24px 16px 32px;
+  border-top: 1px solid var(--c-line);
+  text-align: center;
+  font-size: 13px;
+  color: var(--c-muted);
+}
+.ck-footer strong {
+  font-family: var(--font-display), sans-serif;
+  font-size: 17px;
+  color: var(--c-primary);
+}
+/* Cabeçalho/marca (equivalente a ".brand"/".eyebrow" da origem, usados no ck-top). */
+.ck .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: -1.6px;
+  color: #063760;
+  font-family: var(--font-display), var(--font-text), sans-serif;
+}
+.ck .brand svg {
+  color: #00aef0;
+  width: 35px;
+  height: 35px;
+  stroke-width: 2.8;
+}
+@media (max-width: 1000px) {
+  .ck-grid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+  .ck-flow {
+    padding: 24px;
+  }
+  .ck .trust-seals ul {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ck .campaign-copy {
+    max-width: 56%;
+    padding: 18px 26px;
+  }
+  .ck .campaign h1 {
+    font-size: 28px;
+  }
+  .ck-pix {
+    grid-template-columns: 1fr;
+  }
+  .ck-qr svg,
+  .ck-qr img {
+    max-width: 200px;
+  }
+}
+@media (max-width: 760px) {
+  .ck .ship-bar {
+    font-size: 11.5px;
+    padding: 4px 10px;
+  }
+  .ck .ship-bar i,
+  .ck .ship-bar-date {
+    display: none;
+  }
+  .ck .ship-bar svg {
+    width: 14px;
+    height: 14px;
+  }
+  /* Celular: topo compacto (logo e cronômetro na mesma linha) para o banner ganhar destaque. */
+  .ck-top {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 16px 0;
+  }
+  .ck-top .brand {
+    font-size: 19px;
+    gap: 5px;
+  }
+  .ck-top .brand svg {
+    width: 20px;
+    height: 20px;
+  }
+  .ck-timer {
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+    white-space: nowrap;
+    min-height: 28px;
+    gap: 5px;
+    font-size: 11.5px;
+    padding: 4px 10px;
+    box-shadow: none;
+  }
+  .ck-timer svg {
+    width: 13px;
+    height: 13px;
+  }
+  .ck-timer-long {
+    display: none;
+  }
+  .ck-main {
+    padding-top: 10px;
+  }
+  /* Banner de ponta a ponta e mais alto; texto menor para a imagem aparecer. */
+  .ck .campaign {
+    height: auto;
+    aspect-ratio: 2.35/1;
+    margin: 0 -16px;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .ck .campaign-photo {
+    left: 0;
+    width: 100%;
+    aspect-ratio: auto;
+  }
+  .ck .campaign-photo img {
+    object-position: 72% 50%;
+  }
+  .ck .campaign-photo:after {
+    background: linear-gradient(90deg, #061a3aa6 0, #061a3a00 42%);
+  }
+  .ck .campaign-copy {
+    align-self: flex-end;
+    max-width: 46%;
+    padding: 0 12px 12px;
+  }
+  .ck .campaign-copy > span {
+    font-size: 8.5px;
+    letter-spacing: 1px;
+  }
+  .ck .campaign h1 {
+    font-size: clamp(14px, 4.3vw, 19px);
+    letter-spacing: -0.3px;
+    margin-top: 2px;
+  }
+  .ck .campaign p {
+    display: none;
+  }
+  .ck-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "flow" "sum" "seals";
+    gap: 14px;
+    margin-top: 14px;
+  }
+  .ck-flow {
+    padding: 20px 14px 22px;
+  }
+  .ck .order-summary {
+    position: static;
+    padding: 20px 16px;
+  }
+  .ck-step {
+    padding-left: 40px;
+  }
+  .ck-dot {
+    width: 28px;
+    height: 28px;
+    top: 8px;
+    font-size: 14px;
+  }
+  .ck-step:not(:last-child):before,
+  .ck-step.is-current:before {
+    left: 13px;
+    top: 40px;
+  }
+  .ck-step.is-current:before,
+  .ck-step.is-done:not(:last-child):before {
+    left: 12px;
+  }
+  .ck-step-head h3 {
+    font-size: 18px;
+  }
+  .ck-badge {
+    font-size: 10px;
+    padding: 3px 7px;
+  }
+  .ck .field input,
+  .ck .field .ck-select {
+    font-size: 16px;
+  }
+  .ck-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .ck-actions .primary-button {
+    width: 100%;
+    min-width: 0;
+  }
+  .ck-done {
+    padding: 14px 4px 14px 16px;
+  }
+  .ck .cep-row {
+    grid-template-columns: 3fr 2fr;
+    gap: 12px;
+  }
+  .ck .num-row {
+    grid-template-columns: 2fr 3fr;
+  }
+  .ck .id-row {
+    grid-template-columns: 1fr;
+  }
+  .ck .field.is-ok {
+    padding-right: 34px;
+  }
+  .ck .field-ok {
+    right: 10px;
+  }
+  .ck .ship-opt {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 4px 12px;
+  }
+  .ck .ship-price {
+    grid-column: 2;
+    align-items: flex-start;
+    text-align: left;
+  }
+  .ck .pay-head {
+    padding: 12px 14px;
+  }
+  .ck .pay-label {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .ck .pay-body {
+    padding: 16px 14px;
+  }
+  .ck .payment-content {
+    margin-left: -40px;
+  }
+  .ck-payseals {
+    gap: 10px 16px;
+  }
+  .ck .bump-product {
+    padding: 12px;
+    gap: 12px;
+  }
+  .ck .bump-product img {
+    width: 72px;
+    height: 72px;
+  }
+  .ck .bump-choice {
+    font-size: 13px;
+  }
+  .ck .bump-price {
+    font-size: 22px;
+  }
+  .ck-pix {
+    padding: 14px;
+    gap: 14px;
+  }
+  .ck-copy-row {
+    flex-direction: column;
+  }
+  .ck-copy {
+    min-height: 48px;
+  }
+  .ck-success h2 {
+    font-size: 24px;
+  }
+  .ck-success-list > div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  .ck .trust-seals {
+    padding: 12px;
+  }
+  .ck .trust-seals li > svg {
+    width: 30px;
+    height: 30px;
+    padding: 6px;
+  }
+}
+@media (max-width: 400px) {
+  .ck-top {
+    gap: 8px;
+  }
+  .ck-top .brand {
+    font-size: 17px;
+  }
+  .ck-top .brand svg {
+    width: 18px;
+    height: 18px;
+  }
+  .ck-timer {
+    font-size: 11px;
+    padding: 4px 9px;
+    gap: 4px;
+  }
+  .ck-timer svg {
+    display: none;
+  }
+  .ck .primary-button {
+    font-size: 18.7px;
+    padding: 8px 14px;
+  }
+}
+/* Ajustes finos do layout Yever/Brutus depois da revisão das capturas (origem, mantidos). */
+.ck-pix {
+  grid-template-columns: 168px minmax(0, 1fr);
+  gap: 20px;
+}
+.ck-pix .ck-copy-row {
+  flex-direction: column;
+}
+.ck-pix .ck-copy {
+  min-height: 48px;
+}
+.ck-pix .ck-pay-btn {
+  padding: 8px 12px;
+  gap: 8px;
+}
+.ck-success .ck-testmode {
+  width: 100%;
+  text-align: left;
+}
+@media (max-width: 1000px) {
+  .ck-pix {
+    grid-template-columns: 1fr;
+  }
+}
+.ck-pix .ck-pay-btn {
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+.ck-pix .ck-pay-btn > svg {
+  display: none;
+}
+@media (max-width: 400px) {
+  .ck-pix .ck-pay-btn {
+    white-space: normal;
+  }
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===== Banner de consentimento (LGPD, plano 9.2) — só no checkout, não existe na origem. ===== */
+.ck-consent {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 40;
+  margin: 0 auto;
+  max-width: 640px;
+  padding: 16px 18px;
+  border: 1px solid var(--c-line);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 10px 30px #1018281f;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--c-muted);
+}
+.ck-consent p {
+  margin: 0 0 12px;
+  color: var(--c-text);
+}
+.ck-consent-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ck-consent-actions button {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.ck-consent-accept {
+  border: 0;
+  background: var(--c-button);
+  color: var(--c-on-button);
+}
+.ck-consent-accept:hover {
+  background: var(--c-button-hover);
+}
+.ck-consent-decline {
+  border: 1px solid var(--c-line);
+  background: #fff;
+  color: var(--c-text);
+}
+.ck-consent-decline:hover {
+  background: #eef3f8;
+}
+@media (max-width: 400px) {
+  .ck-consent-actions {
+    flex-direction: column;
+  }
+}
