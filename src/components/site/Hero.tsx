@@ -323,6 +323,7 @@ function DesktopProductPanel() {
             <span className="desktop-choice-indicator" aria-hidden="true">
               <img src="/icons/check.svg" alt="" loading="lazy" decoding="async" />
             </span>
+            <span className="kit-best-tag">Mais vantajoso</span>
             <span className="desktop-package-art is-pair">
               <img src="/thumbs/produto-azul-110.webp" alt="" loading="lazy" decoding="async" />
               <img src="/thumbs/produto-preto-110.webp" alt="" loading="lazy" decoding="async" />

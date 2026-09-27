@@ -149,6 +149,7 @@ export function Offers() {
               </span>
             </div>
             <div className="packshot pair kit-matching kit-artwork kit-family-art">
+              <span className="kit-best-tag">Mais vantajoso</span>
               <img
                 className="kit-family-photo"
                 src="/thumbs/kit-familia-v45-1020.webp"

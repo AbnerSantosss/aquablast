@@ -29,7 +29,7 @@
 
 /* Disabled purchase links have no checkout URL; explain the missing choice. */
 .kit-selection-hint{grid-column:1/-1;margin:.375rem 0;color:#154562;font-size:.8125rem;line-height:1.45;text-align:center}
-.desktop-buy[aria-disabled=true]:focus-visible,#ofertas .price-card .button[aria-disabled=true]:focus-visible{outline:3px solid #008bef;outline-offset:3px}
+.desktop-buy[data-incomplete]:focus-visible,#ofertas .price-card .button[data-incomplete]:focus-visible{outline:3px solid #008bef;outline-offset:3px}
 
 /* Gift story: copy, shared play, then the final action on every screen. */
 #familia{background:linear-gradient(150deg,#eefbff,#cdeefa)}
