@@ -70,6 +70,8 @@ export interface SettingsMap {
   "gateway.mercadopago.accessToken": string; // secret
   "gateway.mercadopago.publicKey": string;
   "gateway.mercadopago.webhookSecret": string; // secret
+  /** Chave de API da FastPay (Basic Auth `API_KEY:`). A mesma URL serve teste e produção: só muda a chave. */
+  "gateway.fastpay.apiKey": string; // secret
   /** Token que entra na URL do postback. Gerado no painel. */
   "gateway.postbackToken": string; // secret
 
@@ -94,6 +96,7 @@ const SECRET_KEYS: ReadonlySet<SettingKey> = new Set<SettingKey>([
   "gateway.ironpay.apiToken",
   "gateway.mercadopago.accessToken",
   "gateway.mercadopago.webhookSecret",
+  "gateway.fastpay.apiKey",
   "gateway.postbackToken",
   "ads.meta.accessToken",
   "ads.ga4.apiSecret",
@@ -151,6 +154,7 @@ export const DEFAULTS: SettingsMap = {
   "gateway.mercadopago.accessToken": "",
   "gateway.mercadopago.publicKey": "",
   "gateway.mercadopago.webhookSecret": "",
+  "gateway.fastpay.apiKey": "",
   "gateway.postbackToken": "",
   "ads.meta.enabled": false,
   "ads.meta.pixelId": "",
