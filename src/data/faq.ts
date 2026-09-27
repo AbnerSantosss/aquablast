@@ -9,7 +9,7 @@ export const faq: FaqItem[] = [
   {
     question: "O que é o AquaBlast?",
     answer:
-      "É uma pistola de água elétrica com efeito luminoso de luz LED, bateria recarregável por USB e reservatório em tambor. Você escolhe 1 unidade, nas cores azul, vermelho ou preto, ou o kit com 2.",
+      "É um brinquedo lançador de água, elétrico, com efeito luminoso de luz LED, bateria recarregável por USB e reservatório em tambor. Você escolhe 1 unidade, nas cores azul, vermelho ou preto, ou o kit com 2.",
   },
   {
     question: "Qual opção devo escolher?",

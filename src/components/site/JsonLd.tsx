@@ -150,7 +150,8 @@ const aggregateRating = {
 const product = {
   "@type": "Product",
   "@id": ID.product,
-  name: "AquaBlast — Pistola de água elétrica com efeito luminoso",
+  name: "AquaBlast — Brinquedo lançador de água com efeito luminoso",
+  category: "Brinquedos > Brinquedos de água",
   image: [
     absoluteUrl("/aquablast-hero.webp"),
     absoluteUrl("/produto-azul.webp"),
@@ -158,7 +159,7 @@ const product = {
     absoluteUrl("/produto-preto.webp"),
   ],
   description:
-    "Pistola de água elétrica com efeito luminoso, bateria recarregável por USB e reservatório em tambor. Presente de Dia das Crianças disponível em 1 unidade (azul, vermelho ou preto) ou kit com 2 unidades.",
+    "Brinquedo lançador de água, elétrico, com efeito luminoso, bateria recarregável por USB e reservatório em tambor. Presente de Dia das Crianças disponível em 1 unidade (azul, vermelho ou preto) ou kit com 2 unidades.",
   brand: { "@type": "Brand", name: BRAND_NAME },
   color: ["Azul", "Vermelho", "Preto"],
   offers: [

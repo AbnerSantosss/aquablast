@@ -92,7 +92,7 @@ export const KIT_PHOTO: HeroPhoto = {
 export const CAMPAIGN_PHOTO: HeroPhoto = {
   src: "/campanha-abertura.webp",
   title: "1 unidade AquaBlast",
-  alt: "Arte promocional da pistola de água elétrica com luz LED, recarga USB e reservatório em tambor",
+  alt: "Arte promocional do brinquedo lançador de água com luz LED, recarga USB e reservatório em tambor",
   kind: "campaign",
 };
 

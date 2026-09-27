@@ -5,15 +5,17 @@ export function Gifting() {
     <section className="section gifting" id="familia">
       <div className="container gifting-grid">
         <div className="gifting-copy">
-          <span className="eyebrow">O PRESENTE É SÓ O COMEÇO</span>
+          {/* Meta Ads (dono, 27/09): deixar explicito que e um brinquedo lancador de agua. */}
+          <span className="eyebrow">BRINQUEDO LANÇADOR DE ÁGUA PARA A FAMÍLIA</span>
           <h2>
             A surpresa passa.
             <br />
             <em>A lembrança fica.</em>
           </h2>
           <p>
-            Primeiro vem o sorriso ao abrir o presente. Depois, os jatos de água, as corridas pelo quintal
-            e aquele pedido de “só mais uma vez!”.
+            <strong>O AquaBlast é um brinquedo lançador de água</strong>, feito para brincar ao ar livre com a
+            família. Primeiro vem o sorriso ao abrir o presente. Depois, os jatos de água, as
+            corridas pelo quintal e aquele pedido de “só mais uma vez!”.
           </p>
         </div>
         <img
@@ -23,7 +25,7 @@ export function Gifting() {
           sizes="(max-width: 42.5rem) calc(100vw - 2.25rem), (max-width: 56.25rem) calc(100vw - 3rem), 36.1rem"
           width={1536}
           height={1024}
-          alt="Cena ilustrativa de uma família brincando com AquaBlast no jardim, ao lado de uma caixa de presente aberta"
+          alt="Cena ilustrativa de uma família brincando com o brinquedo lançador de água AquaBlast no jardim, ao lado de uma caixa de presente aberta"
           loading="lazy"
           decoding="async"
         />

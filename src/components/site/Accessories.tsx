@@ -21,8 +21,8 @@ const accessories = [
   },
   {
     src: "/thumbs/acessorio-visor-390.webp",
-    alt: "Visor de mira transparente do AquaBlast",
-    title: "Visor de mira",
+    alt: "Visor transparente do brinquedo AquaBlast",
+    title: "Visor transparente",
     text: "Um toque de aventura em cada detalhe.",
   },
 ];

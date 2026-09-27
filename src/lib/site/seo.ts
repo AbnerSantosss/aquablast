@@ -20,19 +20,22 @@ export const HOME_URL = SITE_URL;
 /** URL absoluta de um caminho do site (`/og-aquablast.jpg` -> `https://.../og-aquablast.jpg`). */
 export const absoluteUrl = (path: string): string => `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 
-/** Title da home (57 caracteres): termo principal no início, marca no fim. */
-export const SEO_TITLE = "Pistola de água elétrica recarregável com LED | AquaBlast";
+// Meta Ads (dono, 27/09): "brinquedo lançador de água" no lugar de "pistola", para a revisão de
+// anúncios não ler a página como arma. Ver wiki/pedidos/2026-09-27-meta-ads-brinquedo.md.
+
+/** Title da home (55 caracteres): termo principal no início, marca no fim. */
+export const SEO_TITLE = "Brinquedo lançador de água elétrico com LED | AquaBlast";
 
 /** Title de compartilhamento (WhatsApp, Facebook, X): pode ser mais longo que o da SERP. */
-export const OG_TITLE = "AquaBlast: pistola de água elétrica recarregável com luz LED";
+export const OG_TITLE = "AquaBlast: brinquedo lançador de água recarregável com luz LED";
 
 // Campanha sazonal: trocar ou apagar (string vazia) depois de 12/10.
 export const CAMPAIGN = "Presente de Dia das Crianças";
 
 const OFFER_LINE = `1 unidade por ${PRICES.unit.pix} ou kit com 2 por ${PRICES.kit.pix} no Pix.`;
 
-/** Meta description (~157 caracteres com os preços de hoje). Sem CAMPAIGN, a frase continua correta. */
-export const SEO_DESCRIPTION = `Pistola de água elétrica com luz LED, recarga USB e reservatório em tambor. ${
+/** Meta description (~142 caracteres com os preços de hoje). Sem CAMPAIGN, a frase continua correta. */
+export const SEO_DESCRIPTION = `Brinquedo lançador de água com luz LED e recarga USB. ${
   CAMPAIGN ? `${CAMPAIGN}: ` : ""
 }${OFFER_LINE}`;
 
@@ -57,7 +60,7 @@ export const OG_IMAGE = {
   width: 1200,
   height: 630,
   type: "image/jpeg",
-  alt: "Pistola de água elétrica AquaBlast nas cores azul, vermelho e preto",
+  alt: "Brinquedo lançador de água AquaBlast nas cores azul, vermelho e preto",
 };
 
 /** Logo da Organization no schema (PNG 512x512 rastreável; o Google não usa data: URI nem SVG aqui). */
