@@ -1211,6 +1211,18 @@
   font-size: 0.8rem;
   color: var(--muted);
 }
+/* Entrada rápida de desenvolvimento: separada do login de verdade por uma linha tracejada. */
+.login-dev {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px dashed var(--muted);
+}
+.login-card .login-dev-hint {
+  margin-top: 0.5rem;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
 /* "Lembrar de mim" + ajuda à esquerda, "Esqueci minha senha" à direita; quebra em duas linhas se faltar espaço. */
 .login-options {
   display: flex;

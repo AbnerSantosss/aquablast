@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/admin/LoginForm";
+import { devQuickLogin } from "@/lib/admin/actions/dev-login";
 import { getActiveAdminSession } from "@/lib/auth/session";
 import { firstParam } from "@/lib/admin/format";
 
@@ -36,6 +37,16 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           </p>
         ) : null}
         <LoginForm next={next} />
+        {/* Só em `next dev`. A action confere de novo no servidor (NODE_ENV + localhost). */}
+        {process.env.NODE_ENV === "development" ? (
+          <form action={devQuickLogin} className="login-dev">
+            <input type="hidden" name="next" value={next} />
+            <button type="submit" className="btn btn-ghost full">
+              Entrada rápida (desenvolvimento)
+            </button>
+            <p className="login-dev-hint">Só aparece rodando local. Não existe no site publicado.</p>
+          </form>
+        ) : null}
         <p className="login-foot">Após 5 tentativas erradas o acesso é bloqueado por 15 minutos.</p>
       </div>
     </div>
