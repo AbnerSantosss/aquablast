@@ -247,7 +247,7 @@
   #ofertas.offers .offer-shipping-seal>span{font-size:.8125rem;line-height:1.3;text-align:left}
   #ofertas.offers .offer-price-line{display:flex;flex-direction:column;align-items:center;gap:.125rem;padding:0;text-align:center}
   #ofertas.offers .offer-price-line>.pix-price-row{align-items:baseline;justify-content:center;gap:.25rem .5rem}
-  #ofertas.offers .pix-amount{font-size:2.375rem;line-height:1.1}
+  #ofertas.offers .installment-amount{font-size:2.375rem;line-height:1.1}
   #ofertas.offers .offer-price-line .pix-label{font-size:.875rem}
   #ofertas.offers .offer-price-line .pix-label .pix-icon{width:.875rem;height:.875rem}
   #ofertas.offers .offer-price-line .card-installments{margin:0;font-size:.875rem;line-height:1.35}
@@ -346,7 +346,7 @@
   #ofertas.offers .offer-shipping-seal>img{width:5.25rem;max-width:none}
   #ofertas.offers .offer-card-body>.offer-price-line{grid-row:6;grid-column:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;margin:0 var(--offer-pad) 0 .5rem;padding:0}
   #ofertas.offers .offer-price-line>.pix-price-row{align-items:baseline;gap:.25rem .5rem}
-  #ofertas.offers .pix-amount{font-size:2.5rem;line-height:1.05}
+  #ofertas.offers .installment-amount{font-size:2.5rem;line-height:1.05}
   #ofertas.offers .offer-price-line .pix-label{font-size:.875rem}
   #ofertas.offers .offer-price-line .pix-label .pix-icon{width:.875rem;height:.875rem}
   #ofertas.offers .offer-price-line .card-installments{margin:.125rem 0 0;font-size:.875rem;line-height:1.3}
@@ -375,7 +375,7 @@
   #ofertas.offers .kit-color-row .color-product-choice{min-height:2.875rem}
   #ofertas.offers .color-product-choice>img{height:1.625rem}
   #ofertas.offers .color-choice{gap:.25rem;padding-block:.375rem}
-  #ofertas.offers .pix-amount{font-size:2.25rem}
+  #ofertas.offers .installment-amount{font-size:2.25rem}
   #ofertas.offers .offer-card-body>.button{min-height:2.875rem}
 }
 /* R1 no #inicio (telas desktop de ate 48rem = 768px de altura): foto grande + painel com o fluxo do kit
@@ -538,7 +538,7 @@
 
   #ofertas.offers .offer-shipping-seal{padding:.25rem .5rem}
   #ofertas.offers .offer-shipping-seal>img{width:4.25rem}
-  #ofertas.offers .pix-amount{font-size:2.125rem}
+  #ofertas.offers .installment-amount{font-size:2.125rem}
   #ofertas.offers .price-card .button{min-height:3.125rem}
   #ofertas.offers .kit-selection-hint{margin:0}
 }
@@ -611,19 +611,19 @@
 /* Preco com menos destaque, selo de envio maior (desktop: selo a esquerda, preco a direita). */
 @media(min-width:56.3125rem){
   #ofertas.offers .offer-shipping-seal>img{width:7.5rem}
-  #ofertas.offers .pix-amount{font-size:1.875rem}
+  #ofertas.offers .installment-amount{font-size:1.875rem}
   #inicio .desktop-product-panel .desktop-price-band .desktop-price{font-size:1.75rem}
   #inicio .desktop-product-panel .desktop-delivery-content>img{width:7.5rem}
 }
 @media(min-width:56.3125rem) and (max-height:48rem){
   #ofertas.offers .offer-shipping-seal>img{width:6.5rem}
-  #ofertas.offers .pix-amount{font-size:1.75rem}
+  #ofertas.offers .installment-amount{font-size:1.75rem}
   #inicio .desktop-product-panel .desktop-price-band .desktop-price{font-size:1.625rem}
   #inicio .desktop-product-panel .desktop-delivery-content>img{width:5.75rem}
 }
 @media(max-width:56.25rem){
   #ofertas.offers .offer-shipping-seal>img{width:6.5rem;max-width:45%}
-  #ofertas.offers .pix-amount{font-size:1.75rem}
+  #ofertas.offers .installment-amount{font-size:1.75rem}
 }
 /* Ate 46rem (736px) de altura o painel do kit nao tem folga: o selo do painel volta ao tamanho anterior. */
 @media(min-width:56.3125rem) and (max-height:46rem){
@@ -783,3 +783,33 @@
   border-bottom:0;
   border-top-color:#ffb52e;
 }
+
+/* ==========================================================================================
+   Preco (dono, 27/09 - wiki pedidos/2026-09-27-preco-parcela-destaque): a parcela do cartao fica em
+   destaque ("12x de" + valor grande, no lugar do antigo .pix-amount grande: os tamanhos por breakpoint
+   acima foram renomeados para .installment-amount) e o Pix a vista vem embaixo com o selo de desconto.
+   Nenhum HEX novo: #0070dd (offer-cards), #e9f8ee/#087239 (tracking) e as variaveis ja existiam.
+   ========================================================================================== */
+#ofertas .offer-price-line>.installment-row{display:flex;align-items:baseline;justify-content:center;gap:.375rem;color:#0070dd;white-space:nowrap}
+#ofertas .offer-price-line>.installment-row>.installment-count{font-size:1.125rem;font-weight:800;letter-spacing:0}
+#ofertas .offer-price-line>.pix-price-row{flex-wrap:wrap;align-items:center;justify-content:center;gap:.25rem .5rem;margin-top:.375rem}
+#ofertas .offer-price-line .pix-label{white-space:normal}
+#ofertas .offer-price-line .pix-label .pix-amount{font-size:1.125rem;font-weight:900;letter-spacing:0}
+.pix-discount{display:inline-block;padding:.125rem .5rem;border-radius:1rem;background:#e9f8ee;border:.0625rem solid #9bd5b0;color:#087239;font-size:.75rem;font-weight:800;line-height:1.3;white-space:nowrap}
+@media(max-width:42.5rem){
+  #ofertas .offer-price-line>.installment-row>.installment-count{font-size:1rem}
+  #ofertas .offer-price-line .pix-label .pix-amount{font-size:1rem}
+  #ofertas .offer-price-line .pix-discount{font-size:.6875rem}
+}
+
+/* Painel do Hero (desktop) e barra fixa do mobile: mesma ordem, parcela grande em azul e Pix embaixo. */
+.desktop-price-band .installment-row{display:flex;align-items:baseline;gap:.375rem;color:var(--blue);white-space:nowrap}
+.desktop-price-band .installment-count{font-size:1.125rem;font-weight:800}
+#inicio .desktop-product-panel .desktop-price-band .desktop-price{color:var(--blue)}
+.desktop-price-band .pix-price-row{gap:.25rem .5rem;margin-top:.25rem}
+.desktop-price-band .pix-price-row .pix-icon{width:1rem;height:1rem}
+.desktop-price-band .pix-label strong{font-size:1rem;font-weight:900}
+.mobile-buy .mobile-price{color:var(--blue)}
+/* min-width:0 deixa o "ou R$ X no Pix" descer de linha em 360px em vez de empurrar o botao para fora. */
+.mobile-buy>div{flex:1 1 0;min-width:0}
+.mobile-buy .mobile-pix-line{flex-wrap:wrap;gap:0 .25rem}

@@ -29,7 +29,7 @@ export const OG_TITLE = "AquaBlast: pistola de água elétrica recarregável com
 // Campanha sazonal: trocar ou apagar (string vazia) depois de 12/10.
 export const CAMPAIGN = "Presente de Dia das Crianças";
 
-const OFFER_LINE = `1 unidade por ${PRICES.unit.pix} ou kit com 2 por ${PRICES.kit.pix}.`;
+const OFFER_LINE = `1 unidade por ${PRICES.unit.pix} ou kit com 2 por ${PRICES.kit.pix} no Pix.`;
 
 /** Meta description (~157 caracteres com os preços de hoje). Sem CAMPAIGN, a frase continua correta. */
 export const SEO_DESCRIPTION = `Pistola de água elétrica com luz LED, recarga USB e reservatório em tambor. ${
@@ -38,7 +38,7 @@ export const SEO_DESCRIPTION = `Pistola de água elétrica com luz LED, recarga 
 
 // Data da última mudança de conteúdo da home (AAAA-MM-DD). Vai para o <lastmod>
 // do sitemap e o dateModified do schema. Atualize quando mudar texto, preço ou oferta.
-export const CONTENT_UPDATED_AT = "2026-09-26";
+export const CONTENT_UPDATED_AT = "2026-09-27";
 
 // aggregateRating no Product: o dono confirmou em 2026-09-26 que as avaliações de
 // src/data/reviews.ts são de clientes reais. Nota e total saem de reviewSummary(),

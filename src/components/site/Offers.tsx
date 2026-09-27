@@ -54,16 +54,19 @@ function OfferFooter({ pack, buy }: { pack: Pack; buy: string }) {
         <img src="/thumbs/envio-375.webp" alt="Dia das Crianças: envio rápido e postagem ágil" width={1672} height={941} loading="lazy" decoding="async" />
         <span>Consulte o prazo para seu CEP</span>
       </div>
+      {/* Preco (pedido do dono, 27/09): parcela do cartao em destaque, Pix a vista com desconto embaixo. */}
       <div className="offer-price-line">
-        <div className="price pix-price-row">
-          <span className="pix-value">
-            <strong className="pix-amount">{price.pix}</strong>
-          </span>
-          <span className="pix-label">
-            no Pix <img className="pix-icon" src="/icons/pix.svg" alt="" loading="lazy" decoding="async" />
-          </span>
+        <div className="price installment-row">
+          <span className="installment-count">12x de</span>
+          <strong className="installment-amount">{price.installment}</strong>
         </div>
-        <p className="card-installments">{price.installments}</p>
+        <div className="pix-price-row">
+          <span className="pix-label">
+            <img className="pix-icon" src="/icons/pix.svg" alt="" loading="lazy" decoding="async" />
+            ou <strong className="pix-amount">{price.pix}</strong> à vista no Pix
+          </span>
+          <span className="pix-discount">{price.pixDiscount} de desconto</span>
+        </div>
       </div>
       <div className="offer-reassurance">
         <span>

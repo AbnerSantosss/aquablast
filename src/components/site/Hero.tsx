@@ -3,7 +3,7 @@
 
 import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { reviews } from "@/data/reviews";
-import { CAMPAIGN_PHOTO, COLOR_LABELS, HERO_PHOTOS, KIT_PHOTO, MOBILE_QUERY, PRICES } from "@/lib/site/constants";
+import { CAMPAIGN_PHOTO, COLOR_LABELS, HERO_PHOTOS, KIT_PHOTO, KIT_SAVING, MOBILE_QUERY, PRICES } from "@/lib/site/constants";
 import { PurchaseLink } from "./PurchaseLink";
 import { reviewSummary } from "@/lib/site/reviews-summary";
 import { HeroFeaturedVideo } from "./HeroFeaturedVideo";
@@ -211,21 +211,23 @@ function DesktopProductPanel() {
       <div className="desktop-price-band">
         <div>
           <span className="desktop-pack-label">{pack === "kit" ? "Kit com 2 AquaBlast" : "1 unidade AquaBlast"}</span>
+          {/* Preco (pedido do dono, 27/09): parcela em destaque, Pix a vista com desconto embaixo. */}
+          <div className="installment-row" aria-live="polite">
+            <span className="installment-count">12x de</span>
+            <strong className="desktop-price">{price.installment}</strong>
+          </div>
           <div className="pix-price-row">
             <img className="pix-icon" src="/icons/pix.svg" alt="" loading="lazy" decoding="async" />
-            <strong className="desktop-price" aria-live="polite">
-              {price.pix}
-            </strong>
-            <span className="pix-label">no Pix</span>
+            <span className="pix-label">
+              ou <strong>{price.pix}</strong> à vista no Pix
+            </span>
+            <span className="pix-discount">{price.pixDiscount} de desconto</span>
           </div>
-          <p className="card-installments" data-selected-installments="">
-            {price.installments}
-          </p>
         </div>
         <span className="desktop-kit-saving" hidden={pack !== "kit"}>
           ECONOMIZE
           <br />
-          <b>R$ 79,90</b>
+          <b>{KIT_SAVING}</b>
         </span>
       </div>
       <div className="desktop-shipping">

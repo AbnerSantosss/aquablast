@@ -26,10 +26,10 @@ export function MobileBuy() {
     <aside className={offersVisible ? "mobile-buy offers-visible" : "mobile-buy"} aria-label="Presente selecionado">
       <div>
         <small className="mobile-label">{label}</small>
+        {/* Preco (pedido do dono, 27/09): parcela em destaque, Pix a vista ao lado. */}
         <div className="mobile-pix-line">
-          <img className="pix-icon" src="/icons/pix.svg" alt="" />
-          <strong className="mobile-price">{PRICES[pack].pix}</strong>
-          <small>no Pix</small>
+          <strong className="mobile-price">12x de {PRICES[pack].installment}</strong>
+          <small>ou {PRICES[pack].pix} no Pix</small>
         </div>
       </div>
       <a className="button button-green" href="#ofertas">
