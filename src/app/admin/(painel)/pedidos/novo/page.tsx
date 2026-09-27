@@ -51,7 +51,7 @@ export default async function NewOrderPage({ searchParams }: { searchParams: Pro
   return (
     <>
       <div className="crumbs">
-        <Link href="/admin">← Pedidos</Link>
+        <Link href="/admin/pedidos">← Pedidos</Link>
       </div>
       <div className="page-head">
         <div>

@@ -25,6 +25,7 @@ async function loadOrder(formData: FormData) {
 
 const refresh = (id: string) => {
   revalidatePath(`/admin/pedidos/${id}`);
+  revalidatePath("/admin/pedidos");
   revalidatePath("/admin");
 };
 
@@ -236,6 +237,7 @@ export async function createManualOrder(_prev: ActionResult, formData: FormData)
     await sendOrderEmail(created, "order_confirmed", { accessCode: code, triggeredBy: actor });
   }
 
+  revalidatePath("/admin/pedidos");
   revalidatePath("/admin");
   redirect(`/admin/pedidos/${created.id}?ok=${encodeURIComponent(`Pedido ${orderNumber} criado.`)}`);
 }

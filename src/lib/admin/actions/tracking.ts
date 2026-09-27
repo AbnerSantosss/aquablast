@@ -86,6 +86,7 @@ export async function saveTracking(_prev: ActionResult, formData: FormData): Pro
   }
 
   revalidatePath(`/admin/pedidos/${order.id}`);
+  revalidatePath("/admin/pedidos");
   revalidatePath("/admin");
   return ok(`Rastreio salvo. ${notes.join(" ")}`);
 }
