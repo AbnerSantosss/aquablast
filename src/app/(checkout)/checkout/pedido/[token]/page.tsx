@@ -2,13 +2,13 @@ import { notFound, redirect } from "next/navigation";
 import { Checkout } from "@/components/checkout/Checkout";
 import { PixWatch } from "@/components/checkout/PixWatch";
 import { SuccessView } from "@/components/checkout/SuccessView";
-import type { CheckoutInitial, StepName } from "@/components/checkout/types";
+import type { CheckoutInitial, PaidInfo, StepName } from "@/components/checkout/types";
 import { ensureBootstrap } from "@/lib/bootstrap";
 import { getCartByToken } from "@/lib/checkout/own/cart";
 import { selectionFromCart } from "@/lib/checkout/own/catalog";
 import { loadCheckoutProps } from "@/lib/checkout/own/checkout-props";
-import { maskCEP, maskPhone } from "@/lib/checkout/own/masks";
-import { getOrderByPublicToken } from "@/lib/checkout/own/order";
+import { maskCEP, maskPhone, money } from "@/lib/checkout/own/masks";
+import { getCartByOrderId, getLastPaidAttempt, getOrderByPublicToken } from "@/lib/checkout/own/order";
 import { getOrderById, maskedDocument } from "@/lib/orders/service";
 import { getSupportWhatsapp } from "@/lib/site/support-contact";
 import { zedyUrlFromSelection } from "@/lib/site/constants";
@@ -109,21 +109,40 @@ export default async function PedidoPage({ params }: { params: Promise<{ token: 
   const amountCents = Math.round(Number(order.amountTotal ?? "0") * 100);
 
   if (order.paymentStatus === "paid") {
+    // Pedido pago: o MESMO layout do checkout (origem: SuccessView dentro do .ck-flow, etapas concluídas sem
+    // EDITAR). Seleção, bump, número e destinatário só existem no carrinho; bandeira/4 últimos, na tentativa paga.
+    const [cart, attempt] = await Promise.all([getCartByOrderId(order.id), getLastPaidAttempt(order.id)]);
+    const paid: PaidInfo = {
+      orderNumber: order.orderNumber,
+      method: (attempt?.method ?? order.paymentMethod) === "card" ? "card" : "pix",
+      amountCents: attempt?.amountCents ?? amountCents,
+      installments: attempt?.installments ?? order.installments ?? 1,
+      cardBrand: attempt?.cardBrand ?? null,
+      cardLast4: attempt?.cardLast4 ?? null,
+      testMode: attempt?.provider === "simulado",
+    };
+    if (cart) {
+      const selection = selectionFromCart(cart);
+      const { props } = await loadCheckoutProps(selection.pack, cart.bumpAccepted);
+      const initial: CheckoutInitial = { ...initialFromCart(cart, true), step: "pagamento", bump: cart.bumpAccepted };
+      return <Checkout {...props} selection={selection} initial={initial} paid={paid} />;
+    }
+    // Pedido sem carrinho (não deveria acontecer no checkout próprio): confirmação simples com os dados do pedido.
     return (
-      <div className="ck-root">
+      <div className="ck ck-root">
         <main className="container ck-main">
-          <div style={{ maxWidth: 560, margin: "32px auto" }}>
+          <section className="ck-card ck-flow" aria-label="Seu pedido">
             <SuccessView
               orderNumber={order.orderNumber}
-              itemTitle={item?.name ?? "Pedido AquaBlast"}
-              itemVariant={item?.variant ?? ""}
-              addressLine={addressLine(order)}
+              payment={paymentLabel(order)}
+              items={[item?.variant ? `${item.name} (${item.variant})` : (item?.name ?? "Pedido AquaBlast")]}
+              total={money(paid.amountCents)}
+              address={addressLine(order)}
               email={order.customerEmail ?? ""}
-              paymentLabel={paymentLabel(order)}
-              amountCents={amountCents}
-              testMode={false}
+              testMode={paid.testMode}
+              restartHref="/"
             />
-          </div>
+          </section>
         </main>
       </div>
     );

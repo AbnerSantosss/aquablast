@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { checkoutCarts, orders, type CheckoutCart, type Order } from "@/db/schema";
+import { checkoutCarts, orders, paymentAttempts, type CheckoutCart, type Order } from "@/db/schema";
 import { randomToken } from "@/lib/crypto";
 import { addOrderEvent, generateOrderNumber, getOrderById, updateOrderFields } from "@/lib/orders/service";
 import { orderItemOf, selectionFromCart, type Selection } from "./catalog";
@@ -90,4 +90,31 @@ export async function createOrderFromCart(cart: CheckoutCart, q: Quote): Promise
 export async function getOrderByPublicToken(token: string): Promise<Order | null> {
   if (!token) return null;
   return (await db.query.orders.findFirst({ where: eq(orders.publicToken, token) })) ?? null;
+}
+
+/**
+ * Carrinho que originou o pedido (checkout_carts.order_id). Usado pela página do pedido pago para mostrar a
+ * confirmação com o mesmo layout do checkout (seleção, bump, destinatário e número do endereço só existem no carrinho).
+ */
+export async function getCartByOrderId(orderId: string): Promise<CheckoutCart | null> {
+  const [cart] = await db.select().from(checkoutCarts).where(eq(checkoutCarts.orderId, orderId)).orderBy(desc(checkoutCarts.updatedAt)).limit(1);
+  return cart ?? null;
+}
+
+/** Última tentativa paga do pedido: forma, parcelas, bandeira e 4 últimos dígitos (nunca o número inteiro). */
+export async function getLastPaidAttempt(orderId: string) {
+  const [attempt] = await db
+    .select({
+      provider: paymentAttempts.provider,
+      method: paymentAttempts.method,
+      amountCents: paymentAttempts.amountCents,
+      installments: paymentAttempts.installments,
+      cardBrand: paymentAttempts.cardBrand,
+      cardLast4: paymentAttempts.cardLast4,
+    })
+    .from(paymentAttempts)
+    .where(and(eq(paymentAttempts.orderId, orderId), eq(paymentAttempts.status, "paid")))
+    .orderBy(desc(paymentAttempts.createdAt))
+    .limit(1);
+  return attempt ?? null;
 }

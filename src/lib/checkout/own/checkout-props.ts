@@ -15,6 +15,8 @@ export interface CheckoutServerProps {
   theme: Theme;
   methods: ("pix" | "card")[];
   maxInstallments: number;
+  /** Validade do código Pix em segundos (`checkout.pixTtlSeconds`): o texto "vale por 10 minutos" sai daqui (fase 14.3). */
+  pixTtlSeconds: number;
   bumpEnabled: boolean;
   pixGateway: string | null;
   cardGateway: string | null;
@@ -23,10 +25,11 @@ export interface CheckoutServerProps {
 }
 
 export async function loadCheckoutProps(pack: CheckoutPack, bump: boolean): Promise<{ mode: "proprio" | "zedy"; props: CheckoutServerProps }> {
-  const s = await getSettings(["checkout.mode", "checkout.maxInstallments", "checkout.bumpEnabled"] as const);
+  const s = await getSettings(["checkout.mode", "checkout.maxInstallments", "checkout.pixTtlSeconds", "checkout.bumpEnabled"] as const);
   const mode = s["checkout.mode"] === "zedy" ? "zedy" : "proprio";
   const maxInstallments = Math.max(1, Math.min(12, Math.trunc(s["checkout.maxInstallments"])));
   const bumpEnabled = s["checkout.bumpEnabled"];
+  const pixTtlSeconds = s["checkout.pixTtlSeconds"];
 
   const [pixGw, cardGw] = await Promise.all([gatewayFor("pix"), gatewayFor("card")]);
   const [quotesInitial, theme] = await Promise.all([quoteBoth(pack, bumpEnabled && bump, maxInstallments), getTheme()]);
@@ -38,6 +41,6 @@ export async function loadCheckoutProps(pack: CheckoutPack, bump: boolean): Prom
 
   return {
     mode,
-    props: { theme, methods, maxInstallments, bumpEnabled, pixGateway: pixGw?.name ?? null, cardGateway: cardGw?.name ?? null, cardPublicConfig, quotesInitial },
+    props: { theme, methods, maxInstallments, pixTtlSeconds, bumpEnabled, pixGateway: pixGw?.name ?? null, cardGateway: cardGw?.name ?? null, cardPublicConfig, quotesInitial },
   };
 }
