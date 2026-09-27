@@ -62,7 +62,8 @@ export async function POST(request: Request): Promise<Response> {
       });
     }
 
-    return json({ ok: true, token: cart.token, created, quote });
+    // `quote` é o nome do plano (7.1); `quotes` é o nome do contrato entre agentes na wiki. Mesmo objeto.
+    return json({ ok: true, token: cart.token, created, quote, quotes: quote });
   } catch (err) {
     log.error("checkout cart: falha ao salvar", { error: errorMessage(err) });
     return fail(500, "Não conseguimos salvar seus dados agora. Tente de novo em instantes.");
