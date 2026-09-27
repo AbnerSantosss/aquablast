@@ -15,6 +15,13 @@
       "when": 1790349421780,
       "tag": "0001_admin_password_resets",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790489724431,
+      "tag": "0002_checkout_proprio",
+      "breakpoints": true
     }
   ]
 }

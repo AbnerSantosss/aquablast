@@ -46,6 +46,41 @@ export interface SettingsMap {
   "store.supportEmail": string;
   "store.trackingPageUrl": string;
   "accessCode.validityDays": number;
+
+  /** proprio = checkout interno; zedy = manda para a Zedy (plano B). */
+  "checkout.mode": "proprio" | "zedy";
+  "checkout.prices": { unit: { pix: number; card: number }; kit: { pix: number; card: number } }; // centavos
+  "checkout.maxInstallments": number;
+  "checkout.bumpEnabled": boolean;
+  "checkout.pixTtlSeconds": number;
+  "checkout.theme": Record<string, unknown>;
+  "checkout.recovery.enabled": boolean;
+  /** Minutos sem atividade para o carrinho virar "abandonado" e receber o 1º e-mail. */
+  "checkout.recovery.firstAfterMinutes": number;
+  "checkout.recovery.secondAfterMinutes": number;
+  "checkout.recovery.thirdAfterMinutes": number;
+
+  "gateway.pix": "ironpay" | "mercadopago" | "fastpay" | "simulado";
+  "gateway.card": "ironpay" | "mercadopago" | "fastpay" | "simulado" | "desligado";
+  "gateway.ironpay.apiToken": string; // secret
+  "gateway.ironpay.offerHashUnit": string;
+  "gateway.ironpay.offerHashKit": string;
+  "gateway.ironpay.productHashUnit": string;
+  "gateway.ironpay.productHashKit": string;
+  "gateway.mercadopago.accessToken": string; // secret
+  "gateway.mercadopago.publicKey": string;
+  "gateway.mercadopago.webhookSecret": string; // secret
+  /** Token que entra na URL do postback. Gerado no painel. */
+  "gateway.postbackToken": string; // secret
+
+  "ads.meta.enabled": boolean;
+  "ads.meta.pixelId": string;
+  "ads.meta.accessToken": string; // secret
+  "ads.meta.testEventCode": string;
+  "ads.ga4.enabled": boolean;
+  "ads.ga4.measurementId": string;
+  "ads.ga4.apiSecret": string; // secret
+  "ads.consentRequired": boolean;
 }
 
 export type SettingKey = keyof SettingsMap;
@@ -56,6 +91,12 @@ const SECRET_KEYS: ReadonlySet<SettingKey> = new Set<SettingKey>([
   "email.brevo.apiKey",
   "tracking.17track.apiKey",
   "checkout.webhookSecret",
+  "gateway.ironpay.apiToken",
+  "gateway.mercadopago.accessToken",
+  "gateway.mercadopago.webhookSecret",
+  "gateway.postbackToken",
+  "ads.meta.accessToken",
+  "ads.ga4.apiSecret",
 ]);
 
 export function isSecretKey(key: SettingKey): boolean {
@@ -89,6 +130,36 @@ export const DEFAULTS: SettingsMap = {
   "store.supportEmail": "contato@aquablast.com.br",
   "store.trackingPageUrl": "/rastrear",
   "accessCode.validityDays": 180,
+
+  "checkout.mode": "zedy",
+  "checkout.prices": { unit: { pix: 15990, card: 16990 }, kit: { pix: 24990, card: 25990 } },
+  "checkout.maxInstallments": 12,
+  "checkout.bumpEnabled": true,
+  "checkout.pixTtlSeconds": 600,
+  "checkout.theme": {},
+  "checkout.recovery.enabled": true,
+  "checkout.recovery.firstAfterMinutes": 30,
+  "checkout.recovery.secondAfterMinutes": 1440,
+  "checkout.recovery.thirdAfterMinutes": 4320,
+  "gateway.pix": "simulado",
+  "gateway.card": "simulado",
+  "gateway.ironpay.apiToken": "",
+  "gateway.ironpay.offerHashUnit": "",
+  "gateway.ironpay.offerHashKit": "",
+  "gateway.ironpay.productHashUnit": "",
+  "gateway.ironpay.productHashKit": "",
+  "gateway.mercadopago.accessToken": "",
+  "gateway.mercadopago.publicKey": "",
+  "gateway.mercadopago.webhookSecret": "",
+  "gateway.postbackToken": "",
+  "ads.meta.enabled": false,
+  "ads.meta.pixelId": "",
+  "ads.meta.accessToken": "",
+  "ads.meta.testEventCode": "",
+  "ads.ga4.enabled": false,
+  "ads.ga4.measurementId": "",
+  "ads.ga4.apiSecret": "",
+  "ads.consentRequired": true,
 };
 
 export async function getSetting<K extends SettingKey>(key: K): Promise<SettingsMap[K]> {

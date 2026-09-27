@@ -110,6 +110,18 @@ export const orders = pgTable(
     deliveredAt: timestamp("delivered_at", { withTimezone: true }),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
 
+    cartId: uuid("cart_id"),
+    installments: integer("installments"),
+    /** Token público da página /checkout/pedido/<token>. */
+    publicToken: text("public_token"),
+    fbp: text("fbp"),
+    fbc: text("fbc"),
+    gaClientId: text("ga_client_id"),
+    gaSessionId: text("ga_session_id"),
+    clientIp: text("client_ip"),
+    userAgent: text("user_agent"),
+    trackingConsent: boolean("tracking_consent").default(false).notNull(),
+
     adminNotes: text("admin_notes"),
     lastReminderAt: timestamp("last_reminder_at", { withTimezone: true }),
     reminderCount: integer("reminder_count").default(0).notNull(),
@@ -212,6 +224,7 @@ export const emailLog = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     orderId: uuid("order_id").references(() => orders.id, { onDelete: "set null" }),
+    cartId: uuid("cart_id"),
     to: text("to").notNull(),
     templateKey: text("template_key"),
     subject: text("subject").notNull(),
@@ -298,3 +311,102 @@ export type WebhookDelivery = typeof webhookDeliveries.$inferSelect;
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type AdminUser = typeof adminUsers.$inferSelect;
 export type AdminPasswordReset = typeof adminPasswordResets.$inferSelect;
+
+/** Etapa em que o carrinho está (ou onde parou). */
+export const cartStepEnum = pgEnum("cart_step", ["dados", "entrega", "pagamento", "concluido"]);
+/** open = em andamento; abandoned = parado além do prazo; recovered = virou pedido pago depois de e-mail; converted = pagou direto. */
+export const cartStatusEnum = pgEnum("cart_status", ["open", "abandoned", "recovered", "converted"]);
+
+export const checkoutCarts = pgTable(
+  "checkout_carts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Token público do link de retomada. Nunca usar o id na URL. */
+    token: text("token").notNull().unique(),
+    status: cartStatusEnum("status").default("open").notNull(),
+    step: cartStepEnum("step").default("dados").notNull(),
+    pack: text("pack").notNull(), // unit | kit
+    colors: jsonb("colors").$type<string[]>().notNull(), // ["azul"] ou ["azul","preto"]
+    bumpAccepted: boolean("bump_accepted").default(false).notNull(),
+    amountCents: integer("amount_cents").notNull(),
+    customerName: text("customer_name"),
+    customerEmail: text("customer_email"),
+    customerPhone: text("customer_phone"),
+    customerDocumentEnc: text("customer_document_enc"),
+    addressLine1: text("address_line1"),
+    addressNumber: text("address_number"),
+    addressLine2: text("address_line2"),
+    addressNeighborhood: text("address_neighborhood"),
+    addressCity: text("address_city"),
+    addressState: text("address_state"),
+    addressPostalCode: text("address_postal_code"),
+    recipient: text("recipient"),
+    utm: jsonb("utm").$type<Record<string, string>>(),
+    /** Identificadores de anúncio. Só gravados com consentimento. */
+    fbp: text("fbp"),
+    fbc: text("fbc"),
+    gaClientId: text("ga_client_id"),
+    gaSessionId: text("ga_session_id"),
+    clientIp: text("client_ip"),
+    userAgent: text("user_agent"),
+    consent: boolean("consent").default(false).notNull(),
+    orderId: uuid("order_id").references(() => orders.id, { onDelete: "set null" }),
+    recoveryEmailCount: integer("recovery_email_count").default(0).notNull(),
+    lastRecoveryEmailAt: timestamp("last_recovery_email_at", { withTimezone: true }),
+    /** Comprador pediu para não receber mais e-mail de recuperação. */
+    unsubscribedAt: timestamp("unsubscribed_at", { withTimezone: true }),
+    lastActivityAt: timestamp("last_activity_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("checkout_carts_status_idx").on(t.status, t.lastActivityAt),
+    index("checkout_carts_email_idx").on(t.customerEmail),
+  ],
+);
+
+/** Uma linha por tentativa de cobrança. NUNCA guarda número de cartão, validade ou CVV. */
+export const paymentAttempts = pgTable(
+  "payment_attempts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: uuid("order_id").references(() => orders.id, { onDelete: "cascade" }).notNull(),
+    cartId: uuid("cart_id").references(() => checkoutCarts.id, { onDelete: "set null" }),
+    provider: text("provider").notNull(), // ironpay | mercadopago | fastpay | simulado
+    method: text("method").notNull(), // pix | card
+    providerTransactionId: text("provider_transaction_id"),
+    status: text("status").notNull(), // pending | paid | refused | canceled | refunded | error
+    statusReason: text("status_reason"),
+    amountCents: integer("amount_cents").notNull(),
+    installments: integer("installments").default(1).notNull(),
+    cardBrand: text("card_brand"),
+    cardLast4: text("card_last4"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("payment_attempts_order_idx").on(t.orderId, t.createdAt),
+    uniqueIndex("payment_attempts_provider_tx_idx").on(t.provider, t.providerTransactionId),
+  ],
+);
+
+/** Log de eventos enviados para Meta CAPI e GA4. Serve de prova e de deduplicação. */
+export const conversionEvents = pgTable(
+  "conversion_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: uuid("order_id").references(() => orders.id, { onDelete: "set null" }),
+    cartId: uuid("cart_id").references(() => checkoutCarts.id, { onDelete: "set null" }),
+    destination: text("destination").notNull(), // meta | ga4
+    eventName: text("event_name").notNull(),
+    eventId: text("event_id").notNull(),
+    status: text("status").notNull(), // sent | error | skipped
+    detail: text("detail"),
+    sentAt: timestamp("sent_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("conversion_events_dedupe_idx").on(t.destination, t.eventName, t.eventId)],
+);
+
+export type CheckoutCart = typeof checkoutCarts.$inferSelect;
+export type PaymentAttempt = typeof paymentAttempts.$inferSelect;
+export type ConversionEvent = typeof conversionEvents.$inferSelect;
