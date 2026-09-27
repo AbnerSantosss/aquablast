@@ -111,7 +111,7 @@ export function CardPay({
   };
 
   return (
-    <div className="payment-content ck-cardform">
+    <div className="payment-content ck-cardform" data-gtm-ignore="true">
       <div className="form-fields">
         <label className="field has-icon">
           <span>Número do cartão</span>

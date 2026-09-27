@@ -39,7 +39,7 @@ export async function POST(request: Request): Promise<Response> {
   const input = parsed.data;
 
   if (input.customer) {
-    if (!validCPF(input.customer.cpf)) return fail(400, "CPF inválido.", { field: "customer.cpf" });
+    if (input.customer.cpf !== undefined && !validCPF(input.customer.cpf)) return fail(400, "CPF inválido.", { field: "customer.cpf" });
     if (!validMobile(input.customer.phone)) return fail(400, "Celular inválido. Use DDD + número com 9 dígitos.", { field: "customer.phone" });
   }
 

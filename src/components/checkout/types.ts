@@ -24,6 +24,20 @@ export interface AddressData {
   recipient: string;
 }
 
+/**
+ * Estado inicial do checkout quando ele é aberto pelo link de recuperação `/checkout/pedido/<token do carrinho>`
+ * (plano 8.8). Vem do servidor, já lido do banco. `cpfMasked` é a ÚNICA forma do CPF que chega à tela
+ * (`***.***.789-01`); `customer.cpf` vem vazio e só é reenviado se a pessoa digitar um novo.
+ */
+export interface CheckoutInitial {
+  cartToken: string;
+  step: StepName;
+  customer: CustomerData;
+  cpfMasked: string | null;
+  address: AddressData;
+  bump: boolean;
+}
+
 export interface CardFormData {
   number: string;
   holderName: string;

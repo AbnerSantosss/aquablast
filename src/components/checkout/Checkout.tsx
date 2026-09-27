@@ -19,7 +19,7 @@ import { StepEntrega } from "./StepEntrega";
 import { StepPagamento } from "./StepPagamento";
 import { TopBar } from "./TopBar";
 import { TrustSeals } from "./TrustSeals";
-import type { AddressData, CustomerData, PayMethodUi, StepName } from "./types";
+import type { AddressData, CheckoutInitial, CustomerData, PayMethodUi, StepName } from "./types";
 
 const TOKEN_KEY = "ck-cart-token";
 const STEP_ORDER: StepName[] = ["dados", "entrega", "pagamento"];
@@ -58,6 +58,13 @@ function writeTokenToStorage(token: string): void {
  * Pagamento aprovado ou cartão em análise: navega para `/checkout/pedido/<publicToken>` (página durável,
  * lida do banco) em vez de mostrar a confirmação aqui — só o Pix pendente fica nesta tela (QR/polling),
  * porque ainda há algo interativo para fazer ("Gerar novo código").
+ *
+ * `step` enviado ao servidor é a etapa em que a pessoa ESTÁ depois do salvamento ("parou em", como o
+ * painel de carrinhos mostra): e-mail no blur → "dados"; concluiu dados → "entrega"; concluiu entrega →
+ * "pagamento". É esse "pagamento" que dispara o AddPaymentInfo no servidor (POST /api/checkout/cart).
+ *
+ * `initial` (plano 8.8): carrinho retomado pelo link de recuperação. Abre na etapa salva com os dados
+ * preenchidos; o CPF chega só mascarado (`cpfMasked`) e não é reenviado enquanto a pessoa não digitar outro.
  */
 export function Checkout({
   theme,
@@ -69,6 +76,7 @@ export function Checkout({
   cardGateway,
   cardPublicConfig,
   quotesInitial,
+  initial,
 }: {
   theme: Theme;
   selection: Selection;
@@ -79,13 +87,15 @@ export function Checkout({
   cardGateway: string | null;
   cardPublicConfig: Record<string, string>;
   quotesInitial: { pix: Quote; card: Quote };
+  initial?: CheckoutInitial;
 }) {
   const router = useRouter();
-  const [cartToken, setCartToken] = useState<string | undefined>(undefined);
-  const [step, setStep] = useState<StepName>("dados");
-  const [customer, setCustomer] = useState<CustomerData>(EMPTY_CUSTOMER);
-  const [address, setAddress] = useState<AddressData>(EMPTY_ADDRESS);
-  const [bump, setBump] = useState(false);
+  const [cartToken, setCartToken] = useState<string | undefined>(initial?.cartToken);
+  const [step, setStep] = useState<StepName>(initial?.step ?? "dados");
+  const [customer, setCustomer] = useState<CustomerData>(initial?.customer ?? EMPTY_CUSTOMER);
+  const [address, setAddress] = useState<AddressData>(initial?.address ?? EMPTY_ADDRESS);
+  const [bump, setBump] = useState(initial?.bump ?? false);
+  const cpfMasked = initial?.cpfMasked ?? null;
   const [method, setMethod] = useState<PayMethodUi>(methods[0] ?? "pix");
   const [quotes, setQuotes] = useState(quotesInitial);
   const [consent, setConsent] = useState<boolean | null>(null);
@@ -115,7 +125,10 @@ export function Checkout({
         bump: bumpValue,
         tracking: buildTracking(),
       };
-      if (opts.customer && (customer.name || customer.email || customer.phone || customer.cpf)) payload.customer = customer;
+      if (opts.customer && (customer.name || customer.email || customer.phone || customer.cpf)) {
+        // Carrinho retomado com CPF vazio: não reenvia o campo — o servidor mantém o CPF cifrado gravado.
+        payload.customer = cpfMasked && customer.cpf === "" ? { name: customer.name, email: customer.email, phone: customer.phone } : customer;
+      }
       if (opts.address && (address.street || address.cep)) payload.address = address;
       const result = await postCart(payload);
       if (isApiFail(result)) return result;
@@ -124,13 +137,13 @@ export function Checkout({
       setQuotes(result.quotes);
       return result;
     },
-    [cartToken, selection, buildTracking, customer, address],
+    [cartToken, selection, buildTracking, customer, address, cpfMasked],
   );
 
   const submitDados = useCallback(async () => {
     setDadosSubmitting(true);
     setDadosError(null);
-    const result = await saveCart("dados", bump, { customer: true });
+    const result = await saveCart("entrega", bump, { customer: true });
     setDadosSubmitting(false);
     if (isApiFail(result)) {
       setDadosError(result.error);
@@ -147,7 +160,7 @@ export function Checkout({
   const submitEntrega = useCallback(async () => {
     setEntregaSubmitting(true);
     setEntregaError(null);
-    const result = await saveCart("entrega", bump, { customer: true, address: true });
+    const result = await saveCart("pagamento", bump, { customer: true, address: true });
     setEntregaSubmitting(false);
     if (isApiFail(result)) {
       setEntregaError(result.error);
@@ -212,6 +225,7 @@ export function Checkout({
                   {step === "dados" ? (
                     <StepDados
                       customer={customer}
+                      cpfMasked={cpfMasked}
                       onChange={(patch) => setCustomer((c) => ({ ...c, ...patch }))}
                       onEmailBlur={handleEmailBlur}
                       onSubmit={submitDados}

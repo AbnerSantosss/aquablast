@@ -12,6 +12,7 @@ import type { CustomerData } from "./types";
  */
 export function StepDados({
   customer,
+  cpfMasked,
   onChange,
   onEmailBlur,
   onSubmit,
@@ -19,6 +20,8 @@ export function StepDados({
   error,
 }: {
   customer: CustomerData;
+  /** Carrinho retomado (plano 8.8): CPF já gravado, mostrado só mascarado. Campo vazio = manter o gravado. */
+  cpfMasked?: string | null;
   onChange: (patch: Partial<CustomerData>) => void;
   onEmailBlur: () => void;
   onSubmit: () => void;
@@ -30,7 +33,7 @@ export function StepDados({
   const nameOk = customer.name.trim().length >= 3;
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email.trim());
   const phoneOk = validMobile(customer.phone);
-  const cpfOk = validCPF(customer.cpf);
+  const cpfOk = validCPF(customer.cpf) || (!!cpfMasked && customer.cpf === "");
   const valid = nameOk && emailOk && phoneOk && cpfOk;
 
   const submit = () => {
@@ -77,10 +80,11 @@ export function StepDados({
             <input
               value={customer.cpf}
               onChange={(e) => onChange({ cpf: maskCPF(e.target.value) })}
-              placeholder="000.000.000-00"
+              placeholder={cpfMasked ?? "000.000.000-00"}
               inputMode="numeric"
               autoComplete="off"
             />
+            {cpfMasked && customer.cpf === "" ? <small>CPF já informado. Preencha só se quiser corrigir.</small> : null}
           </label>
         </div>
       </div>

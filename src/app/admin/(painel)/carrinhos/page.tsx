@@ -7,7 +7,7 @@ import { Tone } from "@/components/admin/Badge";
 import { requireAdmin } from "@/lib/auth/session";
 import { firstParam, formatBRL, formatDateTime, formatPhone, whatsappLink } from "@/lib/admin/format";
 import { sendReminderNow } from "@/lib/admin/actions/carts";
-import { CART_STATUS_LABEL, CART_STEP_LABEL, isCartStatus, listAbandonedCarts } from "@/lib/admin/queries-checkout";
+import { CART_STATUS_LABEL, CART_STEP_LABEL, listAbandonedCarts } from "@/lib/admin/queries-checkout";
 
 export const metadata: Metadata = { title: "Carrinhos abandonados" };
 

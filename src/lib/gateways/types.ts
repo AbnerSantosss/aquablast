@@ -56,7 +56,7 @@ export interface ChargeInput {
   idempotencyKey: string;
   /** Validade do Pix em segundos (checkout.pixTtlSeconds). */
   pixTtlSeconds: number;
-  /** URL absoluta do postback/webhook do gateway, já com o token (`/api/checkout/postback/<gateway>?t=...`). */
+  /** URL absoluta do postback/webhook do gateway, já com o token (`/api/webhooks/gateway/<gateway>/<token>`, ver `postbackUrlFor`). */
   postbackUrl: string;
   clientIp?: string;
   /** Cartão em claro: IronPay, FastPay (se não tokenizar) e simulado. */

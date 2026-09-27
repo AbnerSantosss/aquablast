@@ -23,9 +23,15 @@ export function OfferTimer({ theme }: { theme: Theme }) {
   const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
-    setNow(Date.now());
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
+    // Primeiro tick fora do corpo do efeito (regra react-hooks/set-state-in-effect): o timeout 0 mantém o
+    // comportamento "aparece logo depois de hidratar" sem setState síncrono dentro do efeito.
+    const tick = () => setNow(Date.now());
+    const first = window.setTimeout(tick, 0);
+    const id = window.setInterval(tick, 1000);
+    return () => {
+      window.clearTimeout(first);
+      window.clearInterval(id);
+    };
   }, []);
 
   if (!theme.timerEnabled) return null;

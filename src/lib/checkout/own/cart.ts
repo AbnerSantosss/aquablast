@@ -99,7 +99,8 @@ export async function upsertCart(input: CartInput, headers: Headers): Promise<{ 
     patch.customerName = input.customer.name;
     patch.customerEmail = input.customer.email.trim().toLowerCase();
     patch.customerPhone = onlyDigits(input.customer.phone);
-    patch.customerDocumentEnc = encryptDocument(input.customer.cpf);
+    // CPF ausente = carrinho retomado (plano 8.8): a tela só viu o CPF mascarado; mantém o cifrado já gravado.
+    if (input.customer.cpf !== undefined) patch.customerDocumentEnc = encryptDocument(input.customer.cpf);
   }
   if (input.address) {
     patch.addressLine1 = input.address.street;

@@ -31,7 +31,12 @@ export const customerSchema = z.object({
   name: z.string().trim().min(3).max(120),
   email: z.email().max(160),
   phone: z.string().min(10).max(20),
-  cpf: z.string().min(11).max(14),
+  /**
+   * Opcional só para o carrinho retomado pelo link de recuperação (plano 8.8): a tela recebe o CPF
+   * mascarado e não o reenvia; `upsertCart` mantém o CPF cifrado já gravado quando o campo não vem.
+   * Pagar continua exigindo CPF no carrinho (POST /pay, `hasCustomerAndAddress`).
+   */
+  cpf: z.string().min(11).max(14).optional(),
 });
 
 export const addressSchema = z.object({

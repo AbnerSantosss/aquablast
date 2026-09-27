@@ -10,7 +10,7 @@ import { desc } from "drizzle-orm";
 export const metadata = { title: "Pixels | Painel AquaBlast" };
 
 const DEST_LABEL: Record<string, string> = { meta: "Meta", ga4: "GA4" };
-const STATUS_LABEL: Record<string, string> = { sent: "Enviado", error: "Erro", skipped: "Ignorado" };
+const STATUS_LABEL: Record<string, string> = { sent: "Enviado", error: "Erro", skipped: "Ignorado", sending: "Enviando" };
 
 export default async function PixelsPage() {
   await requireAdmin();

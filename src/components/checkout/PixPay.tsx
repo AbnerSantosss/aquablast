@@ -33,7 +33,11 @@ export function PixPay({
   const expiresMs = new Date(expiresAt).getTime();
   const expired = now >= expiresMs;
   const onPaidRef = useRef(onPaid);
-  onPaidRef.current = onPaid;
+
+  useEffect(() => {
+    // Atualiza a ref em efeito, não durante o render (regra react-hooks/refs).
+    onPaidRef.current = onPaid;
+  }, [onPaid]);
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 1000);

@@ -84,7 +84,7 @@ export async function saveFastpaySettings(_prev: ActionResult, fd: FormData): Pr
 }
 
 /** Gera um novo token aleatório para a URL do postback (`/api/webhooks/gateway/<provider>/<token>`). */
-export async function regeneratePostbackToken(_prev: ActionResult, _fd: FormData): Promise<ActionResult> {
+export async function regeneratePostbackToken(): Promise<ActionResult> {
   const { actor } = await begin();
   const token = randomBytes(24).toString("hex");
   await setSetting("gateway.postbackToken", token, actor);

@@ -40,8 +40,14 @@ export function ConsentBanner({ requireConsent, onDecide }: { requireConsent: bo
       return;
     }
     const stored = readStored();
-    if (stored) onDecide(stored === "accepted");
-    else setVisible(true);
+    if (stored) {
+      onDecide(stored === "accepted");
+      return;
+    }
+    // Mostrar o banner só depois de hidratar (localStorage não existe no servidor). O timeout 0 evita o
+    // setState síncrono no corpo do efeito (regra react-hooks/set-state-in-effect) sem mudar o resultado.
+    const id = window.setTimeout(() => setVisible(true), 0);
+    return () => window.clearTimeout(id);
     // Só na primeira renderização: onDecide muda de identidade a cada render do pai.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requireConsent]);

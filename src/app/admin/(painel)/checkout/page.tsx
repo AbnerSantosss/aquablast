@@ -3,7 +3,7 @@ import { requireAdmin } from "@/lib/auth/session";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { saveRecoverySettings, saveThemeSettings } from "@/lib/admin/actions/checkout";
 import { getSetting, getSettings } from "@/lib/settings";
-import { contrastRatio, isoToLocalInput, themeDefaults, themeSchema, themeVars } from "@/lib/checkout/own/theme";
+import { contrastRatio, isoToLocalInput, themeSchema, themeVars } from "@/lib/checkout/own/theme";
 
 export const metadata = { title: "Personalizar checkout | Painel AquaBlast" };
 

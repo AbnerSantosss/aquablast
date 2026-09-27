@@ -24,7 +24,9 @@ import { listOrderEmails, listOrderWebhooks } from "@/lib/admin/queries";
 
 type ToneName = "gray" | "blue" | "cyan" | "orange" | "green" | "red";
 const ATTEMPT_STATUS_TONE: Record<string, ToneName> = { paid: "green", pending: "orange", refused: "red", canceled: "gray", refunded: "blue", error: "red" };
-const EVENT_STATUS_TONE: Record<string, ToneName> = { sent: "green", error: "red", skipped: "gray" };
+const EVENT_STATUS_TONE: Record<string, ToneName> = { sent: "green", error: "red", skipped: "gray", sending: "gray" };
+/** Rótulos pt-BR do status em conversion_events (mesma tabela da página /admin/pixels). */
+const EVENT_STATUS_LABEL: Record<string, string> = { sent: "Enviado", error: "Erro", skipped: "Ignorado", sending: "Enviando" };
 
 export const metadata: Metadata = { title: "Pedido" };
 
@@ -331,7 +333,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                               {e.detail ? <span className="cell-sub">{e.detail}</span> : null}
                             </td>
                             <td>
-                              <Tone tone={EVENT_STATUS_TONE[e.status] ?? "gray"}>{e.status}</Tone>
+                              <Tone tone={EVENT_STATUS_TONE[e.status] ?? "gray"}>{EVENT_STATUS_LABEL[e.status] ?? e.status}</Tone>
                             </td>
                           </tr>
                         ))}

@@ -75,7 +75,7 @@ export async function sendMetaTest(_prev: ActionResult, fd: FormData): Promise<A
   return r.ok ? ok(r.detail ?? "Evento de teste enviado à Meta.") : fail(r.detail ?? "Falha ao enviar o evento de teste.");
 }
 
-export async function sendGa4Test(_prev: ActionResult, _fd: FormData): Promise<ActionResult> {
+export async function sendGa4Test(): Promise<ActionResult> {
   await begin();
   const r = await validateGa4Event();
   return r.ok ? ok(r.detail ?? "Evento de teste validado pelo GA4.") : fail(r.detail ?? "O GA4 encontrou problemas no evento de teste.");

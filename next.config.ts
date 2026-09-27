@@ -39,6 +39,9 @@ const checkoutHeaders = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // `NEXT_DIST_DIR=.next-build npm run build` permite rodar o build de verificação sem derrubar o
+  // `next dev` que usa `.next` (os dois no mesmo diretório se corrompem). Sem a variável, nada muda.
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   poweredByHeader: false,
   serverExternalPackages: ["pg", "nodemailer"],
   async headers() {
