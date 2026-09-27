@@ -93,7 +93,7 @@ services:
         echo "scheduler: intervalo de $${SCHEDULER_INTERVAL_SECONDS}s"
         sleep 30
         while true; do
-          for ep in tracking-sync reminders; do
+          for ep in tracking-sync reminders abandoned-carts; do
             code=$$(curl -sS -m 120 -o /dev/null -w '%{http_code}' \
               -H "Authorization: Bearer $${CRON_SECRET}" \
               "$${APP_INTERNAL_URL}/api/cron/$${ep}" || echo "000")

@@ -2,7 +2,19 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { emailTemplates, type EmailTemplate } from "@/db/schema";
 
-export type TemplateKey = "order_confirmed" | "pix_pending" | "pix_reminder" | "shipped" | "out_for_delivery" | "delivered" | "access_code";
+export type TemplateKey =
+  | "order_confirmed"
+  | "pix_pending"
+  | "pix_reminder"
+  | "shipped"
+  | "out_for_delivery"
+  | "delivered"
+  | "access_code"
+  | "cart_abandoned_1"
+  | "cart_abandoned_2"
+  | "cart_abandoned_3"
+  | "payment_refused"
+  | "pix_expired";
 
 /** Placeholders aceitos no assunto e no corpo. Documentados na tela de edição. */
 export const PLACEHOLDERS = [
@@ -20,14 +32,23 @@ export const PLACEHOLDERS = [
   "{{loja}}",
   "{{whatsapp}}",
   "{{email_suporte}}",
+  "{{link_carrinho}}",
+  "{{etapa}}",
+  "{{link_descadastro}}",
 ] as const;
+
+/**
+ * Frase da campanha exibida no cabeçalho de todo e-mail. Depois de 12/10 (Dia das Crianças) esta
+ * frase fica desatualizada e precisa ser trocada pelo dono (pendência registrada na wiki).
+ */
+export const EMAIL_TAGLINE = "Diversão garantida neste Dia das Crianças 💦";
 
 const wrap = (inner: string) => `
 <div style="margin:0;padding:24px 12px;background:#eaf6fb;font-family:'Nunito',Arial,Helvetica,sans-serif;color:#0f2c3a;">
   <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 8px 24px rgba(15,44,58,.10);">
     <div style="background:linear-gradient(135deg,#0ea5e9,#22d3ee);padding:22px 28px;color:#fff;">
       <div style="font-size:22px;font-weight:900;letter-spacing:.3px;">{{loja}}</div>
-      <div style="font-size:13px;opacity:.9;">Diversão garantida neste Dia das Crianças 💦</div>
+      <div style="font-size:13px;opacity:.9;">${EMAIL_TAGLINE}</div>
     </div>
     <div style="padding:26px 28px;font-size:16px;line-height:1.55;">
       ${inner}
@@ -135,6 +156,73 @@ export const DEFAULT_TEMPLATES: Record<TemplateKey, { name: string; description:
       ${code("{{codigo_acesso}}")}
       ${btn("{{link_rastreio}}", "Acompanhar meu pedido")}
       <p style="font-size:14px;color:#4b6675;">Os códigos anteriores deixaram de valer.</p>
+    `),
+  },
+  cart_abandoned_1: {
+    name: "Carrinho abandonado 1 (lembrete)",
+    description: "1º e-mail para quem começou a compra e não terminou. Tempo definido em Configurações → Checkout.",
+    subject: "{{primeiro_nome}}, seu AquaBlast ficou esperando 💧",
+    enabled: true,
+    bodyHtml: wrap(`
+      <h1 style="font-size:24px;margin:0 0 12px;">Faltou pouco, {{primeiro_nome}}!</h1>
+      <p>Você começou a compra do seu AquaBlast e parou antes de concluir. Guardamos o que você já preencheu.</p>
+      <p><strong>{{itens}}</strong><br>Total: <strong>{{valor}}</strong></p>
+      ${btn("{{link_carrinho}}", "Continuar minha compra")}
+      <p style="font-size:14px;color:#4b6675;">O pagamento pode ser por Pix ou cartão. Se já finalizou a compra, ignore este e-mail.</p>
+      <p style="font-size:12px;color:#4b6675;">Não quer receber lembretes desta compra? <a href="{{link_descadastro}}">Clique aqui</a>.</p>
+    `),
+  },
+  cart_abandoned_2: {
+    name: "Carrinho abandonado 2 (dúvidas)",
+    description: "2º e-mail. Oferece ajuda pelo WhatsApp e pelo e-mail de suporte.",
+    subject: "Ficou com alguma dúvida sobre o AquaBlast?",
+    enabled: true,
+    bodyHtml: wrap(`
+      <h1 style="font-size:24px;margin:0 0 12px;">Podemos ajudar, {{primeiro_nome}}?</h1>
+      <p>Vimos que a sua compra não foi concluída. Se ficou alguma dúvida sobre o produto, o pagamento ou a entrega, fale com a gente:</p>
+      <p><strong>WhatsApp:</strong> {{whatsapp}}<br><strong>E-mail:</strong> {{email_suporte}}</p>
+      <p>Seu pedido continua salvo:</p>
+      <p><strong>{{itens}}</strong><br>Total: <strong>{{valor}}</strong></p>
+      ${btn("{{link_carrinho}}", "Voltar para a compra")}
+      <p style="font-size:12px;color:#4b6675;">Não quer receber lembretes desta compra? <a href="{{link_descadastro}}">Clique aqui</a>.</p>
+    `),
+  },
+  cart_abandoned_3: {
+    name: "Carrinho abandonado 3 (último aviso)",
+    description: "3º e último e-mail. Depois dele o carrinho não recebe mais lembretes.",
+    subject: "Último lembrete: sua compra do AquaBlast",
+    enabled: true,
+    bodyHtml: wrap(`
+      <h1 style="font-size:24px;margin:0 0 12px;">Este é o nosso último lembrete</h1>
+      <p>{{primeiro_nome}}, não vamos mais escrever sobre esta compra. Se ainda quiser o seu AquaBlast, o link abaixo leva direto para onde você parou.</p>
+      <p><strong>{{itens}}</strong><br>Total: <strong>{{valor}}</strong></p>
+      ${btn("{{link_carrinho}}", "Finalizar minha compra")}
+      <p style="font-size:12px;color:#4b6675;">Não quer receber lembretes desta compra? <a href="{{link_descadastro}}">Clique aqui</a>.</p>
+    `),
+  },
+  payment_refused: {
+    name: "Pagamento recusado",
+    description: "Enviado quando o cartão é recusado e o comprador não paga de outra forma.",
+    subject: "Não conseguimos aprovar o pagamento do pedido {{pedido}}",
+    enabled: true,
+    bodyHtml: wrap(`
+      <h1 style="font-size:24px;margin:0 0 12px;">O pagamento não foi aprovado</h1>
+      <p>{{primeiro_nome}}, o pagamento do pedido <strong>{{pedido}}</strong> não foi aprovado pela operadora do cartão. Nenhum valor foi cobrado.</p>
+      <p>Você pode tentar outro cartão ou pagar por Pix:</p>
+      ${btn("{{link_pagamento}}", "Tentar de novo")}
+      <p style="font-size:14px;color:#4b6675;">Dúvidas? Fale com a gente: {{whatsapp}} ou {{email_suporte}}.</p>
+    `),
+  },
+  pix_expired: {
+    name: "Pix expirado",
+    description: "Enviado quando o código Pix venceu sem pagamento. O link gera um código novo.",
+    subject: "Seu código Pix do pedido {{pedido}} venceu",
+    enabled: true,
+    bodyHtml: wrap(`
+      <h1 style="font-size:24px;margin:0 0 12px;">Seu código Pix venceu</h1>
+      <p>{{primeiro_nome}}, o código Pix do pedido <strong>{{pedido}}</strong> venceu antes do pagamento. É só gerar um novo:</p>
+      ${btn("{{link_pagamento}}", "Gerar novo código Pix")}
+      <p style="font-size:14px;color:#4b6675;">Se você já pagou, ignore este e-mail: a confirmação chega em instantes.</p>
     `),
   },
 };
