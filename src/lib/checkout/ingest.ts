@@ -2,8 +2,8 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { orders, webhookDeliveries, type Order } from "@/db/schema";
 import { sendOrderEmail } from "@/lib/email/send";
-import { addOrderEvent, encryptDocument, generateOrderNumber, getOrderById, issueAccessCode, transitionOrder, updateOrderFields } from "@/lib/orders/service";
-import { statusFromPayment } from "@/lib/orders/status";
+import { applyPaymentStatus } from "@/lib/orders/payment";
+import { addOrderEvent, encryptDocument, generateOrderNumber, getOrderById, updateOrderFields } from "@/lib/orders/service";
 import { getSettings } from "@/lib/settings";
 import { normalizeCheckoutPayload, type NormalizedCheckout } from "./normalize";
 
@@ -66,31 +66,13 @@ export async function ingestCheckoutWebhook(deliveryId: string, payload: unknown
   }
 
   const detail: string[] = [isNew ? "pedido criado" : "pedido atualizado"];
-  const wasPaid = order.paymentStatus === "paid";
 
-  if (n.paymentStatus && n.paymentStatus !== order.paymentStatus) {
-    if (wasPaid && n.paymentStatus === "pending") {
-      detail.push("ignorado: tentativa de voltar pago → pendente");
-    } else {
-      await updateOrderFields(order.id, { paymentStatus: n.paymentStatus, paidAt: n.paymentStatus === "paid" ? new Date() : order.paidAt });
-      detail.push(`pagamento: ${order.paymentStatus} → ${n.paymentStatus}`);
-      order = (await getOrderById(order.id))!;
-    }
-  }
-
-  const target = statusFromPayment(order.paymentStatus);
-  if (target && order.status !== target) {
-    const res = await transitionOrder({ orderId: order.id, to: target, source: "checkout", dedupeKey: `wh:${deliveryId}:${target}` });
-    if (res.ok && res.changed) {
-      order = res.order;
-      detail.push(`status → ${target}`);
-      if (target === "approved") {
-        const { code } = await issueAccessCode(order.id, "checkout");
-        const mail = await sendOrderEmail(order, "order_confirmed", { accessCode: code, automatic: true });
-        detail.push(mail.ok ? "e-mail de confirmação enviado" : `e-mail: ${mail.error ?? mail.skipped}`);
-      }
-    } else if (!res.ok) detail.push(`status: ${res.reason}`);
-  }
+  // Mesma regra de antes (nunca rebaixa pago → pendente; aprovado pela 1ª vez → código + e-mail),
+  // agora em applyPaymentStatus, compartilhada com o checkout próprio. Sem status novo no payload,
+  // ainda avança o status logístico a partir do pagamento atual, como sempre fez.
+  const applied = await applyPaymentStatus({ orderId: order.id, paymentStatus: n.paymentStatus ?? order.paymentStatus, source: "checkout", dedupeKey: `wh:${deliveryId}` });
+  order = applied.order;
+  detail.push(...applied.detail);
 
   if (isNew && order.paymentStatus === "pending" && order.pixCode) {
     const mail = await sendOrderEmail(order, "pix_pending", { automatic: true });

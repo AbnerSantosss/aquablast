@@ -26,6 +26,25 @@ export function checkoutUrl(pack: Pack, color: Color, kitColors: readonly [Color
 }
 
 /**
+ * Caminho do checkout PRÓPRIO (/checkout) para a mesma escolha que `checkoutUrl` manda para a Zedy.
+ * Usado pelo PurchaseLink quando `checkout.mode === "proprio"` (plano 8.8/8.9). Relativo, sem domínio.
+ */
+export function ownCheckoutPath(pack: Pack, color: Color, kitColors: readonly [Color, Color]): string {
+  return pack === "kit" ? `/checkout?pack=kit&cor1=${kitColors[0]}&cor2=${kitColors[1]}` : `/checkout?pack=unit&cor=${color}`;
+}
+
+/**
+ * Link da Zedy a partir de uma seleção já montada ({ pack, colors }), o mesmo formato de
+ * `selectionFromParams` em @/lib/checkout/own/catalog. Serve para o /checkout redirecionar para a Zedy
+ * quando `checkout.mode` for "zedy" (compatibilidade). Tipado por estrutura para não importar o catálogo.
+ */
+export function zedyUrlFromSelection(sel: { pack: Pack; colors: readonly Color[] }): string {
+  const c1 = sel.colors[0] ?? "azul";
+  const c2 = sel.colors[1] ?? c1;
+  return checkoutUrl(sel.pack, c1, [c1, c2]);
+}
+
+/**
  * Container do Google Tag Manager do site publico (o painel /admin nao carrega).
  * O Pixel da Meta (e o GA4) moram DENTRO do GTM, com o ID na variavel "CONST - Meta Pixel ID".
  * Nao reinstalar o Pixel no codigo: os eventos contariam em dobro.
