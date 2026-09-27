@@ -720,3 +720,64 @@
   #ofertas .offer-card-body>.color-choice::after,
   #ofertas .offer-card-body>.kit-color-selectors::after{animation:none}
 }
+
+/* ==========================================================================================
+   Extensao 4 do pedido ux-selecao-guiada-kit (dono, 27/09): "so deve aparecer isso no que o cliente
+   selecionar". Nenhum HEX novo: #9cc1d7/#c9e2f1/#edf8ff/#ffb52e/#008eff/#38c7ff40/#00a5ff30/#001c3966
+   ja existiam.
+   - Card inteiro clicavel (PriceCard) com mao e hover.
+   - Brilho + moldura em degrade do bloco de cor (extensao 3) so no card .is-selected; no outro o bloco
+     fica com o fundo azul claro e a borda fina de antes, sem animacao.
+   - Guias (balao, anel que pulsa) e o pulso do Comprar so no card selecionado.
+   - Kit: a chamada vira balao de comentario com setinha em cima do numero do passo atual (KitColorSteps
+     poe o .kit-step-cue dentro do <b>), 1 -> "Escolha a primeira opcao", 2 -> "Escolha a segunda opcao".
+   ========================================================================================== */
+#ofertas .price-card{cursor:pointer;transition:transform .18s ease-out,box-shadow .18s ease-out,border-color .18s ease-out}
+@media(hover:hover){
+  #ofertas .price-card:hover{transform:translateY(-.25rem);border-color:#008eff;box-shadow:0 0 0 .125rem #38c7ff40,0 1.125rem 3rem #001c3966}
+  #ofertas .price-card.is-selected:hover{box-shadow:0 0 0 .125rem #38c7ff40,0 0 2rem #00a5ff30,0 1.375rem 3.25rem #001c3966}
+}
+
+/* Card nao selecionado: bloco de cor neutro (sem brilho, moldura fina parada). */
+#ofertas .price-card:not(.is-selected) .offer-card-body>.color-choice::before,
+#ofertas .price-card:not(.is-selected) .offer-card-body>.kit-color-selectors::before{display:none}
+#ofertas .price-card:not(.is-selected) .offer-card-body>.color-choice::after,
+#ofertas .price-card:not(.is-selected) .offer-card-body>.kit-color-selectors::after{
+  border:.0625rem solid #9cc1d7;
+  background:#c9e2f1;
+  animation:none;
+}
+#ofertas .price-card:not(.is-selected) .offer-card-body>.kit-color-selectors::after{background:#edf8ff}
+
+/* Guias so no selecionado: etiqueta da unidade e balao do kit somem no outro card. */
+#ofertas .color-choice:not([data-active])>.kit-step-cue,
+#ofertas .kit-steps:not([data-active]) .kit-step-cue{display:none}
+/* Comprar pulsa so no card selecionado (e so com a escolha completa, regra data-incomplete acima).
+   !important pelo mesmo motivo: vencer aqua-buy-pulse/cta-green-pulse!important. */
+#ofertas .price-card:not(.is-selected) .button{animation:none!important}
+#ofertas .price-card:not(.is-selected) .button::before{display:none}
+
+/* Balao de comentario em cima do numero do passo (o <b> tem 1.25rem nos cards: setinha em .75rem + .4375rem = centro). O numero sobe para a 1a linha do rotulo e o passo
+   atual ganha respiro em cima para o balao nao cobrir o passo anterior nem as cores. */
+#ofertas .kit-steps[data-active] .kit-step[data-step-state="current"]{padding-top:1.625rem}
+#ofertas .kit-step-body .choice-row-label{align-items:flex-start}
+#ofertas .kit-step-body .choice-row-label>b{position:relative;overflow:visible}
+#ofertas .choice-row-label>b>.kit-step-cue{
+  top:auto;
+  bottom:calc(100% + .5rem);
+  left:-.5rem;
+  transform:none;
+  transform-origin:1.1875rem 100%;
+  padding:.25rem .625rem;
+  border-radius:.625rem;
+  line-height:1.2;
+}
+#ofertas .choice-row-label>b>.kit-step-cue::after{
+  content:'';
+  position:absolute;
+  top:calc(100% - .0625rem);
+  left:.75rem;
+  border:.4375rem solid transparent;
+  border-bottom:0;
+  border-top-color:#ffb52e;
+}

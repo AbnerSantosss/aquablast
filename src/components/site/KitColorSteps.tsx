@@ -53,16 +53,27 @@ export function KitColorSteps({ context }: { context: StepsContext }) {
   const steps = STEPS.map((index) => {
     const state = stateOf(index);
     const number = <b aria-hidden={state === "done" || undefined}>{state === "done" ? "✓" : index + 1}</b>;
+    const cue = (
+      <span className="kit-step-cue" aria-hidden="true">
+        {CUE[index]}
+      </span>
+    );
 
     let body: ReactNode;
     if (state === "current") {
+      // Card de oferta (pedido do dono, 27/09): a chamada vira balao de comentario em cima do numero do passo.
       body = (
         <div className={context === "desktop" ? "desktop-kit-color kit-step-body" : "kit-color-row kit-step-body"}>
-          <span className="kit-step-cue" aria-hidden="true">
-            {CUE[index]}
-          </span>
+          {context === "desktop" && cue}
           <span className={context === "desktop" ? "desktop-field-label" : "choice-row-label"}>
-            {number}
+            {context === "desktop" ? (
+              number
+            ) : (
+              <b>
+                {index + 1}
+                {cue}
+              </b>
+            )}
             <span>
               {TITLE[index]}
               <small>Escolha a cor</small>
