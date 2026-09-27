@@ -171,19 +171,8 @@
 }
 .desktop-product-panel .desktop-choice-hint{flex:0 0 auto;white-space:nowrap}
 
-/* Clique na pilula do painel: nao pula para #ofertas (tiraria a pessoa do painel onde ja esta
-   escolhendo). O href="#desktop-packages" e so o fallback sem JS; com JS (handlePillClick em
-   Hero.tsx) o clique foca o botao de pacote ja pressionado e da um destaque curto (~1,2s) no grupo,
-   so com box-shadow nas cores ciano/azul que .desktop-packages ja usa (desktop-focus.css). Sem
-   keyframes: e uma troca de box-shadow com transition curta, cortada em prefers-reduced-motion. */
-.desktop-packages.desktop-packages-highlight{
-  border-radius:1rem;
-  box-shadow:0 0 0 .1875rem #63e1ff,0 0 0 .375rem #39c6ff55;
-  transition:box-shadow .2s ease-out;
-}
-@media(prefers-reduced-motion:reduce){
-  .desktop-packages.desktop-packages-highlight{transition:none}
-}
+/* Clique na pilula do painel: nao pula para #ofertas. Desde o pedido ux-selecao-guiada-kit (26/09)
+   a orientacao fica no fim deste arquivo (.desktop-choice-guide + .desktop-packages.is-guiding). */
 
 /* == Item 4: destaque de borda permanente no card "Kit com 2" (subagente C) == */
 /* #ofertas .price-card.kit-card ganha uma borda em gradiente SEMPRE visivel (mesmo sem is-selected),
@@ -410,4 +399,151 @@
 @media(min-width:56.3125rem) and (max-height:46rem){
   #inicio .desktop-product-panel{gap:.25rem}
   #inicio .desktop-product-panel .desktop-price-band{padding-block:.25rem}
+}
+
+/* ==========================================================================================
+   Pedido 2026-09-26 "ux-selecao-guiada-kit" (wiki/pedidos/2026-09-26-ux-selecao-guiada-kit.md)
+   Nenhum HEX novo: #ffb52e/#ffb44977/#f4d2a7/#fff1df/#efad54/#b8cbdf/#d7f8ff/#004e9d33 ja existiam.
+   ========================================================================================== */
+
+/* -- Item 3: "1 unidade" / "Kit com 2" no painel com estado selecionado inequivoco --
+   Antes os dois botoes eram fotos escuras quase iguais e o selecionado so tinha borda fina + um check
+   de 18px. Agora: selecionado = borda dourada grossa, sombra, check dourado e a etiqueta "Selecionado";
+   o outro fica apagado (saturacao/brilho menores, volta ao normal no hover) e diz "Escolher".
+   #desktop-packages (id) vence as regras [data-desktop-pack][aria-pressed] de desktop-focus.css,
+   visual-refresh.css e purchase-details.css sem !important. */
+@media(min-width:56.3125rem){
+  #desktop-packages button{transition:border-color .15s,box-shadow .2s,filter .2s}
+  #desktop-packages button[aria-pressed="false"]{filter:saturate(.4) brightness(.72)}
+  #desktop-packages button[aria-pressed="false"]:hover,
+  #desktop-packages button[aria-pressed="false"]:focus-visible{filter:none}
+  #desktop-packages button[aria-pressed="true"]{
+    border:.1875rem solid #ffb52e;
+    box-shadow:0 0 0 .1875rem #ffb44977,0 .375rem .875rem #004e9d33;
+  }
+  #desktop-packages .desktop-choice-indicator{width:1.375rem;height:1.375rem;top:.3125rem;right:.3125rem}
+  #desktop-packages button[aria-pressed="true"] .desktop-choice-indicator{background:#ffb52e;border-color:#fff}
+  #desktop-packages button[aria-pressed="true"] .desktop-choice-indicator>img{width:.875rem;height:.875rem;filter:brightness(0)}
+  #desktop-packages .desktop-package-copy{gap:.1875rem}
+  #desktop-packages .desktop-package-state{font-size:.75rem;font-weight:700;line-height:1.3;color:#d7f8ff}
+  #desktop-packages button[aria-pressed="true"] .desktop-package-state{
+    padding:0 .5rem;
+    border-radius:62.5rem;
+    background:#ffb52e;
+    color:var(--navy);
+    font-weight:900;
+  }
+}
+
+/* -- Item 6: pilula "Selecione seu kit" guia para as opcoes logo abaixo dela --
+   O clique (handlePillClick, Hero.tsx) liga uma orientacao que so some quando a pessoa escolhe um pacote:
+   a faixa "Escolha aqui" com seta para baixo e um anel pulsando em volta das duas opcoes. */
+.desktop-product-panel .desktop-choice-guide{margin:0}
+.desktop-product-panel .desktop-choice-guide:not(:empty){
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+  margin:0 0 .5rem;
+  padding:.375rem .75rem;
+  border:.0625rem solid #f4d2a7;
+  border-radius:.625rem;
+  background:#fff1df;
+  color:var(--navy);
+  font-size:.9375rem;
+  font-weight:800;
+  line-height:1.3;
+  animation:kit-step-in .18s ease-out;
+}
+.desktop-product-panel .desktop-choice-guide:not(:empty)::before{
+  content:'';
+  flex:0 0 auto;
+  border-inline:.375rem solid transparent;
+  border-top:.5rem solid #efad54;
+}
+.desktop-packages.is-guiding{animation:kit-cue-ring 1.4s ease-out infinite}
+
+/* -- Item 4: kit guiado em 2 passos com pulso --
+   O passo atual ganha a etiqueta dourada "Escolha a primeira opcao" / "Escolha a segunda opcao" presa na
+   borda de cima e, quando o kit esta escolhido (data-active), um anel que pulsa. Ao escolher a 1a cor o
+   passo fecha e a etiqueta + pulso passam para o 2o. So com as duas cores o Comprar do kit libera. */
+@keyframes kit-cue-ring{0%{box-shadow:0 0 0 0 #ffb44977}80%,100%{box-shadow:0 0 0 .5rem transparent}}
+@keyframes kit-cue-pop{0%,100%{scale:1}50%{scale:1.06}}
+.kit-step[data-step-state="current"]{padding-top:.6875rem}
+.kit-step[data-step-state="current"] .kit-step-body{position:relative;overflow:visible}
+.kit-steps[data-active] .kit-step[data-step-state="current"] .kit-step-body{
+  animation:kit-step-in .18s ease-out,kit-cue-ring 1.4s ease-out .2s infinite;
+}
+.kit-step-cue{
+  position:absolute;
+  top:0;
+  left:50%;
+  z-index:1;
+  transform:translate(-50%,-55%);
+  padding:.125rem .75rem;
+  border-radius:62.5rem;
+  background:#ffb52e;
+  color:var(--navy);
+  font-size:.8125rem;
+  font-weight:900;
+  line-height:1.35;
+  white-space:nowrap;
+  box-shadow:0 .125rem .375rem #004e9d33;
+  pointer-events:none;
+}
+.kit-steps[data-active] .kit-step-cue{animation:kit-cue-pop 1.4s ease-in-out infinite}
+
+/* Comprar do kit bloqueado (sem as 2 cores): deixa de parecer um botao verde pronto. O clique continua
+   levando ao passo que falta (PurchaseLink). !important so para vencer o aqua-buy-pulse!important de
+   visual-refresh.css; o halo ::before some junto. */
+.desktop-buy[aria-disabled="true"],
+#ofertas .price-card .button[aria-disabled="true"]{
+  background:#b8cbdf;
+  color:var(--navy);
+  border-color:#b8cbdf;
+  box-shadow:none;
+  animation:none!important;
+}
+.desktop-buy[aria-disabled="true"]:hover,
+#ofertas .price-card .button[aria-disabled="true"]:hover{background:#b8cbdf}
+.desktop-buy[aria-disabled="true"]::before,
+#ofertas .price-card .button[aria-disabled="true"]::before{display:none}
+
+@media(prefers-reduced-motion:reduce){
+  .desktop-packages.is-guiding,
+  .kit-steps[data-active] .kit-step[data-step-state="current"] .kit-step-body,
+  .kit-steps[data-active] .kit-step-cue,
+  .desktop-product-panel .desktop-choice-guide:not(:empty){animation:none}
+  .desktop-packages.is-guiding{box-shadow:0 0 0 .1875rem #ffb52e}
+  .kit-steps[data-active] .kit-step[data-step-state="current"] .kit-step-body{box-shadow:0 0 0 .125rem #ffb52e}
+}
+
+/* -- Item 2: cards de oferta menores no celular --
+   Antes (390px): unidade 790px e kit 881px de altura, mais que a tela util (~774px). O corte vem de
+   respiros e alturas, sem esconder nada: cabecalho com o selo do kit em uma linha, imagem mais baixa
+   (o kit 3:1 quase sem corte), icones dos beneficios menores, selo de envio e preco mais enxutos. */
+@media(max-width:56.25rem){
+  #ofertas.offers{--offer-img-h-m:clamp(6.75rem,calc((100vw - 2.25rem) / 3.1),8.25rem)}
+  #ofertas.offers .price-card>.price-header{min-height:0;padding:.5rem .75rem;gap:.3125rem}
+  #ofertas.offers .price-header h3{font-size:1.25rem}
+  #ofertas.offers .price-header .offer-card-tag{padding:.1875rem .625rem}
+  #ofertas.offers .kit-emotion-tag{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:0 .375rem;padding:.1875rem .75rem}
+  #ofertas.offers .kit-emotion-tag>strong{font-size:.875rem}
+  #ofertas.offers .packshot>.packshot-caption{padding:.25rem .5rem}
+
+  #ofertas.offers .offer-card-body{gap:.5rem;padding:.625rem .75rem .75rem}
+  #ofertas.offers .offer-included{font-size:.9375rem}
+  #ofertas.offers .offer-benefits li{gap:.25rem}
+  #ofertas.offers .offer-benefit-photo{width:2.25rem;height:2rem}
+
+  #ofertas.offers .color-choice{padding:.5rem .625rem;gap:.375rem}
+  #ofertas.offers .color-product-choice,
+  #ofertas.offers .kit-color-row .color-product-choice{min-height:3.125rem}
+  #ofertas.offers .color-product-choice>img{height:1.75rem}
+  #ofertas.offers .kit-step-body.kit-color-row{padding:.375rem .5rem}
+
+  #ofertas.offers .offer-shipping-seal{padding:.25rem .5rem}
+  #ofertas.offers .offer-shipping-seal>img{width:4.25rem}
+  #ofertas.offers .pix-amount{font-size:2.125rem}
+  #ofertas.offers .price-card .button{min-height:3.125rem}
+  #ofertas.offers .kit-selection-hint{margin:0}
 }

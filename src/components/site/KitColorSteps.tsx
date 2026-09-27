@@ -13,6 +13,8 @@ const STEPS = [0, 1] as const;
 const ORDINAL = ["primeiro", "segundo"] as const;
 const TITLE = ["Primeiro brinquedo", "Segundo brinquedo"] as const;
 const SHORT = ["Primeiro", "Segundo"] as const;
+/** Chamada que pulsa no passo atual (pedido do dono, 26/09): guia 1a -> 2a opcao antes de liberar o kit. */
+const CUE = ["Escolha a primeira opção", "Escolha a segunda opção"] as const;
 const SWATCH_LABEL: Record<StepsContext, readonly [string, string]> = {
   desktop: ["Cor do 1º AquaBlast no desktop", "Cor do 2º AquaBlast no desktop"],
   offer: ["Cor do 1º AquaBlast do kit na oferta", "Cor do 2º AquaBlast do kit na oferta"],
@@ -56,6 +58,9 @@ export function KitColorSteps({ context }: { context: StepsContext }) {
     if (state === "current") {
       body = (
         <div className={context === "desktop" ? "desktop-kit-color kit-step-body" : "kit-color-row kit-step-body"}>
+          <span className="kit-step-cue" aria-hidden="true">
+            {CUE[index]}
+          </span>
           <span className={context === "desktop" ? "desktop-field-label" : "choice-row-label"}>
             {number}
             <span>
@@ -118,6 +123,7 @@ export function KitColorSteps({ context }: { context: StepsContext }) {
         className="desktop-kit-selection kit-steps"
         data-desktop-colors="kit"
         data-kit-ready={kitReady || undefined}
+        data-active={pack === "kit" || undefined}
         hidden={pack !== "kit"}
       >
         {steps}
@@ -125,7 +131,12 @@ export function KitColorSteps({ context }: { context: StepsContext }) {
     );
   }
   return (
-    <div ref={rootRef} className="kit-color-selectors kit-steps" data-kit-ready={kitReady || undefined}>
+    <div
+      ref={rootRef}
+      className="kit-color-selectors kit-steps"
+      data-kit-ready={kitReady || undefined}
+      data-active={pack === "kit" || undefined}
+    >
       {steps}
     </div>
   );

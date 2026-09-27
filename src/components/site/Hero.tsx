@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { reviews } from "@/data/reviews";
 import { CAMPAIGN_PHOTO, COLOR_LABELS, HERO_PHOTOS, KIT_PHOTO, MOBILE_QUERY, PRICES } from "@/lib/site/constants";
 import { PurchaseLink } from "./PurchaseLink";
@@ -173,18 +173,20 @@ function DesktopProductPanel() {
   const { pack, color, colorTouched, selectPack } = useSelection();
   const price = PRICES[pack];
   const unitAlt = colorTouched ? `AquaBlast ${COLOR_LABELS[color].toLowerCase()}` : "";
+  // Orientacao da pilula: fica visivel (e o grupo pulsa) ate a pessoa clicar em um dos pacotes.
+  const [guiding, setGuiding] = useState(false);
 
   // A pilula do painel nao leva a #ofertas (tiraria a pessoa do painel onde ja esta escolhendo):
-  // foca o pacote ja pressionado e da um destaque curto no grupo, so com CSS (sem scroll).
+  // foca o primeiro pacote e liga a orientacao "Escolha aqui" sobre as opcoes logo abaixo (sem scroll).
   const handlePillClick = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
-    const group = document.getElementById("desktop-packages");
-    if (!group) return;
-    const pressed = group.querySelector<HTMLButtonElement>('button[aria-pressed="true"]');
-    const target = pressed ?? group.querySelector<HTMLButtonElement>("button");
-    target?.focus({ preventScroll: true });
-    group.classList.add("desktop-packages-highlight");
-    window.setTimeout(() => group.classList.remove("desktop-packages-highlight"), 1200);
+    setGuiding(true);
+    document.querySelector<HTMLButtonElement>("#desktop-packages button")?.focus({ preventScroll: true });
+  };
+
+  const choosePack = (next: typeof pack) => {
+    setGuiding(false);
+    selectPack(next);
   };
 
   return (
@@ -283,8 +285,11 @@ function DesktopProductPanel() {
             Clique para escolher
           </span>
         </div>
+        <p className="desktop-choice-guide" role="status">
+          {guiding ? "Escolha aqui: 1 unidade ou Kit com 2" : ""}
+        </p>
         <div
-          className="desktop-packages"
+          className={guiding ? "desktop-packages is-guiding" : "desktop-packages"}
           id="desktop-packages"
           role="group"
           aria-label="Escolha a quantidade de AquaBlast"
@@ -294,7 +299,7 @@ function DesktopProductPanel() {
             data-desktop-pack="unit"
             aria-label="Selecionar 1 unidade"
             aria-pressed={pack === "unit"}
-            onClick={() => selectPack("unit")}
+            onClick={() => choosePack("unit")}
           >
             <span className="desktop-choice-indicator" aria-hidden="true">
               <img src="/icons/check.svg" alt="" loading="lazy" decoding="async" />
@@ -304,13 +309,16 @@ function DesktopProductPanel() {
             </span>
             <span className="desktop-package-copy">
               <strong>1 unidade</strong>
+              <span className="desktop-package-state" aria-hidden="true">
+                {pack === "unit" ? "Selecionado" : "Escolher"}
+              </span>
             </span>
           </button>
           <button
             data-desktop-pack="kit"
             aria-label="Selecionar kit com 2"
             aria-pressed={pack === "kit"}
-            onClick={() => selectPack("kit")}
+            onClick={() => choosePack("kit")}
           >
             <span className="desktop-choice-indicator" aria-hidden="true">
               <img src="/icons/check.svg" alt="" loading="lazy" decoding="async" />
@@ -321,6 +329,9 @@ function DesktopProductPanel() {
             </span>
             <span className="desktop-package-copy">
               <strong>Kit com 2</strong>
+              <span className="desktop-package-state" aria-hidden="true">
+                {pack === "kit" ? "Selecionado" : "Escolher"}
+              </span>
             </span>
           </button>
         </div>
