@@ -349,14 +349,13 @@
   #ofertas.offers .offer-price-line .pix-label .pix-icon{width:.875rem;height:.875rem}
   #ofertas.offers .offer-price-line .card-installments{margin:.125rem 0 0;font-size:.875rem;line-height:1.3}
 
-  /* 7-10. Garantias, Comprar, dica (so no kit) e nota. */
+  /* 7-10. Garantias, Comprar, dica e nota. */
   #ofertas.offers .offer-card-body>.offer-reassurance{grid-row:7;align-self:center;padding:0;min-height:0}
   #ofertas.offers .offer-reassurance>span{font-size:.8125rem}
   #ofertas.offers .offer-card-body>.button{grid-row:8;width:auto;min-height:3rem;margin:0 var(--offer-pad);font-size:1.0625rem}
   #ofertas.offers .offer-card-body>.kit-selection-hint{grid-row:9;font-size:.8125rem;line-height:1.35}
   #ofertas.offers .offer-card-body>.offer-checkout-note{grid-row:10;align-self:start;font-size:.8125rem;line-height:1.3}
-  /* Na unidade nao ha dica: a nota sobe para logo abaixo do Comprar (linhas 9-10). */
-  #ofertas.offers .price-card:not(.kit-card)>.offer-card-body>.offer-checkout-note{grid-row:9/11}
+  /* Desde 26/09 a unidade tambem tem dica (cor obrigatoria), entao as duas usam as linhas 9 e 10. */
 }
 /* Telas de ate 53.125rem (850px) de altura: respiros e amostras um pouco menores. */
 @media(min-width:56.3125rem) and (max-height:53.125rem){
@@ -546,4 +545,24 @@
   #ofertas.offers .pix-amount{font-size:2.125rem}
   #ofertas.offers .price-card .button{min-height:3.125rem}
   #ofertas.offers .kit-selection-hint{margin:0}
+}
+
+/* -- Cor obrigatoria na unidade (pedido do dono, 26/09): mesmo guia do kit --
+   Enquanto nenhuma cor foi escolhida (data-unit-cue), o bloco de cor mostra a etiqueta "Escolha a cor"
+   na borda de cima e, com a unidade selecionada (data-active), pulsa. O Comprar fica cinza e sem pulso
+   (regra aria-disabled acima) e so volta ao verde pulsando depois da escolha. */
+.desktop-color-selection[data-unit-cue],
+#ofertas .color-choice[data-unit-cue]{position:relative;overflow:visible;padding-top:.875rem}
+.desktop-color-selection[data-unit-cue]{padding-inline:.5rem;padding-bottom:.375rem;border-radius:.75rem;background:#fff1df}
+.desktop-color-selection[data-unit-cue][data-active],
+#ofertas .color-choice[data-unit-cue][data-active]{animation:kit-cue-ring 1.4s ease-out infinite}
+[data-unit-cue][data-active]>.kit-step-cue{animation:kit-cue-pop 1.4s ease-in-out infinite}
+/* No card de oferta do desktop a linha de cor encosta nos beneficios: a etiqueta precisa de respiro acima. */
+@media(min-width:56.3125rem){#ofertas.offers .offer-card-body>.color-choice[data-unit-cue]{margin-top:.625rem}}
+@media(prefers-reduced-motion:reduce){
+  .desktop-color-selection[data-unit-cue][data-active],
+  #ofertas .color-choice[data-unit-cue][data-active],
+  [data-unit-cue][data-active]>.kit-step-cue{animation:none}
+  .desktop-color-selection[data-unit-cue][data-active],
+  #ofertas .color-choice[data-unit-cue][data-active]{box-shadow:0 0 0 .125rem #ffb52e}
 }

@@ -7,7 +7,7 @@ import { CAMPAIGN_PHOTO, COLOR_LABELS, HERO_PHOTOS, KIT_PHOTO, MOBILE_QUERY, PRI
 import { PurchaseLink } from "./PurchaseLink";
 import { reviewSummary } from "@/lib/site/reviews-summary";
 import { HeroFeaturedVideo } from "./HeroFeaturedVideo";
-import { UnitSwatches } from "./ColorSwatches";
+import { UnitColorCue, UnitSwatches } from "./ColorSwatches";
 import { KitColorSteps } from "./KitColorSteps";
 import { scrollBehavior } from "./media-query";
 import { useSelection } from "./SelectionProvider";
@@ -336,9 +336,16 @@ function DesktopProductPanel() {
           </button>
         </div>
       </div>
-      <div className="desktop-color-selection" data-desktop-colors="unit" hidden={pack !== "unit"}>
+      <div
+        className="desktop-color-selection"
+        data-desktop-colors="unit"
+        data-unit-cue={!colorTouched || undefined}
+        data-active={pack === "unit" || undefined}
+        hidden={pack !== "unit"}
+      >
+        <UnitColorCue />
         <span className="desktop-field-label">
-          Cor: <b className="color-label">{COLOR_LABELS[color]}</b>
+          Cor: <b className="color-label">{colorTouched ? COLOR_LABELS[color] : "escolha"}</b>
         </span>
         <UnitSwatches label="Cor da unidade no desktop" />
       </div>

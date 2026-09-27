@@ -4,7 +4,7 @@
 import type { MouseEvent, ReactNode } from "react";
 import { COLOR_LABELS, PRICES } from "@/lib/site/constants";
 import type { Pack } from "@/lib/site/types";
-import { UnitSwatches } from "./ColorSwatches";
+import { UnitColorCue, UnitSwatches } from "./ColorSwatches";
 import { KitColorSteps } from "./KitColorSteps";
 import { useSelection } from "./SelectionProvider";
 import { PurchaseLink } from "./PurchaseLink";
@@ -99,7 +99,7 @@ function PriceCard({ pack, className, children }: { pack: Pack; className: strin
 }
 
 export function Offers() {
-  const { color } = useSelection();
+  const { color, colorTouched, pack } = useSelection();
   const colorLabel = COLOR_LABELS[color];
 
   return (
@@ -126,9 +126,14 @@ export function Offers() {
             <div className="offer-card-body">
               <p className="offer-included">1 AquaBlast na cor que você escolher</p>
               <OfferBenefits />
-              <div className="color-choice">
+              <div
+                className="color-choice"
+                data-unit-cue={!colorTouched || undefined}
+                data-active={pack === "unit" || undefined}
+              >
+                <UnitColorCue />
                 <span>
-                  Cor: <strong className="color-label">{colorLabel}</strong>
+                  Cor: <strong className="color-label">{colorTouched ? colorLabel : "escolha abaixo"}</strong>
                 </span>
                 <UnitSwatches label="Cor da unidade" />
               </div>

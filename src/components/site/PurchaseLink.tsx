@@ -5,20 +5,31 @@ import { checkoutUrl } from "@/lib/site/constants";
 import type { Pack } from "@/lib/site/types";
 import { kitFocusTarget, revealFocus, useSelection } from "./SelectionProvider";
 
-/** No checkout URL exists until both kit colors have been explicitly chosen. */
+/** No checkout URL exists until the unit color, or both kit colors, have been explicitly chosen. */
 export function PurchaseLink({ pack, className, children }: { pack: Pack; className: string; children: ReactNode }) {
-  const { color, kitColors, kitConfirmed, kitReady, reopenKitStep } = useSelection();
+  const { color, colorTouched, kitColors, kitConfirmed, kitReady, reopenKitStep } = useSelection();
   const hintId = useId();
-  const blocked = pack === "kit" && !kitReady;
+  const blocked = pack === "kit" ? !kitReady : !colorTouched;
   const missing = kitConfirmed[0] ? 1 : 0;
-  const hint = !kitConfirmed[0] && !kitConfirmed[1]
+  const kitHint = !kitConfirmed[0] && !kitConfirmed[1]
     ? "Escolha a cor do primeiro e do segundo brinquedo para continuar."
     : `Falta escolher a cor do ${missing === 0 ? "primeiro" : "segundo"} brinquedo.`;
+  const hint = pack === "kit"
+    ? blocked ? kitHint : "Duas cores escolhidas. Seu kit está pronto!"
+    : blocked ? "Escolha a cor do seu AquaBlast para continuar." : "Cor escolhida. É só comprar!";
 
-  /** Kit incompleto: fecha um "Trocar" aberto e leva o foco ao passo que falta (so rola se estiver fora da tela). */
+  /**
+   * Escolha incompleta: leva o foco a cor que falta (so rola se estiver fora da tela). No kit, fecha antes
+   * um "Trocar" aberto e vai ao passo atual; na unidade, vai a primeira cor.
+   */
   const focusMissingChoice = (link: HTMLAnchorElement) => {
-    reopenKitStep(null);
     const container = link.closest(".price-card, .desktop-product-panel");
+    if (pack !== "kit") {
+      const first = container?.querySelector<HTMLButtonElement>("button[data-color]");
+      if (first) revealFocus(first);
+      return;
+    }
+    reopenKitStep(null);
     const target =
       kitFocusTarget(container) ??
       container?.querySelector<HTMLButtonElement>(`button[data-kit-index="${missing}"]`);
@@ -49,7 +60,7 @@ export function PurchaseLink({ pack, className, children }: { pack: Pack; classN
       >
         {children}
       </a>
-      {pack === "kit" && <p id={hintId} className="kit-selection-hint" role="status">{blocked ? hint : "Duas cores escolhidas. Seu kit está pronto!"}</p>}
+      <p id={hintId} className="kit-selection-hint" role="status">{hint}</p>
     </>
   );
 }

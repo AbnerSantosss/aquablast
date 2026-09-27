@@ -5,9 +5,23 @@ import { COLOR_KEYS, COLOR_LABELS } from "@/lib/site/constants";
 import type { Color } from "@/lib/site/types";
 import { useSelection } from "./SelectionProvider";
 
-/** Botões `[data-color]`: escolhem a cor da unidade. */
+/**
+ * Etiqueta "Escolha a cor" presa na borda do bloco de cor da unidade enquanto nenhuma cor foi escolhida
+ * de forma explicita (colorTouched). Mesmo desenho da etiqueta dos passos do kit (.kit-step-cue).
+ */
+export function UnitColorCue() {
+  const { colorTouched } = useSelection();
+  if (colorTouched) return null;
+  return (
+    <span className="kit-step-cue" aria-hidden="true">
+      Escolha a cor
+    </span>
+  );
+}
+
+/** Botões `[data-color]`: escolhem a cor da unidade. Nenhum aparece marcado antes da primeira escolha. */
 export function UnitSwatches({ label }: { label: string }) {
-  const { color, chooseColor } = useSelection();
+  const { color, colorTouched, chooseColor } = useSelection();
   return (
     <div className="swatches" role="group" aria-label={label}>
       {COLOR_KEYS.map((key) => (
@@ -16,7 +30,7 @@ export function UnitSwatches({ label }: { label: string }) {
           className="color-product-choice"
           data-color={key}
           aria-label={COLOR_LABELS[key]}
-          aria-pressed={color === key}
+          aria-pressed={colorTouched && color === key}
           onClick={() => chooseColor(key)}
         >
           <img src={`/thumbs/produto-${key}-110.webp`} alt="" loading="lazy" decoding="async" />

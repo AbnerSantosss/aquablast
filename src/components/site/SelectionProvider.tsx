@@ -77,11 +77,13 @@ export function kitFocusTarget(root: ParentNode | null | undefined): HTMLElement
   );
 }
 
-/** Onde o foco vai ao chegar nas escolhas: kit -> passo atual (ou o 1o controle); unidade -> cor pressionada. */
+/** Onde o foco vai ao chegar nas escolhas: kit -> passo atual (ou o 1o controle); unidade -> cor pressionada (ou a 1a). */
 function choiceFocusTarget(root: ParentNode | null, pack: Pack): HTMLElement | null {
   if (!root) return null;
   if (pack === "kit") return kitFocusTarget(root) ?? root.querySelector<HTMLElement>(".kit-step button");
-  return root.querySelector<HTMLElement>('button[aria-pressed="true"]');
+  return (
+    root.querySelector<HTMLElement>('button[aria-pressed="true"]') ?? root.querySelector<HTMLElement>("button[data-color]")
+  );
 }
 
 function scrollToCard(pack: Pack) {
