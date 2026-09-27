@@ -627,3 +627,96 @@
 @media(min-width:56.3125rem) and (max-height:46rem){
   #inicio .desktop-product-panel .desktop-delivery-content>img{width:5rem}
 }
+
+/* ==========================================================================================
+   Extensao 3 do pedido ux-selecao-guiada-kit (dono, 27/09): "a cor tem que ser um destaque nos cards
+   de compra, e a borda deve um blur rgb com as cores do site". Nenhum HEX novo: #ee4d2d/#ffb52e/
+   #ffe063/#63e1ff/#39c6ff/#0081ff/#006bca/#c9e2f1/#edf8ff ja existiam.
+   Como: o bloco de cor (unidade: .color-choice; kit: .kit-color-selectors) perde fundo e borda proprios
+   e ganha dois pseudo-elementos atras do conteudo (isolation + z-index:-1, na ordem do DOM):
+   ::before = brilho (o mesmo degrade, desfocado, vazando .25rem pela borda);
+   ::after  = moldura (degrade na borda de .1875rem + fundo solido por dentro, que tampa o brilho).
+   O anel de pulso do guia (kit-cue-ring, box-shadow no proprio bloco) continua funcionando por fora.
+   O card tem overflow:hidden: o brilho fica dentro da margem do corpo do card.
+   ========================================================================================== */
+@keyframes color-rgb-flow{to{background-position:300% 0}}
+#ofertas .offer-card-body>.color-choice,
+#ofertas .offer-card-body>.kit-color-selectors{
+  position:relative;
+  isolation:isolate;
+  border:0;
+  border-radius:1rem;
+  background:none;
+}
+#ofertas .offer-card-body>.color-choice::before,
+#ofertas .offer-card-body>.kit-color-selectors::before,
+#ofertas .offer-card-body>.color-choice::after,
+#ofertas .offer-card-body>.kit-color-selectors::after{
+  content:'';
+  position:absolute;
+  z-index:-1;
+  border-radius:inherit;
+  pointer-events:none;
+  animation:color-rgb-flow 5s linear infinite;
+}
+#ofertas .offer-card-body>.color-choice::before,
+#ofertas .offer-card-body>.kit-color-selectors::before{
+  inset:-.25rem;
+  background:linear-gradient(100deg,#ee4d2d,#ffb52e,#ffe063,#63e1ff,#0081ff,#006bca,#ee4d2d) 0 0/300% 100%;
+  filter:blur(.625rem);
+  opacity:.95;
+}
+#ofertas .offer-card-body>.color-choice::after,
+#ofertas .offer-card-body>.kit-color-selectors::after{
+  inset:0;
+  border:.1875rem solid transparent;
+  background:
+    linear-gradient(#c9e2f1,#c9e2f1) padding-box,
+    linear-gradient(100deg,#ee4d2d,#ffb52e,#ffe063,#63e1ff,#0081ff,#006bca,#ee4d2d) 0 0/300% 100% border-box;
+  animation-name:choice-border-flow;
+}
+/* Kit: por dentro fica o azul bem claro do site, para os dois passos (azul e laranja) aparecerem. */
+#ofertas .offer-card-body>.kit-color-selectors::after{
+  background:
+    linear-gradient(#edf8ff,#edf8ff) padding-box,
+    linear-gradient(100deg,#ee4d2d,#ffb52e,#ffe063,#63e1ff,#0081ff,#006bca,#ee4d2d) 0 0/300% 100% border-box;
+}
+#ofertas .offer-card-body>.kit-color-selectors{padding:.5rem}
+
+/* Cor como destaque: rotulo maior e mais forte, amostras com o brinquedo maior. */
+#ofertas .color-choice>span{color:var(--navy);font-weight:900}
+#ofertas .color-choice .color-label{color:#006bca}
+#ofertas .kit-step .choice-row-label>span{font-weight:900;color:var(--navy)}
+#ofertas .color-product-choice>span,
+#ofertas .kit-color-row .color-product-choice>span{font-weight:900}
+@media(min-width:56.3125rem){
+  #ofertas.offers .color-choice{padding:.625rem .75rem}
+  #ofertas.offers .color-choice>span{font-size:1.0625rem}
+  #ofertas.offers .color-choice .swatches{max-width:17rem}
+  #ofertas.offers .color-product-choice,
+  #ofertas.offers .kit-color-row .color-product-choice{min-height:3.75rem}
+  #ofertas.offers .color-product-choice>img{height:2.375rem}
+  #ofertas.offers .color-product-choice>span,
+  #ofertas.offers .kit-color-row .color-product-choice>span{font-size:.875rem}
+}
+@media(min-width:56.3125rem) and (max-height:48rem){
+  #ofertas.offers .color-product-choice,
+  #ofertas.offers .kit-color-row .color-product-choice{min-height:3.375rem}
+  #ofertas.offers .color-product-choice>img{height:2.125rem}
+}
+@media(max-width:56.25rem){
+  #ofertas.offers .color-choice{padding:.625rem .625rem .5rem}
+  #ofertas.offers .color-choice>span{font-size:1rem}
+  #ofertas.offers .color-product-choice,
+  #ofertas.offers .kit-color-row .color-product-choice{min-height:3.5rem}
+  #ofertas.offers .color-product-choice>img{height:2.125rem}
+  #ofertas.offers .color-product-choice>span,
+  #ofertas.offers .kit-color-row .color-product-choice>span{font-size:.875rem}
+  #ofertas.offers .offer-card-body>.kit-color-selectors{padding:.4375rem}
+}
+@media(prefers-reduced-motion:reduce){
+  #ofertas .offer-card-body>.color-choice::before,
+  #ofertas .offer-card-body>.kit-color-selectors::before,
+  #ofertas .offer-card-body>.color-choice::after,
+  #ofertas .offer-card-body>.kit-color-selectors::after{animation:none}
+}
