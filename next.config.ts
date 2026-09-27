@@ -8,6 +8,35 @@ const securityHeaders = [
   { key: "Strict-Transport-Security", value: "max-age=31536000" },
 ];
 
+/**
+ * Checkout próprio (plano Fase 6.4): sem cache e Referrer-Policy explícita no /checkout e nas APIs dele.
+ * CSP só nas páginas /checkout: o rastreamento é 100% no servidor (Meta CAPI + GA4 MP), então não há GTM
+ * nem pixel aqui. Libera apenas o SDK do Mercado Pago (tokenização do cartão no navegador) e os domínios
+ * que ele usa para iframes/API/estáticos. Domínios do MP a confirmar no painel/documentação ao ligar o gateway.
+ * 'unsafe-inline' em script-src é exigido pelos scripts inline de hidratação do Next (sem nonce);
+ * 'unsafe-eval' e ws: só em desenvolvimento (HMR).
+ */
+const isDev = process.env.NODE_ENV !== "production";
+const MP_HOSTS = "https://*.mercadopago.com https://*.mercadopago.com.br https://*.mercadolibre.com https://*.mlstatic.com";
+const checkoutCsp = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://sdk.mercadopago.com ${MP_HOSTS}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  `connect-src 'self' ${MP_HOSTS}${isDev ? " ws: wss:" : ""}`,
+  `frame-src 'self' ${MP_HOSTS}`,
+  "form-action 'self'",
+  "base-uri 'self'",
+  "frame-ancestors 'self'",
+  "object-src 'none'",
+].join("; ");
+
+const checkoutHeaders = [
+  { key: "Cache-Control", value: "private, no-store" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+];
+
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
@@ -18,6 +47,10 @@ const nextConfig: NextConfig = {
       { source: "/api/(.*)", headers: [{ key: "Cache-Control", value: "private, no-store" }] },
       { source: "/admin/(.*)", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }, { key: "Cache-Control", value: "private, no-store" }] },
       { source: "/rastrear", headers: [{ key: "X-Robots-Tag", value: "noindex" }] },
+      // `:path*` também casa com "/checkout" sem nada depois.
+      { source: "/checkout/:path*", headers: [...checkoutHeaders, { key: "Content-Security-Policy", value: checkoutCsp }] },
+      { source: "/api/checkout/:path*", headers: checkoutHeaders },
+      { source: "/checkout/pedido/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
     ];
   },
 };
