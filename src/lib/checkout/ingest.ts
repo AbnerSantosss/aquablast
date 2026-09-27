@@ -5,7 +5,9 @@ import { sendOrderEmail } from "@/lib/email/send";
 import { applyPaymentStatus } from "@/lib/orders/payment";
 import { addOrderEvent, encryptDocument, generateOrderNumber, getOrderById, updateOrderFields } from "@/lib/orders/service";
 import { getSettings } from "@/lib/settings";
+import { trackServerEvent, zedyPurchaseEnabled } from "@/lib/tracking-ads/dispatch";
 import { normalizeCheckoutPayload, type NormalizedCheckout } from "./normalize";
+import { OWN_PROVIDER } from "./own/order";
 
 export type IngestOutcome = { status: "processed" | "ignored" | "unmapped"; detail: string; orderId: string | null };
 
@@ -73,6 +75,14 @@ export async function ingestCheckoutWebhook(deliveryId: string, payload: unknown
   const applied = await applyPaymentStatus({ orderId: order.id, paymentStatus: n.paymentStatus ?? order.paymentStatus, source: "checkout", dedupeKey: `wh:${deliveryId}` });
   order = applied.order;
   detail.push(...applied.detail);
+
+  // Purchase pela CAPI/GA4 para pedidos que ainda vêm da Zedy (plano 9.6). DESLIGADO por padrão
+  // (ZEDY_PURCHASE_ENABLED em tracking-ads/dispatch.ts): enquanto a Zedy também manda Purchase pelo Pixel dela,
+  // ligar isto conta a venda em dobro. Mesmo event_id do checkout próprio (pur-<orderNumber>), então nunca duplica aqui.
+  if (applied.becamePaid && order.checkoutProvider !== OWN_PROVIDER && (await zedyPurchaseEnabled())) {
+    await trackServerEvent({ name: "Purchase", eventId: `pur-${order.orderNumber}`, order });
+    detail.push("Purchase repassado ao rastreamento de anúncios (ver conversion_events)");
+  }
 
   if (isNew && order.paymentStatus === "pending" && order.pixCode) {
     const mail = await sendOrderEmail(order, "pix_pending", { automatic: true });

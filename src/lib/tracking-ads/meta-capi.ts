@@ -1,17 +1,46 @@
-// STUB: implementado por rastreamento.
-// SÓ SERVIDOR. Meta Conversions API: POST https://graph.facebook.com/v<versão>/<pixelId>/events?access_token=<ads.meta.accessToken>
-// com { data: [{ event_name, event_time, event_id, action_source: "website", event_source_url, user_data: { em, ph, external_id
-// (sha256Hex), fbp, fbc, client_ip_address, client_user_agent }, custom_data: { currency: "BRL", value, content_ids, num_items } }],
-// test_event_code?: ads.meta.testEventCode }. Nunca logar o access token nem os dados pessoais em claro.
+import { isIP } from "node:net";
+import { sha256Hex } from "@/lib/crypto";
+import { env } from "@/lib/env";
+import { errorMessage } from "@/lib/log";
+import { getSettings } from "@/lib/settings";
 import type { TrackEventName } from "./types";
+
+/**
+ * Meta Conversions API (plano 9.4). SÓ SERVIDOR.
+ * POST https://graph.facebook.com/<versão>/<pixelId>/events?access_token=<ads.meta.accessToken>
+ * Regras:
+ * - Dados pessoais vão normalizados + SHA-256 (sha256Hex). CPF NUNCA é enviado, nem com hash.
+ * - client_ip_address, client_user_agent, fbp e fbc vão SEM hash (é o que a Meta exige).
+ * - Campo vazio é omitido (nunca manda hash de string vazia).
+ * - test_event_code só entra no corpo quando ads.meta.testEventCode está preenchido (em produção: vazio).
+ * - O access token nunca aparece em log, detalhe ou exceção (scrubSecret).
+ * - Timeout de 10 s. Quem chama (dispatch.ts) trata falha como "error" e nunca derruba a compra.
+ */
+
+/** Versão da Graph API. Trocar aqui quando a Meta descontinuar esta. */
+export const META_GRAPH_VERSION = "v25.0";
+
+const TIMEOUT_MS = 10_000;
+
+export interface MetaHashedUserData {
+  email?: string;
+  phone?: string;
+  externalId?: string;
+  firstName?: string;
+  lastName?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
+}
 
 export interface MetaEventInput {
   eventName: TrackEventName;
   eventId: string;
   eventTime: Date;
   sourceUrl?: string;
-  /** Já hasheados (sha256Hex de valor normalizado). */
-  hashed: { email?: string; phone?: string; externalId?: string };
+  /** Já hasheados (sha256Hex de valor normalizado). Use hashMetaUserData() para montar. */
+  hashed: MetaHashedUserData;
   fbp?: string;
   fbc?: string;
   clientIp?: string;
@@ -19,9 +48,252 @@ export interface MetaEventInput {
   valueCents?: number;
   contentIds?: string[];
   numItems?: number;
+  /** Número do pedido (só Purchase). */
+  orderId?: string;
+  /** Itens para custom_data.contents. */
+  contents?: { id: string; quantity: number; itemPriceCents: number }[];
 }
 
+export interface MetaSendResult {
+  ok: boolean;
+  detail?: string;
+}
+
+/* ------------------------------------------------------------------ normalização + hash */
+
+/** Minúsculas, sem acento, só letras a-z (regra da Meta para fn/ln/ct). */
+function lettersOnly(v: string): string {
+  return v
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
+}
+
+function digitsOnly(v: string): string {
+  return v.replace(/\D/g, "");
+}
+
+/** Telefone brasileiro só com dígitos e DDI 55 na frente. Curto demais → vazio. */
+export function normalizeBrPhone(v: string): string {
+  let d = digitsOnly(v).replace(/^0+/, "");
+  if (d.length === 10 || d.length === 11) d = `55${d}`;
+  return d.length >= 12 && d.length <= 13 && d.startsWith("55") ? d : "";
+}
+
+function hashIf(v: string | null | undefined): string | undefined {
+  const s = (v ?? "").trim();
+  return s ? sha256Hex(s) : undefined;
+}
+
+/** Dados crus do comprador (nunca CPF). */
+export interface MetaRawUserData {
+  email?: string | null;
+  phone?: string | null;
+  /** Nome completo: a 1ª palavra vira fn e a última vira ln. */
+  name?: string | null;
+  city?: string | null;
+  /** UF de 2 letras. */
+  state?: string | null;
+  /** CEP. */
+  zip?: string | null;
+  /** Código ISO de 2 letras. Padrão "br". */
+  country?: string | null;
+  /** Identificador estável do comprador no nosso sistema (id do carrinho). */
+  externalId?: string | null;
+}
+
+/** Normaliza cada campo como a Meta pede e aplica SHA-256. Campos vazios ficam de fora. */
+export function hashMetaUserData(raw: MetaRawUserData): MetaHashedUserData {
+  const words = (raw.name ?? "").trim().split(/\s+/).filter(Boolean);
+  const fn = words.length ? lettersOnly(words[0]) : "";
+  const ln = words.length > 1 ? lettersOnly(words[words.length - 1]) : "";
+  const st = lettersOnly(raw.state ?? "");
+  const country = lettersOnly(raw.country ?? "br");
+  const out: MetaHashedUserData = {
+    email: hashIf((raw.email ?? "").trim().toLowerCase()),
+    phone: hashIf(normalizeBrPhone(raw.phone ?? "")),
+    firstName: hashIf(fn),
+    lastName: hashIf(ln),
+    city: hashIf(lettersOnly(raw.city ?? "")),
+    state: hashIf(st.length === 2 ? st : ""),
+    zip: hashIf(digitsOnly(raw.zip ?? "")),
+    country: hashIf(country.length === 2 ? country : ""),
+    externalId: hashIf(raw.externalId ?? ""),
+  };
+  for (const k of Object.keys(out) as (keyof MetaHashedUserData)[]) if (!out[k]) delete out[k];
+  return out;
+}
+
+/* ------------------------------------------------------------------ corpo */
+
+type MetaUserData = Record<string, string | string[]>;
+
+function userDataOf(input: MetaEventInput): MetaUserData {
+  const h = input.hashed;
+  const ud: MetaUserData = {};
+  const put = (key: string, v: string | undefined) => {
+    if (v) ud[key] = [v];
+  };
+  put("em", h.email);
+  put("ph", h.phone);
+  put("fn", h.firstName);
+  put("ln", h.lastName);
+  put("ct", h.city);
+  put("st", h.state);
+  put("zp", h.zip);
+  put("country", h.country);
+  put("external_id", h.externalId);
+  const ip = input.clientIp?.trim();
+  if (ip && isIP(ip)) ud.client_ip_address = ip;
+  if (input.userAgent?.trim()) ud.client_user_agent = input.userAgent.trim();
+  if (input.fbp?.trim()) ud.fbp = input.fbp.trim();
+  if (input.fbc?.trim()) ud.fbc = input.fbc.trim();
+  return ud;
+}
+
+const reais = (cents: number) => Math.round(cents) / 100;
+
+/** Monta o objeto `data[0]` da CAPI. Exportado para diagnóstico/teste (não contém token). */
+export function buildMetaEvent(input: MetaEventInput): Record<string, unknown> {
+  const custom: Record<string, unknown> = { currency: "BRL" };
+  if (typeof input.valueCents === "number") custom.value = reais(input.valueCents);
+  if (input.orderId) custom.order_id = input.orderId;
+  if (input.contentIds?.length) {
+    custom.content_type = "product";
+    custom.content_ids = input.contentIds;
+  }
+  if (input.contents?.length) custom.contents = input.contents.map((c) => ({ id: c.id, quantity: c.quantity, item_price: reais(c.itemPriceCents) }));
+  if (typeof input.numItems === "number") custom.num_items = input.numItems;
+
+  const ev: Record<string, unknown> = {
+    event_name: input.eventName,
+    event_time: Math.floor(input.eventTime.getTime() / 1000),
+    event_id: input.eventId,
+    action_source: "website",
+    event_source_url: input.sourceUrl || defaultSourceUrl(),
+    user_data: userDataOf(input),
+    custom_data: custom,
+  };
+  return ev;
+}
+
+export function defaultSourceUrl(path = "/checkout"): string {
+  try {
+    return new URL(path, env().APP_URL).toString();
+  } catch {
+    return path;
+  }
+}
+
+/* ------------------------------------------------------------------ envio */
+
+interface MetaConfig {
+  pixelId: string;
+  accessToken: string;
+  testEventCode: string;
+}
+
+async function metaConfig(): Promise<MetaConfig> {
+  const s = await getSettings(["ads.meta.pixelId", "ads.meta.accessToken", "ads.meta.testEventCode"] as const);
+  return {
+    pixelId: String(s["ads.meta.pixelId"] ?? "").trim(),
+    accessToken: String(s["ads.meta.accessToken"] ?? "").trim(),
+    testEventCode: String(s["ads.meta.testEventCode"] ?? "").trim(),
+  };
+}
+
+/** Tira o token de qualquer texto que vá para log/detalhe/painel. */
+function scrubSecret(text: string, secret: string): string {
+  let t = text;
+  if (secret) t = t.split(secret).join("***");
+  return t.replace(/access_token=[^&\s"]+/gi, "access_token=***").slice(0, 500);
+}
+
+interface MetaApiResponse {
+  events_received?: number;
+  messages?: unknown[];
+  fbtrace_id?: string;
+  error?: { message?: string; type?: string; code?: number; error_subcode?: number; error_user_msg?: string; fbtrace_id?: string };
+}
+
+async function postEvents(cfg: MetaConfig, events: Record<string, unknown>[], testEventCode: string): Promise<MetaSendResult> {
+  if (!/^\d{5,25}$/.test(cfg.pixelId)) return { ok: false, detail: "Meta: Pixel ID vazio ou inválido no painel" };
+  if (!cfg.accessToken) return { ok: false, detail: "Meta: token de acesso não configurado no painel" };
+
+  const url = new URL(`https://graph.facebook.com/${META_GRAPH_VERSION}/${cfg.pixelId}/events`);
+  url.searchParams.set("access_token", cfg.accessToken);
+  const body: Record<string, unknown> = { data: events };
+  if (testEventCode) body.test_event_code = testEventCode;
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+      cache: "no-store",
+    });
+    const text = await res.text();
+    let json: MetaApiResponse = {};
+    try {
+      json = text ? (JSON.parse(text) as MetaApiResponse) : {};
+    } catch {
+      json = {};
+    }
+    const test = testEventCode ? " (com test_event_code)" : "";
+    if (!res.ok || json.error) {
+      const e = json.error;
+      const msg = e ? `${e.message ?? "erro"}${e.code ? ` [code ${e.code}${e.error_subcode ? `/${e.error_subcode}` : ""}]` : ""}${e.fbtrace_id ? ` fbtrace ${e.fbtrace_id}` : ""}` : text.slice(0, 200);
+      return { ok: false, detail: scrubSecret(`Meta HTTP ${res.status}: ${msg}${test}`, cfg.accessToken) };
+    }
+    const received = typeof json.events_received === "number" ? json.events_received : 0;
+    const detail = `Meta HTTP ${res.status}: events_received=${received}${json.fbtrace_id ? ` fbtrace ${json.fbtrace_id}` : ""}${test}`;
+    return { ok: received > 0, detail: scrubSecret(detail, cfg.accessToken) };
+  } catch (err) {
+    const timeout = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
+    return { ok: false, detail: scrubSecret(timeout ? `Meta: sem resposta em ${TIMEOUT_MS / 1000} s` : `Meta: falha de rede (${errorMessage(err)})`, cfg.accessToken) };
+  }
+}
+
+/** Envia um evento para a CAPI. Nunca lança. */
 export async function sendMetaEvent(input: MetaEventInput): Promise<{ ok: boolean; detail?: string }> {
-  void input; // STUB: implementado por rastreamento
-  return { ok: false, detail: "meta-capi não implementado" };
+  try {
+    const cfg = await metaConfig();
+    return await postEvents(cfg, [buildMetaEvent(input)], cfg.testEventCode);
+  } catch (err) {
+    return { ok: false, detail: `Meta: ${errorMessage(err)}`.slice(0, 500) };
+  }
+}
+
+/**
+ * Botão "Enviar evento de teste" do painel de Pixels (plano 11.10): manda um PageView para a Meta
+ * COM test_event_code (exige o código preenchido no painel, ou passado em `testEventCode`).
+ * O evento aparece em Gerenciador de Eventos → Eventos de teste. Não grava em conversion_events.
+ */
+export async function sendMetaTestEvent(opts: { clientIp?: string; userAgent?: string; testEventCode?: string } = {}): Promise<{ ok: boolean; detail?: string }> {
+  try {
+    const cfg = await metaConfig();
+    const code = (opts.testEventCode ?? cfg.testEventCode).trim();
+    if (!code) return { ok: false, detail: "Preencha o código de evento de teste (Gerenciador de Eventos → Eventos de teste) antes de enviar." };
+    const now = new Date();
+    const ev = {
+      event_name: "PageView",
+      event_time: Math.floor(now.getTime() / 1000),
+      event_id: `test-${now.getTime().toString(36)}`,
+      action_source: "website",
+      event_source_url: defaultSourceUrl("/checkout"),
+      user_data: userDataOf({
+        eventName: "InitiateCheckout",
+        eventId: "",
+        eventTime: now,
+        hashed: hashMetaUserData({ externalId: "painel-teste", country: "br" }),
+        clientIp: opts.clientIp,
+        userAgent: opts.userAgent?.trim() || "AquaBlast painel (evento de teste)",
+      }),
+    };
+    return await postEvents(cfg, [ev], code);
+  } catch (err) {
+    return { ok: false, detail: `Meta: ${errorMessage(err)}`.slice(0, 500) };
+  }
 }

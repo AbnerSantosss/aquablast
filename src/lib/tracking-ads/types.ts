@@ -1,4 +1,4 @@
-// STUB: implementado por rastreamento (pode acrescentar campos; não remover os existentes).
+// Tipos do rastreamento de anúncios (plano fase 9). Pode acrescentar campos; não remover os existentes.
 // Rastreamento de anúncios 100% no servidor (decisão do dono, 2026-09-27 03h16): Meta CAPI + GA4 Measurement Protocol.
 // Sem GTM, sem dataLayer, sem pixel no navegador para os eventos do checkout. O navegador só LÊ identificadores.
 import type { CheckoutCart, Order } from "@/db/schema";
