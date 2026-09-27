@@ -1,0 +1,226 @@
+/*
+ * Estilos das telas do checkout próprio (Fase 11.7-11.10: Produtos, Gateways, Personalizar, Pixels).
+ * Regra do projeto: não editar admin.css (é do painel-a). Aqui só se usam os tokens que já existem em
+ * admin.css (:root) mais color-mix() — nenhum HEX novo.
+ */
+
+.gw-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.gw-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  background: var(--card);
+}
+
+.gw-card.is-active {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 15%, transparent);
+}
+
+.gw-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.gw-card-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.gw-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  display: inline-block;
+  background: var(--muted);
+}
+
+.gw-dot.is-on {
+  background: var(--green);
+}
+
+.routing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.ca-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.ca-tab {
+  border: 1px solid var(--line);
+  background: var(--pale);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ca-tab.is-active {
+  background: var(--navy);
+  color: #fff;
+  border-color: var(--navy);
+}
+
+.ca-panel {
+  display: none;
+}
+
+.ca-panel.is-active {
+  display: block;
+}
+
+.ca-preview-wrap {
+  position: sticky;
+  top: 1rem;
+}
+
+.ca-preview {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--c-bg, var(--bg));
+  box-shadow: var(--shadow);
+}
+
+.ca-preview-head {
+  padding: 0.7rem 1rem;
+  color: var(--c-on-primary, #fff);
+  background: var(--c-primary, var(--navy));
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.ca-preview-timer {
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--c-on-timer, #fff);
+  background: var(--c-timer, var(--red));
+}
+
+.ca-preview-ship {
+  padding: 0.5rem 1rem;
+  font-size: 0.78rem;
+  background: color-mix(in srgb, var(--c-accent, var(--cyan)) 18%, white);
+  color: var(--text);
+}
+
+.ca-preview-banner {
+  padding: 1.1rem 1rem;
+  background: color-mix(in srgb, var(--c-primary, var(--navy)) 92%, black);
+  color: #fff;
+}
+
+.ca-preview-banner .eyebrow {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.ca-preview-banner h4 {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+}
+
+.ca-preview-banner p {
+  margin: 0;
+  font-size: 0.82rem;
+  opacity: 0.9;
+}
+
+.ca-preview-body {
+  padding: 1rem;
+}
+
+.ca-preview-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 1rem;
+  font-weight: 800;
+  color: var(--c-on-button, #fff);
+  background: var(--c-button, var(--green));
+}
+
+.ca-preview-badge {
+  display: inline-block;
+  margin-top: 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c-accent, var(--cyan)) 25%, white);
+  color: var(--text);
+}
+
+.ca-preview-footer {
+  padding: 0.7rem 1rem;
+  font-size: 0.72rem;
+  text-align: center;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+}
+
+.contrast-warn {
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--orange);
+}
+
+.color-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.color-field input[type="color"] {
+  width: 2.4rem;
+  height: 2.2rem;
+  padding: 0.15rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+
+.color-field input[type="text"] {
+  flex: 1;
+}
+
+.evt-log {
+  max-height: 22rem;
+  overflow: auto;
+}
+
+.pix-mono-box {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  background: var(--pale);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.75rem;
+  word-break: break-all;
+}

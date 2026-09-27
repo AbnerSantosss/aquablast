@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { OrderStatus } from "@/db/schema";
+import { desc, eq } from "drizzle-orm";
+import "@/app/admin/checkout-admin.css";
+import { db } from "@/db";
+import { conversionEvents, paymentAttempts, type OrderStatus } from "@/db/schema";
 import { ActionForm } from "@/components/admin/ActionForm";
-import { EmailStatusBadge, PaymentBadge, SourceBadge, StatusBadge, WebhookBadge } from "@/components/admin/Badge";
+import { EmailStatusBadge, PaymentBadge, SourceBadge, StatusBadge, Tone, WebhookBadge } from "@/components/admin/Badge";
 import { CopyButton } from "@/components/admin/CopyButton";
 import { Flash } from "@/components/admin/Flash";
 import { JsonBlock } from "@/components/admin/JsonBlock";
@@ -11,11 +14,17 @@ import { requireAdmin } from "@/lib/auth/session";
 import { activeAccessCodePrefix, getOrderById, getOrderEvents, maskedDocument } from "@/lib/orders/service";
 import { PAYMENT_LABEL, STATUS_LABEL, STATUS_ORDER, canTransition } from "@/lib/orders/status";
 import { getSettings } from "@/lib/settings";
+import { GATEWAY_LABELS, isGatewayName } from "@/lib/gateways";
 import { CARRIERS } from "@/lib/tracking/provider";
 import { addManualEvent, changeStatus, resendAccessCode, resendPix, saveNotes, sendConfirmation, sendShippedEmail, updatePayment } from "@/lib/admin/actions/orders";
+import { refundOrderPayment } from "@/lib/admin/actions/gateways";
 import { clearTracking, saveTracking, syncTrackingNow } from "@/lib/admin/actions/tracking";
 import { firstParam, formatBRL, formatCep, formatDateTime, formatPhone, telLink, timeAgo, whatsappLink } from "@/lib/admin/format";
 import { listOrderEmails, listOrderWebhooks } from "@/lib/admin/queries";
+
+type ToneName = "gray" | "blue" | "cyan" | "orange" | "green" | "red";
+const ATTEMPT_STATUS_TONE: Record<string, ToneName> = { paid: "green", pending: "orange", refused: "red", canceled: "gray", refunded: "blue", error: "red" };
+const EVENT_STATUS_TONE: Record<string, ToneName> = { sent: "green", error: "red", skipped: "gray" };
 
 export const metadata: Metadata = { title: "Pedido" };
 
@@ -29,13 +38,17 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const order = await getOrderById(id);
   if (!order) notFound();
 
-  const [eventsAsc, emails, webhooks, codePrefix, settings] = await Promise.all([
+  const [eventsAsc, emails, webhooks, codePrefix, settings, attempts, convEvents] = await Promise.all([
     getOrderEvents(order.id),
     listOrderEmails(order.id),
     listOrderWebhooks(order.id),
     activeAccessCodePrefix(order.id),
     getSettings(["store.name", "store.trackingPageUrl", "tracking.17track.defaultCarrier", "tracking.provider"] as const),
+    db.query.paymentAttempts.findMany({ where: eq(paymentAttempts.orderId, order.id), orderBy: [desc(paymentAttempts.createdAt)] }),
+    db.query.conversionEvents.findMany({ where: eq(conversionEvents.orderId, order.id), orderBy: [desc(conversionEvents.sentAt)] }),
   ]);
+  const latestPaidAttempt = attempts.find((a) => a.status === "paid" && a.providerTransactionId);
+  const canRefund = order.checkoutProvider === "proprio" && order.paymentStatus === "paid" && !!latestPaidAttempt && isGatewayName(latestPaidAttempt.provider);
   const events = [...eventsAsc].sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
 
   const firstName = (order.customerName ?? "").split(/\s+/)[0] || "tudo bem";
@@ -74,7 +87,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   return (
     <>
       <div className="crumbs">
-        <Link href="/admin">← Pedidos</Link>
+        <Link href="/admin/pedidos">← Pedidos</Link>
       </div>
       <div className="page-head">
         <div>
@@ -243,6 +256,91 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                 Aplicar
               </button>
             </ActionForm>
+
+            {order.checkoutProvider === "proprio" ? (
+              <>
+                <h3 className="section-title">Tentativas de pagamento (checkout próprio)</h3>
+                {attempts.length === 0 ? (
+                  <p className="muted small">Nenhuma tentativa registrada.</p>
+                ) : (
+                  <div className="table-wrap">
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Quando</th>
+                          <th>Gateway</th>
+                          <th>Método</th>
+                          <th>Status</th>
+                          <th className="num">Valor</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {attempts.map((a) => (
+                          <tr key={a.id}>
+                            <td className="nowrap">{formatDateTime(a.createdAt)}</td>
+                            <td>{(isGatewayName(a.provider) && GATEWAY_LABELS[a.provider]) || a.provider}</td>
+                            <td>
+                              {a.method}
+                              {a.installments > 1 ? <span className="cell-sub">{a.installments}x</span> : null}
+                            </td>
+                            <td>
+                              <Tone tone={ATTEMPT_STATUS_TONE[a.status] ?? "gray"}>{a.status}</Tone>
+                              {a.statusReason ? <span className="cell-sub">{a.statusReason}</span> : null}
+                            </td>
+                            <td className="num">{formatBRL(a.amountCents / 100)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                {canRefund ? (
+                  <ActionForm
+                    action={refundOrderPayment}
+                    inline
+                    confirm={`Estornar o pagamento do pedido ${order.orderNumber}? O gateway será chamado agora e a operação não pode ser desfeita por aqui.`}
+                  >
+                    <input type="hidden" name="orderId" value={order.id} />
+                    <button type="submit" className="btn btn-ghost danger btn-sm">
+                      Estornar
+                    </button>
+                  </ActionForm>
+                ) : null}
+
+                <h3 className="section-title">Conversões enviadas (Meta / GA4)</h3>
+                {convEvents.length === 0 ? (
+                  <p className="muted small">Nenhum evento de conversão registrado para este pedido.</p>
+                ) : (
+                  <div className="table-wrap">
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Quando</th>
+                          <th>Destino</th>
+                          <th>Evento</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {convEvents.map((e) => (
+                          <tr key={e.id}>
+                            <td className="nowrap">{formatDateTime(e.sentAt)}</td>
+                            <td>{e.destination === "meta" ? "Meta" : e.destination === "ga4" ? "GA4" : e.destination}</td>
+                            <td>
+                              {e.eventName}
+                              {e.detail ? <span className="cell-sub">{e.detail}</span> : null}
+                            </td>
+                            <td>
+                              <Tone tone={EVENT_STATUS_TONE[e.status] ?? "gray"}>{e.status}</Tone>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            ) : null}
 
             {order.utm && Object.keys(order.utm).length ? (
               <>

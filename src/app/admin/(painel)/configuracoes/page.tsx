@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { Tone } from "@/components/admin/Badge";
 import { ChangePasswordForm } from "@/components/admin/ChangePasswordForm";
@@ -324,6 +325,12 @@ export default async function SettingsPage() {
           <h2>Checkout</h2>
           <p className="muted small">Recebe pedidos e pagamentos da plataforma de checkout.</p>
         </div>
+        <p className="callout" style={{ marginBottom: "1rem" }}>
+          Esta seção é sobre o webhook da <strong>Zedy</strong> (checkout atual). Para configurar o <strong>checkout próprio</strong>{" "}
+          (preços, gateways de pagamento, aparência e Pixels), use <Link href="/admin/produtos">Produtos</Link>,{" "}
+          <Link href="/admin/gateways">Gateways</Link>, <Link href="/admin/checkout">Personalizar checkout</Link> e{" "}
+          <Link href="/admin/pixels">Pixels</Link> no menu.
+        </p>
         <h3 className="section-title">URL do webhook (cole no checkout)</h3>
         <div className="copy-line">
           <code>{checkoutWebhookUrl}</code>
