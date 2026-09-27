@@ -175,7 +175,9 @@
    a orientacao fica no fim deste arquivo (.desktop-choice-guide + .desktop-packages.is-guiding). */
 
 /* == Item 4: destaque de borda permanente no card "Kit com 2" (subagente C) == */
-/* #ofertas .price-card.kit-card ganha uma borda em gradiente SEMPRE visivel (mesmo sem is-selected),
+/* Desde 27/09 (dono: "so quando o kit for escolhido") a borda so aparece com .is-selected; sem selecao o
+   card do kit fica com a borda azul comum, igual a unidade. Texto original:
+   #ofertas .price-card.kit-card ganha uma borda em gradiente SEMPRE visivel (mesmo sem is-selected),
    no espirito da pilula: border transparente + fundo em 2 camadas (padding-box = fundo branco atual
    do card, border-box = gradiente dourado/ciano), reaproveitando o keyframe choice-border-flow ja
    usado por .catalog-choice-link (selection-gifting.css). O card "1 unidade" nao muda.
@@ -183,7 +185,7 @@
    classes), entao quando o kit tambem esta is-selected essa borda gradiente continua por cima da
    border-color solida azul do is-selected — mas o anel de selecao dele (box-shadow, nao alterado
    aqui) continua aparecendo por fora da borda, distinguindo selecionado de nao selecionado. */
-#ofertas .price-card.kit-card{
+#ofertas .price-card.kit-card.is-selected{
   border:.1875rem solid transparent;
   background:
     linear-gradient(#fff,#fff) padding-box,
@@ -192,10 +194,10 @@
   animation:choice-border-flow 6s linear infinite;
 }
 @media(max-width:42.5rem){
-  #ofertas .price-card.kit-card{border-width:.15625rem}
+  #ofertas .price-card.kit-card.is-selected{border-width:.15625rem}
 }
 @media(prefers-reduced-motion:reduce){
-  #ofertas .price-card.kit-card{animation:none}
+  #ofertas .price-card.kit-card.is-selected{animation:none}
 }
 
 /* == Item 5 (mobile) == */
