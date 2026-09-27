@@ -14,7 +14,7 @@ export function Gifting() {
           </h2>
           <p>
             <strong>O AquaBlast é um brinquedo lançador de água</strong>, feito para brincar ao ar livre com a
-            família. Primeiro vem o sorriso ao abrir o presente. Depois, os jatos de água, as
+            família: um presente de Dia das Crianças para filho, neto ou sobrinho. Primeiro vem o sorriso ao abrir o presente. Depois, os jatos de água, as
             corridas pelo quintal e aquele pedido de “só mais uma vez!”.
           </p>
         </div>

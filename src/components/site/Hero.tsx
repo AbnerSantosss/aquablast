@@ -64,7 +64,7 @@ function CatalogGallery({ children }: { children: ReactNode }) {
   return (
     <div className={videoActive ? "catalog-gallery desktop-video-active" : "catalog-gallery"}>
       <h1 id="hero-title" className="visually-hidden">
-        AquaBlast: brinquedo lançador de água elétrico — escolha 1 unidade ou o kit com 2
+        AquaBlast: brinquedo de água elétrico, presente de Dia das Crianças — escolha 1 unidade ou o kit com 2
       </h1>
       <div className="catalog-gift-label mobile-gallery-label">
         <img src="/thumbs/gift-60.webp" alt="" width={34} height={34} />
@@ -192,7 +192,7 @@ function DesktopProductPanel() {
   return (
     <div className="desktop-product-panel" aria-labelledby="desktop-product-title">
       <div className="desktop-product-heading">
-        <h2 id="desktop-product-title">Brinquedo lançador de água com efeito luminoso</h2>
+        <h2 id="desktop-product-title">Brinquedo de água elétrico com efeito luminoso</h2>
       </div>
       {/* Sem aria-label: o nome vem do conteúdo (texto visível + trechos visually-hidden) e continua
           "Nota 4,9 de 5. Leia as 66 avaliações do produto.", sem o "label-content-name-mismatch". */}

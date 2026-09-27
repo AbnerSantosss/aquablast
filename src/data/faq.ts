@@ -9,7 +9,12 @@ export const faq: FaqItem[] = [
   {
     question: "O que é o AquaBlast?",
     answer:
-      "É um brinquedo lançador de água, elétrico, com efeito luminoso de luz LED, bateria recarregável por USB e reservatório em tambor. Você escolhe 1 unidade, nas cores azul, vermelho ou preto, ou o kit com 2.",
+      "É um brinquedo de água elétrico, do tipo lançador de água, com efeito luminoso de luz LED, bateria recarregável por USB e reservatório em tambor. Você escolhe 1 unidade, nas cores azul, vermelho ou preto, ou o kit com 2.",
+  },
+  {
+    question: "O AquaBlast é um bom presente de Dia das Crianças?",
+    answer:
+      "Sim. É um brinquedo de água para brincar ao ar livre, no quintal ou no jardim, com luz LED e bateria recarregável por USB. É um presente para filho, neto ou sobrinho, e o kit com 2 deixa a brincadeira a dois. Confira a indicação de idade na embalagem antes de presentear.",
   },
   {
     question: "Qual opção devo escolher?",

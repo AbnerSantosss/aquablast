@@ -20,24 +20,28 @@ export const HOME_URL = SITE_URL;
 /** URL absoluta de um caminho do site (`/og-aquablast.jpg` -> `https://.../og-aquablast.jpg`). */
 export const absoluteUrl = (path: string): string => `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 
-// Meta Ads (dono, 27/09): "brinquedo lançador de água" no lugar de "pistola", para a revisão de
-// anúncios não ler a página como arma. Ver wiki/pedidos/2026-09-27-meta-ads-brinquedo.md.
+// Vocabulário (dono, 27/09): sem "pistola"/"arma" por causa do Meta Ads. O termo de busca é
+// "brinquedo de água" (Google Trends BR 12 meses: 54, contra 1 de "lançador de água"); "lançador"
+// fica só no texto da página. Ver wiki/pedidos/2026-09-27-seo-palavras-presente.md.
 
-/** Title da home (55 caracteres): termo principal no início, marca no fim. */
-export const SEO_TITLE = "Brinquedo lançador de água elétrico com LED | AquaBlast";
+// Campanha sazonal: trocar ou apagar (string vazia) depois de 12/10. Com ela, o title troca
+// "com luz LED | AquaBlast" pela campanha ("presente dia das crianças" dispara na semana do dia 12).
+export const CAMPAIGN = "Presente de Dia das Crianças";
+
+/** Title da home: 57 caracteres com a campanha, 50 sem. Termo principal no início. */
+export const SEO_TITLE = CAMPAIGN
+  ? `Brinquedo de água elétrico | ${CAMPAIGN}`
+  : "Brinquedo de água elétrico com luz LED | AquaBlast";
 
 /** Title de compartilhamento (WhatsApp, Facebook, X): pode ser mais longo que o da SERP. */
-export const OG_TITLE = "AquaBlast: brinquedo lançador de água recarregável com luz LED";
-
-// Campanha sazonal: trocar ou apagar (string vazia) depois de 12/10.
-export const CAMPAIGN = "Presente de Dia das Crianças";
+export const OG_TITLE = "AquaBlast: brinquedo de água elétrico e recarregável com luz LED";
 
 const OFFER_LINE = `1 unidade por ${PRICES.unit.pix} ou kit com 2 por ${PRICES.kit.pix} no Pix.`;
 
-/** Meta description (~142 caracteres com os preços de hoje). Sem CAMPAIGN, a frase continua correta. */
-export const SEO_DESCRIPTION = `Brinquedo lançador de água com luz LED e recarga USB. ${
-  CAMPAIGN ? `${CAMPAIGN}: ` : ""
-}${OFFER_LINE}`;
+/** Meta description (~157 caracteres com os preços de hoje, ~108 sem CAMPAIGN). Sem CAMPAIGN, a frase continua correta. */
+export const SEO_DESCRIPTION = `Brinquedo de água elétrico com LED e recarga USB${
+  CAMPAIGN ? `, ${CAMPAIGN.charAt(0).toLowerCase()}${CAMPAIGN.slice(1)} para filho ou neto` : ""
+}. ${OFFER_LINE}`;
 
 // Data da última mudança de conteúdo da home (AAAA-MM-DD). Vai para o <lastmod>
 // do sitemap e o dateModified do schema. Atualize quando mudar texto, preço ou oferta.
@@ -60,7 +64,7 @@ export const OG_IMAGE = {
   width: 1200,
   height: 630,
   type: "image/jpeg",
-  alt: "Brinquedo lançador de água AquaBlast nas cores azul, vermelho e preto",
+  alt: "Brinquedo de água elétrico AquaBlast nas cores azul, vermelho e preto",
 };
 
 /** Logo da Organization no schema (PNG 512x512 rastreável; o Google não usa data: URI nem SVG aqui). */
