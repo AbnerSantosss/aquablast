@@ -1,198 +1,134 @@
 "use client";
 
-import { useState } from "react";
-import { maskCEP, onlyDigits } from "@/lib/checkout/own/masks";
-import type { AddressData } from "./types";
-
-type ViaCep = {
-  cep?: string;
-  logradouro?: string;
-  bairro?: string;
-  localidade?: string;
-  uf?: string;
-  erro?: boolean;
-};
+import { Info, LoaderCircle } from "lucide-react";
+import type { ReactNode } from "react";
+import { Field, fullName, UFS } from "./Field";
+import type { CepState, FieldKey, FormData } from "./types";
 
 /**
- * Busca o CEP na ViaCEP com timeout de 5s (plano 8.7). Falha ou timeout => `null`, e quem chama cai
- * para o preenchimento manual (`.cep-manual`) — nunca inventa endereço.
+ * Etapa 2 — Entrega (origem app/checkout.tsx, `body(2)`), mesmos campos, textos e comportamento: os campos de
+ * endereço ficam travados até o CEP ser buscado; CEP achado preenche rua/bairro/cidade/UF; CEP não achado (ou
+ * ViaCEP fora do ar) libera tudo com o aviso `.cep-manual` e mostra Cidade/Estado. "CONFIRMAR ENDEREÇO" valida
+ * e revela as opções de frete; só então o botão vira CONTINUAR. A busca do CEP e o foco ficam no Checkout.
+ * Estado: `<select>` nativo (o projeto não usa Radix; ver nota 2 do checkout.css).
  */
-async function lookupCep(cep: string): Promise<ViaCep | null> {
-  const digits = onlyDigits(cep);
-  if (digits.length !== 8) return null;
-  const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), 5000);
-  try {
-    const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`, { signal: controller.signal });
-    if (!res.ok) return null;
-    const data = (await res.json()) as ViaCep;
-    if (data.erro) return null;
-    return data;
-  } catch {
-    return null;
-  } finally {
-    window.clearTimeout(timer);
-  }
-}
-
-/** Etapa 2 — Entrega (origem app/checkout.tsx, `body(1)`). */
 export function StepEntrega({
-  address,
+  data,
   onChange,
   onSubmit,
-  submitting,
+  cepState,
+  addrOk,
+  busy,
+  buttonLabel,
   error,
 }: {
-  address: AddressData;
-  onChange: (patch: Partial<AddressData>) => void;
-  onSubmit: () => void;
-  submitting: boolean;
-  error: string | null;
+  data: FormData;
+  onChange: (key: FieldKey, value: string) => void;
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  cepState: CepState;
+  addrOk: boolean;
+  busy: boolean;
+  buttonLabel: string;
+  error: ReactNode;
 }) {
-  const [manual, setManual] = useState(false);
-  const [looking, setLooking] = useState(false);
-  const [notFound, setNotFound] = useState(false);
-  const [touched, setTouched] = useState(false);
-
-  const handleCepChange = (value: string) => {
-    const masked = maskCEP(value);
-    onChange({ cep: masked });
-    setNotFound(false);
-    if (onlyDigits(masked).length === 8) void runLookup(masked);
-  };
-
-  const runLookup = async (cep: string) => {
-    setLooking(true);
-    const found = await lookupCep(cep);
-    setLooking(false);
-    if (!found) {
-      setNotFound(true);
-      setManual(true);
-      return;
-    }
-    onChange({
-      street: found.logradouro ?? "",
-      district: found.bairro ?? "",
-      city: found.localidade ?? "",
-      state: found.uf ?? "",
-    });
-    setManual(false);
-  };
-
-  const cepOk = onlyDigits(address.cep).length === 8;
-  const streetOk = address.street.trim().length >= 2;
-  const numberOk = address.number.trim().length >= 1;
-  const districtOk = address.district.trim().length >= 2;
-  const cityOk = address.city.trim().length >= 2;
-  const stateOk = address.state.trim().length === 2;
-  const recipientOk = address.recipient.trim().length >= 3;
-  const valid = cepOk && streetOk && numberOk && districtOk && cityOk && stateOk && recipientOk;
-
-  const submit = () => {
-    setTouched(true);
-    if (valid) onSubmit();
-  };
-
+  const locked = cepState === "idle" || cepState === "loading";
+  const manual = cepState === "manual";
+  const filled = (v: string) => !locked && !!v.trim();
   return (
-    <div className="ck-step-body">
+    <form onSubmit={onSubmit} noValidate>
       <div className="form-fields">
         <div className="cep-row">
-          <label className="field">
-            <span>CEP</span>
-            <input
-              value={address.cep}
-              onChange={(e) => handleCepChange(e.target.value)}
-              placeholder="00000-000"
-              inputMode="numeric"
-              autoComplete="postal-code"
-            />
-          </label>
-          {looking ? <span className="cep-city">buscando…</span> : null}
-          {!looking && !manual && address.city ? (
-            <span className="cep-city">
-              {address.city}/{address.state}
-            </span>
-          ) : null}
+          <Field
+            name="cep"
+            label="CEP"
+            placeholder="00000-000"
+            value={data.cep}
+            onChange={onChange}
+            opts={{ autoComplete: "postal-code", inputMode: "numeric", maxLength: 9, ok: cepState === "found" || (manual && data.cep.length === 9) }}
+          />
+          <p className="cep-city" aria-live="polite">
+            {cepState === "loading" ? (
+              <>
+                <LoaderCircle className="spin" size={16} aria-hidden="true" />
+                Buscando CEP…
+              </>
+            ) : cepState === "found" ? (
+              `${data.city}/${data.state}`
+            ) : manual ? (
+              <span className="ck-u-sr-only">Não encontramos o CEP automaticamente. Preencha o endereço abaixo.</span>
+            ) : (
+              ""
+            )}
+          </p>
         </div>
-
-        {notFound ? <p className="error">CEP não encontrado. Preencha o endereço manualmente.</p> : null}
-
-        {!manual ? (
-          <button type="button" className="cep-manual" onClick={() => setManual(true)}>
-            Não é o endereço certo? Preencher manualmente
-          </button>
+        {manual ? (
+          <p className="cep-manual">
+            <Info size={17} aria-hidden="true" />
+            Não encontramos o CEP automaticamente. Preencha o endereço abaixo.
+          </p>
         ) : null}
-
-        <label className="field">
-          <span>Rua</span>
-          <input value={address.street} onChange={(e) => onChange({ street: e.target.value })} disabled={!manual && looking} autoComplete="address-line1" />
-        </label>
-
-        <div className="num-row">
-          <label className="field">
-            <span>Número</span>
-            <input value={address.number} onChange={(e) => onChange({ number: e.target.value })} autoComplete="off" />
-          </label>
-          <label className="field">
-            <span>Complemento (opcional)</span>
-            <input value={address.extra} onChange={(e) => onChange({ extra: e.target.value })} placeholder="Apto, bloco…" autoComplete="address-line2" />
-          </label>
+        <Field name="street" label="Endereço" placeholder="Rua das Flores" value={data.street} onChange={onChange} opts={{ autoComplete: "address-line1", disabled: locked, ok: filled(data.street) }} />
+        <div className="field-row num-row">
+          <Field name="number" label="Número" placeholder="000" value={data.number} onChange={onChange} opts={{ maxLength: 20, disabled: locked, ok: filled(data.number) }} />
+          <Field name="extra" label="Complemento" placeholder="Apt 503, Bloco 1" value={data.extra} onChange={onChange} opts={{ optional: true, autoComplete: "address-line2", disabled: locked }} />
         </div>
-
-        <label className="field">
-          <span>Bairro</span>
-          <input value={address.district} onChange={(e) => onChange({ district: e.target.value })} disabled={!manual && looking} autoComplete="address-level3" />
-        </label>
-
-        <div className="field-row" style={{ display: "grid", gridTemplateColumns: "2fr 1fr" }}>
-          <label className="field">
-            <span>Cidade</span>
-            <input value={address.city} onChange={(e) => onChange({ city: e.target.value })} disabled={!manual && looking} autoComplete="address-level2" />
-          </label>
-          <label className="field">
-            <span>UF</span>
-            <input
-              value={address.state}
-              onChange={(e) => onChange({ state: e.target.value.toUpperCase().slice(0, 2) })}
-              disabled={!manual && looking}
-              autoComplete="address-level1"
-              maxLength={2}
-            />
-          </label>
-        </div>
-
-        <label className="field">
-          <span>Quem recebe</span>
-          <input value={address.recipient} onChange={(e) => onChange({ recipient: e.target.value })} placeholder="Nome de quem vai receber" autoComplete="name" />
-        </label>
+        <Field name="district" label="Bairro" placeholder="Centro" value={data.district} onChange={onChange} opts={{ disabled: locked, ok: filled(data.district) }} />
+        {manual ? (
+          <div className="field-row">
+            <Field name="city" label="Cidade" placeholder="Sua cidade" value={data.city} onChange={onChange} opts={{ autoComplete: "address-level2", ok: !!data.city.trim() }} />
+            <label className="field">
+              <span>Estado</span>
+              <select
+                name="state"
+                className={`ck-select state-select${data.state ? "" : " is-placeholder"}`}
+                value={data.state}
+                onChange={(e) => onChange("state", e.target.value)}
+                autoComplete="address-level1"
+              >
+                <option value="">Selecione</option>
+                {UFS.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        ) : null}
+        <Field
+          name="recipient"
+          label="Destinatário"
+          placeholder="Nome de quem vai receber"
+          value={data.recipient}
+          onChange={onChange}
+          opts={{ autoComplete: "name", disabled: locked, ok: !locked && fullName(data.recipient) }}
+        />
       </div>
-
-      <section className="ship-options" aria-labelledby="ship-title">
-        <h4 id="ship-title">Opções de frete</h4>
-        <p>Selecione o método de entrega desejado</p>
-        <div className="ship-list" role="radiogroup" aria-labelledby="ship-title">
-          <label className="ship-opt is-selected">
-            <input type="radio" name="ship-option" value="full" checked readOnly />
-            <span className="ship-name">
-              <strong>Frete FULL</strong>
-              <small>Envio rápido com rastreamento</small>
-            </span>
-            <span className="ship-price">
-              <b>FRETE GRÁTIS</b>
-              <small>Chega antes do Dia das Crianças</small>
-            </span>
-          </label>
-        </div>
-      </section>
-
-      {touched && !valid ? <p className="error">Confira o endereço completo antes de continuar.</p> : null}
-      {error ? <p className="error">{error}</p> : null}
-
+      {addrOk ? (
+        <section className="ship-options" aria-labelledby="ship-title">
+          <h4 id="ship-title">Opções de frete</h4>
+          <p>Selecione o método de entrega desejado</p>
+          <div className="ship-list" role="radiogroup" aria-labelledby="ship-title">
+            <label className="ship-opt is-selected">
+              <input type="radio" name="ship-option" value="full" checked readOnly />
+              <span className="ship-name">
+                <strong>Frete FULL</strong>
+                <small>Envio rápido com rastreamento</small>
+              </span>
+              <span className="ship-price">
+                <b>FRETE GRÁTIS</b>
+                <small>Chega antes do Dia das Crianças</small>
+              </span>
+            </label>
+          </div>
+        </section>
+      ) : null}
+      {error}
       <div className="ck-actions">
-        <button type="button" className={`primary-button${submitting ? " spin" : ""}`} onClick={submit} disabled={submitting}>
-          Continuar
+        <button className="primary-button" type="submit" disabled={busy}>
+          {addrOk ? buttonLabel : "CONFIRMAR ENDEREÇO"}
         </button>
       </div>
-    </div>
+    </form>
   );
 }

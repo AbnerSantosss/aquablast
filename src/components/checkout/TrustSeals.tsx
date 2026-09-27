@@ -1,50 +1,46 @@
-import { CreditCard, Lock, QrCode, ShieldCheck, Truck } from "lucide-react";
+import { CreditCard, LockKeyhole, RotateCcw, ScanLine, ShieldCheck, Truck } from "lucide-react";
+import type { PayMethodUi } from "./types";
+
+const SEALS = [
+  [ShieldCheck, "Compra 100% segura", "Ambiente protegido"],
+  [LockKeyhole, "Dados criptografados", "Conexão SSL (HTTPS)"],
+  [Truck, "Envio FULL", "Com rastreamento"],
+  [RotateCcw, "7 dias para devolução", "Direito de arrependimento"],
+] as const;
 
 /**
- * Selos de confiança (grid ".trust-seals", origem app/checkout.tsx). Conteúdo fixo, sem número inventado
- * (regra dura #2): "Compra 100% segura" e "Dados protegidos" descrevem o próprio checkout (HTTPS +
- * criptografia), não uma métrica de terceiros.
+ * Selos de garantia (origem app/checkout.tsx, `section.trust-seals`), mesmos textos. Nenhum número inventado:
+ * "7 dias" é o direito de arrependimento do CDC (art. 49) e as parcelas vêm de `checkout.maxInstallments`.
+ * A linha "Formas de pagamento" só lista o que está de fato ligado no painel.
  */
-export function TrustSeals() {
+export function TrustSeals({ methods, maxInstallments }: { methods: PayMethodUi[]; maxInstallments: number }) {
   return (
-    <section className="ck-card trust-seals" aria-label="Selos de confiança">
+    <section className="trust-seals" aria-label="Garantias da compra">
       <ul>
-        <li>
-          <ShieldCheck aria-hidden="true" />
-          <span>
-            <strong>Compra 100% segura</strong>
-            <small>Conexão criptografada</small>
-          </span>
-        </li>
-        <li>
-          <Truck aria-hidden="true" />
-          <span>
-            <strong>Frete grátis</strong>
-            <small>Para todo o Brasil</small>
-          </span>
-        </li>
-        <li>
-          <Lock aria-hidden="true" />
-          <span>
-            <strong>Dados protegidos</strong>
-            <small>Nunca compartilhados</small>
-          </span>
-        </li>
-        <li>
-          <ShieldCheck aria-hidden="true" />
-          <span>
-            <strong>Garantia AquaBlast</strong>
-            <small>Suporte pelo WhatsApp</small>
-          </span>
-        </li>
+        {SEALS.map(([Icon, title, text]) => (
+          <li key={title}>
+            <Icon aria-hidden="true" />
+            <span>
+              <strong>{title}</strong>
+              <small>{text}</small>
+            </span>
+          </li>
+        ))}
       </ul>
       <div className="pay-methods">
-        <em>
-          <QrCode aria-hidden="true" /> Pix
-        </em>
-        <em>
-          <CreditCard aria-hidden="true" /> Cartão de crédito
-        </em>
+        <span>Formas de pagamento</span>
+        {methods.includes("pix") ? (
+          <em>
+            <ScanLine size={15} aria-hidden="true" />
+            Pix
+          </em>
+        ) : null}
+        {methods.includes("card") ? (
+          <em>
+            <CreditCard size={15} aria-hidden="true" />
+            {maxInstallments > 1 ? `Cartão em até ${maxInstallments}x` : "Cartão de crédito"}
+          </em>
+        ) : null}
       </div>
     </section>
   );

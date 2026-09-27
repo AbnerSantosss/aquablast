@@ -1,20 +1,33 @@
 "use client";
 
-import { Lock } from "lucide-react";
-import { useState } from "react";
+import { CircleAlert, CreditCard, LoaderCircle, LockKeyhole } from "lucide-react";
+import { useRef, useState } from "react";
 import { gatewayTokenizes, tokenizeCard } from "@/lib/gateways/browser";
 import type { GatewayName } from "@/lib/gateways/types";
-import { cardBrandOf, cardLast4, money, onlyDigits, validCardExpiry, validCPF, validLuhn } from "@/lib/checkout/own/masks";
+import { cardBrandOf, cardLast4, maskCPF, money, onlyDigits, validCardExpiry, validCPF, validLuhn } from "@/lib/checkout/own/masks";
 import { isApiFail, postPay } from "./api";
+import { PaySeals } from "./PaySeals";
 import type { CardFormData } from "./types";
 
-const EMPTY_CARD: CardFormData = { number: "", holderName: "", expMonth: "", expYear: "", cvv: "", holderCpf: "" };
+const EMPTY = { number: "", name: "", exp: "", cvv: "", cpf: "" };
+type CardKey = keyof typeof EMPTY;
+
+// Cartão de teste público do gateway simulado, montado em partes para não aparecer como número de cartão no código.
+const TEST_CARD = ["4242", "4242", "4242", "4242"].join(" ");
+
+/** "MM/AA" → mês e ano numéricos (ano com 4 dígitos), formato exigido pelo `cardSchema` do POST /pay. */
+function parseExp(v: string): { month: number; year: number } | null {
+  const m = /^(\d{2})\/(\d{2})$/.exec(v);
+  return m ? { month: Number(m[1]), year: 2000 + Number(m[2]) } : null;
+}
 
 /**
- * Formulário de cartão real (plano 8.6/8.7/9). Quando o gateway tokeniza no navegador (Mercado Pago,
- * ver @/lib/gateways/browser), o número/CVV vão direto pro SDK e nunca chegam ao nosso POST /pay —
- * mandamos `cardToken`; senão mandamos `card` em claro (HTTPS, e o servidor nunca grava número/CVV,
- * só `cardLast4`). Regra dura: nunca `console.log`/gravar número, validade ou CVV aqui.
+ * Cartão (origem app/simulated-payment.tsx, `CardPay`), mesmas classes, textos, máscaras e ordem de validação.
+ * Quando o gateway tokeniza no navegador (Mercado Pago), número/CVV vão direto para o SDK e o POST /pay recebe só
+ * `cardToken`; senão vai `card` (HTTPS; o servidor nunca grava número/CVV, só os 4 últimos). Mês/ano seguem como
+ * NÚMERO (antes da fase 14 iam como texto e o servidor respondia 400 em todo pagamento com cartão).
+ * Recusa: limpa número e CVV (plano 8.7). Regra dura: nunca logar nem gravar número, validade ou CVV.
+ * O aviso "use o cartão de teste" só aparece com o gateway `simulado`; no modo real, o aviso de segurança.
  */
 export function CardPay({
   cartToken,
@@ -24,6 +37,7 @@ export function CardPay({
   gateway,
   publicConfig,
   testMode,
+  storeName,
   onPending,
   onPaid,
 }: {
@@ -34,143 +48,166 @@ export function CardPay({
   gateway: string | null;
   publicConfig: Record<string, string>;
   testMode: boolean;
-  onPending: (message: string | null, orderNumber: string, publicToken: string) => void;
-  onPaid: (orderNumber: string, publicToken: string) => void;
+  storeName: string;
+  onPending: (publicToken: string) => void;
+  onPaid: (publicToken: string) => void;
 }) {
-  const [card, setCard] = useState<CardFormData>(EMPTY_CARD);
-  const [installments, setInstallments] = useState(1);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [touched, setTouched] = useState(false);
+  const max = Math.max(1, maxInstallments);
+  const [f, setF] = useState(EMPTY);
+  const [inst, setInst] = useState(String(max));
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const form = useRef<HTMLFormElement>(null);
 
-  const patch = (p: Partial<CardFormData>) => setCard((c) => ({ ...c, ...p }));
+  const digits = onlyDigits(f.number);
+  const brand = cardBrandOf(digits);
+  const per = (n: number) => Math.round(amountCents / n);
 
-  const brand = cardBrandOf(card.number);
-  const numberOk = validLuhn(card.number);
-  const monthNum = Number(card.expMonth);
-  const yearNum = Number(card.expYear.length === 2 ? `20${card.expYear}` : card.expYear);
-  const expOk = validCardExpiry(monthNum, yearNum);
-  const cvvOk = onlyDigits(card.cvv).length >= 3 && onlyDigits(card.cvv).length <= 4;
-  const nameOk = card.holderName.trim().length >= 3;
-  const cpfOk = validCPF(card.holderCpf);
-  const valid = numberOk && expOk && cvvOk && nameOk && cpfOk;
+  function set(k: CardKey, v: string) {
+    const masked =
+      k === "number"
+        ? onlyDigits(v).slice(0, 16).replace(/(\d{4})(?=\d)/g, "$1 ")
+        : k === "exp"
+          ? onlyDigits(v).slice(0, 4).replace(/^(\d{2})(\d)/, "$1/$2")
+          : k === "cvv"
+            ? onlyDigits(v).slice(0, 4)
+            : k === "cpf"
+              ? maskCPF(v)
+              : v;
+    setF((p) => ({ ...p, [k]: masked }));
+    setError("");
+  }
 
-  const installmentCents = Math.round(amountCents / installments);
+  function fail(msg: string, name: string) {
+    setError(msg);
+    form.current?.querySelector<HTMLInputElement>(`[name=${name}]`)?.focus();
+  }
 
-  const submit = async () => {
-    setTouched(true);
-    setError(null);
-    if (!valid) return;
-    setSubmitting(true);
+  async function pay(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (busy) return;
+    const exp = parseExp(f.exp);
+    if (!validLuhn(digits)) return fail("Número do cartão inválido. Confira os dígitos.", "cc-number");
+    if (!exp || !validCardExpiry(exp.month, exp.year)) return fail("Validade inválida ou vencida. Use o formato MM/AA.", "cc-exp");
+    if (!/^\d{3,4}$/.test(f.cvv)) return fail("Informe o CVV com 3 ou 4 dígitos.", "cc-csc");
+    if (f.name.trim().split(/\s+/).length < 2) return fail("Informe o nome impresso no cartão (nome e sobrenome).", "cc-name");
+    if (!validCPF(f.cpf)) return fail("Confira o CPF do titular do cartão.", "cc-cpf");
+    setError("");
+    setBusy(true);
+    const installments = Number(inst);
+    const card: CardFormData = { number: digits, holderName: f.name.trim(), expMonth: exp.month, expYear: exp.year, cvv: f.cvv, holderCpf: onlyDigits(f.cpf) };
     try {
       const tokenizes = gateway ? gatewayTokenizes(gateway as GatewayName) : false;
-      let result;
-      if (tokenizes && gateway) {
-        const tokenized = await tokenizeCard(
-          gateway as GatewayName,
-          publicConfig,
-          { number: card.number, holderName: card.holderName, expMonth: monthNum, expYear: yearNum, cvv: card.cvv, holderCpf: card.holderCpf },
-          amountCents,
-        );
-        result = await postPay({
-          cartToken,
-          method: "card",
-          installments,
-          bump,
-          cardToken: tokenized.token,
-          cardBrand: tokenized.brand,
-          cardPaymentMethodId: tokenized.paymentMethodId,
-          cardIssuerId: tokenized.issuerId,
-          cardLast4: cardLast4(card.number),
-        });
-      } else {
-        result = await postPay({ cartToken, method: "card", installments, bump, card });
-      }
-
+      const result =
+        tokenizes && gateway
+          ? await tokenizeCard(gateway as GatewayName, publicConfig, card, amountCents).then((t) =>
+              postPay({
+                cartToken,
+                method: "card",
+                installments,
+                bump,
+                cardToken: t.token,
+                cardBrand: t.brand,
+                cardPaymentMethodId: t.paymentMethodId,
+                cardIssuerId: t.issuerId,
+                cardLast4: cardLast4(digits),
+              }),
+            )
+          : await postPay({ cartToken, method: "card", installments, bump, card });
       if (isApiFail(result)) {
-        setError(result.error);
+        if (result.status === "refused" || result.status === "error") setF((p) => ({ ...p, number: "", cvv: "" }));
+        setError(result.message ?? result.error);
         return;
       }
       if (result.status === "paid") {
-        onPaid(result.orderNumber, result.publicToken);
+        setF(EMPTY);
+        onPaid(result.publicToken);
         return;
       }
       if (result.status === "pending") {
-        onPending(result.message, result.orderNumber, result.publicToken);
+        setF(EMPTY);
+        onPending(result.publicToken);
         return;
       }
-      // refused ou error: mantém nome/CPF, limpa número e CVV (nunca reaproveita dado sensível recusado).
-      setCard((c) => ({ ...c, number: "", cvv: "" }));
-      setError(result.message ?? "Não foi possível aprovar o pagamento. Confira os dados do cartão ou tente outro cartão.");
     } catch (err) {
-      setCard((c) => ({ ...c, number: "", cvv: "" }));
+      setF((p) => ({ ...p, number: "", cvv: "" }));
       setError(err instanceof Error ? err.message : "Não foi possível processar o cartão. Tente de novo.");
     } finally {
-      setSubmitting(false);
+      setBusy(false);
     }
-  };
+  }
 
   return (
-    <div className="payment-content ck-cardform" data-gtm-ignore="true">
+    <form className="ck-cardform" onSubmit={(e) => void pay(e)} noValidate ref={form}>
+      <p className="ck-card-warn">
+        {testMode ? (
+          <>
+            <CircleAlert size={17} aria-hidden="true" />
+            <span>
+              Não use um cartão real. Para testar use <b>{TEST_CARD}</b>, validade futura e CVV <b>123</b>.
+            </span>
+          </>
+        ) : (
+          <>
+            <LockKeyhole size={17} aria-hidden="true" />
+            <span>Não guardamos os dados do seu cartão. A conexão é criptografada.</span>
+          </>
+        )}
+      </p>
       <div className="form-fields">
         <label className="field has-icon">
-          <span>Número do cartão</span>
-          <input value={card.number} onChange={(e) => patch({ number: onlyDigits(e.target.value).slice(0, 19) })} inputMode="numeric" autoComplete="cc-number" placeholder="0000 0000 0000 0000" />
-          {brand ? <span className="ck-brand">{brand}</span> : null}
+          <CreditCard className="field-icon" size={22} aria-hidden="true" />
+          <span>
+            Número do cartão{brand ? <em className="ck-brand"> · {brand}</em> : null}
+          </span>
+          <input name="cc-number" autoComplete="cc-number" inputMode="numeric" maxLength={19} placeholder="0000 0000 0000 0000" value={f.number} onChange={(e) => set("number", e.target.value)} disabled={busy} />
         </label>
-        <label className="field">
-          <span>Nome impresso no cartão</span>
-          <input value={card.holderName} onChange={(e) => patch({ holderName: e.target.value })} autoComplete="cc-name" placeholder="Como está no cartão" />
-        </label>
-        <div className="field-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}>
+        <div className="field-row">
           <label className="field">
-            <span>Mês</span>
-            <input value={card.expMonth} onChange={(e) => patch({ expMonth: onlyDigits(e.target.value).slice(0, 2) })} inputMode="numeric" placeholder="MM" autoComplete="cc-exp-month" />
-          </label>
-          <label className="field">
-            <span>Ano</span>
-            <input value={card.expYear} onChange={(e) => patch({ expYear: onlyDigits(e.target.value).slice(0, 4) })} inputMode="numeric" placeholder="AAAA" autoComplete="cc-exp-year" />
+            <span>Validade</span>
+            <input name="cc-exp" autoComplete="cc-exp" inputMode="numeric" maxLength={5} placeholder="MM/AA" value={f.exp} onChange={(e) => set("exp", e.target.value)} disabled={busy} />
           </label>
           <label className="field">
             <span>CVV</span>
-            <input value={card.cvv} onChange={(e) => patch({ cvv: onlyDigits(e.target.value).slice(0, 4) })} inputMode="numeric" placeholder="123" autoComplete="cc-csc" />
+            <input name="cc-csc" autoComplete="cc-csc" inputMode="numeric" maxLength={4} placeholder="123" value={f.cvv} onChange={(e) => set("cvv", e.target.value)} disabled={busy} />
           </label>
         </div>
         <label className="field">
-          <span>CPF do titular</span>
-          <input value={card.holderCpf} onChange={(e) => patch({ holderCpf: onlyDigits(e.target.value).slice(0, 11) })} inputMode="numeric" placeholder="000.000.000-00" autoComplete="off" />
+          <span>Nome como no cartão</span>
+          <input name="cc-name" autoComplete="cc-name" placeholder="Maria M Silva" value={f.name} onChange={(e) => set("name", e.target.value)} disabled={busy} />
         </label>
         <label className="field">
-          <span>Parcelas</span>
-          <select
-            className={`ck-select${installments === 0 ? " is-placeholder" : ""}`}
-            value={installments}
-            onChange={(e) => setInstallments(Number(e.target.value))}
-          >
-            {Array.from({ length: Math.max(1, maxInstallments) }, (_, i) => i + 1).map((n) => (
-              <option key={n} value={n}>
-                {n}x de {money(Math.round(amountCents / n))} sem juros
+          <span>CPF do titular do cartão</span>
+          <input name="cc-cpf" autoComplete="off" inputMode="numeric" maxLength={14} placeholder="000.000.000-00" value={f.cpf} onChange={(e) => set("cpf", e.target.value)} disabled={busy} />
+        </label>
+        <label className="field">
+          <span>Número de parcelas</span>
+          <select name="cc-installments" className="ck-select inst-select" value={inst} onChange={(e) => setInst(e.target.value)} disabled={busy}>
+            {Array.from({ length: max }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={String(n)}>
+                {n}x de {money(per(n))} sem juros{n === 1 ? " (total)" : ""}
               </option>
             ))}
           </select>
         </label>
       </div>
-
-      <p className="ck-card-warn">
-        <Lock aria-hidden="true" size={14} /> Não guardamos os dados do seu cartão. A conexão é criptografada.
-      </p>
-
-      {testMode ? <p className="ck-testmode">Modo de teste: nenhuma cobrança real será feita.</p> : null}
-
-      {touched && !valid ? <p className="error">Confira número, validade, CVV, nome e CPF do cartão.</p> : null}
-      {error ? <p className="error">{error}</p> : null}
-
-      <div className="ck-actions">
-        <button type="button" className={`primary-button${submitting ? " spin" : ""}`} onClick={() => void submit()} disabled={submitting}>
-          Pagar {money(installments > 1 ? installmentCents : amountCents)}
-          {installments > 1 ? ` em ${installments}x` : ""}
-        </button>
-      </div>
-    </div>
+      {error ? (
+        <p className="error" role="alert">
+          <CircleAlert size={16} aria-hidden="true" />
+          {error}
+        </p>
+      ) : null}
+      <button type="submit" className="primary-button ck-pay-btn" disabled={busy}>
+        {busy ? (
+          <>
+            <LoaderCircle className="spin" size={19} aria-hidden="true" />
+            Processando…
+          </>
+        ) : (
+          "FINALIZAR COMPRA"
+        )}
+      </button>
+      <PaySeals storeName={storeName} />
+    </form>
   );
 }

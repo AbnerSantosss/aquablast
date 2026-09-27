@@ -1,174 +1,160 @@
 "use client";
 
 import Image from "next/image";
-import { Check, CreditCard, QrCode } from "lucide-react";
-import { useState } from "react";
+import { Check, CreditCard, ScanLine } from "lucide-react";
+import { useRef } from "react";
 import { money } from "@/lib/checkout/own/masks";
-import { COLOR_LABELS, KIT_PHOTO } from "@/lib/site/constants";
-import type { Color } from "@/lib/site/types";
 import type { Quote } from "@/lib/checkout/own/pricing";
-import { isApiFail, postPay } from "./api";
-import { PixPay } from "./PixPay";
+import type { Color } from "@/lib/site/types";
 import { CardPay } from "./CardPay";
-import type { PayMethodUi, PixResult } from "./types";
+import { colorName, thumbOf } from "./OrderSummary";
+import { TestModeNote } from "./PaySeals";
+import { PixPay } from "./PixPay";
+import type { PayMethodUi } from "./types";
 
 /**
- * Etapa 3 — Pagamento (origem app/checkout.tsx, `body(2)`). Junta o order bump, o acordeão Pix/Cartão
- * (`.pay-acc`) e delega o formulário de cartão para `CardPay`. O Pix é iniciado aqui (POST /api/checkout/pay
- * com `method:"pix"`) porque não precisa de nenhum dado além do carrinho; o resultado vira `PixPay`.
- *
- * A 2ª unidade do bump sempre repete a MESMA cor da 1ª (ver OrderSummary.tsx e order.ts `effectiveSelection`
- * — não existe campo no banco para uma cor diferente), por isso o título abaixo usa a cor real do pedido,
- * nunca uma cor fixa como na origem ("Leve também uma AquaBlast preta").
+ * Etapa 3 — Pagamento (origem app/checkout.tsx, `body(3)`): aviso de modo de teste, order bump e o acordeão
+ * Cartão/Pix (`.pay-acc`, cada forma num cartão e só a escolhida aberta), mesmas classes e textos.
+ * Diferenças permitidas (tabela 8.6): o aviso de teste só aparece quando o gateway da forma escolhida é
+ * `simulado`; o bump repete a cor da 1ª unidade (não existe campo para outra cor) com a foto dessa cor; valores
+ * vêm do servidor. Abrir o Cartão com o ponteiro leva o foco ao número do cartão (quem trata é o Checkout).
  */
 export function StepPagamento({
   cartToken,
   color,
+  canBump,
   bump,
   onBumpChange,
-  bumpEnabled,
   quotes,
   methods,
   method,
   onMethodChange,
   maxInstallments,
+  pixTtlSeconds,
   pixGateway,
   cardGateway,
   cardPublicConfig,
+  storeName,
   onPaid,
   onPending,
 }: {
   cartToken: string;
   color: Color;
+  canBump: boolean;
   bump: boolean;
   onBumpChange: (value: boolean) => void;
-  bumpEnabled: boolean;
   quotes: { pix: Quote; card: Quote };
   methods: PayMethodUi[];
   method: PayMethodUi;
-  onMethodChange: (method: PayMethodUi) => void;
+  onMethodChange: (method: PayMethodUi, byPointer: boolean) => void;
   maxInstallments: number;
+  pixTtlSeconds: number;
   pixGateway: string | null;
   cardGateway: string | null;
   cardPublicConfig: Record<string, string>;
-  onPaid: (orderNumber: string, publicToken: string) => void;
-  onPending: (message: string | null, orderNumber: string, publicToken: string) => void;
+  storeName: string;
+  onPaid: (publicToken: string) => void;
+  onPending: (publicToken: string) => void;
 }) {
-  const [pix, setPix] = useState<{ result: PixResult; orderNumber: string; publicToken: string } | null>(null);
-  const [pixSubmitting, setPixSubmitting] = useState(false);
-  const [pixError, setPixError] = useState<string | null>(null);
-
+  const pointerPick = useRef(false);
   const q = quotes[method];
-  const testModePix = pixGateway === "simulado";
-  const testModeCard = cardGateway === "simulado";
+  const testMode = (method === "pix" ? pixGateway : cardGateway) === "simulado";
+  const hasBump = canBump && bump;
 
-  const confirmPix = async () => {
-    setPixSubmitting(true);
-    setPixError(null);
-    const result = await postPay({ cartToken, method: "pix", installments: 1, bump });
-    setPixSubmitting(false);
-    if (isApiFail(result)) {
-      setPixError(result.error);
-      return;
-    }
-    if (result.status === "paid") {
-      onPaid(result.orderNumber, result.publicToken);
-      return;
-    }
-    if (result.status === "pending" && result.pix) {
-      setPix({ result: result.pix, orderNumber: result.orderNumber, publicToken: result.publicToken });
-      return;
-    }
-    setPixError(result.message ?? "Não foi possível gerar o Pix. Tente de novo.");
-  };
+  const options = (
+    [
+      ["card", CreditCard, "Cartão de crédito", maxInstallments > 1 ? `Até ${maxInstallments}x sem juros` : "À vista no cartão"],
+      ["pix", ScanLine, "Pix", "Aprovação na hora"],
+    ] as const
+  ).filter(([id]) => methods.includes(id));
 
   return (
-    <div className="ck-step-body">
-      {bumpEnabled ? (
-        <div className={`order-bump${bump ? " added" : ""}`} aria-label="Oferta opcional: segunda unidade">
+    <div className="payment-content">
+      {testMode ? <TestModeNote /> : null}
+      {canBump ? (
+        <section className={`order-bump ${hasBump ? "added" : ""}`} aria-label="Oferta opcional: segunda unidade">
           <label className="bump-choice">
-            <span className={`ck-checkbox${bump ? " is-checked" : ""}`}>
-              <input type="checkbox" checked={bump} onChange={(e) => onBumpChange(e.target.checked)} />
-              {bump ? <Check aria-hidden="true" size={15} /> : null}
+            <span className={`ck-checkbox${hasBump ? " is-checked" : ""}`}>
+              <input type="checkbox" checked={hasBump} onChange={(e) => onBumpChange(e.target.checked)} />
+              {hasBump ? <Check aria-hidden="true" size={15} /> : null}
             </span>
-            <span>{bump ? "ADICIONADO AO PEDIDO" : "SIM, QUERO ADICIONAR A SEGUNDA UNIDADE"}</span>
+            <span>{hasBump ? "ADICIONADO AO PEDIDO" : "SIM, QUERO ADICIONAR A SEGUNDA UNIDADE"}</span>
           </label>
           <div className="bump-product">
-            <Image src={KIT_PHOTO.src} alt={KIT_PHOTO.alt} width={120} height={80} />
+            <Image src={thumbOf(color, 610)} width={92} height={92} alt={`AquaBlast ${colorName(color)}`} />
             <div>
               <em className="bump-tag">OFERTA DO KIT</em>
-              <h4>Leve mais uma AquaBlast {COLOR_LABELS[color]}</h4>
+              <h4>Leve também uma AquaBlast {colorName(color)}</h4>
               <strong className="bump-price">+ {money(q.bumpDeltaCents)}</strong>
               {q.bumpSavingCents > 0 ? <small>Economize {money(q.bumpSavingCents)} em relação à unidade avulsa</small> : null}
             </div>
           </div>
-        </div>
+        </section>
       ) : null}
-
-      <div className="pay-acc">
-        {methods.includes("pix") ? (
-          <div className={`pay-item${method === "pix" ? " is-open" : ""}`}>
-            <label className="pay-head">
-              <input type="radio" name="pay-method" checked={method === "pix"} onChange={() => onMethodChange("pix")} />
+      <div
+        className="pay-acc"
+        role="radiogroup"
+        aria-label="Forma de pagamento"
+        onKeyDown={() => {
+          pointerPick.current = false;
+        }}
+      >
+        {options.map(([id, Icon, label, hint]) => (
+          <div key={id} className={`pay-item${method === id ? " is-open" : ""}`}>
+            <label
+              className="pay-head"
+              onPointerDown={() => {
+                pointerPick.current = true;
+              }}
+            >
+              <input
+                type="radio"
+                name="pay-method"
+                value={id}
+                checked={method === id}
+                onChange={() => {
+                  const byPointer = pointerPick.current;
+                  pointerPick.current = false;
+                  onMethodChange(id, byPointer);
+                }}
+              />
+              <Icon size={21} aria-hidden="true" />
               <span className="pay-label">
-                <QrCode aria-hidden="true" size={18} /> Pix
+                <strong>{label}</strong>
+                <small>{hint}</small>
               </span>
             </label>
-            {method === "pix" ? (
+            {method === id ? (
               <div className="pay-body">
-                {testModePix ? <p className="ck-testmode">Modo de teste: nenhuma cobrança real será feita.</p> : null}
-                {pix ? (
-                  <PixPay
-                    code={pix.result.code}
-                    qrUrl={pix.result.qrUrl}
-                    expiresAt={pix.result.expiresAt}
-                    publicToken={pix.publicToken}
-                    onRegenerate={() => void confirmPix()}
-                    onPaid={() => onPaid(pix.orderNumber, pix.publicToken)}
-                    regenerating={pixSubmitting}
+                {id === "card" ? (
+                  <CardPay
+                    cartToken={cartToken}
+                    bump={hasBump}
+                    amountCents={quotes.card.amountCents}
+                    maxInstallments={maxInstallments}
+                    gateway={cardGateway}
+                    publicConfig={cardPublicConfig}
+                    testMode={cardGateway === "simulado"}
+                    storeName={storeName}
+                    onPending={onPending}
+                    onPaid={onPaid}
                   />
                 ) : (
-                  <div className="payment-content">
-                    <p>Ao confirmar, geramos um código Pix de {money(quotes.pix.amountCents)} para você pagar no app do seu banco.</p>
-                    {pixError ? <p className="error">{pixError}</p> : null}
-                    <div className="ck-actions">
-                      <button type="button" className={`primary-button${pixSubmitting ? " spin" : ""}`} onClick={() => void confirmPix()} disabled={pixSubmitting}>
-                        Confirmar com Pix
-                      </button>
-                    </div>
-                  </div>
+                  <PixPay
+                    key={`${hasBump ? "kit" : "un"}-${quotes.pix.amountCents}`}
+                    cartToken={cartToken}
+                    bump={hasBump}
+                    amountCents={quotes.pix.amountCents}
+                    ttlSeconds={pixTtlSeconds}
+                    testMode={pixGateway === "simulado"}
+                    storeName={storeName}
+                    onPaid={onPaid}
+                  />
                 )}
               </div>
             ) : null}
           </div>
-        ) : null}
-
-        {methods.includes("card") ? (
-          <div className={`pay-item${method === "card" ? " is-open" : ""}`}>
-            <label className="pay-head">
-              <input type="radio" name="pay-method" checked={method === "card"} onChange={() => onMethodChange("card")} />
-              <span className="pay-label">
-                <CreditCard aria-hidden="true" size={18} /> Cartão de crédito
-              </span>
-            </label>
-            {method === "card" ? (
-              <div className="pay-body">
-                {testModeCard ? <p className="ck-testmode">Modo de teste: nenhuma cobrança real será feita.</p> : null}
-                <CardPay
-                  cartToken={cartToken}
-                  bump={bump}
-                  amountCents={quotes.card.amountCents}
-                  maxInstallments={maxInstallments}
-                  gateway={cardGateway}
-                  publicConfig={cardPublicConfig}
-                  testMode={false}
-                  onPending={onPending}
-                  onPaid={onPaid}
-                />
-              </div>
-            ) : null}
-          </div>
-        ) : null}
+        ))}
       </div>
     </div>
   );

@@ -1,110 +1,77 @@
 "use client";
 
-import { useState } from "react";
-import { maskCPF, maskPhone, validCPF, validMobile } from "@/lib/checkout/own/masks";
-import type { CustomerData } from "./types";
+import { LockKeyhole } from "lucide-react";
+import type { ReactNode } from "react";
+import { validCPF, validMobile } from "@/lib/checkout/own/masks";
+import { Field, fullName, validEmail } from "./Field";
+import type { FieldKey, FormData } from "./types";
 
 /**
- * Etapa 1 — Dados (origem app/checkout.tsx, `body(0)`). Validação aqui é só de conforto (feedback
- * imediato); a validação que decide é sempre a do servidor (POST /api/checkout/cart, mesmas regras de
- * @/lib/checkout/own/masks). `onEmailBlur` dispara o salvamento parcial (plano 8.7) — só quando o
- * consentimento já foi respondido, decisão de quem chama este componente (Checkout.tsx).
+ * Etapa 1 — Seus dados (origem app/checkout.tsx, `body(1)`), mesmos campos, textos e ordem. A validação que
+ * bloqueia fica no Checkout (`next`, mesma ordem de mensagens da origem) e a que decide é a do servidor
+ * (POST /api/checkout/cart). `onEmailBlur` dispara o salvamento parcial (plano 8.7).
+ * Carrinho retomado (plano 8.8): o CPF gravado aparece só mascarado no placeholder; vazio = manter o gravado.
  */
 export function StepDados({
-  customer,
-  cpfMasked,
+  data,
   onChange,
   onEmailBlur,
   onSubmit,
-  submitting,
+  cpfMasked,
+  busy,
+  buttonLabel,
   error,
 }: {
-  customer: CustomerData;
-  /** Carrinho retomado (plano 8.8): CPF já gravado, mostrado só mascarado. Campo vazio = manter o gravado. */
-  cpfMasked?: string | null;
-  onChange: (patch: Partial<CustomerData>) => void;
+  data: FormData;
+  onChange: (key: FieldKey, value: string) => void;
   onEmailBlur: () => void;
-  onSubmit: () => void;
-  submitting: boolean;
-  error: string | null;
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  cpfMasked: string | null;
+  busy: boolean;
+  buttonLabel: string;
+  error: ReactNode;
 }) {
-  const [touched, setTouched] = useState(false);
-
-  const nameOk = customer.name.trim().length >= 3;
-  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email.trim());
-  const phoneOk = validMobile(customer.phone);
-  const cpfOk = validCPF(customer.cpf) || (!!cpfMasked && customer.cpf === "");
-  const valid = nameOk && emailOk && phoneOk && cpfOk;
-
-  const submit = () => {
-    setTouched(true);
-    if (valid) onSubmit();
-  };
-
+  const keepCpf = !!cpfMasked && data.cpf === "";
   return (
-    <div className="ck-step-body">
+    <form onSubmit={onSubmit}>
       <div className="form-fields">
-        <label className="field">
-          <span>Nome completo</span>
-          <input
-            value={customer.name}
-            onChange={(e) => onChange({ name: e.target.value })}
-            placeholder="Seu nome completo"
-            autoComplete="name"
+        <Field name="name" label="Nome completo" placeholder="Como está no seu documento" value={data.name} onChange={onChange} opts={{ autoComplete: "name", ok: fullName(data.name) }} />
+        <Field
+          name="email"
+          label="E-mail"
+          placeholder="voce@exemplo.com"
+          value={data.email}
+          onChange={onChange}
+          opts={{ type: "email", autoComplete: "email", ok: validEmail(data.email), onBlur: onEmailBlur }}
+        />
+        <div className="field-row id-row">
+          <Field
+            name="phone"
+            label="Celular com DDD"
+            placeholder="(00) 00000-0000"
+            value={data.phone}
+            onChange={onChange}
+            opts={{ type: "tel", autoComplete: "tel", inputMode: "tel", maxLength: 15, ok: validMobile(data.phone) }}
           />
-        </label>
-        <label className="field">
-          <span>E-mail</span>
-          <input
-            type="email"
-            value={customer.email}
-            onChange={(e) => onChange({ email: e.target.value })}
-            onBlur={onEmailBlur}
-            placeholder="voce@email.com"
-            autoComplete="email"
+          <Field
+            name="cpf"
+            label="CPF"
+            placeholder={cpfMasked ?? "000.000.000-00"}
+            value={data.cpf}
+            onChange={onChange}
+            opts={{ inputMode: "numeric", maxLength: 14, ok: validCPF(data.cpf) || keepCpf, optional: keepCpf }}
           />
-        </label>
-        <div className="field-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
-          <label className="field">
-            <span>Celular (WhatsApp)</span>
-            <input
-              value={customer.phone}
-              onChange={(e) => onChange({ phone: maskPhone(e.target.value) })}
-              placeholder="(11) 91234-5678"
-              inputMode="numeric"
-              autoComplete="tel"
-            />
-          </label>
-          <label className="field">
-            <span>CPF</span>
-            <input
-              value={customer.cpf}
-              onChange={(e) => onChange({ cpf: maskCPF(e.target.value) })}
-              placeholder={cpfMasked ?? "000.000.000-00"}
-              inputMode="numeric"
-              autoComplete="off"
-            />
-            {cpfMasked && customer.cpf === "" ? <small>CPF já informado. Preencha só se quiser corrigir.</small> : null}
-          </label>
         </div>
+        <p className="inline-help">
+          <LockKeyhole size={14} aria-hidden="true" /> Usaremos seus dados só para acompanhar esta compra.
+        </p>
       </div>
-
-      {touched && !valid ? (
-        <p className="error" style={{ color: "#9b1c13" }}>
-          Confira nome, e-mail, celular e CPF antes de continuar.
-        </p>
-      ) : null}
-      {error ? (
-        <p className="error" style={{ color: "#9b1c13" }}>
-          {error}
-        </p>
-      ) : null}
-
+      {error}
       <div className="ck-actions">
-        <button type="button" className={`primary-button${submitting ? " spin" : ""}`} onClick={submit} disabled={submitting}>
-          Continuar
+        <button className="primary-button" type="submit" disabled={busy}>
+          {buttonLabel}
         </button>
       </div>
-    </div>
+    </form>
   );
 }

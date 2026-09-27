@@ -1,29 +1,26 @@
 "use client";
 
 import Image from "next/image";
+import { Check, CircleAlert, Copy, Timer } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStatus } from "./api";
+import { pad2, useClock } from "./useClock";
 
 /**
- * Pix pendente na página durável /checkout/pedido/[token] (plano 8.8) — só leitura: aqui não existe
- * `cartToken` (a página lê o pedido direto do banco, `getOrderByPublicToken`), então não dá para gerar um
- * código novo se este expirar. Poll igual `PixPay.tsx` (a cada 5s, pausado com a aba oculta); ao detectar
- * `status:"paid"` chama `router.refresh()` para o Server Component reler o pedido do banco e trocar esta
- * tela pela confirmação — não duplica o HTML de sucesso aqui.
+ * Pix pendente na página durável /checkout/pedido/[token] (plano 8.8), com as mesmas classes do `PixPay`
+ * (origem app/simulated-payment.tsx): `.ck-pix`, `.ck-pix-head`, `.ck-copy-row` com `label.field`, `.ck-pix-steps`.
+ * Só leitura: aqui não existe `cartToken` (a página lê o pedido direto do banco), então não dá para gerar um
+ * código novo se este expirar. Consulta o status a cada 5 s (pausado com a aba oculta); ao detectar `paid` chama
+ * `router.refresh()` para o Server Component reler o pedido e mostrar a confirmação.
  */
 export function PixWatch({ code, qrUrl, expiresAt, publicToken }: { code: string; qrUrl: string | null; expiresAt: string; publicToken: string }) {
   const router = useRouter();
-  const [now, setNow] = useState(() => Date.now());
-  const [copied, setCopied] = useState(false);
+  const now = useClock();
+  const [copyMsg, setCopyMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const expiresMs = new Date(expiresAt).getTime();
-  const expired = now >= expiresMs;
+  const expired = now !== null && now >= expiresMs;
   const refreshedRef = useRef(false);
-
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
 
   useEffect(() => {
     if (expired) return;
@@ -43,54 +40,70 @@ export function PixWatch({ code, qrUrl, expiresAt, publicToken }: { code: string
     };
   }, [publicToken, expired, router]);
 
-  useEffect(() => {
-    if (!copied) return;
-    const id = window.setTimeout(() => setCopied(false), 2500);
-    return () => window.clearTimeout(id);
-  }, [copied]);
-
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(code);
-      setCopied(true);
+      setCopyMsg({ ok: true, text: "Código copiado." });
     } catch {
-      // ambiente sem clipboard: código já está selecionável no campo abaixo.
+      setCopyMsg({ ok: false, text: "Não foi possível copiar. Selecione o código e copie manualmente." });
     }
   };
 
   if (expired) {
     return (
-      <div className="ck-pix-expired">
-        <p>O código Pix deste pedido expirou. Fale com a gente para receber um novo link de pagamento.</p>
+      <div className="ck-pix no-qr">
+        <div className="ck-pix-info">
+          <div className="ck-pix-expired">
+            <strong>Código expirado</strong>
+            <p>O código Pix deste pedido expirou. Fale com a gente para receber um novo link de pagamento.</p>
+          </div>
+        </div>
       </div>
     );
   }
 
-  const secondsLeft = Math.max(0, Math.floor((expiresMs - now) / 1000));
-  const mm = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
-  const ss = String(secondsLeft % 60).padStart(2, "0");
+  const left = now === null ? null : Math.max(0, Math.ceil((expiresMs - now) / 1000));
 
   return (
-    <div className="ck-pix">
-      <div className="ck-qr">{qrUrl ? <Image src={qrUrl} alt="QR Code Pix" width={220} height={220} unoptimized /> : null}</div>
+    <div className={`ck-pix${qrUrl ? "" : " no-qr"}`}>
+      {qrUrl ? (
+        <figure className="ck-qr">
+          <Image src={qrUrl} alt="QR Code Pix" width={196} height={196} unoptimized />
+        </figure>
+      ) : null}
       <div className="ck-pix-info">
         <div className="ck-pix-head">
-          <span>Pague com Pix</span>
-          <span className="ck-pix-timer">
-            Expira em {mm}:{ss}
-          </span>
+          <p>Pague com Pix</p>
+          {left !== null ? (
+            <p className="ck-pix-timer" aria-live="off">
+              <Timer size={16} aria-hidden="true" />
+              Expira em{" "}
+              <b>
+                {pad2(Math.floor(left / 60))}:{pad2(left % 60)}
+              </b>
+            </p>
+          ) : null}
         </div>
         <div className="ck-copy-row">
-          <input value={code} readOnly aria-label="Código Pix copia e cola" />
+          <label className="field">
+            <span>Pix copia e cola</span>
+            <input name="pix-code" readOnly value={code} onFocus={(e) => e.currentTarget.select()} />
+          </label>
           <button type="button" className="ck-copy" onClick={() => void copy()}>
-            {copied ? "Copiado!" : "Copiar código"}
+            <Copy size={17} aria-hidden="true" />
+            Copiar código
           </button>
         </div>
-        {copied ? <p className="ck-copied">Código copiado.</p> : null}
+        {copyMsg ? (
+          <p role="status" className={copyMsg.ok ? "ck-copied" : "error"}>
+            {copyMsg.ok ? <Check size={16} aria-hidden="true" /> : <CircleAlert size={16} aria-hidden="true" />}
+            {copyMsg.text}
+          </p>
+        ) : null}
         <ol className="ck-pix-steps">
-          <li>Abra o app do seu banco</li>
-          <li>Escolha pagar via Pix com QR Code ou copia e cola</li>
-          <li>Confirme o pagamento — a confirmação aparece aqui automaticamente</li>
+          <li>Abra o app do banco</li>
+          <li>Escolha Pix</li>
+          <li>{qrUrl ? "Escaneie ou cole o código" : "Cole o código"}</li>
         </ol>
       </div>
     </div>

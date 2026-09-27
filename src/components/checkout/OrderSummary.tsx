@@ -1,92 +1,124 @@
-import { ShieldCheck } from "lucide-react";
+import { Check, Truck } from "lucide-react";
 import Image from "next/image";
 import type { Quote } from "@/lib/checkout/own/pricing";
 import { money } from "@/lib/checkout/own/masks";
 import type { Selection } from "@/lib/checkout/own/catalog";
-import { titleOf, variantOf } from "@/lib/checkout/own/catalog";
-import { KIT_PHOTO, productPhoto } from "@/lib/site/constants";
-import type { PayMethodUi } from "./types";
+import { COLOR_LABELS } from "@/lib/site/constants";
+import type { Color } from "@/lib/site/types";
+import type { PaidInfo, PayMethodUi } from "./types";
 
 /**
- * Resumo do pedido (origem app/checkout.tsx, `.order-summary`). Todo valor vem de `quotes` (calculado no
- * servidor por `quoteBoth`, @/lib/checkout/own/pricing) — o navegador nunca calcula preço, só formata
- * (`money`) e divide `installmentCents`/`amountCents` para exibir, igual à origem (`per(n)`).
- *
- * O bump (2ª unidade) sempre repete a cor da 1ª: o `checkout_carts`/`orders` gravado pelo agente
- * apis-seguranca (order.ts `effectiveSelection`) não tem um campo para a cor da 2ª unidade do bump —
- * só existe `bump: boolean`. Por isso aqui (e em StepPagamento/OrderBump) não há seletor de cor para o
- * bump, diferente do que a Fase 8.6 do plano previa: o dado para isso não existe de ponta a ponta.
+ * O bump (2ª unidade) sempre repete a cor da 1ª: `checkout_carts`/`orders` não têm campo para a cor da 2ª
+ * unidade do bump — só `bump: boolean` (order.ts `effectiveSelection`). Por isso não há seletor de cor no bump.
  */
 export function effectiveSelectionClient(selection: Selection, bump: boolean): Selection {
   if (selection.pack === "kit") return selection;
   return bump ? { pack: "kit", colors: [selection.colors[0], selection.colors[0]] } : selection;
 }
 
+export const colorName = (c: Color) => COLOR_LABELS[c].toLowerCase();
+export const thumbOf = (c: Color, size: 110 | 610 = 110) => `/thumbs/produto-${c}-${size}.webp`;
+
+/**
+ * Resumo do pedido (origem app/checkout.tsx, `aside.order-summary`), mesmas classes e textos. Todo valor vem de
+ * `quotes` (servidor, `quoteBoth`) ou do pedido pago (`paid.amountCents`); aqui só se formata. Diferenças
+ * permitidas pela tabela 8.6: nome/cor/foto do produto (cores reais da seleção) e valores (Pix e cartão têm
+ * preços diferentes no painel, então o total acompanha a forma escolhida).
+ */
 export function OrderSummary({
   selection,
   bump,
   quotes,
-  method,
+  payView,
+  showShipping,
+  paid,
 }: {
   selection: Selection;
   bump: boolean;
   quotes: { pix: Quote; card: Quote };
-  method: PayMethodUi;
+  /** Forma em destaque no total (origem `payView`): a paga, a escolhida na etapa 3 ou Pix antes dela. */
+  payView: PayMethodUi;
+  showShipping: boolean;
+  paid?: PaidInfo | null;
 }) {
-  const effective = effectiveSelectionClient(selection, bump);
-  const photo = effective.pack === "kit" ? KIT_PHOTO : productPhoto(effective.colors[0]);
-  const q = quotes[method];
-  const pixSavingCents = quotes.card.amountCents - quotes.pix.amountCents;
-  const pixIsCheaper = pixSavingCents > 0;
+  const q = quotes[payView];
+  const isKit = selection.pack === "kit";
+  const hasBump = !isKit && bump;
+  const total = paid ? paid.amountCents : q.amountCents;
+  // Preço da seleção original (sem o bump), como a origem mostra no produto: kit − delta = unidade.
+  const basePrice = hasBump ? q.amountCents - q.bumpDeltaCents : q.amountCents;
+  const [c1, c2] = selection.colors;
+
+  const installments = paid ? paid.installments : q.installments;
+  const per = paid ? Math.round(paid.amountCents / Math.max(1, paid.installments)) : q.installmentCents;
 
   return (
-    <aside className="ck-card order-summary">
+    <aside className="ck-card order-summary" aria-label="Resumo do pedido">
       <h2 className="ck-sum-title">Resumo do pedido</h2>
       <div className="selected-product">
-        <Image src={photo.src} alt={photo.alt} width={80} height={80} />
+        {isKit ? (
+          <span className="ck-kit-thumbs">
+            <Image src={thumbOf(c1)} width={40} height={80} alt={`AquaBlast ${colorName(c1)}`} />
+            <Image src={thumbOf(c2 ?? c1)} width={40} height={80} alt={`AquaBlast ${colorName(c2 ?? c1)}`} />
+          </span>
+        ) : (
+          <Image src={thumbOf(c1)} width={80} height={80} alt={`AquaBlast ${colorName(c1)}`} />
+        )}
         <div>
-          <h4>{titleOf(effective)}</h4>
-          <p>{variantOf(effective)}</p>
+          <h4>{isKit ? "Kit com 2 AquaBlast" : "1 unidade AquaBlast"}</h4>
+          <p>{isKit ? `1 ${colorName(c1)} + 1 ${colorName(c2 ?? c1)}` : `Cor ${colorName(c1)}`}</p>
+          <div className="offer">
+            {isKit && q.bumpSavingCents > 0 ? (
+              <s>
+                <span className="ck-u-sr-only">De </span>
+                {money(q.amountCents + q.bumpSavingCents)}
+              </s>
+            ) : null}
+            <b>{money(basePrice)}</b>
+          </div>
+          {isKit && q.bumpSavingCents > 0 ? <em className="save-tag">ECONOMIZE {money(q.bumpSavingCents)}</em> : null}
         </div>
       </div>
-
-      {bump && q.bumpSavingCents > 0 ? (
+      {hasBump ? (
         <div className="bump-summary">
           <span>
-            <ShieldCheck aria-hidden="true" size={15} /> Kit com 2 unidades
+            <Check size={15} aria-hidden="true" /> + 1 AquaBlast {colorName(c1)}
           </span>
-          <span>Economia de {money(q.bumpSavingCents)}</span>
+          <b>{money(q.bumpDeltaCents)}</b>
         </div>
       ) : null}
-
       <dl className="price-details">
         <div>
-          <dt>{method === "pix" ? "Pix" : `Cartão em ${q.installments}x`}</dt>
-          <dd>{money(q.amountCents)}</dd>
+          <dt>Subtotal</dt>
+          <dd>{money(total)}</dd>
         </div>
-        {pixIsCheaper && method === "card" ? (
+        {showShipping ? (
           <div>
-            <dt>No Pix</dt>
-            <dd className="green">{money(quotes.pix.amountCents)}</dd>
+            <dt>Entrega</dt>
+            <dd className="green">Grátis</dd>
           </div>
         ) : null}
       </dl>
-
-      <div className={`total${method === "pix" ? " is-pix" : ""}`}>
-        <span>Total</span>
-        <strong>
-          <b>{money(q.amountCents)}</b>
-          {method === "card" && q.installments > 1 ? <small>{q.installments}x de {money(q.installmentCents)} sem juros</small> : null}
-          {method === "pix" ? <small>À VISTA NO PIX</small> : null}
-        </strong>
+      <div className={`total is-${payView}`} aria-live="polite">
+        <span>Valor total:</span>
+        {payView === "card" ? (
+          <strong>
+            <b>
+              {installments}x {money(per)}
+            </b>
+            <small>(ou {money(total)} à vista)</small>
+          </strong>
+        ) : (
+          <strong>
+            <b>{money(total)}</b>
+            <small>NO PIX</small>
+          </strong>
+        )}
       </div>
-
-      {pixIsCheaper && method === "card" ? (
-        <p className="ck-sum-note">
-          <ShieldCheck aria-hidden="true" size={16} />
-          Pagando no Pix você economiza {money(pixSavingCents)}.
-        </p>
-      ) : null}
+      <p className="ck-sum-note">
+        <Truck size={15} aria-hidden="true" />
+        Dia das Crianças: envio rápido, com código de rastreamento
+      </p>
     </aside>
   );
 }

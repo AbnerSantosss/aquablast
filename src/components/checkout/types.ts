@@ -4,6 +4,9 @@ import type { Quote } from "@/lib/checkout/own/pricing";
 
 export type StepName = "dados" | "entrega" | "pagamento";
 
+/** Estado da busca do CEP (origem: `CepState`). `idle`/`loading` travam os campos de endereço. */
+export type CepState = "idle" | "loading" | "found" | "manual";
+
 export type PayMethodUi = "pix" | "card";
 
 export interface CustomerData {
@@ -24,6 +27,10 @@ export interface AddressData {
   recipient: string;
 }
 
+/** Todos os campos das etapas 1 e 2 num objeto só, como na origem (`fields`); o nome vira o `name` do input. */
+export type FormData = CustomerData & AddressData;
+export type FieldKey = keyof FormData;
+
 /**
  * Estado inicial do checkout quando ele é aberto pelo link de recuperação `/checkout/pedido/<token do carrinho>`
  * (plano 8.8). Vem do servidor, já lido do banco. `cpfMasked` é a ÚNICA forma do CPF que chega à tela
@@ -38,13 +45,34 @@ export interface CheckoutInitial {
   bump: boolean;
 }
 
+/**
+ * Formato que o POST /api/checkout/pay aceita em `card` (cardSchema em @/lib/checkout/own/schemas: mês e ano
+ * NUMÉRICOS, ano com 4 dígitos). Antes da fase 14 o CardPay mandava mês/ano como texto e o servidor recusava
+ * com 400 — o formulário agora guarda "MM/AA" (igual à origem) e converte só na hora de enviar.
+ */
 export interface CardFormData {
   number: string;
   holderName: string;
-  expMonth: string;
-  expYear: string;
+  expMonth: number;
+  expYear: number;
   cvv: string;
   holderCpf: string;
+}
+
+/**
+ * Pedido já pago, mostrado pela página durável /checkout/pedido/[token] com o MESMO layout do checkout
+ * (origem: `SuccessView` dentro do `.ck-flow`, etapas concluídas sem EDITAR). Montado no servidor a partir de
+ * `orders` + a última tentativa paga em `payment_attempts` (bandeira/últimos 4 só existem lá).
+ */
+export interface PaidInfo {
+  orderNumber: string;
+  method: PayMethodUi;
+  amountCents: number;
+  installments: number;
+  cardBrand: string | null;
+  cardLast4: string | null;
+  /** Gateway `simulado`: mostra o aviso de modo de teste (plano 8.6). */
+  testMode: boolean;
 }
 
 /** GET /api/checkout/config, ver src/app/api/checkout/config/route.ts. */

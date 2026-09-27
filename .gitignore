@@ -41,3 +41,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# testes e2e da fase 14 (capturas, e-mails do coletor, resultados, backup de settings)
+e2e/out/

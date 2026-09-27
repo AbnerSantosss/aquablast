@@ -24,7 +24,9 @@ const checkoutCsp = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  `connect-src 'self' ${MP_HOSTS}${isDev ? " ws: wss:" : ""}`,
+  // ViaCEP: busca do endereço pelo CEP no navegador (StepEntrega.tsx). Sem ele a CSP bloqueava a busca e
+  // todo CEP caía em "não encontrado" (achado na fase 14, 2026-09-27).
+  `connect-src 'self' https://viacep.com.br ${MP_HOSTS}${isDev ? " ws: wss:" : ""}`,
   `frame-src 'self' ${MP_HOSTS}`,
   "form-action 'self'",
   "base-uri 'self'",

@@ -13,6 +13,9 @@ export interface ApiFail {
   ok: false;
   error: string;
   field?: string;
+  /** Só nas respostas de POST /pay com `status:"refused"|"error"`: texto do gateway para o cliente. */
+  message?: string | null;
+  status?: string;
 }
 
 export type CartStep = "dados" | "entrega" | "pagamento";
@@ -100,6 +103,20 @@ export async function getStatus(publicToken: string): Promise<StatusResponse | A
   try {
     const res = await fetch(`/api/checkout/status/${publicToken}`, { cache: "no-store" });
     return await parseJson<StatusResponse>(res);
+  } catch {
+    return { ok: false, error: "Sem conexão com o servidor." };
+  }
+}
+
+/** Só com o gateway `simulado` (plano 8.6: botão "Simular pagamento aprovado"). Em produção a rota responde 404. */
+export async function postSimulatePaid(publicToken: string): Promise<{ ok: true; status: string; orderNumber: string } | ApiFail> {
+  try {
+    const res = await fetch("/api/checkout/simular-pagamento", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ publicToken }),
+    });
+    return await parseJson<{ ok: true; status: string; orderNumber: string }>(res);
   } catch {
     return { ok: false, error: "Sem conexão com o servidor." };
   }

@@ -1,62 +1,54 @@
 "use client";
 
-import { Droplet, Timer } from "lucide-react";
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Clock, Droplets } from "lucide-react";
 import { timeLeft, type Theme } from "@/lib/checkout/own/theme";
+import { pad2, useClock } from "./useClock";
 
-/** Logo do checkout (origem app/checkout.tsx, `Brand()`). Mesmo ícone de gota do site (SITE_ICON), via lucide-react. */
+/** Logo do checkout (origem app/checkout.tsx, `Brand()`): link para a home com o ícone Droplets. */
 export function Brand({ storeName }: { storeName: string }) {
   return (
-    <span className="brand">
-      <Droplet aria-hidden="true" />
-      {storeName}
-    </span>
+    <Link className="brand" href="/" aria-label={`${storeName} início`}>
+      <Droplets aria-hidden="true" />
+      <span>{storeName}</span>
+    </Link>
   );
 }
 
 /**
- * Cronômetro da oferta (origem app/checkout.tsx, `OfferTimer()`, via `useClock`/`timeLeft`).
- * `is-pending` fica visível=hidden no primeiro render (servidor x cliente podem calcular tempos
- * diferentes por alguns ms): só aparece depois do primeiro tick no navegador.
+ * Divide o rótulo do tema no formato da origem: `Oferta<span.ck-timer-long> Dia das Crianças</span> termina em:`
+ * (o miolo some no celular por CSS). Rótulo fora desse formato vai inteiro, sem parte escondida.
+ */
+function splitLabel(label: string): [string, string, string] {
+  const m = /^(Oferta)( .+?)( termina em:?)$/.exec(label);
+  return m ? [m[1], m[2], m[3]] : [label, "", ""];
+}
+
+/**
+ * Cronômetro da oferta (origem `OfferTimer`). Data e rótulo vêm do tema (painel /admin/checkout). Só mostra o
+ * tempo depois de montar no cliente (`is-pending` + aria-hidden antes disso) e some quando a data passa —
+ * nenhum número inventado no lugar.
  */
 export function OfferTimer({ theme }: { theme: Theme }) {
-  const [now, setNow] = useState<number | null>(null);
-
-  useEffect(() => {
-    // Primeiro tick fora do corpo do efeito (regra react-hooks/set-state-in-effect): o timeout 0 mantém o
-    // comportamento "aparece logo depois de hidratar" sem setState síncrono dentro do efeito.
-    const tick = () => setNow(Date.now());
-    const first = window.setTimeout(tick, 0);
-    const id = window.setInterval(tick, 1000);
-    return () => {
-      window.clearTimeout(first);
-      window.clearInterval(id);
-    };
-  }, []);
-
+  const now = useClock(theme.timerEnabled);
   if (!theme.timerEnabled) return null;
   const left = now === null ? null : timeLeft(theme.timerEnd, now);
-  if (now !== null && !left) return null; // oferta acabou: some (nenhum número inventado no lugar).
-
-  const pad = (n: number) => String(n).padStart(2, "0");
-
+  if (now !== null && !left) return null;
+  const [head, long, tail] = splitLabel(theme.timerLabel);
   return (
-    <div className={`ck-timer${now === null ? " is-pending" : ""}`}>
-      <Timer aria-hidden="true" size={15} />
-      <span className="ck-timer-long">{theme.timerLabel}</span>
-      {left ? (
-        <b>
-          {left.days > 0 ? `${left.days}d ` : ""}
-          {pad(left.hours)}:{pad(left.minutes)}:{pad(left.seconds)}
-        </b>
-      ) : (
-        <b>00:00:00</b>
-      )}
+    <div className={`ck-timer${left ? "" : " is-pending"}`} aria-live="off" aria-hidden={left ? undefined : true}>
+      <Clock size={16} aria-hidden="true" />
+      <span>
+        {head}
+        {long ? <span className="ck-timer-long">{long}</span> : null}
+        {tail}
+      </span>
+      <b>{left ? `${pad2(left.days)}d ${pad2(left.hours)}:${pad2(left.minutes)}:${pad2(left.seconds)}` : "00d 00:00:00"}</b>
     </div>
   );
 }
 
-/** Topo do checkout: marca + cronômetro (".ck-top", origem app/checkout.tsx). */
+/** Topo do checkout: marca + cronômetro (`header.ck-top`, origem app/checkout.tsx). */
 export function TopBar({ theme }: { theme: Theme }) {
   return (
     <header className="ck-top">

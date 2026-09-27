@@ -33,9 +33,9 @@
 
 /* ---------- Reset mínimo equivalente ao Tailwind global da origem, escopado em .ck-root ---------- */
 .ck-root,
-.ck-root *,
-.ck-root *::before,
-.ck-root *::after {
+:where(.ck-root) *,
+:where(.ck-root) *::before,
+:where(.ck-root) *::after {
   box-sizing: border-box;
 }
 .ck-root {
@@ -44,49 +44,72 @@
   font-size: 16px;
   line-height: 1.5;
 }
-.ck-root button,
-.ck-root a,
-.ck-root input,
-.ck-root select {
+:where(.ck-root) button,
+:where(.ck-root) a,
+:where(.ck-root) input,
+:where(.ck-root) select {
   -webkit-tap-highlight-color: transparent;
   font-family: inherit;
 }
-.ck-root button,
-.ck-root a {
+:where(.ck-root) button,
+:where(.ck-root) a {
   touch-action: manipulation;
 }
-.ck-root button {
+:where(.ck-root) button {
   cursor: pointer;
 }
-.ck-root button:disabled {
+:where(.ck-root) button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
-.ck-root a {
+:where(.ck-root) a {
   color: inherit;
   text-decoration: none;
 }
-.ck-root h1,
-.ck-root h2,
-.ck-root h3,
-.ck-root h4,
-.ck-root p {
+:where(.ck-root) h1,
+:where(.ck-root) h2,
+:where(.ck-root) h3,
+:where(.ck-root) h4,
+:where(.ck-root) p {
   margin: 0;
 }
-.ck-root button:focus-visible,
-.ck-root a:focus-visible {
+:where(.ck-root) button:focus-visible,
+:where(.ck-root) a:focus-visible {
   outline: 3px solid #00aef0;
   outline-offset: 4px;
 }
-.ck-root .container {
+:where(.ck-root) .container {
   max-width: 1152px;
   padding: 0 28px;
   margin: auto;
 }
 @media (max-width: 760px) {
-  .ck-root .container {
+  :where(.ck-root) .container {
     padding-left: 16px;
     padding-right: 16px;
+  }
+}
+/* Regras globais da origem (globals.css linhas 6, 14 e 15) que o bloco ".ck" pressupõe: sem elas a
+   linha Celular/CPF virava bloco (uma embaixo da outra) e o campo não encolhia dentro da grade. */
+:where(.ck-root) .field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+:where(.ck-root) .field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 760px) {
+  :where(.ck-root) .field-row {
+    gap: 12px;
+  }
+}
+@media (max-width: 370px) {
+  :where(.ck-root) .field-row {
+    grid-template-columns: 1fr;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1512,20 +1535,22 @@
   color: var(--c-primary);
 }
 /* Cabeçalho/marca (equivalente a ".brand"/".eyebrow" da origem, usados no ck-top). */
-.ck .brand {
+/* :where() = mesma especificidade do ".brand" global da origem, para o ".ck-top .brand" vencer. Valores
+   finais da cascata da origem (linha 23 do globals.css: 22px, -.8px, gap 4px, svg 24px). */
+:where(.ck) .brand {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 30px;
+  gap: 4px;
+  font-size: 22px;
   font-weight: 900;
-  letter-spacing: -1.6px;
+  letter-spacing: -0.8px;
   color: #063760;
   font-family: var(--font-display), var(--font-text), sans-serif;
 }
-.ck .brand svg {
+:where(.ck) .brand svg {
   color: #00aef0;
-  width: 35px;
-  height: 35px;
+  width: 24px;
+  height: 24px;
   stroke-width: 2.8;
 }
 @media (max-width: 1000px) {
@@ -1897,4 +1922,99 @@
   .ck-consent-actions {
     flex-direction: column;
   }
+}
+
+/* ===== Fase 14.3 (não existe na origem; diferenças permitidas pela tabela 8.6) ===== */
+/* Pix sem QR (gateway real que só devolve o copia e cola): a coluna do QR some e o código ocupa a largura. */
+.ck-pix.no-qr {
+  grid-template-columns: minmax(0, 1fr);
+}
+/* Kit no resumo: as fotos reais das 2 cores lado a lado, no mesmo quadrado 80x80 da foto da origem. */
+.ck .selected-product .ck-kit-thumbs {
+  display: flex;
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  border: 1px solid var(--c-line);
+  overflow: hidden;
+  background: #fff;
+}
+.ck .selected-product .ck-kit-thumbs img {
+  width: 40px;
+  height: 80px;
+  border: 0;
+  border-radius: 0;
+  object-fit: cover;
+}
+
+/*
+ * Fase 14.3 - reset equivalente ao preflight do Tailwind v4 que a origem carrega (app/globals.css
+ * "@import tailwindcss") e este projeto não tem. Sem ele a comparação visual deu +8px de margem no body,
+ * +9px no topo, +59px na etapa 1 e +45px no cartão (margens padrão de h/p/ol/figure, fonte padrão de
+ * button/input, svg inline). Escopado em .ck-root e com :where() (especificidade zero), então qualquer
+ * regra de classe acima continua valendo, igual ao @layer base da origem.
+ */
+body:has(.ck-root) {
+  margin: 0;
+  background: #f4f5f7;
+}
+:where(.ck-root, .ck-root *, .ck-root ::before, .ck-root ::after) {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0 solid;
+}
+:where(.ck-root) {
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  tab-size: 4;
+}
+:where(.ck-root) :where(h1, h2, h3, h4, h5, h6) {
+  font-size: inherit;
+  font-weight: inherit;
+}
+:where(.ck-root) :where(a) {
+  color: inherit;
+  -webkit-text-decoration: inherit;
+  text-decoration: inherit;
+}
+:where(.ck-root) :where(b, strong) {
+  font-weight: bolder;
+}
+:where(.ck-root) :where(small) {
+  font-size: 80%;
+}
+:where(.ck-root) :where(ol, ul, menu) {
+  list-style: none;
+}
+:where(.ck-root) :where(img, svg, video, canvas, iframe, object) {
+  display: block;
+  vertical-align: middle;
+}
+:where(.ck-root) :where(img, video) {
+  max-width: 100%;
+  height: auto;
+}
+:where(.ck-root) :where(button, input, select, optgroup, textarea) {
+  font: inherit;
+  font-feature-settings: inherit;
+  font-variation-settings: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  border-radius: 0;
+  background-color: transparent;
+  opacity: 1;
+}
+:where(.ck-root) :where(button, input:where([type="button"], [type="reset"], [type="submit"])) {
+  appearance: button;
+}
+:where(.ck-root) ::placeholder {
+  opacity: 1;
+}
+:where(.ck-root) :where(table) {
+  text-indent: 0;
+  border-color: inherit;
+  border-collapse: collapse;
 }

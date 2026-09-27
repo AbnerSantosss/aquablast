@@ -1,66 +1,74 @@
+"use client";
+
+import Link from "next/link";
 import { Check } from "lucide-react";
-import { money } from "@/lib/checkout/own/masks";
+import { useEffect, useRef } from "react";
+import { TestModeNote } from "./PaySeals";
 
 /**
- * Confirmação (origem app/simulated-payment.tsx, `.ck-success`) — adaptada para o pedido real: sem o
- * botão "Fazer novo teste" (só existe na demo) e com "Enviamos" no presente, já que o pedido está
- * pago/registrado de verdade. Props em formato já pronto para exibir (título, variante, endereço em
- * uma linha) para servir tanto o fluxo ao vivo (Checkout.tsx, a partir de `Selection`/`AddressData`)
- * quanto a página /checkout/pedido/[token] (a partir da linha do banco, `orders`).
+ * Confirmação (origem app/simulated-payment.tsx, `SuccessView`), mesmas classes e textos, dentro do `.ck-flow`
+ * acima das etapas concluídas. Diferenças da origem: "Enviamos" no lugar de "Enviaríamos" (o pedido é real) e o
+ * aviso de modo de teste + o botão "Fazer novo teste" só aparecem com o gateway `simulado` (plano 8.6).
+ * O título recebe o foco ao montar, como na origem.
  */
 export function SuccessView({
   orderNumber,
-  itemTitle,
-  itemVariant,
-  addressLine,
+  payment,
+  items,
+  total,
+  address,
   email,
-  paymentLabel,
-  amountCents,
   testMode,
+  restartHref,
 }: {
   orderNumber: string;
-  itemTitle: string;
-  itemVariant: string;
-  addressLine: string;
+  payment: string;
+  items: string[];
+  total: string;
+  address: string;
   email: string;
-  paymentLabel: string;
-  amountCents: number;
   testMode: boolean;
+  restartHref: string;
 }) {
+  const title = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    title.current?.focus();
+  }, []);
   return (
     <section className="ck-success" role="status" aria-labelledby="ck-success-title">
       <div className="ck-success-icon" aria-hidden="true">
         <Check size={30} strokeWidth={3} />
       </div>
-      <h2 id="ck-success-title">Pedido confirmado!</h2>
+      <h2 id="ck-success-title" ref={title} tabIndex={-1}>
+        Pedido confirmado!
+      </h2>
       <p className="ck-success-order">
         Pedido nº <strong>{orderNumber}</strong>
       </p>
-
-      {testMode ? <p className="ck-testmode">Modo de teste: nenhuma cobrança real foi feita.</p> : null}
-
+      {testMode ? <TestModeNote /> : null}
       <dl className="ck-success-list">
         <div>
           <dt>Pagamento</dt>
-          <dd>{paymentLabel}</dd>
+          <dd>{payment}</dd>
         </div>
         <div>
-          <dt>Item</dt>
+          <dt>Itens</dt>
           <dd>
-            <span>{itemTitle}</span>
-            <small>{itemVariant}</small>
+            {items.map((i) => (
+              <span key={i}>{i}</span>
+            ))}
           </dd>
         </div>
         <div>
           <dt>Total</dt>
           <dd>
-            <strong>{money(amountCents)}</strong>
+            <strong>{total}</strong>
           </dd>
         </div>
         <div>
           <dt>Entrega</dt>
           <dd>
-            <span>{addressLine}</span>
+            <span>{address}</span>
             <small>Frete FULL grátis · Com código de rastreamento</small>
           </dd>
         </div>
@@ -71,6 +79,11 @@ export function SuccessView({
           </dd>
         </div>
       </dl>
+      {testMode ? (
+        <Link className="primary-button ck-pay-btn" href={restartHref}>
+          Fazer novo teste
+        </Link>
+      ) : null}
     </section>
   );
 }
