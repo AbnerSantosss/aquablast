@@ -28,6 +28,7 @@ async function pixExpira(variant) {
     await page.route("**/api/checkout/pay", async (r) => { await new Promise((ok) => setTimeout(ok, 700)); await r.continue(); });
     await L.toPayment(page);
     await L.waitText(page.locator(".ck-step[aria-current=step]"), "Pagamento");
+    await L.choosePix(page); // cartao abre selecionado por padrao desde 2026-09-28
     await L.btn(page, "FINALIZAR COMPRA").click();
     const gerando = page.getByRole("button", { name: "Gerando Pix…" });
     await gerando.waitFor({ timeout: 3000 });

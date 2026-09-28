@@ -19,19 +19,23 @@ async function run(variant) {
     await L.waitText(page.locator(".selected-product"), "Kit com 2 AquaBlast");
     await L.waitText(page.locator(".selected-product .offer s"), /^De R\$ [\d.,]+$/);
     await L.waitText(page.locator(".save-tag"), /^ECONOMIZE R\$ [\d.,]+$/);
-    await L.waitText(page.locator(".order-summary .total b"), "R$ 249,90");
+    // Antes de escolher a forma (2026-09-28): parcela do kit no cartao em destaque, Pix com desconto abaixo.
+    await L.waitText(page.locator(".order-summary .total"), /12x de R\$ 21,66 ?sem juros no cartão · total R\$ 259,90/);
+    await L.waitText(page.locator(".order-summary .total-alt.is-pix"), /ou R\$ 249,90 à vista no Pix ?R\$ 10,00 de desconto/);
     await L.fillDados(page);
     await L.submitDados(page);
     await L.fillEntrega(page);
     await L.submitEntrega(page);
     assert.equal(await page.locator(".order-bump").count(), 0, "kit nao tem oferta da 2a unidade");
 
-    await page.locator(".pay-head", { hasText: "Cartão de crédito" }).click();
+    // Cartao ja abre selecionado (2026-09-28); o clique continua para cobrir o caso de o padrao mudar.
+    assert.ok(await page.locator('input[name="pay-method"][value="card"]').isChecked(), "cartao deveria abrir selecionado");
+    await L.payHead(page, "card").click();
     await L.waitText(page.locator(".ck-card-warn"), "Não use um cartão real.");
     assert.equal(await L.field(page, "cc-number").getAttribute("autocomplete"), "cc-number");
     assert.equal(await L.field(page, "cc-number").getAttribute("inputmode"), "numeric");
     assert.equal(await L.field(page, "cc-cpf").inputValue(), "");
-    await L.waitText(page.locator(".order-summary .total"), /12x R\$ 21,66.*\(ou R\$ 259,90 à vista\)/);
+    await L.waitText(page.locator(".order-summary .total"), /12x de R\$ 21,66 ?sem juros no cartão · total R\$ 259,90/);
 
     // Luhn invalido: mascara, bandeira e foco no numero.
     await cartao(page, L.CARD_BAD_LUHN);
@@ -77,11 +81,13 @@ async function run(variant) {
     await cartao(page, L.CARD_OK);
     await L.btn(page, "FINALIZAR COMPRA").click();
     await page.waitForURL(/\/checkout\/pedido\//, { timeout: 20000 });
-    const ok = page.locator(".ck-success");
-    await L.waitText(ok, "Pedido confirmado!");
-    await L.waitText(ok, /Cartão Visa final 4242 em 12x de R\$ 21,66 sem juros/);
-    await L.waitText(ok, "Kit com 2 AquaBlast");
-    await L.waitText(ok, "Frete FULL grátis · Com código de rastreamento");
+    // Tela de compra confirmada (2026-09-28): forma de pagamento, itens e frete sairam da tela.
+    await L.waitText(page.locator(".oc-hero"), /Obrigado pela sua compra, \S+!/);
+    await L.waitText(page.locator(".oc-summary"), /Total\s*R\$/);
+    await L.waitText(page.locator(".oc-summary"), /Enviamos a confirmação para \S+@/);
+    assert.equal(await page.locator(".oc-step.is-current strong").textContent(), "Compra aprovada");
+    await L.waitText(page.locator(".oc-hero"), "Pagamento aprovado");
+    assert.equal(await page.locator(".oc-step.is-done").count(), 2, "pedido pago comeca com 2 etapas concluidas");
     assert.equal(await page.locator("input[name^=cc-]").count(), 0, "campos do cartao deveriam sumir");
     assert.equal(await page.locator(".ck-step[aria-current=step]").count(), 0);
     assert.equal(await page.getByRole("button", { name: /^Editar/ }).count(), 0);

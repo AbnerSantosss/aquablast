@@ -1400,40 +1400,81 @@
 .ck .total {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: 2px 10px;
-  padding-top: 14px;
+  gap: 4px 10px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #edf8ff;
+  border: 1px solid #d9e7ef;
 }
 .ck .total > span {
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 800;
+  color: #063760;
 }
 .ck .total > strong {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--c-ok);
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   text-align: right;
-  line-height: 1.2;
+  line-height: 1.15;
+  color: #063760;
 }
 .ck .total > strong b {
   font-family: var(--font-display), sans-serif;
-  font-size: 24px;
-  font-weight: 800;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  color: #006bca;
 }
 .ck .total small {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--c-muted);
+  margin-top: 3px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #526c80;
 }
-.ck .total.is-pix small {
-  font-size: 12px;
+.ck .total.is-pix > strong b {
+  color: #087e3a;
+}
+.ck .total-alt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px dashed #087e3a59;
+  background: #087e3a0d;
+  font-size: 14px;
+  color: #163a56;
+}
+.ck .total-alt:not(.is-pix) {
+  border-color: #d9e7ef;
+  background: #fff;
+}
+.ck .total-alt svg {
+  flex-shrink: 0;
+  color: #087e3a;
+}
+.ck .total-alt:not(.is-pix) svg {
+  color: #006bca;
+}
+.ck .total-alt b {
   font-weight: 800;
-  letter-spacing: 0.6px;
-  color: var(--c-ok);
+  color: #063760;
+}
+.ck .total-alt em {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #087e3a;
+  color: #fff;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+  white-space: nowrap;
 }
 .ck-sum-note {
   display: flex;
@@ -1450,89 +1491,150 @@
   color: var(--c-ok);
   flex-shrink: 0;
 }
-/* Selos e rodapé */
+/* Selos e rodapé (refeitos em 2026-09-28: selos gerados na OpenRouter + rodapé azul-marinho da LP). */
 .ck .trust-seals {
   grid-area: seals;
-  padding: 14px 16px;
-  border: 1px solid #e5e8ed;
-  border-radius: 12px;
-  background: #ffffffb3;
+  padding: 18px;
+  border: 1px solid #d9e7ef;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 2px #1018280a;
 }
 .ck .trust-seals ul {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px 16px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px 18px;
 }
 .ck .trust-seals li {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 12px;
   min-width: 0;
 }
-.ck .trust-seals li > svg {
+.ck .trust-seals li img,
+.ck .trust-seals .seal-pix {
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  padding: 7px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  background: var(--c-ok-bg);
-  color: var(--c-ok);
+  box-shadow: 0 4px 12px #0637602e;
+}
+/* Selo do Pix = símbolo oficial (SVG verde-água do Banco Central, não recolorir) num círculo branco do mesmo
+   tamanho das artes geradas, para a fileira de selos ficar alinhada. */
+.ck .trust-seals .seal-pix {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d9e7ef;
+  background: #fff;
 }
 .ck .trust-seals strong {
   display: block;
-  font-size: 12.5px;
+  font-size: 14px;
+  font-weight: 800;
   line-height: 1.25;
+  color: #063760;
 }
 .ck .trust-seals small {
   display: block;
-  font-size: 11.5px;
+  font-size: 12.5px;
   line-height: 1.3;
-  color: var(--c-muted);
+  color: #526c80;
 }
-.ck .pay-methods {
+.ck-footer {
+  margin-top: 40px;
+  background: #032644;
+  color: #edf8ff;
+  font-size: 14px;
+}
+.ck-footer-in {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 0.8fr);
+  gap: 28px 40px;
+  padding-top: 36px;
+  padding-bottom: 32px;
+}
+.ck-footer :where(.ck-footer-brand) .brand {
+  color: #fff;
+}
+.ck-footer :where(.ck-footer-brand) .brand svg {
+  color: #63e1ff;
+}
+.ck-footer-brand p {
+  margin-top: 10px;
+  max-width: 34ch;
+  line-height: 1.55;
+  color: #d9e7ef;
+}
+.ck-footer h2 {
+  margin: 0 0 12px;
+  font-family: var(--font-display), sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #63e1ff;
+}
+.ck .pay-methods > div {
   display: flex;
-  align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px dashed var(--c-line);
-  font-size: 12.5px;
-  color: var(--c-muted);
 }
 .ck .pay-methods em {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 9px;
-  border: 1px solid var(--c-line);
-  border-radius: 6px;
-  background: #fff;
+  gap: 7px;
+  min-height: 38px;
+  padding: 6px 12px;
+  border: 1px solid #ffffff2e;
+  border-radius: 10px;
+  background: #ffffff14;
   font-style: normal;
-  font-weight: 650;
-  color: var(--c-text);
+  font-weight: 700;
+  color: #fff;
 }
 .ck .pay-methods em svg {
-  color: var(--c-primary);
+  color: #63e1ff;
 }
-.ck-footer {
+.ck-footer-nav {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 24px 16px 32px;
-  border-top: 1px solid var(--c-line);
-  text-align: center;
-  font-size: 13px;
-  color: var(--c-muted);
+  align-items: flex-start;
 }
-.ck-footer strong {
-  font-family: var(--font-display), sans-serif;
-  font-size: 17px;
-  color: var(--c-primary);
+.ck-footer-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+.ck-footer-nav a:hover {
+  color: #63e1ff;
+  text-decoration: underline;
+}
+.ck-footer-bottom {
+  border-top: 1px solid #ffffff1f;
+  background: #02253f;
+}
+.ck-footer-bottom .container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 16px;
+  padding-top: 14px;
+  padding-bottom: 18px;
+  font-size: 13px;
+  color: #d9e7efd9;
+}
+.ck-footer-bottom span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 /* Cabeçalho/marca (equivalente a ".brand"/".eyebrow" da origem, usados no ck-top). */
 /* :where() = mesma especificidade do ".brand" global da origem, para o ".ck-top .brand" vencer. Valores
@@ -1547,6 +1649,9 @@
   color: #063760;
   font-family: var(--font-display), var(--font-text), sans-serif;
 }
+:where(.ck) a.brand {
+  min-height: 44px;
+}
 :where(.ck) .brand svg {
   color: #00aef0;
   width: 24px;
@@ -1559,9 +1664,6 @@
   }
   .ck-flow {
     padding: 24px;
-  }
-  .ck .trust-seals ul {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .ck .campaign-copy {
     max-width: 56%;
@@ -1576,6 +1678,17 @@
   .ck-qr svg,
   .ck-qr img {
     max-width: 200px;
+  }
+}
+/* Tablet (761-900 px): com o resumo de 320 px ao lado, a coluna das etapas ficava com ~300 px (endereço e
+   formas de pagamento quebrando em 3 linhas). Aqui já empilha como no celular, mantendo o resto do visual. */
+@media (max-width: 900px) {
+  .ck-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "flow" "sum" "seals";
+  }
+  .ck .order-summary {
+    position: static;
   }
 }
 @media (max-width: 760px) {
@@ -1790,12 +1903,59 @@
     gap: 2px;
   }
   .ck .trust-seals {
-    padding: 12px;
+    padding: 14px;
   }
-  .ck .trust-seals li > svg {
-    width: 30px;
-    height: 30px;
-    padding: 6px;
+  .ck .trust-seals ul {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 10px;
+  }
+  .ck .trust-seals li {
+    flex-direction: column;
+    text-align: center;
+    gap: 6px;
+  }
+  .ck .trust-seals li img,
+  .ck .trust-seals .seal-pix {
+    width: 48px;
+    height: 48px;
+  }
+  /* 5 selos em 2 colunas: o último ocupa a linha inteira (centralizado) em vez de ficar sozinho à esquerda. */
+  .ck .trust-seals li:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+  .ck .trust-seals strong {
+    font-size: 13px;
+  }
+  .ck .trust-seals small {
+    font-size: 12px;
+  }
+  .ck-footer {
+    margin-top: 28px;
+  }
+  .ck-footer-in {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    padding-top: 28px;
+    padding-bottom: 20px;
+  }
+  .ck-footer-bottom .container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .ck .total {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  .ck .total > span {
+    font-size: 14px;
+  }
+  .ck .total > strong {
+    align-items: flex-start;
+    text-align: left;
+  }
+  .ck .total > strong b {
+    font-size: 26px;
   }
 }
 @media (max-width: 400px) {
@@ -1820,6 +1980,34 @@
   .ck .primary-button {
     font-size: 18.7px;
     padding: 8px 14px;
+  }
+  /* 320-400 px: devolve largura ao conteúdo das etapas (antes o número do cartão cortava o placeholder e o
+     e-mail do bloco "Seus dados" caía para a linha de baixo do ícone). */
+  .ck-flow {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .ck-step {
+    padding-left: 36px;
+  }
+  .ck .payment-content {
+    margin-left: -36px;
+  }
+  .ck .pay-body {
+    padding: 14px 10px;
+  }
+  .ck .field.has-icon {
+    padding-left: 42px;
+  }
+  .ck .field-icon {
+    left: 12px;
+  }
+  .ck-done {
+    padding-left: 12px;
+  }
+  .ck-edit {
+    padding: 0 8px;
+    font-size: 12px;
   }
 }
 /* Ajustes finos do layout Yever/Brutus depois da revisão das capturas (origem, mantidos). */
@@ -2017,4 +2205,451 @@ body:has(.ck-root) {
   text-indent: 0;
   border-color: inherit;
   border-collapse: collapse;
+}
+
+/* ---------- Compra confirmada (OrderConfirmed.tsx) — layout do dono, 2026-09-28 ---------- */
+/* Cor sólida por baixo da imagem: se o fundo não carregar, o texto continua legível. */
+.ck-root.oc {
+  /* padding, e não margem no cabeçalho: a margem vazava para fora e mostrava o cinza do body. */
+  background: #dff1fc url("/checkout/compra-confirmada-fundo.webp") center top / cover no-repeat;
+}
+.oc-wrap {
+  width: min(100% - 32px, 942px);
+  margin-inline: auto;
+}
+.oc-top {
+  background: #fff;
+  box-shadow: 0 1px 0 #cfe4f3;
+}
+.oc-top-in {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 60px;
+}
+.oc-safe {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--c-primary);
+  font-size: 14px;
+}
+.oc-safe svg {
+  color: #0a6fd1;
+  flex-shrink: 0;
+}
+/* Espaçamentos na escala de 8px (4/8/16/24/32/48). */
+.oc-main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px 0 48px;
+}
+.oc-card {
+  background: #fff;
+  border: 1px solid #b9dcf3;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgb(6 55 96 / 8%);
+}
+.oc-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  min-height: 190px;
+  overflow: hidden;
+  background: #f1f9ff;
+}
+.oc-hero-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  align-self: center;
+  gap: 14px;
+  padding: 28px 0 28px 34px;
+}
+.oc-hero-check {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--c-ok);
+  color: #fff;
+}
+.oc-approved {
+  color: var(--c-ok);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 34px;
+}
+.oc-hero h1 {
+  margin-top: 6px;
+  color: var(--c-primary);
+  font-family: var(--font-display), var(--font-text), sans-serif;
+  font-size: clamp(24px, 3.1vw, 30px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+}
+.oc-lead {
+  margin-top: 6px;
+  color: #1f4f86;
+  font-size: 18px;
+}
+.oc-order {
+  margin-top: 8px;
+  color: var(--c-muted);
+  font-size: 14px;
+}
+.oc-order strong {
+  color: var(--c-text);
+}
+.oc-hero-photo {
+  position: relative;
+  min-height: 190px;
+}
+.oc-hero-photo img {
+  object-fit: cover;
+  object-position: center 22%;
+}
+/* Degradê que funde a foto no card, como no layout. */
+.oc-hero-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #f1f9ff 0%, rgb(241 249 255 / 0%) 34%);
+}
+.oc-next {
+  padding: 22px 18px 18px;
+}
+.oc-next h2 {
+  padding-left: 6px;
+  color: var(--c-primary);
+  font-family: var(--font-display), var(--font-text), sans-serif;
+  font-size: 21px;
+  font-weight: 800;
+}
+.oc-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.oc-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+  text-align: center;
+}
+/* Linha até a etapa anterior; verde só quando as duas pontas estão concluídas. */
+.oc-step + .oc-step::before {
+  content: "";
+  position: absolute;
+  top: 23px;
+  right: calc(50% + 34px);
+  width: calc(100% - 68px);
+  height: 2px;
+  background: #cfd8e3;
+}
+.oc-step.is-done + .oc-step.is-done::before {
+  background: var(--c-ok);
+}
+.oc-step-dot {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #e9eef5;
+  color: #3d5877;
+}
+.oc-step.is-done .oc-step-dot {
+  background: var(--c-ok);
+  color: #fff;
+}
+/* Etapa atual: halo verde com leve desfoque, pulsando (pedido do dono, 2026-09-28). */
+.oc-step-dot {
+  position: relative;
+  isolation: isolate;
+}
+.oc-step.is-current .oc-step-dot::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  z-index: -1;
+  border-radius: 50%;
+  background: var(--c-ok);
+  filter: blur(5px);
+  animation: oc-pulse 1.8s ease-in-out infinite;
+}
+@keyframes oc-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.18);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .oc-step.is-current .oc-step-dot::before {
+    animation: none;
+    opacity: 0.45;
+  }
+}
+.oc-summary {
+  padding: 22px 24px;
+}
+.oc-summary h2 {
+  color: var(--c-primary);
+  font-family: var(--font-display), var(--font-text), sans-serif;
+  font-size: 21px;
+  font-weight: 800;
+}
+.oc-summary-list {
+  margin: 12px 0 0;
+}
+.oc-summary-list > div {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 12px;
+  padding: 11px 0;
+  border-top: 1px solid #dcebf6;
+}
+.oc-summary-list > div:first-child {
+  border-top: 0;
+}
+.oc-summary-list dt {
+  color: var(--c-muted);
+  font-size: 14px;
+}
+.oc-summary-list dd {
+  margin: 0;
+  color: var(--c-text);
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.oc-summary-list dd span {
+  display: block;
+}
+.oc-step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.oc-step-text strong {
+  color: var(--c-primary);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.oc-step.is-done .oc-step-text strong {
+  color: var(--c-ok);
+}
+.oc-step-text small {
+  color: var(--c-muted);
+  font-size: 13px;
+}
+.oc-mail {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-top: 22px;
+  padding: 14px 28px;
+  border-radius: 10px;
+  background: #eaf5fd;
+}
+.oc-mail-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: #d3eafb;
+  color: #0a6fd1;
+}
+.oc-mail > div {
+  padding-left: 28px;
+  border-left: 1px solid #b9d3e8;
+}
+.oc-mail h3 {
+  color: var(--c-primary);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+.oc-mail p {
+  margin-top: 4px;
+  color: #1f4f86;
+  font-size: 15px;
+}
+.oc-mail small {
+  display: block;
+  margin-top: 6px;
+  color: var(--c-muted);
+  font-size: 13px;
+}
+.oc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+}
+.oc-support {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 248px;
+  min-height: 48px;
+  padding: 8px 24px;
+  border: 2px solid var(--c-primary);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--c-primary);
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.oc-support:hover {
+  background: #eaf5fd;
+}
+.oc-footer {
+  background: #fff;
+  border-top: 1px solid #cfe4f3;
+  color: var(--c-muted);
+  font-size: 14px;
+}
+.oc-footer-in {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 0 32px;
+  text-align: center;
+}
+.oc-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 24px;
+}
+.oc-footer nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--c-primary);
+  font-weight: 600;
+}
+.oc-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 248px;
+  min-height: 48px;
+  padding: 8px 24px;
+  border-radius: 6px;
+  background: var(--c-button);
+  color: var(--c-on-button);
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--c-button) 28%, transparent);
+}
+.oc-back:hover {
+  background: var(--c-button-hover);
+}
+.oc-calm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--c-primary);
+  font-size: 14px;
+  text-align: center;
+}
+.oc-calm svg {
+  color: #0a6fd1;
+  flex-shrink: 0;
+}
+@media (max-width: 760px) {
+  .oc-main {
+    gap: 16px;
+    padding: 16px 0 32px;
+  }
+  .oc-actions {
+    flex-direction: column;
+  }
+  .oc-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .oc-hero-photo {
+    order: -1;
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+  }
+  .oc-hero-photo::after {
+    background: linear-gradient(0deg, #f1f9ff 0%, rgb(241 249 255 / 0%) 30%);
+  }
+  .oc-hero-copy {
+    padding: 8px 18px 22px;
+  }
+  .oc-lead {
+    font-size: 16px;
+  }
+  /* No celular as etapas viram lista em pé: cinco colunas não cabem com texto legível. */
+  .oc-steps {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    padding-left: 6px;
+  }
+  .oc-step {
+    flex-direction: row;
+    gap: 14px;
+    padding: 0;
+    text-align: left;
+  }
+  .oc-step + .oc-step::before {
+    top: -18px;
+    right: auto;
+    left: 23px;
+    width: 2px;
+    height: 18px;
+  }
+  .oc-summary {
+    padding: 18px 16px;
+  }
+  .oc-summary-list > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+  .oc-mail {
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px;
+  }
+  .oc-mail-icon {
+    width: 52px;
+    height: 52px;
+  }
+  .oc-mail-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+  .oc-mail > div {
+    padding-left: 0;
+    border-left: 0;
+  }
+
 }

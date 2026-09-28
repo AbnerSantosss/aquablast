@@ -1,9 +1,12 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 // Conferencia de PRODUCAO, so leitura: nao compra, nao entra no painel, nao envia formulario.
-// Uso: NODE_PATH="$(npm root -g)" node e2e/prod-leitura.cjs [https://aquablastbrasil.com.br]
+// Uso: NODE_PATH="$(npm root -g)" node e2e/prod-leitura.cjs [https://aquablastbrasil.com.br] [proprio|zedy]
+// O segundo argumento e o modo esperado do checkout (padrao "proprio" desde 2026-09-28, quando o dono pediu
+// "quero tudo atualizado nosso": a LP leva para o nosso /checkout; sem gateway, o cliente ve o aviso no pagamento).
 const { chromium } = require("playwright");
 
 const BASE = (process.argv[2] || "https://aquablastbrasil.com.br").replace(/\/$/, "");
+const MODE = process.argv[3] === "zedy" ? "zedy" : "proprio";
 let failed = 0;
 
 async function check(name, fn) {
@@ -31,12 +34,12 @@ function assert(cond, msg) {
     assert(r.status() === 200 && j.ok === true && j.db === true, `status ${r.status()} ${JSON.stringify(j)}`);
   });
 
-  await check("checkout/config existe e esta em modo zedy", async () => {
+  await check(`checkout/config existe e esta em modo ${MODE}`, async () => {
     const r = await ctx.request.get(`${BASE}/api/checkout/config`);
     assert(r.status() === 200, `status ${r.status()} (404 = imagem antiga)`);
     const body = await r.text();
-    assert(/"mode"\s*:\s*"zedy"/.test(body), `modo inesperado: ${body.slice(0, 200)}`);
-    return "mode zedy";
+    assert(new RegExp(`"mode"\\s*:\\s*"${MODE}"`).test(body), `modo inesperado: ${body.slice(0, 200)}`);
+    return `mode ${MODE}`;
   });
 
   await check("LP abre sem erro de pagina", async () => {
@@ -49,13 +52,25 @@ function assert(cond, msg) {
     return await page.title();
   });
 
-  await check("botoes de compra apontam para a Zedy", async () => {
-    const hrefs = await page.$$eval("a[href]", (as) => as.map((a) => a.href));
+  await check(`botoes de compra apontam para ${MODE === "zedy" ? "a Zedy" : "o checkout proprio"}`, async () => {
+    // Desde 2026-09-28 o Comprar nasce em /checkout e so vira link da Zedy depois que /api/checkout/config responde.
+    if (MODE === "zedy") {
+      await page
+        .waitForFunction(() => [...document.querySelectorAll("a[data-purchase]")].some((a) => a.href.includes("seguro.aquablastbrasil.com.br")), null, { timeout: 10000 })
+        .catch(() => {});
+    } else {
+      await page.waitForTimeout(3000);
+    }
+    const hrefs = await page.$$eval("a[data-purchase]", (as) => as.map((a) => a.href));
     const zedy = hrefs.filter((h) => h.includes("seguro.aquablastbrasil.com.br"));
-    const proprio = hrefs.filter((h) => /\/checkout(\?|$|\/)/.test(new URL(h).pathname + new URL(h).search) && new URL(h).host === new URL(location.href).host);
-    assert(zedy.length > 0, "nenhum link para seguro.aquablastbrasil.com.br");
-    assert(proprio.length === 0, `${proprio.length} link(s) para o checkout proprio`);
-    return `${zedy.length} link(s) Zedy`;
+    const proprio = hrefs.filter((h) => new URL(h).host === new URL(BASE).host && new URL(h).pathname === "/checkout");
+    assert(hrefs.length > 0, "nenhum botao de compra (a[data-purchase])");
+    if (MODE === "zedy") {
+      assert(zedy.length > 0 && proprio.length === 0, `${zedy.length} Zedy, ${proprio.length} proprio`);
+      return `${zedy.length} link(s) Zedy`;
+    }
+    assert(zedy.length === 0 && proprio.length === hrefs.length, `${zedy.length} Zedy, ${proprio.length} proprio de ${hrefs.length}`);
+    return `${proprio.length} link(s) para /checkout`;
   });
 
   await check("preco na LP (Pix 159,90 / cartao 169,90)", async () => {
@@ -65,6 +80,18 @@ function assert(cond, msg) {
     assert(text.includes("159,90"), "159,90 nao aparece");
     assert(html.includes("169,90"), "169,90 nao esta no HTML");
   });
+
+  if (MODE === "proprio") {
+    await check("checkout proprio abre com parcela em destaque, selos e rodape", async () => {
+      const r = await page.goto(`${BASE}/checkout?pack=unit&cor=azul`, { waitUntil: "load", timeout: 45000 });
+      assert(r && r.status() === 200, `status ${r ? r.status() : "sem resposta"} em ${page.url()}`);
+      const total = await page.locator(".total").innerText();
+      assert(/12x de R\$\s?14,16/.test(total), `total sem a parcela: ${total}`);
+      assert((await page.locator(".trust-seals li").count()) >= 3, "selos ausentes");
+      assert((await page.locator("footer.ck-footer").count()) === 1, "rodape ausente");
+      return total.replace(/\s+/g, " ");
+    });
+  }
 
   await check("login do painel sem entrada rapida", async () => {
     const r = await page.goto(`${BASE}/admin/login`, { waitUntil: "load", timeout: 45000 });

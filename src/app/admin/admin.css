@@ -37,6 +37,7 @@
 }
 
 :root {
+  /* Marca: não mexer. */
   --navy: #063760;
   --deep: #032644;
   --blue: #006bca;
@@ -44,13 +45,29 @@
   --green: #087e3a;
   --orange: #f97316;
   --red: #c2410c;
-  --text: #163a56;
-  --muted: #526c80;
-  --pale: #edf8ff;
-  --line: #d9e7ef;
-  --bg: #f3f8fc;
-  --card: #ffffff;
-  --shadow: 0 0.75rem 2.25rem #062e5512;
+
+  /* Neutros de superfície e texto. Razões de contraste calculadas (WCAG 2.2). */
+  --text: #163a56; /* 11.84:1 no card, 8.69:1 no fundo */
+  --muted: #34495c; /* texto secundário: 9.32:1 no card, 6.84:1 no fundo */
+  --pale: #e4f1fb; /* superfície tonalizada dentro do card (callout, chip, código) */
+  --line: #a9c0d2; /* divisor decorativo */
+  --line-strong: #4d6a82; /* borda de controle: 5.68:1 no card, 4.17:1 no fundo */
+  --bg: #cfdfec; /* fundo da área de conteúdo */
+  --bg-veil: 90%; /* quanto da cor cobre a imagem de fundo; abaixo disso o texto sobre o fundo perde a garantia de contraste */
+  --card: #ffffff; /* superfície de card */
+  --card-raised: #ffffff; /* superfície elevada (KPI, hover) */
+  --sunken: #e6eff7; /* cabeçalho de tabela */
+  --zebra: #f3f8fc; /* linha par da tabela */
+  --row-hover: #dcecf9;
+  --link: #004f93; /* 8.27:1 no card, 6.07:1 no fundo (o --blue dá só 3.90:1 no fundo) */
+  --placeholder: #566f83; /* 5.25:1 no branco */
+  --focus: #063760; /* anel de foco nas áreas claras: 8.95:1 no fundo */
+  --green-ink: #076b31;
+  --orange-ink: #a84808;
+  --orange-edge: #b9560c;
+  --danger: #a61b12;
+  --shadow: 0 1px 2px #03264424, 0 0.375rem 1rem #0326441a, 0 1.25rem 2.5rem #03264414;
+  --shadow-raised: 0 2px 4px #0326442e, 0 0.75rem 1.5rem #03264424, 0 1.75rem 3rem #0326441a;
   --radius: 1.375rem;
   --radius-sm: 0.625rem;
   --font: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -60,6 +77,20 @@
 .admin,
 .admin * {
   box-sizing: border-box;
+}
+/* Moldura branca: era a margem padrão de 8px do <body> (o layout raiz é vazio de propósito).
+   Só vale quando existe .admin na página, então site público e checkout não são afetados. */
+html:has(.admin),
+body:has(.admin) {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+}
+/* Navegador sem :has(): o próprio .admin cobre a margem do body. */
+@supports not selector(:has(*)) {
+  .admin {
+    margin: -8px;
+  }
 }
 .admin {
   min-height: 100vh;
@@ -72,8 +103,13 @@
   -webkit-font-smoothing: antialiased;
 }
 .admin a {
-  color: var(--blue);
+  color: var(--link);
   text-decoration: none;
+}
+/* Foco visível: anel de 3px, fora do elemento. Nas áreas claras usa navy; na sidebar, ciano. */
+.admin :where(a, button, summary, select, textarea, input, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
 }
 .admin a:hover {
   text-decoration: underline;
@@ -82,9 +118,17 @@
 .admin a.btn {
   text-decoration: none;
 }
-.admin a.btn-primary,
+.admin a.btn {
+  color: var(--navy);
+}
+.admin a.btn-primary {
+  color: var(--deep);
+}
 .admin a.btn-blue {
   color: #fff;
+}
+.admin a.btn-ghost.danger {
+  color: var(--danger);
 }
 .admin h1,
 .admin h2,
@@ -165,7 +209,7 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  opacity: 0.7;
+  opacity: 0.8;
 }
 .nav {
   display: flex;
@@ -181,19 +225,30 @@
   color: #d8ecff !important;
   font-weight: 700;
   text-decoration: none !important;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 .nav-link svg {
   flex-shrink: 0;
-  opacity: 0.85;
+  opacity: 0.9;
 }
 .nav-link:hover {
-  background: #ffffff14;
-}
-.nav-link.is-active {
   background: #ffffff1f;
   color: #fff !important;
+}
+.nav-link.is-active {
+  background: #ffffff2e;
+  color: #fff !important;
   box-shadow: inset 3px 0 0 var(--cyan);
+}
+.nav-link.is-active svg {
+  color: var(--cyan);
+}
+.sidebar :where(a, button):focus-visible {
+  outline-color: var(--cyan);
+}
+/* Anel por dentro: no celular o menu rola na horizontal e cortaria um anel externo. */
+.sidebar .nav-link:focus-visible {
+  outline-offset: -3px;
 }
 .nav-link.is-active svg {
   opacity: 1;
@@ -211,7 +266,7 @@
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #ffffff80;
+  color: #ffffffb8;
 }
 .sidebar-footer {
   margin-top: auto;
@@ -219,7 +274,7 @@
   flex-direction: column;
   gap: 0.75rem;
   padding: 0.75rem 0.5rem 0;
-  border-top: 1px solid #ffffff22;
+  border-top: 1px solid #ffffff3d;
 }
 .admin-id {
   display: flex;
@@ -231,29 +286,43 @@
 }
 .admin-id span {
   font-size: 0.8rem;
-  opacity: 0.75;
+  opacity: 0.8;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .sidebar .btn-ghost {
   color: #fff;
-  border-color: #ffffff44;
+  border-color: #ffffff8c;
   background: transparent;
+  box-shadow: none;
 }
 .sidebar .btn-ghost:hover {
-  background: #ffffff1a;
+  background: #ffffff24;
+  border-color: #fff;
 }
+/* Cor sólida declarada antes: a imagem pode não existir. O véu (--bg-veil) garante o contraste do
+   texto que fica direto no fundo, qualquer que seja a imagem. */
 .content {
   min-width: 0;
   padding: 2rem clamp(1rem, 3vw, 2.5rem) 4rem;
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--bg) var(--bg-veil), transparent), color-mix(in srgb, var(--bg) var(--bg-veil), transparent)),
+    url("/admin-bg/painel-fundo.webp");
+  background-position: center, right top;
+  background-size: auto, cover;
+  background-repeat: no-repeat;
+  background-attachment: scroll, fixed;
 }
 
 @media (max-width: 900px) {
+  /* minmax(0, 1fr): com "1fr" puro a coluna cresce até caber o menu inteiro e a página rola para o lado. */
   .shell {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .sidebar {
+    min-width: 0;
     position: static;
     height: auto;
     flex-direction: row;
@@ -275,6 +344,7 @@
     -webkit-overflow-scrolling: touch;
   }
   .nav-link {
+    min-height: 2.75rem;
     padding: 0.45rem 0.7rem;
     white-space: nowrap;
     font-size: 0.9rem;
@@ -304,6 +374,8 @@
   }
   .content {
     padding: 1.25rem 1rem 3rem;
+    background-attachment: scroll, scroll;
+    background-size: auto, 100% auto;
   }
 }
 
@@ -407,8 +479,11 @@
   gap: 0.75rem;
   margin-bottom: 1.5rem;
 }
+/* Hierarquia: rótulo (pequeno, caixa alta) > número (grande) > detalhe (.cell-sub). */
 .kpi {
-  background: var(--card);
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--card-raised), var(--zebra));
   border: 1px solid var(--line);
   border-radius: 1rem;
   padding: 0.9rem 1rem;
@@ -416,14 +491,30 @@
   text-decoration: none !important;
   color: inherit;
   display: block;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
 }
-.kpi:hover {
+/* Faixa de cor no topo: separa o KPI do fundo e dá identidade. */
+.kpi::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--blue), var(--cyan));
+}
+/* KPI que é link é um controle: a borda é o limite dele (4.17:1 contra o fundo). */
+.admin a.kpi {
+  border-color: var(--line-strong);
+  color: inherit;
+}
+.admin a.kpi:hover {
   border-color: var(--blue);
+  box-shadow: var(--shadow-raised);
+  transform: translateY(-2px);
 }
 .kpi-label {
   display: block;
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--muted);
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -435,9 +526,21 @@
   color: var(--navy);
   line-height: 1.1;
   margin-top: 0.2rem;
+  font-variant-numeric: tabular-nums;
 }
+.kpi .cell-sub {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.kpi.is-alert::before {
+  background: linear-gradient(90deg, var(--red), var(--orange));
+}
+/* --orange puro dá 2.80:1 no branco; o tom escuro dá 5.84:1. */
 .kpi.is-alert .kpi-value {
-  color: var(--orange);
+  color: var(--orange-ink);
 }
 
 /* ---------- Definições (chave/valor) ---------- */
@@ -463,17 +566,19 @@
 .bar-track {
   height: 0.6rem;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--blue) 10%, white);
+  background: #d5e3ef;
+  box-shadow: inset 0 0 0 1px var(--line);
   overflow: hidden;
 }
 .bar-fill {
   height: 100%;
   border-radius: 999px;
-  background: var(--blue);
+  background: linear-gradient(90deg, var(--navy), var(--blue));
 }
 .bar-value {
   font-size: 0.85rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
 }
@@ -501,8 +606,8 @@
   gap: 0.6rem;
   padding: 0.6rem 0.85rem;
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--orange) 8%, white);
-  border: 1px solid color-mix(in srgb, var(--orange) 25%, white);
+  background: color-mix(in srgb, var(--orange) 10%, white);
+  border: 1px solid var(--orange-edge);
 }
 .checklist li a {
   font-weight: 700;
@@ -560,11 +665,22 @@
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--navy);
+  background: var(--sunken);
+  border-bottom: 2px solid var(--line-strong);
   white-space: nowrap;
 }
+.table th:first-child {
+  border-top-left-radius: var(--radius-sm);
+}
+.table th:last-child {
+  border-top-right-radius: var(--radius-sm);
+}
+.table tbody tr:nth-child(even) {
+  background: var(--zebra);
+}
 .table tbody tr:hover {
-  background: var(--pale);
+  background: var(--row-hover);
 }
 .table td.num {
   text-align: right;
@@ -592,47 +708,54 @@
   white-space: nowrap;
   vertical-align: middle;
 }
-.tone-gray {
-  background: #e6edf2;
-  color: #40566a;
+/* Texto de cada tom com 5.4:1 ou mais no próprio fundo. O anel interno na cor do texto destaca o
+   badge tanto no branco quanto na linha zebrada ou em hover. */
+.badge[class*="tone-"] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 45%, transparent);
+}
+/* .tone-muted é usado em Pixels e não existia: mesmo visual do cinza. */
+.tone-gray,
+.tone-muted {
+  background: #dfe8ef;
+  color: #34495c;
 }
 .tone-blue {
-  background: #dcecfc;
+  background: #d6e8fb;
   color: #05539a;
 }
 .tone-cyan {
-  background: #d9f6ff;
-  color: #0b6f8e;
+  background: #d3f3fd;
+  color: #07607c;
 }
 .tone-orange {
-  background: #ffe8d6;
-  color: #b45309;
+  background: #ffe4cf;
+  color: #9a4407;
 }
 .tone-green {
-  background: #dcf5e6;
-  color: var(--green);
+  background: #d5f2e0;
+  color: var(--green-ink);
 }
 .tone-red {
-  background: #fde2e2;
-  color: #b42318;
+  background: #fde0de;
+  color: var(--danger);
 }
 .badge-outline {
   background: transparent;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   color: var(--muted);
   font-weight: 700;
 }
 .src-admin {
-  border-color: #f9a86b;
-  color: #b45309;
+  border-color: var(--orange-edge);
+  color: #9a4407;
 }
 .src-checkout {
-  border-color: #7fb8ee;
+  border-color: #1f6fc0;
   color: #05539a;
 }
 .src-tracking {
-  border-color: #6fd3ef;
-  color: #0b6f8e;
+  border-color: #14809f;
+  color: #07607c;
 }
 
 /* ---------- Botões ---------- */
@@ -643,55 +766,72 @@
   gap: 0.4rem;
   padding: 0.55rem 1rem;
   border-radius: var(--radius-sm);
-  border: 1px solid transparent;
+  /* Base (também .btn sem variante e .btn-outline): fundo de card, texto navy, borda de controle. */
+  border: 1px solid var(--line-strong);
+  background: var(--card);
+  color: var(--navy);
   font: inherit;
   font-size: 0.9rem;
   font-weight: 800;
   line-height: 1.2;
   cursor: pointer;
   text-decoration: none !important;
-  transition: background 0.15s, box-shadow 0.15s, transform 0.05s;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.05s;
   white-space: nowrap;
+}
+.btn:hover {
+  background: var(--pale);
+  border-color: var(--navy);
+}
+.btn-outline {
+  background: transparent;
 }
 .btn:active {
   transform: translateY(1px);
 }
 .btn:disabled,
 .btn.is-disabled {
-  opacity: 0.5;
+  opacity: 0.55;
+  box-shadow: none;
   cursor: not-allowed;
   pointer-events: none;
 }
+/* Branco sobre --orange dá 2.80:1 (reprova). Texto --deep dá 5.49:1 sem mexer na cor da marca. */
 .btn-primary {
   background: var(--orange);
-  color: #fff;
-  box-shadow: 0 0.5rem 1.25rem #f9731640;
+  color: var(--deep);
+  border-color: var(--orange-edge);
+  box-shadow: 0 1px 2px #0326442e, 0 0.5rem 1.25rem #f9731659;
 }
 .btn-primary:hover {
-  background: #ea6a0f;
+  background: #ff8a3d;
+  border-color: var(--orange-edge);
 }
 .btn-blue {
   background: var(--blue);
   color: #fff;
+  border-color: var(--link);
+  box-shadow: 0 1px 2px #0326442e;
 }
 .btn-blue:hover {
   background: #005cae;
+  border-color: var(--navy);
 }
 .btn-ghost {
-  background: #fff;
+  background: var(--card);
   color: var(--navy);
-  border-color: var(--line);
+  border-color: var(--line-strong);
 }
 .btn-ghost:hover {
   background: var(--pale);
-  border-color: #b9d3e4;
+  border-color: var(--navy);
 }
 .btn-ghost.danger {
-  color: #b42318;
+  color: var(--danger);
 }
 .btn-ghost.danger:hover {
-  background: #fde2e2;
-  border-color: #f5b5b5;
+  background: #fde0de;
+  border-color: var(--danger);
 }
 .btn-sm {
   padding: 0.35rem 0.7rem;
@@ -735,31 +875,48 @@
 .field-error {
   font-size: 0.8rem;
   font-weight: 700;
-  color: #b42318;
+  color: var(--danger);
 }
 .admin input:not([type="checkbox"]):not([type="radio"]),
 .admin select,
 .admin textarea {
   width: 100%;
   padding: 0.55rem 0.7rem;
-  border: 1px solid #c9dbe7;
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: #fff;
   color: var(--text);
   font: inherit;
   font-size: 0.92rem;
-  outline: none;
+  box-shadow: inset 0 1px 2px #0326441a;
   transition: border-color 0.15s, box-shadow 0.15s;
+}
+.admin input::placeholder,
+.admin textarea::placeholder {
+  color: var(--placeholder);
+  opacity: 1;
+}
+.admin input:not([type="checkbox"]):not([type="radio"]):hover,
+.admin select:hover,
+.admin textarea:hover {
+  border-color: var(--navy);
+}
+.admin input[aria-invalid="true"],
+.admin select[aria-invalid="true"],
+.admin textarea[aria-invalid="true"] {
+  border-color: var(--danger);
+  box-shadow: inset 0 0 0 1px var(--danger);
 }
 .admin textarea {
   resize: vertical;
   min-height: 3rem;
 }
-.admin input:focus,
-.admin select:focus,
-.admin textarea:focus {
+/* Campo em foco: anel de 3px (regra geral de :focus-visible) mais a borda na cor da marca. */
+.admin input:focus-visible,
+.admin select:focus-visible,
+.admin textarea:focus-visible {
   border-color: var(--blue);
-  box-shadow: 0 0 0 3px #006bca22;
+  outline-offset: 1px;
 }
 .admin fieldset {
   border: 0;
@@ -807,8 +964,8 @@
   color: var(--navy);
 }
 /* Anel por dentro da área de 44 px, para caber na altura do campo. */
-.pw-toggle:focus-visible {
-  outline: 2px solid var(--blue);
+.admin .pw-toggle:focus-visible {
+  outline: 2px solid var(--focus);
   outline-offset: -4px;
   color: var(--navy);
 }
@@ -832,6 +989,17 @@
   width: 1rem;
   height: 1rem;
   accent-color: var(--blue);
+  flex: none;
+}
+/* .check é a classe do rótulo de checkbox; em Gateways ela também está numa <ul>. Sem isto os itens
+   viravam colunas lado a lado e a página rolava para o lado no celular. */
+ul.check {
+  display: block;
+  padding-left: 1.25rem;
+  cursor: default;
+}
+ul.check li + li {
+  margin-top: 0.35rem;
 }
 .form-row {
   display: flex;
@@ -864,22 +1032,22 @@
 }
 .af-result.is-ok,
 .flash.is-ok {
-  background: #dcf5e6;
-  color: var(--green);
-  border-color: #b5e6c8;
+  background: #d5f2e0;
+  color: var(--green-ink);
+  border-color: var(--green-ink);
 }
 .af-result.is-err,
 .flash.is-err {
-  background: #fde2e2;
-  color: #b42318;
-  border-color: #f5b5b5;
+  background: #fde0de;
+  color: var(--danger);
+  border-color: var(--danger);
 }
 .af-code {
   display: block;
   margin-top: 0.5rem;
   padding: 0.6rem 0.8rem;
   background: #fff;
-  border: 1px dashed #94a3b8;
+  border: 1px dashed var(--line-strong);
   border-radius: var(--radius-sm);
   font-family: var(--mono);
   font-size: 1.1rem;
@@ -929,12 +1097,12 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--cyan);
+  background: var(--blue);
   border: 2px solid #fff;
-  box-shadow: 0 0 0 2px var(--line);
+  box-shadow: 0 0 0 2px var(--line-strong);
 }
 .timeline li:first-child::before {
-  background: var(--orange);
+  background: var(--red);
 }
 .tl-head {
   display: flex;
@@ -967,7 +1135,7 @@
 .json-block summary {
   cursor: pointer;
   font-weight: 700;
-  color: var(--blue);
+  color: var(--link);
   font-size: 0.9rem;
 }
 .json-block pre {
@@ -1002,7 +1170,7 @@
   overflow: auto;
   padding: 0.5rem 0.7rem;
   background: var(--pale);
-  border: 1px dashed #94a3b8;
+  border: 1px dashed var(--line-strong);
   border-radius: var(--radius-sm);
   font-family: var(--mono);
   font-size: 0.78rem;
@@ -1021,8 +1189,8 @@
   font-size: 0.88rem;
 }
 .callout.warn {
-  background: #fff4e8;
-  border-color: #f9c79b;
+  background: #fff1e2;
+  border-color: var(--orange-edge);
 }
 .callout ul {
   margin: 0.4rem 0 0;
@@ -1040,7 +1208,7 @@
   color: var(--muted);
 }
 .secret-hint.is-on {
-  color: var(--green);
+  color: var(--green-ink);
   font-weight: 700;
 }
 .tabs {
@@ -1052,17 +1220,23 @@
 .tabs a {
   padding: 0.35rem 0.75rem;
   border-radius: 999px;
-  border: 1px solid var(--line);
-  background: #fff;
+  border: 1px solid var(--line-strong);
+  background: var(--card);
   color: var(--navy);
   font-size: 0.85rem;
   font-weight: 700;
   text-decoration: none !important;
+  transition: background 0.15s, border-color 0.15s;
+}
+.tabs a:hover {
+  background: var(--pale);
+  border-color: var(--navy);
 }
 .tabs a.is-active {
   background: var(--navy);
   border-color: var(--navy);
   color: #fff;
+  box-shadow: 0 0.25rem 0.75rem #06376040;
 }
 .toc {
   display: flex;
@@ -1073,11 +1247,15 @@
 .toc a {
   padding: 0.3rem 0.7rem;
   border-radius: 999px;
-  background: #fff;
-  border: 1px solid var(--line);
+  background: var(--card);
+  border: 1px solid var(--line-strong);
   font-size: 0.82rem;
   font-weight: 700;
   text-decoration: none !important;
+}
+.toc a:hover {
+  background: var(--pale);
+  border-color: var(--navy);
 }
 
 /* ---------- Templates ---------- */
@@ -1118,7 +1296,7 @@
 .chip {
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   background: var(--pale);
   color: var(--navy);
   font: inherit;
@@ -1127,7 +1305,8 @@
   cursor: pointer;
 }
 .chip:hover {
-  border-color: var(--blue);
+  border-color: var(--navy);
+  background: var(--row-hover);
 }
 .tpl-preview {
   position: sticky;
@@ -1140,7 +1319,7 @@
 .preview-frame {
   width: 100%;
   height: 640px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: #fff;
 }
@@ -1160,7 +1339,12 @@
   display: grid;
   place-items: center;
   padding: 1.5rem 1rem;
-  background: var(--deep) url("/offer-water-stage.webp") center / cover no-repeat;
+  /* Cor sólida primeiro. A imagem nova fica por cima; se ela não existir, aparece a antiga. */
+  background-color: var(--deep);
+  background-image: url("/admin-bg/login-fundo.webp"), url("/offer-water-stage.webp");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 .login-page::before {
   content: "";
@@ -1175,7 +1359,7 @@
   padding: 2rem 1.75rem;
   background: #fff;
   border-radius: var(--radius);
-  box-shadow: 0 1.5rem 3rem #03264466;
+  box-shadow: 0 2px 6px #03264459, 0 1.5rem 3rem #03264480, 0 0 0 6px #ffffff2e;
 }
 .login-card .brand {
   color: var(--navy) !important;
@@ -1188,6 +1372,7 @@
 }
 .login-card .brand small {
   color: var(--muted);
+  opacity: 1;
 }
 .login-card p.lead {
   color: var(--muted);
@@ -1215,7 +1400,7 @@
 .login-dev {
   margin-top: 1.25rem;
   padding-top: 1.25rem;
-  border-top: 1px dashed var(--muted);
+  border-top: 1px dashed var(--line-strong);
 }
 .login-card .login-dev-hint {
   margin-top: 0.5rem;
@@ -1292,4 +1477,352 @@
   max-width: 560px;
   margin: 3rem auto;
   text-align: center;
+}
+
+/* ---------- Dashboard (grade de cards com gráficos em SVG/CSS puro) ---------- */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+}
+.dash-grid .span-2 {
+  grid-column: span 2;
+}
+.dash-stack {
+  display: grid;
+  gap: 1rem;
+}
+/* Duas colunas: "dense" sobe a pilha para o lado do Pix e o ultimo card ocupa a linha, sem buracos. */
+@media (max-width: 1200px) {
+  .dash-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: dense;
+  }
+  /* 8o card = order bump: sozinho na linha, ocupa as duas colunas. */
+  .dash-grid > :nth-child(8),
+  .dash-grid > :last-child {
+    grid-column: span 2;
+  }
+}
+@media (max-width: 700px) {
+  .dash-grid {
+    grid-template-columns: 1fr;
+    grid-auto-flow: row;
+  }
+  .dash-grid .span-2,
+  .dash-grid > :nth-child(8),
+  .dash-grid > :last-child {
+    grid-column: auto;
+  }
+}
+.dash-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 1.25rem 1.35rem 1.35rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 0.875rem;
+  box-shadow: var(--shadow);
+}
+.admin .dash-card h2 {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.admin .dash-value {
+  margin-top: 0.6rem;
+  font-size: 1.85rem;
+  font-weight: 900;
+  line-height: 1.1;
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+}
+.admin .dash-sub {
+  margin-top: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.admin .dash-empty {
+  margin: auto 0;
+  padding: 1.5rem 0;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.meter {
+  display: block;
+  height: 0.5rem;
+  margin-top: 1rem;
+  border-radius: 999px;
+  background: #d5e3ef;
+  overflow: hidden;
+}
+.meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--blue);
+}
+
+/* Pizza / rosca */
+.donut {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
+  margin-top: 1rem;
+}
+.donut-svg {
+  flex: none;
+  width: 8rem;
+  height: 8rem;
+}
+.legend {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+.legend li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.legend-dot {
+  flex: none;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-top: 0.3rem;
+  border-radius: 0.2rem;
+}
+.legend-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.legend-sub {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Colunas do funil */
+.cols-chart {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1.25rem 0 0;
+  padding: 1rem 0 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+.cols-chart li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.cols-value {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+}
+.cols-track {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  height: 9rem;
+}
+.cols-bar {
+  display: block;
+  width: 100%;
+  height: var(--v);
+  border-radius: 0.5rem 0.5rem 0.2rem 0.2rem;
+}
+.cols-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* Lista ordenada com barra */
+.rank {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.rank li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.rank-pos {
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--sunken);
+  color: var(--navy);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+.rank li:nth-child(-n + 3) .rank-pos {
+  background: var(--navy);
+  color: #fff;
+}
+.rank-row {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+  min-height: 2.5rem;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.rank-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: #cfe3f7;
+}
+.rank-label,
+.rank-value {
+  position: relative;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.rank-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.rank-sub {
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.rank-value {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+/* Tela estreita: cinco colunas nao cabem com rotulo legivel, o funil vira barras deitadas. */
+@media (max-width: 560px) {
+  .cols-chart {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+  .cols-chart li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "label value" "track track";
+    align-items: end;
+    gap: 0.3rem 0.75rem;
+  }
+  .cols-label {
+    grid-area: label;
+    text-align: left;
+    font-size: 0.85rem;
+  }
+  .cols-value {
+    grid-area: value;
+  }
+  .cols-track {
+    grid-area: track;
+    height: 0.85rem;
+    align-items: stretch;
+    border-radius: 999px;
+    background: var(--sunken);
+    overflow: hidden;
+  }
+  .cols-bar {
+    width: var(--v);
+    height: 100%;
+    border-radius: 999px;
+  }
+}
+
+/* ---------- Alvos de toque (WCAG 2.5.8, meta de 44px) ---------- */
+@media (max-width: 900px), (pointer: coarse) {
+  .btn,
+  .btn-sm,
+  .tabs a,
+  .toc a,
+  .chip {
+    min-height: 2.75rem;
+  }
+  .tabs a,
+  .toc a,
+  .chip {
+    display: inline-flex;
+    align-items: center;
+  }
+  .admin input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  .admin select {
+    min-height: 2.75rem;
+  }
+  .check {
+    min-height: 2.75rem;
+    align-items: center;
+  }
+  .check input {
+    margin-top: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+  /* Checkbox maior: o recuo da ajuda acompanha (1.25rem + gap de 0.5rem). */
+  .login-remember .hint {
+    padding-left: 1.75rem;
+  }
+  .login-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding-bottom: 0;
+  }
+  .json-block summary {
+    display: flex;
+    align-items: center;
+    min-height: 2.75rem;
+  }
+}
+
+/* ---------- Movimento reduzido ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .admin *,
+  .admin *::before,
+  .admin *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+  .btn:active,
+  .admin a.kpi:hover {
+    transform: none;
+  }
+  .content {
+    background-attachment: scroll, scroll;
+  }
 }

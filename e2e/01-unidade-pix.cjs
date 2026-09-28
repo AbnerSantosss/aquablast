@@ -12,7 +12,9 @@ async function run(variant = { width: 1440, height: 900, tag: "desktop" }) {
     await L.waitText(page.locator(".ck-timer"), /Oferta Dia das Crianças termina em:/);
     assert.equal(await page.locator(".ck-steps > li").count(), 3);
     await L.waitText(page.locator(".selected-product"), "Cor azul");
-    await L.waitText(page.locator(".order-summary .total b"), "R$ 159,90");
+    // Antes de escolher a forma (2026-09-28): parcela do cartao em destaque e o Pix com desconto logo abaixo.
+    await L.waitText(page.locator(".order-summary .total"), /12x de R\$ 14,16 ?sem juros no cartão · total R\$ 169,90/);
+    await L.waitText(page.locator(".order-summary .total-alt.is-pix"), /ou R\$ 159,90 à vista no Pix ?R\$ 10,00 de desconto/);
     assert.ok(await L.field(page, "name").isVisible());
     await L.shot(page, `c1-${variant.tag}-0-primeira-dobra`, false);
 
@@ -39,14 +41,16 @@ async function run(variant = { width: 1440, height: 900, tag: "desktop" }) {
     await L.waitText(page.locator(".ck-done").nth(1), `${L.endereco.street}, ${L.endereco.number}`);
     await L.waitText(page.locator(".ck-testmode").first(), "Modo de teste");
     assert.equal(await page.getByText(/boleto/i).count(), 0, "boleto nao deveria aparecer");
-    await L.waitText(page.locator(".order-summary .total b"), "R$ 159,90");
-
-    // Cartao: total muda (unidade no cartao 169,90); volta ao Pix.
-    await page.locator(".pay-head", { hasText: "Cartão de crédito" }).click();
-    await L.waitText(page.locator(".order-summary .total"), /12x R\$ 14,16.*\(ou R\$ 169,90 à vista\)/);
+    // Cartao abre selecionado quando esta ligado (2026-09-28): parcela em destaque (unidade no cartao 169,90).
+    assert.ok(await page.locator('input[name="pay-method"][value="card"]').isChecked(), "cartao deveria abrir selecionado");
+    await L.field(page, "cc-number").waitFor({ timeout: 10000 });
+    await L.waitText(page.locator(".order-summary .total"), /12x de R\$ 14,16 ?sem juros no cartão · total R\$ 169,90/);
+    await L.waitText(page.locator(".order-summary .total-alt.is-pix"), /ou R\$ 159,90 à vista no Pix/);
     await L.shot(page, `c1-${variant.tag}-3-pagamento-cartao`);
-    await page.locator(".pay-head", { hasText: "Pix" }).click();
-    await L.waitText(page.locator(".order-summary .total b"), "R$ 159,90");
+    // Pix: o total do Pix vira o destaque e o cartao passa para a linha de baixo.
+    await L.choosePix(page);
+    await L.waitText(page.locator(".order-summary .total"), /R\$ 159,90 ?à vista no Pix/);
+    await L.waitText(page.locator(".order-summary .total-alt"), /ou 12x de R\$ 14,16 sem juros no cartão/);
     await L.shot(page, `c1-${variant.tag}-3-pagamento`);
 
     // Order bump: 2a unidade pela diferenca ate o kit (valor vem do servidor).
@@ -70,9 +74,13 @@ async function run(variant = { width: 1440, height: 900, tag: "desktop" }) {
 
     await L.btn(page, "Simular pagamento aprovado").click();
     await page.waitForURL(/\/checkout\/pedido\//, { timeout: 15000 });
-    await L.waitText(page.locator(".ck-success"), "Pedido confirmado!");
-    await L.waitText(page.locator(".ck-success"), "R$ 249,90");
-    await L.waitText(page.locator(".ck-success"), L.cliente.email);
+    // Tela de compra confirmada (2026-09-28): nao mostra mais total nem e-mail, so o numero do pedido e as etapas.
+    await L.waitText(page.locator(".oc-hero"), /Obrigado pela sua compra, \S+!/);
+    await L.waitText(page.locator(".oc-summary"), /Total\s*R\$/);
+    await L.waitText(page.locator(".oc-summary"), /Enviamos a confirmação para \S+@/);
+    assert.equal(await page.locator(".oc-step.is-current strong").textContent(), "Compra aprovada");
+    await L.waitText(page.locator(".oc-order"), /AQB-/);
+    assert.equal(await page.locator(".oc-step.is-done").count(), 2, "pedido pago comeca com 2 etapas concluidas");
     await L.noHorizontalScroll(page);
     await L.shot(page, `c1-${variant.tag}-6-sucesso-pix`);
     const publicToken = page.url().split("/").pop();

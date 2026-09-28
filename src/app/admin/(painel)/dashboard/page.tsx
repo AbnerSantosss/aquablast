@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/session";
@@ -16,25 +17,119 @@ const PRESETS = [
   { key: "ano", label: "Este ano" },
 ] as const;
 
-function Bars({ rows, total }: { rows: { label: string; value: number; sub?: string }[]; total: number }) {
-  if (rows.length === 0) return <p className="sub">Sem dados no período selecionado.</p>;
+/** Todas com 3:1 ou mais contra o branco do card (o laranja da marca dá 2.80:1, por isso o tom escuro).
+ *  Cores das séries: marca primeiro. Cada fatia também tem rótulo e valor na legenda (cor não é o único sinal). */
+const SERIES = ["#006bca", "#c2410c", "#0e9bbd", "#087e3a", "#6d4bd0", "#063760", "#a16207", "#5d7c94"];
+
+type Row = { label: string; value: number; sub?: string };
+
+/** Pizza ou rosca em SVG puro (sem biblioteca): cada fatia é um traço do mesmo círculo. */
+function Donut({ rows, variant, title }: { rows: Row[]; variant: "pie" | "ring"; title: string }) {
+  const total = rows.reduce((sum, r) => sum + r.value, 0);
+  if (rows.length === 0 || total <= 0) return <p className="dash-empty">Sem dados no período selecionado.</p>;
+  const radius = variant === "pie" ? 25 : 36;
+  const stroke = variant === "pie" ? 50 : 22;
+  const circ = 2 * Math.PI * radius;
+  const gap = rows.length > 1 ? 0.8 : 0;
+  const slices = rows.map((r, i) => {
+    const before = rows.slice(0, i).reduce((sum, x) => sum + x.value, 0);
+    return {
+      ...r,
+      color: SERIES[i % SERIES.length],
+      length: Math.max(0, (r.value / total) * circ - gap),
+      offset: -(before / total) * circ,
+    };
+  });
+  const summary = rows.map((r) => `${r.label}: ${r.value} (${Math.round((r.value / total) * 100)}%)`).join(", ");
+  return (
+    <div className="donut">
+      <svg className="donut-svg" viewBox="0 0 100 100" role="img" aria-label={`${title}. ${summary}`}>
+        <g transform="rotate(-90 50 50)">
+          {slices.map((sl) => (
+            <circle
+              key={sl.label}
+              cx="50"
+              cy="50"
+              r={radius}
+              fill="none"
+              stroke={sl.color}
+              strokeWidth={stroke}
+              strokeDasharray={`${sl.length} ${circ}`}
+              strokeDashoffset={sl.offset}
+            />
+          ))}
+        </g>
+      </svg>
+      <ul className="legend">
+        {slices.map((sl) => (
+          <li key={sl.label}>
+            <span className="legend-dot" style={{ background: sl.color }} aria-hidden="true" />
+            <span className="legend-label">
+              {sl.label}
+              <span className="legend-sub">
+                {sl.value}
+                {sl.sub ? ` · ${sl.sub}` : ""} ({Math.round((sl.value / total) * 100)}%)
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Colunas verticais do funil do checkout. */
+function Columns({ rows }: { rows: Row[] }) {
   const max = Math.max(1, ...rows.map((r) => r.value));
   return (
-    <div className="bar-chart">
-      {rows.map((r) => (
-        <div className="bar-row" key={r.label}>
-          <span className="bar-label">{r.label}</span>
-          <div className="bar-track">
-            <div className="bar-fill" style={{ width: `${Math.max(2, (r.value / max) * 100)}%` }} />
-          </div>
-          <span className="bar-value">
-            {r.value}
-            {r.sub ? ` · ${r.sub}` : ""}
-            {total > 0 ? ` (${Math.round((r.value / total) * 100)}%)` : ""}
+    <ol className="cols-chart">
+      {rows.map((r, i) => (
+        <li key={r.label}>
+          <span className="cols-value">{r.value}</span>
+          <span className="cols-track" aria-hidden="true">
+            <span
+              className="cols-bar"
+              style={{ "--v": `${Math.max(3, (r.value / max) * 100)}%`, background: SERIES[i % SERIES.length] } as CSSProperties}
+            />
           </span>
-        </div>
+          <span className="cols-label">{r.label}</span>
+        </li>
       ))}
-    </div>
+    </ol>
+  );
+}
+
+/** Lista ordenada com barra dentro da linha (estados, produtos). */
+function Rank({ rows, total, unit }: { rows: Row[]; total: number; unit?: string }) {
+  if (rows.length === 0) return <p className="dash-empty">Sem dados no período selecionado.</p>;
+  const max = Math.max(1, ...rows.map((r) => r.value));
+  return (
+    <ol className="rank">
+      {rows.map((r, i) => (
+        <li key={r.label}>
+          <span className="rank-pos">{i + 1}</span>
+          <span className="rank-row">
+            <span className="rank-fill" style={{ width: `${Math.max(4, (r.value / max) * 100)}%` }} aria-hidden="true" />
+            <span className="rank-label">
+              {r.label}
+              {r.sub ? <span className="rank-sub">{r.sub}</span> : null}
+            </span>
+            <span className="rank-value">
+              {unit ? `${r.value} ${unit}` : total > 0 ? `${r.value} (${Math.round((r.value / total) * 100)}%)` : r.value}
+            </span>
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function Meter({ value, max }: { value: number; max: number }) {
+  const width = max > 0 ? Math.min(100, (value / max) * 100) : 0;
+  return (
+    <span className="meter" aria-hidden="true">
+      <span className="meter-fill" style={{ width: `${width}%` }} />
+    </span>
   );
 }
 
@@ -97,41 +192,31 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </form>
       ) : null}
 
-      <div className="kpis">
-        <div className="kpi">
-          <span className="kpi-label">Vendas totais</span>
-          <span className="kpi-value">{formatBRL(data.salesTotal.amount)}</span>
-          <span className="cell-sub">{data.salesTotal.count} pedido(s) pago(s)</span>
-        </div>
-        <div className="kpi">
-          <span className="kpi-label">Ticket médio</span>
-          <span className="kpi-value">{data.ticketMedio === null ? "—" : formatBRL(data.ticketMedio)}</span>
-        </div>
-        <div className="kpi">
-          <span className="kpi-label">Conversão de Pix</span>
-          <span className="kpi-value">{pct(data.pixConversion.paid, data.pixConversion.generated)}</span>
-          <span className="cell-sub">
-            {data.pixConversion.paid} pago(s) de {data.pixConversion.generated} gerado(s)
-          </span>
-        </div>
-        <div className="kpi">
-          <span className="kpi-label">Carrinhos abandonados</span>
-          <span className="kpi-value">{data.abandonedCarts.count}</span>
-          <span className="cell-sub">{data.abandonedCarts.recovered} recuperado(s) por lembrete</span>
-        </div>
-        <div className="kpi">
-          <span className="kpi-label">Pedidos cancelados</span>
-          <span className="kpi-value">{data.cancelledOrders}</span>
-        </div>
-      </div>
+      <div className="dash-grid">
+        <section className="dash-card">
+          <h2>Vendas totais</h2>
+          <p className="dash-value">{formatBRL(data.salesTotal.amount)}</p>
+          <p className="dash-sub">{data.salesTotal.count} pedido(s) pago(s)</p>
+        </section>
 
-      <div className="cols-2">
-        <div className="card">
-          <div className="card-head">
-            <h2>Conversão do checkout</h2>
-          </div>
-          <Bars
-            total={data.funnel.criados}
+        <section className="dash-card">
+          <h2>Ticket médio</h2>
+          <p className="dash-value">{data.ticketMedio === null ? "—" : formatBRL(data.ticketMedio)}</p>
+        </section>
+
+        <section className="dash-card">
+          <h2>Conversão de Pix</h2>
+          <p className="dash-value">{pct(data.pixConversion.paid, data.pixConversion.generated)}</p>
+          <p className="dash-sub">
+            {data.pixConversion.paid} pago(s) de {data.pixConversion.generated} gerado(s)
+          </p>
+          <Meter value={data.pixConversion.paid} max={data.pixConversion.generated} />
+        </section>
+
+        <section className="dash-card span-2">
+          <h2>Conversão do checkout</h2>
+          <p className="dash-value">{pct(data.funnel.pagaram, data.funnel.criados)}</p>
+          <Columns
             rows={[
               { label: "Iniciaram o checkout", value: data.funnel.criados },
               { label: "Preencheram dados", value: data.funnel.comDados },
@@ -140,52 +225,68 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               { label: "Pagaram", value: data.funnel.pagaram },
             ]}
           />
+        </section>
+
+        <div className="dash-stack">
+          <section className="dash-card">
+            <h2>Carrinhos abandonados</h2>
+            <p className="dash-value">{data.abandonedCarts.count}</p>
+            <p className="dash-sub">{data.abandonedCarts.recovered} recuperado(s) por lembrete</p>
+            <Meter value={data.abandonedCarts.recovered} max={data.abandonedCarts.count} />
+          </section>
+
+          <section className="dash-card">
+            <h2>Pedidos cancelados</h2>
+            <p className="dash-value">{data.cancelledOrders}</p>
+          </section>
         </div>
 
-        <div className="card">
-          <div className="card-head">
-            <h2>Formas de pagamento</h2>
-          </div>
-          <Bars
-            total={data.salesTotal.count}
-            rows={data.paymentMethods.map((m) => ({ label: METHOD_LABEL[m.method] ?? m.method, value: m.count, sub: formatBRL(m.amount) }))}
+        <section className="dash-card">
+          <h2>Formas de pagamento</h2>
+          <Donut
+            variant="pie"
+            title="Formas de pagamento"
+            rows={data.paymentMethods.map((m) => ({
+              label: METHOD_LABEL[m.method] ?? m.method,
+              value: m.count,
+              sub: formatBRL(m.amount),
+            }))}
           />
-        </div>
+        </section>
 
-        <div className="card">
-          <div className="card-head">
-            <h2>Parcelamentos (cartão)</h2>
-          </div>
-          <Bars
-            total={data.installments.reduce((s, i) => s + i.count, 0)}
+        <section className="dash-card">
+          <h2>Parcelamentos (cartão)</h2>
+          <Donut
+            variant="ring"
+            title="Parcelamentos (cartão)"
             rows={data.installments.map((i) => ({ label: `${i.installments}x`, value: i.count }))}
           />
-        </div>
+        </section>
 
-        <div className="card">
-          <div className="card-head">
-            <h2>Vendas por order bump</h2>
-          </div>
-          <p className="sub">
-            {data.bump.count > 0
-              ? `${data.bump.count} pedido(s) com o item extra aceito, somando ${formatBRL(data.bump.amount)}.`
-              : "Sem dados no período selecionado."}
-          </p>
-        </div>
+        <section className="dash-card">
+          <h2>Vendas por order bump</h2>
+          {data.bump.count > 0 ? (
+            <>
+              <p className="dash-value">{formatBRL(data.bump.amount)}</p>
+              <p className="dash-sub">{data.bump.count} pedido(s) com o item extra aceito</p>
+            </>
+          ) : (
+            <p className="dash-empty">Sem dados no período selecionado.</p>
+          )}
+        </section>
 
-        <div className="card">
-          <div className="card-head">
-            <h2>Vendas por estado</h2>
-          </div>
-          <Bars total={data.salesTotal.count} rows={data.byState.slice(0, 10).map((s) => ({ label: s.state, value: s.count, sub: formatBRL(s.amount) }))} />
-        </div>
+        <section className="dash-card span-2">
+          <h2>Vendas por estado</h2>
+          <Rank
+            total={data.salesTotal.count}
+            rows={data.byState.slice(0, 10).map((st) => ({ label: st.state, value: st.count, sub: formatBRL(st.amount) }))}
+          />
+        </section>
 
-        <div className="card">
-          <div className="card-head">
-            <h2>Top produtos</h2>
-          </div>
-          <Bars total={data.salesTotal.count} rows={data.topProducts.map((p) => ({ label: p.sku, value: p.count }))} />
-        </div>
+        <section className="dash-card">
+          <h2>Top produtos</h2>
+          <Rank total={data.salesTotal.count} unit="vendido(s)" rows={data.topProducts.map((pr) => ({ label: pr.sku, value: pr.count }))} />
+        </section>
       </div>
     </>
   );

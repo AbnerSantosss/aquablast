@@ -19,6 +19,8 @@ async function run(variant) {
     await L.fillEntrega(page);
     await L.submitEntrega(page);
     await L.noHorizontalScroll(page);
+    // Cartao abre selecionado por padrao (2026-09-28): escolhe o Pix para gerar o codigo.
+    await L.choosePix(page);
     await page.locator(".bump-choice").click();
     await L.btn(page, "FINALIZAR COMPRA").click();
     const code = L.field(page, "pix-code");
@@ -26,7 +28,7 @@ async function run(variant) {
     assert.match(await code.inputValue(), /^SIMULADO-NAO-PAGUE-sim_/);
     await L.noHorizontalScroll(page);
     await L.shot(page, `c5-360-pix`);
-    await page.locator(".pay-head", { hasText: "Cartão de crédito" }).click();
+    await L.payHead(page, "card").click();
     await L.field(page, "cc-number").waitFor();
     await L.noHorizontalScroll(page);
     for (const nome of ["Editar seus dados", "Editar entrega", "FINALIZAR COMPRA"]) await alturaMin(page.getByRole("button", { name: nome }), nome);

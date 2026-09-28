@@ -1,36 +1,46 @@
 import { notFound, redirect } from "next/navigation";
 import { Checkout } from "@/components/checkout/Checkout";
+import { OrderConfirmed } from "@/components/checkout/OrderConfirmed";
 import { PixWatch } from "@/components/checkout/PixWatch";
-import { SuccessView } from "@/components/checkout/SuccessView";
-import type { CheckoutInitial, PaidInfo, StepName } from "@/components/checkout/types";
+import type { CheckoutInitial, StepName } from "@/components/checkout/types";
 import { ensureBootstrap } from "@/lib/bootstrap";
 import { getCartByToken } from "@/lib/checkout/own/cart";
 import { selectionFromCart } from "@/lib/checkout/own/catalog";
 import { loadCheckoutProps } from "@/lib/checkout/own/checkout-props";
 import { maskCEP, maskPhone, money } from "@/lib/checkout/own/masks";
-import { getCartByOrderId, getLastPaidAttempt, getOrderByPublicToken } from "@/lib/checkout/own/order";
+import { getLastPaidAttempt, getOrderByPublicToken } from "@/lib/checkout/own/order";
+import { getTheme } from "@/lib/checkout/own/theme-server";
 import { getOrderById, maskedDocument } from "@/lib/orders/service";
 import { getSupportWhatsapp } from "@/lib/site/support-contact";
-import { zedyUrlFromSelection } from "@/lib/site/constants";
-import type { CheckoutCart } from "@/db/schema";
+import { CONTACT_EMAIL, zedyUrlFromSelection } from "@/lib/site/constants";
+import type { CheckoutCart, Order } from "@/db/schema";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Seu pedido | AquaBlast" };
-
-function paymentLabel(order: { paymentMethod: string | null; installments: number | null }): string {
-  if (order.paymentMethod === "pix") return "Pix";
-  if (order.paymentMethod === "card") return order.installments && order.installments > 1 ? `Cartão de crédito em ${order.installments}x` : "Cartão de crédito";
-  return "—";
-}
 
 /** Fora do componente: o relógio é lido uma vez por requisição (Server Component), não durante um render puro. */
 function isPixExpired(pixExpiresAt: Date | null): boolean {
   return pixExpiresAt ? pixExpiresAt.getTime() <= Date.now() : true;
 }
 
-function addressLine(order: { addressLine1: string | null; addressNeighborhood: string | null; addressCity: string | null; addressState: string | null }): string {
+function currentYear(): number {
+  return new Date().getFullYear();
+}
+
+function paymentLabel(method: string | null, installments: number | null): string {
+  if (method === "pix") return "Pix";
+  if (method === "card") return installments && installments > 1 ? `Cartão de crédito em ${installments}x` : "Cartão de crédito";
+  return "—";
+}
+
+function addressLine(order: Order): string {
   const cityState = [order.addressCity, order.addressState].filter(Boolean).join("/");
   return [order.addressLine1, order.addressNeighborhood, cityState].filter(Boolean).join(" · ") || "—";
+}
+
+function itemLabel(item: Order["items"][number]): string {
+  const name = item.variant ? `${item.name} (${item.variant})` : item.name;
+  return item.quantity > 1 ? `${item.quantity}x ${name}` : name;
 }
 
 /**
@@ -78,6 +88,8 @@ function initialFromCart(cart: CheckoutCart, bumpEnabled: boolean): CheckoutInit
  *    parou, com os dados preenchidos e o CPF só mascarado.
  * Token que não existe em nenhuma das duas → `notFound()`.
  *
+ * Pedido pago mostra `<OrderConfirmed />` (compra confirmada), não mais o checkout com as etapas concluídas.
+ *
  * Na tela do pedido não existe `cartToken`, então um Pix expirado não tem botão "Gerar novo código" —
  * o cliente é direcionado ao WhatsApp de suporte (`getSupportWhatsapp`, só aparece quando o dono
  * cadastrou o número; nunca um número inventado).
@@ -104,49 +116,31 @@ export default async function PedidoPage({ params }: { params: Promise<{ token: 
     return <Checkout {...props} selection={selection} initial={initialFromCart(cart, props.bumpEnabled)} />;
   }
 
-  const whatsapp = await getSupportWhatsapp();
-  const item = order.items[0];
-  const amountCents = Math.round(Number(order.amountTotal ?? "0") * 100);
-
   if (order.paymentStatus === "paid") {
-    // Pedido pago: o MESMO layout do checkout (origem: SuccessView dentro do .ck-flow, etapas concluídas sem
-    // EDITAR). Seleção, bump, número e destinatário só existem no carrinho; bandeira/4 últimos, na tentativa paga.
-    const [cart, attempt] = await Promise.all([getCartByOrderId(order.id), getLastPaidAttempt(order.id)]);
-    const paid: PaidInfo = {
-      orderNumber: order.orderNumber,
-      method: (attempt?.method ?? order.paymentMethod) === "card" ? "card" : "pix",
-      amountCents: attempt?.amountCents ?? amountCents,
-      installments: attempt?.installments ?? order.installments ?? 1,
-      cardBrand: attempt?.cardBrand ?? null,
-      cardLast4: attempt?.cardLast4 ?? null,
-      testMode: attempt?.provider === "simulado",
-    };
-    if (cart) {
-      const selection = selectionFromCart(cart);
-      const { props } = await loadCheckoutProps(selection.pack, cart.bumpAccepted);
-      const initial: CheckoutInitial = { ...initialFromCart(cart, true), step: "pagamento", bump: cart.bumpAccepted };
-      return <Checkout {...props} selection={selection} initial={initial} paid={paid} />;
-    }
-    // Pedido sem carrinho (não deveria acontecer no checkout próprio): confirmação simples com os dados do pedido.
+    // Pedido pago: tela de compra confirmada (layout do dono, 2026-09-28). As etapas seguem o status real do pedido.
+    const [theme, attempt, whatsapp] = await Promise.all([getTheme(), getLastPaidAttempt(order.id), getSupportWhatsapp()]);
+    const amountCents = attempt?.amountCents ?? Math.round(Number(order.amountTotal ?? "0") * 100);
     return (
-      <div className="ck ck-root">
-        <main className="container ck-main">
-          <section className="ck-card ck-flow" aria-label="Seu pedido">
-            <SuccessView
-              orderNumber={order.orderNumber}
-              payment={paymentLabel(order)}
-              items={[item?.variant ? `${item.name} (${item.variant})` : (item?.name ?? "Pedido AquaBlast")]}
-              total={money(paid.amountCents)}
-              address={addressLine(order)}
-              email={order.customerEmail ?? ""}
-              testMode={paid.testMode}
-              restartHref="/"
-            />
-          </section>
-        </main>
-      </div>
+      <OrderConfirmed
+        theme={theme}
+        orderNumber={order.orderNumber}
+        status={order.status}
+        testMode={attempt?.provider === "simulado"}
+        firstName={order.customerName?.trim().split(/\s+/)[0] || null}
+        summary={{
+          items: order.items.length > 0 ? order.items.map(itemLabel) : ["Pedido AquaBlast"],
+          payment: paymentLabel(attempt?.method ?? order.paymentMethod, attempt?.installments ?? order.installments),
+          total: money(amountCents),
+          address: addressLine(order),
+          email: order.customerEmail,
+        }}
+        support={whatsapp ? { href: whatsapp.href, external: true } : { href: `mailto:${CONTACT_EMAIL}`, external: false }}
+        year={currentYear()}
+      />
     );
   }
+
+  const whatsapp = await getSupportWhatsapp();
 
   const pixExpired = isPixExpired(order.pixExpiresAt);
   const showPixWatch = order.paymentStatus === "pending" && order.paymentMethod === "pix" && order.pixCode && !pixExpired;

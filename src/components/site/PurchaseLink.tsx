@@ -13,16 +13,18 @@ const READY_LABEL: Record<Pack, string> = { unit: "Quero 1 unidade", kit: "Quero
  * (que o usam) não fazem parte do escopo deste agente para virar server component e repassar a
  * configuração por prop — por isso o modo é lido aqui mesmo, uma única vez por carregamento de página,
  * de GET /api/checkout/config (pública, já cacheia no client via este módulo). Enquanto não chega
- * resposta (ou se falhar) o link continua indo para a Zedy, o comportamento atual — sem regressão.
+ * resposta (HTML do servidor, antes da hidratação, ou fetch que falhou) o link vai para /checkout, que no
+ * servidor redireciona para a Zedy quando o painel está em "zedy". Antes (até 2026-09-28) o link nascia na
+ * Zedy e quem clicava rápido caía no checkout antigo mesmo com o modo "proprio" ligado.
  */
-let modeRequest: Promise<"proprio" | "zedy"> | null = null;
+let modeRequest: Promise<"proprio" | "zedy" | null> | null = null;
 
-function getCheckoutMode(): Promise<"proprio" | "zedy"> {
+function getCheckoutMode(): Promise<"proprio" | "zedy" | null> {
   if (!modeRequest) {
     modeRequest = fetch("/api/checkout/config", { credentials: "omit" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { mode?: string } | null) => (data?.mode === "proprio" ? "proprio" : "zedy"))
-      .catch(() => "zedy" as const);
+      .then((data: { mode?: string } | null) => (data?.mode === "proprio" ? "proprio" : data?.mode === "zedy" ? "zedy" : null))
+      .catch(() => null);
   }
   return modeRequest;
 }
@@ -54,7 +56,7 @@ export function PurchaseLink({ pack, className, children }: { pack: Pack; classN
   const { color, colorTouched, kitColors, kitConfirmed, kitReady, reopenKitStep } = useSelection();
   const hintId = useId();
   const [warned, setWarned] = useState(false);
-  const [mode, setMode] = useState<"proprio" | "zedy">("zedy");
+  const [mode, setMode] = useState<"proprio" | "zedy" | null>(null);
   useEffect(() => {
     getCheckoutMode().then(setMode);
   }, []);
@@ -90,7 +92,11 @@ export function PurchaseLink({ pack, className, children }: { pack: Pack; classN
         className={className}
         data-purchase={pack}
         data-incomplete={incomplete || undefined}
-        href={mode === "proprio" ? `${ownCheckoutPath(pack, color, kitColors)}${adParamsFromLocation()}` : checkoutUrl(pack, color, kitColors)}
+        href={
+          mode === "zedy"
+            ? checkoutUrl(pack, color, kitColors)
+            : `${ownCheckoutPath(pack, color, kitColors)}${mode === "proprio" ? adParamsFromLocation() : ""}`
+        }
         aria-describedby={hintId}
         onClick={(event) => {
           if (!incomplete || warned) return;

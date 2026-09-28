@@ -1,0 +1,20 @@
+[
+  {
+    "id": "painel-fundo",
+    "out": "public/admin-bg/painel-fundo.webp",
+    "aspectRatio": "16:9",
+    "width": 1920,
+    "height": 1200,
+    "maxKB": 250,
+    "prompt": "Abstract background texture for a software dashboard. Extremely subtle, soft, out-of-focus water surface with very gentle wide ripples and faint caustic light patterns, seen from directly above. Color palette restricted to very pale greyish blue and off-white (around #eef4f9, #e3edf5, #d6e4ef). Very low contrast, almost flat, evenly lit, uniform across the entire frame with no focal point, no dark areas, no bright highlights, no vignette, no horizon. Calm, minimal, clean. It will sit behind white cards with dark text, so it must be quiet and even. Absolutely no text, no letters, no numbers, no watermark, no logo, no people, no objects, no animals, no boats, no borders, no frames. Landscape orientation."
+  },
+  {
+    "id": "login-fundo",
+    "out": "public/admin-bg/login-fundo.webp",
+    "aspectRatio": "16:9",
+    "width": 1920,
+    "height": 1200,
+    "maxKB": 250,
+    "prompt": "Abstract background of deep blue water with light, for a login screen. Underwater view of deep ocean water with soft rays of light coming down from the surface and smooth flowing caustic light ripples. Color palette: deep navy blue (#032644, #063760) dominating the frame, transitioning to luminous cyan (#63e1ff) where the light enters near the top. Smooth gradients, soft and slightly blurred, elegant, calm, no busy detail in the center because a white card will be placed there. Absolutely no text, no letters, no numbers, no watermark, no logo, no people, no divers, no fish, no animals, no toys, no objects, no bubbles clusters, no borders, no frames. Landscape orientation."
+  }
+]

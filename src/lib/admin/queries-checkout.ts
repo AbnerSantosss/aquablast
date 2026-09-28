@@ -159,7 +159,9 @@ export async function getDashboardData(range: { start: Date; end: Date }): Promi
   const installmentsRows = await db
     .select({ installments: orders.installments, count: count() })
     .from(orders)
-    .where(and(paidCond, eq(orders.paymentMethod, "card")));
+    .where(and(paidCond, eq(orders.paymentMethod, "card")))
+    .groupBy(orders.installments)
+    .orderBy(orders.installments);
   const byInstallments = new Map<number, number>();
   for (const r of installmentsRows) {
     const n = r.installments ?? 1;

@@ -1,5 +1,5 @@
 // SÓ SERVIDOR. E-mails de carrinho abandonado e de pós-pagamento do checkout próprio (plano 10.2/10.3).
-import { and, desc, eq, gt, isNotNull, isNull, lt } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { checkoutCarts, emailLog, orders, paymentAttempts, type CheckoutCart } from "@/db/schema";
 import { selectionFromCart, titleOf, variantOf } from "@/lib/checkout/own/catalog";
@@ -123,19 +123,30 @@ export async function runAbandonedCarts(limit = 50): Promise<AbandonedRunResult>
   if (positive.length === 0) return { ...result, disabled: true };
 
   const now = new Date();
-  const cutoff = new Date(now.getTime() - Math.min(...positive) * 60_000);
-  const rows = await db.query.checkoutCarts.findMany({
-    where: and(
-      isNotNull(checkoutCarts.customerEmail),
-      isNull(checkoutCarts.unsubscribedAt),
-      lt(checkoutCarts.recoveryEmailCount, 3),
-      lt(checkoutCarts.lastActivityAt, cutoff),
-    ),
-    orderBy: checkoutCarts.lastActivityAt,
-    limit: limit * 3,
-  });
-
-  const eligible = rows.filter((c) => c.status === "open" || c.status === "abandoned").slice(0, limit);
+  const [t1, t2, t3] = thresholds;
+  // Todas as regras de pular ficam na consulta, não só no laço abaixo. Antes a consulta pegava os 50 mais
+  // antigos e o laço descartava depois; carrinho pulado não muda de estado, então os mesmos 50 voltavam a
+  // cada rodada e os carrinhos novos nunca eram olhados (achado de 2026-09-28, teste e2e api-5.6).
+  const eligible = await db
+    .select()
+    .from(checkoutCarts)
+    .where(
+      and(
+        inArray(checkoutCarts.status, ["open", "abandoned"]),
+        isNotNull(checkoutCarts.customerEmail),
+        isNull(checkoutCarts.unsubscribedAt),
+        lt(checkoutCarts.recoveryEmailCount, 3),
+        // Tempo do próximo lembrete já passou (0 = lembrete desligado no painel).
+        sql`(case ${checkoutCarts.recoveryEmailCount} when 0 then ${t1}::int when 1 then ${t2}::int else ${t3}::int end) > 0`,
+        sql`${checkoutCarts.lastActivityAt} <= now() - make_interval(mins => (case ${checkoutCarts.recoveryEmailCount} when 0 then ${t1}::int when 1 then ${t2}::int else ${t3}::int end))`,
+        // Regra 5: comprou com o mesmo e-mail depois do carrinho.
+        sql`not exists (select 1 from ${orders} where ${orders.customerEmail} = ${checkoutCarts.customerEmail} and ${orders.paymentStatus} = 'paid' and ${orders.createdAt} > ${checkoutCarts.createdAt})`,
+        // Regra 6: Pix pendente ligado ao carrinho (coberto pelo lembrete de Pix).
+        sql`not exists (select 1 from ${orders} where ${orders.id} = ${checkoutCarts.orderId} and ${orders.paymentMethod} = 'pix' and ${orders.paymentStatus} = 'pending')`,
+      ),
+    )
+    .orderBy(checkoutCarts.lastActivityAt)
+    .limit(limit);
   result.checked = eligible.length;
 
   for (const cart of eligible) {
@@ -150,6 +161,7 @@ export async function runAbandonedCarts(limit = 50): Promise<AbandonedRunResult>
       continue;
     }
 
+    // As checagens abaixo repetem a consulta de propósito: entre ela e o envio o cliente pode ter pago.
     // Regra 5: quem comprou por outro caminho com o mesmo e-mail (depois do carrinho) não recebe lembrete.
     const paidLater = cart.customerEmail
       ? await db.query.orders.findFirst({

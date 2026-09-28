@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, CreditCard, Mail, MapPin, Phone, ScanLine } from "lucide-react";
+import { Check, CreditCard, Mail, MapPin, Phone } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Selection } from "@/lib/checkout/own/catalog";
@@ -14,7 +14,8 @@ import { Campaign } from "./Campaign";
 import { ConsentBanner } from "./ConsentBanner";
 import { ErrorBox, fullName, UFS } from "./Field";
 import { Footer } from "./Footer";
-import { colorName, OrderSummary } from "./OrderSummary";
+import { colorName, OrderSummary, type PayView } from "./OrderSummary";
+import { PixLogo } from "./PixLogo";
 import { ShipBar } from "./ShipBar";
 import { StepDados } from "./StepDados";
 import { StepEntrega } from "./StepEntrega";
@@ -82,6 +83,7 @@ export function Checkout({
   cardGateway,
   cardPublicConfig,
   quotesInitial,
+  support,
   initial,
   paid,
 }: {
@@ -95,6 +97,7 @@ export function Checkout({
   cardGateway: string | null;
   cardPublicConfig: Record<string, string>;
   quotesInitial: { pix: Quote; card: Quote };
+  support: { href: string; external: boolean };
   initial?: CheckoutInitial;
   paid?: PaidInfo;
 }) {
@@ -103,7 +106,8 @@ export function Checkout({
   const [step, setStep] = useState(initial ? STEP_OF[initial.step] : 1);
   const [data, setData] = useState<FormData>(initial ? { ...initial.customer, ...initial.address } : EMPTY);
   const [bump, setBump] = useState(initial?.bump ?? false);
-  const [method, setMethod] = useState<PayMethodUi>(methods.includes("pix") ? "pix" : (methods[0] ?? "pix"));
+  // Cartão abre primeiro quando está ligado: a parcela é o preço em destaque (combinado com o dono em 2026-09-27).
+  const [method, setMethod] = useState<PayMethodUi>(methods.includes("card") ? "card" : (methods[0] ?? "pix"));
   const [quotes, setQuotes] = useState(quotesInitial);
   const [consent, setConsent] = useState<boolean | null>(null);
   const [error, setError] = useState("");
@@ -331,7 +335,7 @@ export function Checkout({
       : "Pix"
     : "";
   const restartHref = selection.pack === "kit" ? `/checkout?pack=kit&cor1=${c1}&cor2=${c2 ?? c1}` : `/checkout?pack=unit&cor=${c1}`;
-  const payView: PayMethodUi = paid ? paid.method : step === 3 ? method : "pix";
+  const payView: PayView = paid ? paid.method : step === 3 && methods.length > 0 ? method : "preview";
 
   const doneCard = (i: number) =>
     i === 0 ? (
@@ -368,7 +372,7 @@ export function Checkout({
             </>
           ) : (
             <>
-              <ScanLine size={17} aria-hidden="true" />
+              <PixLogo size={17} />
               Pix
             </>
           )}
@@ -473,11 +477,19 @@ export function Checkout({
               })}
             </ol>
           </section>
-          <OrderSummary selection={selection} bump={paid ? bump : hasBump} quotes={quotes} payView={payView} showShipping={step > 2 || !!paid} paid={paid ?? null} />
+          <OrderSummary
+            selection={selection}
+            bump={paid ? bump : hasBump}
+            quotes={quotes}
+            payView={payView}
+            cardEnabled={methods.includes("card")}
+            pixEnabled={methods.includes("pix")}
+            paid={paid ?? null}
+          />
           <TrustSeals methods={methods} maxInstallments={maxInstallments} />
         </div>
       </main>
-      <Footer theme={theme} year={year} />
+      <Footer theme={theme} year={year} methods={methods} maxInstallments={maxInstallments} support={support} />
       {paid ? null : <ConsentBanner requireConsent onDecide={setConsent} />}
     </div>
   );

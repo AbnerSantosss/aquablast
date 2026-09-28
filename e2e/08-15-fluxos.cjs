@@ -29,11 +29,15 @@ async function waitDb(fn, what, timeout = 15000) {
 }
 
 async function payPixSimulado(page) {
+  await L.choosePix(page); // cartao abre selecionado por padrao desde 2026-09-28
   await L.btn(page, "FINALIZAR COMPRA").click();
   await L.field(page, "pix-code").waitFor({ timeout: 15000 });
   await L.btn(page, "Simular pagamento aprovado").click();
   await page.waitForURL(/\/checkout\/pedido\//, { timeout: 15000 });
-  await L.waitText(page.locator(".ck-success"), "Pedido confirmado!");
+  await L.waitText(page.locator(".oc-hero"), /Obrigado pela sua compra, \S+!/);
+    await L.waitText(page.locator(".oc-summary"), /Total\s*R\$/);
+    await L.waitText(page.locator(".oc-summary"), /Enviamos a confirmação para \S+@/);
+    assert.equal(await page.locator(".oc-step.is-current strong").textContent(), "Compra aprovada");
   return page.url().split("/").pop();
 }
 
@@ -65,11 +69,17 @@ async function c09() {
   const { browser, page, pageErrors } = await L.open({ width: 412, height: 915, mobile: true });
   try {
     await L.toPayment(page);
+    // Desde 2026-09-28 o cartao abre selecionado e a parcela fica em destaque; no Pix o destaque vira o total a vista.
     const total = page.locator(".order-summary .total");
-    await L.waitText(total.locator("b"), "R$ 159,90");
-    await page.locator(".pay-head", { hasText: "Cartão de crédito" }).click();
-    await L.waitText(total, /12x R\$ 14,16.*\(ou R\$ 169,90 à vista\)/);
-    await page.locator(".pay-head", { hasText: "Pix" }).click();
+    const alt = page.locator(".order-summary .total-alt");
+    await L.waitText(total, /12x de R\$ 14,16 ?sem juros no cartão · total R\$ 169,90/);
+    await L.waitText(alt, /ou R\$ 159,90 à vista no Pix ?R\$ 10,00 de desconto/);
+    await L.choosePix(page);
+    await L.waitText(total, /R\$ 159,90 ?à vista no Pix/);
+    await L.waitText(alt, /ou 12x de R\$ 14,16 sem juros no cartão/);
+    await L.payHead(page, "card").click();
+    await L.waitText(total, /12x de R\$ 14,16 ?sem juros no cartão · total R\$ 169,90/);
+    await L.choosePix(page);
     await L.waitText(total.locator("b"), "R$ 159,90");
     assert.deepEqual(pageErrors, []);
   } finally {

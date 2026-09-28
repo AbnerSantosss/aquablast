@@ -1,0 +1,50 @@
+[
+  {
+    "id": "selo-cartao",
+    "out": "public/checkout/selos/selo-cartao.webp",
+    "width": 192,
+    "height": 192,
+    "maxKB": 24,
+    "trim": true,
+    "prompt": "Single app-style icon badge, perfectly centered. A perfect circle that fills the whole square frame edge to edge, filled with a smooth glossy gradient from deep navy blue (#063760) at the bottom to bright blue (#006bca) at the top, with a subtle soft water ripple highlight in the upper part. In the center, a clean soft 3D symbol: a blank white credit card tilted slightly, with a small golden chip and a light cyan (#63e1ff) stripe, completely blank with no numbers and no names. Soft rounded shapes, friendly, premium, modern flat-3D clay style with gentle inner shadow. Transparent background outside the circle: no glow, no shadow and no halo outside the circle edge. The circle must be dark: navy #063760 dominant, blue #006bca only as the top highlight. Absolutely no text, no letters, no numbers, no words, no logos, no brand marks, no card network logos, no watermark.",
+    "mask": "circle",
+    "model": "openai/gpt-5-image",
+    "transparent": true
+  },
+  {
+    "id": "selo-seguro",
+    "out": "public/checkout/selos/selo-seguro.webp",
+    "width": 192,
+    "height": 192,
+    "maxKB": 24,
+    "trim": true,
+    "prompt": "Single app-style icon badge, perfectly centered. A perfect circle that fills the whole square frame edge to edge, filled with a smooth glossy gradient from deep navy blue (#063760) at the bottom to bright blue (#006bca) at the top, with a subtle soft water ripple highlight in the upper part. In the center, a clean soft 3D symbol: a white shield with a bold green (#087e3a) check mark in the middle and a small light cyan (#63e1ff) padlock at its base, meaning safe purchase. Soft rounded shapes, friendly, premium, modern flat-3D clay style with gentle inner shadow. Transparent background outside the circle: no glow, no shadow and no halo outside the circle edge. The circle must be dark: navy #063760 dominant, blue #006bca only as the top highlight. Absolutely no text, no letters, no numbers, no words, no logos, no brand marks, no watermark.",
+    "mask": "circle",
+    "model": "openai/gpt-5-image",
+    "transparent": true
+  },
+  {
+    "id": "selo-envio",
+    "out": "public/checkout/selos/selo-envio.webp",
+    "width": 192,
+    "height": 192,
+    "maxKB": 24,
+    "trim": true,
+    "prompt": "Single app-style icon badge, perfectly centered. A perfect circle that fills the whole square frame edge to edge, filled with a smooth glossy gradient from deep navy blue (#063760) at the bottom to bright blue (#006bca) at the top, with a subtle soft water ripple highlight in the upper part. In the center, a clean soft 3D symbol: a small white delivery truck seen from the side carrying a light brown cardboard box, with three light cyan (#63e1ff) speed lines behind it, meaning fast shipping. Soft rounded shapes, friendly, premium, modern flat-3D clay style with gentle inner shadow. Transparent background outside the circle: no glow, no shadow and no halo outside the circle edge. The circle must be dark: navy #063760 dominant, blue #006bca only as the top highlight. Absolutely no text, no letters, no numbers, no words, no logos, no brand marks, no license plate, no watermark.",
+    "mask": "circle",
+    "model": "openai/gpt-5-image",
+    "transparent": true
+  },
+  {
+    "id": "selo-garantia",
+    "out": "public/checkout/selos/selo-garantia.webp",
+    "width": 192,
+    "height": 192,
+    "maxKB": 24,
+    "trim": true,
+    "prompt": "Single app-style icon badge, perfectly centered. A perfect circle that fills the whole square frame edge to edge, filled with a smooth glossy gradient from deep navy blue (#063760) at the bottom to bright blue (#006bca) at the top, with a subtle soft water ripple highlight in the upper part. In the center, a clean soft 3D symbol: a light brown cardboard package box with a white circular return arrow curving around it and a small green (#087e3a) check mark, meaning easy returns guarantee. Soft rounded shapes, friendly, premium, modern flat-3D clay style with gentle inner shadow. Transparent background outside the circle: no glow, no shadow and no halo outside the circle edge. The circle must be dark: navy #063760 dominant, blue #006bca only as the top highlight. Absolutely no text, no letters, no numbers, no words, no logos, no brand marks, no watermark.",
+    "mask": "circle",
+    "model": "openai/gpt-5-image",
+    "transparent": true
+  }
+]

@@ -157,6 +157,18 @@ async function toPayment(page, query) {
   await submitEntrega(page);
 }
 
+/**
+ * Cabecalho de uma forma de pagamento na etapa 3, pelo value do radio ("pix" | "card"): nao depende do texto,
+ * que pode mencionar a outra forma. Desde 2026-09-28 o CARTAO abre selecionado quando esta ligado; quem quer
+ * Pix precisa escolher (choosePix).
+ */
+const payHead = (page, method) => page.locator(".pay-head").filter({ has: page.locator(`input[value="${method}"]`) });
+
+async function choosePix(page) {
+  await payHead(page, "pix").click();
+  await page.locator('.pay-item.is-open input[value="pix"]').waitFor({ timeout: 10000 });
+}
+
 async function cartTokenOf(page) {
   return page.evaluate(() => { try { return window.localStorage.getItem("ck-cart-token"); } catch { return null; } });
 }
@@ -184,6 +196,6 @@ async function scenario(id, title, fn) {
 module.exports = {
   BASE, OUT, cliente, endereco, CARD_OK, CARD_REFUSED, CARD_BAD_LUHN, assert, withDb,
   open, checkNetwork, noHorizontalScroll, shot, field, btn, waitText,
-  fillDados, submitDados, fillEntrega, submitEntrega, goCheckout, toPayment, cartTokenOf,
+  fillDados, submitDados, fillEntrega, submitEntrega, goCheckout, toPayment, cartTokenOf, payHead, choosePix,
   clearRateLimits, setSetting, deleteSetting, scenario,
 };

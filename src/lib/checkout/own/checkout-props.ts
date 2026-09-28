@@ -1,5 +1,7 @@
 import { gatewayFor } from "@/lib/gateways";
 import { getSettings } from "@/lib/settings";
+import { CONTACT_EMAIL } from "@/lib/site/constants";
+import { getSupportWhatsapp } from "@/lib/site/support-contact";
 import type { CheckoutPack } from "./catalog";
 import { quoteBoth, type Quote } from "./pricing";
 import { getTheme } from "./theme-server";
@@ -22,6 +24,8 @@ export interface CheckoutServerProps {
   cardGateway: string | null;
   cardPublicConfig: Record<string, string>;
   quotesInitial: { pix: Quote; card: Quote };
+  /** Suporte do rodapé: WhatsApp cadastrado no painel ou, sem ele, o e-mail do site (mesma regra da compra confirmada). */
+  support: { href: string; external: boolean };
 }
 
 export async function loadCheckoutProps(pack: CheckoutPack, bump: boolean): Promise<{ mode: "proprio" | "zedy"; props: CheckoutServerProps }> {
@@ -32,7 +36,8 @@ export async function loadCheckoutProps(pack: CheckoutPack, bump: boolean): Prom
   const pixTtlSeconds = s["checkout.pixTtlSeconds"];
 
   const [pixGw, cardGw] = await Promise.all([gatewayFor("pix"), gatewayFor("card")]);
-  const [quotesInitial, theme] = await Promise.all([quoteBoth(pack, bumpEnabled && bump, maxInstallments), getTheme()]);
+  const [quotesInitial, theme, whatsapp] = await Promise.all([quoteBoth(pack, bumpEnabled && bump, maxInstallments), getTheme(), getSupportWhatsapp()]);
+  const support = whatsapp ? { href: whatsapp.href, external: true } : { href: `mailto:${CONTACT_EMAIL}`, external: false };
   const cardPublicConfig = cardGw ? await cardGw.publicConfig() : {};
 
   const methods: ("pix" | "card")[] = [];
@@ -41,6 +46,6 @@ export async function loadCheckoutProps(pack: CheckoutPack, bump: boolean): Prom
 
   return {
     mode,
-    props: { theme, methods, maxInstallments, pixTtlSeconds, bumpEnabled, pixGateway: pixGw?.name ?? null, cardGateway: cardGw?.name ?? null, cardPublicConfig, quotesInitial },
+    props: { theme, methods, maxInstallments, pixTtlSeconds, bumpEnabled, pixGateway: pixGw?.name ?? null, cardGateway: cardGw?.name ?? null, cardPublicConfig, quotesInitial, support },
   };
 }

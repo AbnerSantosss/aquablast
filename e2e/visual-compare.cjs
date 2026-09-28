@@ -116,6 +116,8 @@ const STEPS = [
   ["3-pagamento-pix", async (p) => {
     await p.getByRole("button", { name: "CONTINUAR", exact: true }).click();
     await p.locator(".pay-acc").waitFor({ timeout: 10000 });
+    // A origem abre no Pix; o nosso abre no cartao desde 2026-09-28. Escolhe o Pix nos dois lados para comparar igual.
+    await p.locator(".pay-head", { hasText: "Pix" }).first().click();
   }],
   ["3-pagamento-cartao", async (p) => {
     await p.locator(".pay-head", { hasText: "Cartão de crédito" }).click();

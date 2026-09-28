@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { Check, CreditCard, ScanLine } from "lucide-react";
+import { Check, CreditCard } from "lucide-react";
+import { ErrorBox } from "./Field";
+import { PixLogo } from "./PixLogo";
 import { useRef } from "react";
 import { money } from "@/lib/checkout/own/masks";
 import type { Quote } from "@/lib/checkout/own/pricing";
@@ -63,10 +65,24 @@ export function StepPagamento({
 
   const options = (
     [
-      ["card", CreditCard, "Cartão de crédito", maxInstallments > 1 ? `Até ${maxInstallments}x sem juros` : "À vista no cartão"],
-      ["pix", ScanLine, "Pix", "Aprovação na hora"],
+      [
+        "card",
+        CreditCard,
+        "Cartão de crédito",
+        quotes.card.installments > 1 ? `${quotes.card.installments}x de ${money(quotes.card.installmentCents)} sem juros` : `${money(quotes.card.amountCents)} à vista no cartão`,
+      ],
+      ["pix", PixLogo, "Pix", `${money(quotes.pix.amountCents)} à vista · aprovação na hora`],
     ] as const
   ).filter(([id]) => methods.includes(id));
+
+  // Nenhuma forma ligada no painel (ex.: produção sem gateway real): diz isso com clareza em vez de um acordeão vazio.
+  if (options.length === 0) {
+    return (
+      <div className="payment-content">
+        <ErrorBox>Pagamento indisponível no momento. Seus dados ficaram salvos: tente de novo em alguns minutos ou fale com a gente pelo rodapé.</ErrorBox>
+      </div>
+    );
+  }
 
   return (
     <div className="payment-content">
