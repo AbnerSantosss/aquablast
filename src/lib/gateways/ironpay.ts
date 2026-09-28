@@ -98,11 +98,13 @@ function parsePaidAt(body: Record<string, unknown> | null): Date | null {
  * Cria uma oferta num produto da IronPay (`POST /products/{hash}/offers`, doc pública) e devolve o hash dela.
  * Existe porque a tela de produtos da IronPay não mostra o hash da oferta (só o link go.ironpayapp.com.br/…),
  * e o `offer_hash` é obrigatório em toda transação. Usado pelo botão "Criar ofertas na IronPay" do painel.
+ * A doc diz `amount`, mas a API responde 422 "campo price" sem `price` (2026-09-28): manda os dois, em centavos
+ * como o resto da API pública. `price` devolve o valor que a IronPay gravou, para o painel mostrar e o dono conferir.
  */
-export async function createIronpayOffer(productHash: string, title: string, amountCents: number): Promise<{ ok: true; hash: string } | { ok: false; reason: string }> {
+export async function createIronpayOffer(productHash: string, title: string, amountCents: number): Promise<{ ok: true; hash: string; price: string | null } | { ok: false; reason: string }> {
   const token = await getSetting("gateway.ironpay.apiToken");
   if (!token) return { ok: false, reason: "Salve o token da API da IronPay antes." };
-  const res = await call(`/products/${encodeURIComponent(productHash)}/offers`, { method: "POST", body: { title, amount: amountCents } }, token);
+  const res = await call(`/products/${encodeURIComponent(productHash)}/offers`, { method: "POST", body: { title, price: amountCents, amount: amountCents } }, token);
   if (res.timedOut) return { ok: false, reason: "A IronPay demorou para responder." };
   if (res.status === 401) return { ok: false, reason: "A IronPay recusou o token (401)." };
   if (res.status === 404) return { ok: false, reason: `Produto ${productHash} não encontrado na IronPay (404).` };
@@ -110,7 +112,8 @@ export async function createIronpayOffer(productHash: string, title: string, amo
   const data = res.body.data && typeof res.body.data === "object" ? (res.body.data as Record<string, unknown>) : res.body;
   const hash = typeof data.hash === "string" ? data.hash : null;
   if (!hash) return { ok: false, reason: "A IronPay respondeu sem o hash da oferta." };
-  return { ok: true, hash };
+  const raw = data.price ?? data.amount;
+  return { ok: true, hash, price: typeof raw === "string" || typeof raw === "number" ? String(raw) : null };
 }
 
 export const ironpayGateway: Gateway = {

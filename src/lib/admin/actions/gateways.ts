@@ -94,10 +94,10 @@ export async function createIronpayOffers(_prev: ActionResult, fd: FormData): Pr
       return fail(`${p.pack === "unit" ? "Unidade" : "Kit"}: ${res.reason}${created.length ? ` (já criada: ${created.join(", ")})` : ""}`);
     }
     patch[p.offerKey] = res.hash;
-    created.push(p.pack === "unit" ? "unidade" : "kit");
+    created.push(`${p.pack === "unit" ? "unidade" : "kit"} (enviado ${p.amount} centavos${res.price ? `, IronPay gravou ${res.price}` : ""})`);
   }
   await apply(actor, "gateway.ironpay", patch);
-  return ok(created.length ? `Oferta criada na IronPay e salva: ${created.join(" e ")}.` : "As duas ofertas já estavam salvas. Nada foi criado.");
+  return ok(created.length ? `Oferta criada na IronPay e salva: ${created.join(" e ")}. Confira o preço das ofertas na tela do produto da IronPay.` : "As duas ofertas já estavam salvas. Nada foi criado.");
 }
 
 export async function saveMercadopagoSettings(_prev: ActionResult, fd: FormData): Promise<ActionResult> {
