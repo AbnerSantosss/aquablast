@@ -23,6 +23,8 @@ export interface CheckoutServerProps {
   pixGateway: string | null;
   cardGateway: string | null;
   cardPublicConfig: Record<string, string>;
+  /** Cartão visível com as parcelas, mas sem gateway: a opção avisa e leva ao Pix (`checkout.cardComingSoon`). */
+  cardPending: boolean;
   quotesInitial: { pix: Quote; card: Quote };
   /** Cupom de teste vindo da URL (`?cupom=`), normalizado. Vazio sem cupom; o servidor decide se vale. */
   coupon: string;
@@ -31,7 +33,7 @@ export interface CheckoutServerProps {
 }
 
 export async function loadCheckoutProps(pack: CheckoutPack, bump: boolean, couponRaw?: string): Promise<{ mode: "proprio" | "zedy"; props: CheckoutServerProps }> {
-  const s = await getSettings(["checkout.mode", "checkout.maxInstallments", "checkout.pixTtlSeconds", "checkout.bumpEnabled"] as const);
+  const s = await getSettings(["checkout.mode", "checkout.maxInstallments", "checkout.pixTtlSeconds", "checkout.bumpEnabled", "checkout.cardComingSoon"] as const);
   const mode = s["checkout.mode"] === "zedy" ? "zedy" : "proprio";
   const maxInstallments = Math.max(1, Math.min(12, Math.trunc(s["checkout.maxInstallments"])));
   const bumpEnabled = s["checkout.bumpEnabled"];
@@ -45,10 +47,11 @@ export async function loadCheckoutProps(pack: CheckoutPack, bump: boolean, coupo
 
   const methods: ("pix" | "card")[] = [];
   if (pixGw) methods.push("pix");
-  if (cardGw) methods.push("card");
+  const cardPending = !cardGw && !!pixGw && s["checkout.cardComingSoon"];
+  if (cardGw || cardPending) methods.push("card");
 
   return {
     mode,
-    props: { theme, methods, maxInstallments, pixTtlSeconds, bumpEnabled, pixGateway: pixGw?.name ?? null, cardGateway: cardGw?.name ?? null, cardPublicConfig, quotesInitial, coupon, support },
+    props: { theme, methods, maxInstallments, pixTtlSeconds, bumpEnabled, pixGateway: pixGw?.name ?? null, cardGateway: cardGw?.name ?? null, cardPublicConfig, cardPending, quotesInitial, coupon, support },
   };
 }

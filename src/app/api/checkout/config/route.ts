@@ -23,7 +23,7 @@ export async function GET(request: Request): Promise<Response> {
   if (!limit.allowed) return tooMany(limit.retryAfterSeconds);
 
   try {
-    const s = await getSettings(["checkout.mode", "checkout.maxInstallments", "checkout.pixTtlSeconds", "checkout.bumpEnabled", "gateway.card"] as const);
+    const s = await getSettings(["checkout.mode", "checkout.maxInstallments", "checkout.pixTtlSeconds", "checkout.bumpEnabled", "gateway.card", "checkout.cardComingSoon"] as const);
     const [pixGw, cardGw] = await Promise.all([gatewayFor("pix"), gatewayFor("card")]);
     const maxInstallments = Math.max(1, Math.min(12, Math.trunc(s["checkout.maxInstallments"])));
     const publicConfig = cardGw ? await cardGw.publicConfig() : {};
@@ -31,7 +31,8 @@ export async function GET(request: Request): Promise<Response> {
 
     const methods: ("pix" | "card")[] = [];
     if (pixGw) methods.push("pix");
-    if (cardGw) methods.push("card");
+    const cardPending = !cardGw && !!pixGw && s["checkout.cardComingSoon"];
+    if (cardGw || cardPending) methods.push("card");
 
     return json({
       ok: true,
@@ -41,6 +42,8 @@ export async function GET(request: Request): Promise<Response> {
       card: {
         enabled: s["gateway.card"] !== "desligado",
         available: !!cardGw,
+        /** Aparece no checkout com as parcelas, mas ainda sem gateway (paga só no Pix). */
+        comingSoon: cardPending,
         gateway: cardGw?.name ?? null,
         tokenizesCard: cardGw?.tokenizesCard ?? false,
         publicConfig,

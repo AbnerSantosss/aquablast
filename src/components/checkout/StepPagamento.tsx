@@ -9,6 +9,7 @@ import { money } from "@/lib/checkout/own/masks";
 import type { Quote } from "@/lib/checkout/own/pricing";
 import type { Color } from "@/lib/site/types";
 import { CardPay } from "./CardPay";
+import { CardPending } from "./CardPending";
 import { colorName, thumbOf } from "./OrderSummary";
 import { TestModeNote } from "./PaySeals";
 import { PixPay } from "./PixPay";
@@ -37,6 +38,7 @@ export function StepPagamento({
   pixGateway,
   cardGateway,
   cardPublicConfig,
+  cardPending = false,
   storeName,
   onPaid,
   onPending,
@@ -56,6 +58,7 @@ export function StepPagamento({
   pixGateway: string | null;
   cardGateway: string | null;
   cardPublicConfig: Record<string, string>;
+  cardPending?: boolean;
   storeName: string;
   onPaid: (publicToken: string) => void;
   onPending: (publicToken: string) => void;
@@ -144,7 +147,9 @@ export function StepPagamento({
             </label>
             {method === id ? (
               <div className="pay-body">
-                {id === "card" ? (
+                {id === "card" && cardPending ? (
+                  <CardPending pixCents={quotes.pix.amountCents} cardCents={quotes.card.amountCents} onPix={() => onMethodChange("pix", false)} />
+                ) : id === "card" ? (
                   <CardPay
                     cartToken={cartToken}
                     bump={hasBump}

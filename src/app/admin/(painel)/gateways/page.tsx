@@ -37,6 +37,7 @@ export default async function GatewaysPage() {
     "gateway.postbackToken",
     "checkout.mode",
     "checkout.testCoupon",
+    "checkout.cardComingSoon",
   ] as const);
 
   const ironpayToken = await describeSecret("gateway.ironpay.apiToken");
@@ -121,7 +122,7 @@ export default async function GatewaysPage() {
           <h2>Roteamento de pagamento</h2>
         </div>
         <p className="small muted">Qual gateway processa cada método no checkout próprio.</p>
-        <ActionForm action={saveRoutingSettings}>
+        <ActionForm key={`${s["gateway.card"]}|${s["checkout.cardComingSoon"]}`} action={saveRoutingSettings}>
           <div className="routing-grid">
             <label className="field">
               <span>Pix</span>
@@ -143,6 +144,10 @@ export default async function GatewaysPage() {
               </select>
             </label>
           </div>
+          <label className="check">
+            <input type="checkbox" name="checkout.cardComingSoon" defaultChecked={s["checkout.cardComingSoon"]} />
+            <span>Com o cartão desligado, mostrar a opção Cartão com as parcelas (ao abrir, avisa que está em ativação e leva ao Pix)</span>
+          </label>
           <button className="btn" type="submit">
             Salvar roteamento
           </button>

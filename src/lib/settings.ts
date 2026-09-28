@@ -58,6 +58,12 @@ export interface SettingsMap {
    * Existe para o dono pagar um Pix real de valor mínimo e provar o gateway ponta a ponta. Desligar depois.
    */
   "checkout.testCoupon": { enabled: boolean; code: string; pixCents: number };
+  /**
+   * Cartão "aguardando gateway" (dono, 2026-09-28): com `gateway.card` desligado e o Pix ligado, o checkout
+   * mostra a opção Cartão com as parcelas, mas ao abrir avisa que o cartão ainda não está disponível e leva ao Pix.
+   * Nenhum número de cartão é pedido sem gateway para cobrar.
+   */
+  "checkout.cardComingSoon": boolean;
   "checkout.theme": Record<string, unknown>;
   "checkout.recovery.enabled": boolean;
   /** Minutos sem atividade para o carrinho virar "abandonado" e receber o 1º e-mail. */
@@ -145,6 +151,7 @@ export const DEFAULTS: SettingsMap = {
   "checkout.bumpEnabled": true,
   "checkout.pixTtlSeconds": 600,
   "checkout.testCoupon": { enabled: false, code: "", pixCents: 500 },
+  "checkout.cardComingSoon": true,
   "checkout.theme": {},
   "checkout.recovery.enabled": true,
   "checkout.recovery.firstAfterMinutes": 30,

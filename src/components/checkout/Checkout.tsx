@@ -82,6 +82,7 @@ export function Checkout({
   pixGateway,
   cardGateway,
   cardPublicConfig,
+  cardPending = false,
   quotesInitial,
   coupon = "",
   support,
@@ -97,6 +98,8 @@ export function Checkout({
   pixGateway: string | null;
   cardGateway: string | null;
   cardPublicConfig: Record<string, string>;
+  /** Cartão aparece com as parcelas, mas ainda sem gateway: a etapa 3 abre no Pix e o cartão só avisa. */
+  cardPending?: boolean;
   quotesInitial: { pix: Quote; card: Quote };
   /** Cupom de teste da URL (`?cupom=`): vai junto em cada POST; o valor sai sempre do servidor. */
   coupon?: string;
@@ -110,7 +113,8 @@ export function Checkout({
   const [data, setData] = useState<FormData>(initial ? { ...initial.customer, ...initial.address } : EMPTY);
   const [bump, setBump] = useState(initial?.bump ?? false);
   // Cartão abre primeiro quando está ligado: a parcela é o preço em destaque (combinado com o dono em 2026-09-27).
-  const [method, setMethod] = useState<PayMethodUi>(methods.includes("card") ? "card" : (methods[0] ?? "pix"));
+  // Cartão aguardando gateway: o resumo continua mostrando a parcela até a etapa 3, que abre no Pix (única forma que cobra).
+  const [method, setMethod] = useState<PayMethodUi>(methods.includes("card") && !cardPending ? "card" : methods.includes("pix") ? "pix" : (methods[0] ?? "pix"));
   const [quotes, setQuotes] = useState(quotesInitial);
   const [consent, setConsent] = useState<boolean | null>(null);
   const [error, setError] = useState("");
@@ -315,7 +319,7 @@ export function Checkout({
   }
 
   function handleMethodChange(m: PayMethodUi, byPointer: boolean) {
-    if (byPointer && m === "card") focusNext.current = "input[name=cc-number]";
+    if (byPointer && m === "card" && !cardPending) focusNext.current = "input[name=cc-number]";
     setMethod(m);
     setError("");
   }
@@ -410,6 +414,7 @@ export function Checkout({
         pixGateway={pixGateway}
         cardGateway={cardGateway}
         cardPublicConfig={cardPublicConfig}
+        cardPending={cardPending}
         storeName={theme.storeName}
         onPaid={goToOrder}
         onPending={goToOrder}

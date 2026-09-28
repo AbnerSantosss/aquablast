@@ -813,6 +813,18 @@
   padding: 8px 12px;
   font-size: 13px;
 }
+/* Cartão aguardando gateway (checkout.cardComingSoon): aviso + botão que leva ao Pix */
+.ck-card-pending {
+  display: grid;
+  gap: 12px;
+}
+.ck-card-pending .ck-pay-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
 /* Acordeão de formas de pagamento: só a escolhida abre, abaixo de um divisor */
 .ck .pay-acc {
   display: grid;

@@ -50,6 +50,7 @@ export async function saveRoutingSettings(_prev: ActionResult, fd: FormData): Pr
   await apply(actor, "gateway.routing", {
     "gateway.pix": pix as SettingsMap["gateway.pix"],
     "gateway.card": card as SettingsMap["gateway.card"],
+    "checkout.cardComingSoon": bool(fd, "checkout.cardComingSoon"),
   });
   return ok("Roteamento de pagamento salvo.");
 }

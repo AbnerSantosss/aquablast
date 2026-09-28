@@ -6,7 +6,7 @@
 const { spawnSync } = require("child_process");
 const path = require("path");
 
-const FILES = ["01-unidade-pix", "02-kit-cartao", "03-editar", "04-cep-manual", "05-celular-360", "06-07-relogio", "08-15-fluxos", "16-cupom", "api-14-5"];
+const FILES = ["01-unidade-pix", "02-kit-cartao", "03-editar", "04-cep-manual", "05-celular-360", "06-07-relogio", "08-15-fluxos", "16-cupom", "17-cartao-aguardando", "api-14-5"];
 let failed = 0;
 for (const f of FILES) {
   const r = spawnSync(process.execPath, [path.join(__dirname, `${f}.cjs`)], { stdio: ["ignore", "pipe", "inherit"], env: process.env, encoding: "utf8" });
