@@ -13,7 +13,8 @@ import { applyPaymentStatus } from "@/lib/orders/payment";
 import { db } from "@/db";
 import { paymentAttempts } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { isSecretKey, setSetting, type SettingKey, type SettingsMap } from "@/lib/settings";
+import { createIronpayOffer } from "@/lib/gateways/ironpay";
+import { getSetting, isSecretKey, setSetting, type SettingKey, type SettingsMap } from "@/lib/settings";
 
 /**
  * Ações da tela Gateways (fase 11.8): roteamento (`gateway.pix`/`gateway.card`), credenciais de cada
@@ -63,6 +64,40 @@ export async function saveIronpaySettings(_prev: ActionResult, fd: FormData): Pr
     "gateway.ironpay.productHashKit": str(fd, "gateway.ironpay.productHashKit", 200),
   });
   return ok("Credenciais da IronPay salvas. Segredo em branco foi mantido.");
+}
+
+/**
+ * Cria na IronPay as ofertas que faltam (unidade e kit) e grava os `offer_hash` devolvidos.
+ * Usa os product hash digitados no formulário (o "Código produto" que a IronPay mostra); o kit sem produto próprio
+ * usa o da unidade. Só cria oferta para o pacote que ainda não tem hash: clicar de novo não duplica.
+ * Valor da oferta = preço no cartão (o maior); cada cobrança manda o valor real em `amount`.
+ */
+export async function createIronpayOffers(_prev: ActionResult, fd: FormData): Promise<ActionResult> {
+  const { actor } = await begin();
+  const productUnit = str(fd, "gateway.ironpay.productHashUnit", 200) || (await getSetting("gateway.ironpay.productHashUnit"));
+  const productKit = str(fd, "gateway.ironpay.productHashKit", 200) || (await getSetting("gateway.ironpay.productHashKit")) || productUnit;
+  if (!productUnit) return fail("Informe o product hash da unidade (o \"Código produto\" na tela do produto da IronPay).");
+
+  const prices = await getSetting("checkout.prices");
+  const packs = [
+    { pack: "unit", product: productUnit, offerKey: "gateway.ironpay.offerHashUnit", title: "1 unidade AquaBlast (site)", amount: prices.unit.card },
+    { pack: "kit", product: productKit, offerKey: "gateway.ironpay.offerHashKit", title: "Kit com 2 AquaBlast (site)", amount: prices.kit.card },
+  ] as const;
+
+  const created: string[] = [];
+  const patch: Patch = { "gateway.ironpay.productHashUnit": productUnit, "gateway.ironpay.productHashKit": productKit };
+  for (const p of packs) {
+    if (await getSetting(p.offerKey)) continue;
+    const res = await createIronpayOffer(p.product, p.title, p.amount);
+    if (!res.ok) {
+      await apply(actor, "gateway.ironpay", patch);
+      return fail(`${p.pack === "unit" ? "Unidade" : "Kit"}: ${res.reason}${created.length ? ` (já criada: ${created.join(", ")})` : ""}`);
+    }
+    patch[p.offerKey] = res.hash;
+    created.push(p.pack === "unit" ? "unidade" : "kit");
+  }
+  await apply(actor, "gateway.ironpay", patch);
+  return ok(created.length ? `Oferta criada na IronPay e salva: ${created.join(" e ")}.` : "As duas ofertas já estavam salvas. Nada foi criado.");
 }
 
 export async function saveMercadopagoSettings(_prev: ActionResult, fd: FormData): Promise<ActionResult> {

@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth/session";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { CopyButton } from "@/components/admin/CopyButton";
 import {
+  createIronpayOffers,
   regeneratePostbackToken,
   saveCheckoutModeSettings,
   saveFastpaySettings,
@@ -71,8 +72,8 @@ export default async function GatewaysPage() {
           <div className="routing-grid">
             <label className="field">
               <span>Modo</span>
-              <select name="checkout.mode" defaultValue={s["checkout.mode"]}>
-                <option value="zedy">Zedy (atual)</option>
+              <select key={s["checkout.mode"]} name="checkout.mode" defaultValue={s["checkout.mode"]}>
+                <option value="zedy">Zedy</option>
                 <option value="proprio">Checkout próprio</option>
               </select>
             </label>
@@ -92,7 +93,7 @@ export default async function GatewaysPage() {
           <div className="routing-grid">
             <label className="field">
               <span>Pix</span>
-              <select name="gateway.pix" defaultValue={s["gateway.pix"]}>
+              <select key={s["gateway.pix"]} name="gateway.pix" defaultValue={s["gateway.pix"]}>
                 <option value="ironpay">IronPay</option>
                 <option value="mercadopago">Mercado Pago</option>
                 <option value="fastpay">FastPay</option>
@@ -101,7 +102,7 @@ export default async function GatewaysPage() {
             </label>
             <label className="field">
               <span>Cartão de crédito</span>
-              <select name="gateway.card" defaultValue={s["gateway.card"]}>
+              <select key={s["gateway.card"]} name="gateway.card" defaultValue={s["gateway.card"]}>
                 <option value="desligado">Desligado</option>
                 <option value="ironpay">IronPay</option>
                 <option value="mercadopago">Mercado Pago</option>
@@ -152,7 +153,7 @@ export default async function GatewaysPage() {
             <span className={`gw-dot ${configuredByProvider.ironpay ? "is-on" : ""}`} title={configuredByProvider.ironpay ? "Configurado" : "Faltam credenciais"} />
           </div>
           <p className="small muted">Pix e cartão. Cartão em claro (sem tokenização) — o número nunca é salvo por nós.</p>
-          <ActionForm action={saveIronpaySettings}>
+          <ActionForm key={`${s["gateway.ironpay.offerHashUnit"]}|${s["gateway.ironpay.offerHashKit"]}|${s["gateway.ironpay.productHashUnit"]}|${s["gateway.ironpay.productHashKit"]}`} action={saveIronpaySettings}>
             <label className="field">
               <span>Token da API {ironpayToken.configured ? <span className="secret-hint is-on">{ironpayToken.hint}</span> : null}</span>
               <input name="gateway.ironpay.apiToken" type="password" placeholder={ironpayToken.configured ? "Deixe em branco para manter" : ""} autoComplete="off" />
@@ -177,6 +178,15 @@ export default async function GatewaysPage() {
             </div>
             <button className="btn" type="submit">
               Salvar IronPay
+            </button>
+          </ActionForm>
+          <p className="small muted">
+            A IronPay não mostra o offer hash na tela. Com o token e o product hash da unidade salvos, este botão cria as
+            ofertas que faltam (unidade e kit) direto na IronPay e preenche os campos. O kit sem product hash usa o da unidade.
+          </p>
+          <ActionForm action={createIronpayOffers} inline>
+            <button className="btn btn-outline" type="submit">
+              Criar ofertas na IronPay
             </button>
           </ActionForm>
         </div>

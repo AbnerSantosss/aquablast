@@ -94,6 +94,25 @@ function parsePaidAt(body: Record<string, unknown> | null): Date | null {
   return Number.isNaN(t) ? null : new Date(t);
 }
 
+/**
+ * Cria uma oferta num produto da IronPay (`POST /products/{hash}/offers`, doc pública) e devolve o hash dela.
+ * Existe porque a tela de produtos da IronPay não mostra o hash da oferta (só o link go.ironpayapp.com.br/…),
+ * e o `offer_hash` é obrigatório em toda transação. Usado pelo botão "Criar ofertas na IronPay" do painel.
+ */
+export async function createIronpayOffer(productHash: string, title: string, amountCents: number): Promise<{ ok: true; hash: string } | { ok: false; reason: string }> {
+  const token = await getSetting("gateway.ironpay.apiToken");
+  if (!token) return { ok: false, reason: "Salve o token da API da IronPay antes." };
+  const res = await call(`/products/${encodeURIComponent(productHash)}/offers`, { method: "POST", body: { title, amount: amountCents } }, token);
+  if (res.timedOut) return { ok: false, reason: "A IronPay demorou para responder." };
+  if (res.status === 401) return { ok: false, reason: "A IronPay recusou o token (401)." };
+  if (res.status === 404) return { ok: false, reason: `Produto ${productHash} não encontrado na IronPay (404).` };
+  if (!res.ok || !res.body) return { ok: false, reason: `A IronPay respondeu ${res.status || "erro de rede"}${res.status === 400 || res.status === 422 ? ` (${validationReason(res.body)})` : ""}.` };
+  const data = res.body.data && typeof res.body.data === "object" ? (res.body.data as Record<string, unknown>) : res.body;
+  const hash = typeof data.hash === "string" ? data.hash : null;
+  if (!hash) return { ok: false, reason: "A IronPay respondeu sem o hash da oferta." };
+  return { ok: true, hash };
+}
+
 export const ironpayGateway: Gateway = {
   name: "ironpay",
   label: "IronPay",
