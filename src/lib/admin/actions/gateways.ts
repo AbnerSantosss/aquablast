@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/session";
 import { ensureBootstrap } from "@/lib/bootstrap";
 import { actorOf, audit } from "@/lib/admin/audit";
-import { str } from "@/lib/admin/form";
+import { bool, num, str } from "@/lib/admin/form";
 import { fail, ok, type ActionResult } from "@/lib/admin/types";
 import { getGateway, isGatewayName } from "@/lib/gateways";
 import { getOrderById } from "@/lib/orders/service";
@@ -137,6 +137,23 @@ export async function saveCheckoutModeSettings(_prev: ActionResult, fd: FormData
   revalidatePath("/admin/gateways");
   revalidatePath("/admin/configuracoes");
   return ok(mode === "proprio" ? "Checkout próprio ativado: os links de compra do site vão para /checkout." : "Checkout Zedy ativado: os links de compra voltam para a Zedy.");
+}
+
+/**
+ * Cupom de teste do Pix (`checkout.testCoupon`): com ele ligado, `/checkout?cupom=CODIGO` cobra o valor fixo daqui
+ * no Pix, para o dono testar o gateway com pagamento real mínimo. Só o Pix; cartão ignora o cupom.
+ */
+export async function saveTestCouponSettings(_prev: ActionResult, fd: FormData): Promise<ActionResult> {
+  const { actor } = await begin();
+  const enabled = bool(fd, "enabled");
+  const code = str(fd, "code", 40).toUpperCase();
+  const reais = num(fd, "pixReais");
+  if (enabled && code.length < 4) return fail("Use um código com pelo menos 4 caracteres.");
+  if (reais === null || reais < 0.01 || reais > 1000) return fail("Informe o valor do Pix com cupom em reais (entre 0,01 e 1000).");
+  await setSetting("checkout.testCoupon", { enabled, code, pixCents: Math.round(reais * 100) }, actor);
+  await audit(actor, "settings.update", { type: "settings", id: "checkout.testCoupon" }, { keys: ["checkout.testCoupon"] });
+  revalidatePath("/admin/gateways");
+  return ok(enabled ? "Cupom de teste ligado. Desligue depois do teste." : "Cupom de teste desligado.");
 }
 
 /**

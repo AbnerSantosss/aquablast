@@ -22,6 +22,7 @@ import { pad2, ttlLabel, useClock } from "./useClock";
 export function PixPay({
   cartToken,
   bump,
+  coupon,
   amountCents,
   ttlSeconds,
   testMode,
@@ -30,6 +31,7 @@ export function PixPay({
 }: {
   cartToken: string;
   bump: boolean;
+  coupon: string;
   amountCents: number;
   ttlSeconds: number;
   testMode: boolean;
@@ -73,7 +75,7 @@ export function PixPay({
     setPhase("loading");
     setCopyMsg(null);
     setError("");
-    const result = await postPay({ cartToken, method: "pix", installments: 1, bump });
+    const result = await postPay({ cartToken, method: "pix", installments: 1, bump, ...(coupon ? { coupon } : {}) });
     if (isApiFail(result)) {
       setError(result.message ?? result.error);
       setPhase(pix ? "ready" : "idle");

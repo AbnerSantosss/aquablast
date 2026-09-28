@@ -59,9 +59,12 @@ export function OrderSummary({
   const isKit = selection.pack === "kit";
   const hasBump = !isKit && bump;
   const total = paid ? paid.amountCents : q.amountCents;
+  // Cupom de teste: o total já vem com desconto do servidor; o produto mostra o preço de tabela e o desconto vira linha própria.
+  const couponOff = paid ? 0 : q.couponDiscountCents;
+  const listTotal = q.amountCents + couponOff;
   // Preço da seleção original (sem o bump): kit − delta = unidade.
-  const basePrice = hasBump ? q.amountCents - q.bumpDeltaCents : q.amountCents;
-  const pixSaving = card.amountCents - pix.amountCents;
+  const basePrice = hasBump ? listTotal - q.bumpDeltaCents : listTotal;
+  const pixSaving = card.amountCents - (pix.amountCents + pix.couponDiscountCents);
   const [c1, c2] = selection.colors;
 
   const installments = paid ? paid.installments : card.installments;
@@ -108,7 +111,13 @@ export function OrderSummary({
         {hasBump ? (
           <div>
             <dt>Subtotal</dt>
-            <dd>{money(total)}</dd>
+            <dd>{money(couponOff > 0 ? listTotal : total)}</dd>
+          </div>
+        ) : null}
+        {couponOff > 0 ? (
+          <div>
+            <dt>Cupom de teste</dt>
+            <dd className="green">− {money(couponOff)}</dd>
           </div>
         ) : null}
         <div>

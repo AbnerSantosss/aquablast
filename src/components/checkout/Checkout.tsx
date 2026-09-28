@@ -83,6 +83,7 @@ export function Checkout({
   cardGateway,
   cardPublicConfig,
   quotesInitial,
+  coupon = "",
   support,
   initial,
   paid,
@@ -97,6 +98,8 @@ export function Checkout({
   cardGateway: string | null;
   cardPublicConfig: Record<string, string>;
   quotesInitial: { pix: Quote; card: Quote };
+  /** Cupom de teste da URL (`?cupom=`): vai junto em cada POST; o valor sai sempre do servidor. */
+  coupon?: string;
   support: { href: string; external: boolean };
   initial?: CheckoutInitial;
   paid?: PaidInfo;
@@ -164,6 +167,7 @@ export function Checkout({
       step: targetStep,
       bump: bumpValue,
       tracking: buildTracking(),
+      ...(coupon ? { coupon } : {}),
     };
     if (opts.customer && (data.name || data.email || data.phone || data.cpf)) {
       // Carrinho retomado com CPF vazio: não reenvia o campo — o servidor mantém o CPF cifrado gravado.
@@ -397,6 +401,7 @@ export function Checkout({
         bump={bump}
         onBumpChange={handleBumpChange}
         quotes={quotes}
+        coupon={coupon}
         methods={methods}
         method={method}
         onMethodChange={handleMethodChange}

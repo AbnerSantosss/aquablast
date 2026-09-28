@@ -148,7 +148,7 @@ export async function POST(request: Request): Promise<Response> {
 
   const bump = s["checkout.bumpEnabled"] && input.bump;
   const sel = selectionFromCart(cart);
-  const q = await quote(sel.pack, input.method, bump, input.installments);
+  const q = await quote(sel.pack, input.method, bump, input.installments, input.coupon);
   if (input.method === "card" && input.installments > q.installments) return fail(400, "Número de parcelas indisponível.", { field: "installments" });
 
   const postbackUrl = await postbackUrlFor(gw.name);

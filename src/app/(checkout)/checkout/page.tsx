@@ -19,7 +19,8 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   const params = await searchParams;
   const selection = selectionFromParams(params);
 
-  const { mode, props } = await loadCheckoutProps(selection.pack, false);
+  const cupom = Array.isArray(params.cupom) ? params.cupom[0] : params.cupom;
+  const { mode, props } = await loadCheckoutProps(selection.pack, false, cupom);
   if (mode === "zedy") {
     redirect(zedyUrlFromSelection(selection));
   }

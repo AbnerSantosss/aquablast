@@ -44,6 +44,8 @@ export interface CartPayload {
   customer?: { name: string; email: string; phone: string; cpf?: string };
   address?: { cep: string; street: string; number: string; extra?: string; district: string; city: string; state: string; recipient: string };
   tracking?: CartTrackingInput;
+  /** Cupom de teste (`?cupom=`); só vai quando existe. */
+  coupon?: string;
 }
 
 async function parseJson<T>(res: Response): Promise<T | ApiFail> {
@@ -78,6 +80,7 @@ export interface PayPayload {
   cardPaymentMethodId?: string;
   cardIssuerId?: string;
   cardLast4?: string;
+  coupon?: string;
 }
 
 export async function postPay(payload: PayPayload): Promise<PayResponse | ApiFail> {

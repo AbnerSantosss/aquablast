@@ -28,6 +28,7 @@ export function StepPagamento({
   bump,
   onBumpChange,
   quotes,
+  coupon,
   methods,
   method,
   onMethodChange,
@@ -46,6 +47,7 @@ export function StepPagamento({
   bump: boolean;
   onBumpChange: (value: boolean) => void;
   quotes: { pix: Quote; card: Quote };
+  coupon: string;
   methods: PayMethodUi[];
   method: PayMethodUi;
   onMethodChange: (method: PayMethodUi, byPointer: boolean) => void;
@@ -160,6 +162,7 @@ export function StepPagamento({
                     key={`${hasBump ? "kit" : "un"}-${quotes.pix.amountCents}`}
                     cartToken={cartToken}
                     bump={hasBump}
+                    coupon={coupon}
                     amountCents={quotes.pix.amountCents}
                     ttlSeconds={pixTtlSeconds}
                     testMode={pixGateway === "simulado"}

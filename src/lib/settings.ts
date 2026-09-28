@@ -53,6 +53,11 @@ export interface SettingsMap {
   "checkout.maxInstallments": number;
   "checkout.bumpEnabled": boolean;
   "checkout.pixTtlSeconds": number;
+  /**
+   * Cupom de teste (painel > Gateways): com `enabled` e o código certo, o Pix sai por `pixCents`.
+   * Existe para o dono pagar um Pix real de valor mínimo e provar o gateway ponta a ponta. Desligar depois.
+   */
+  "checkout.testCoupon": { enabled: boolean; code: string; pixCents: number };
   "checkout.theme": Record<string, unknown>;
   "checkout.recovery.enabled": boolean;
   /** Minutos sem atividade para o carrinho virar "abandonado" e receber o 1º e-mail. */
@@ -139,6 +144,7 @@ export const DEFAULTS: SettingsMap = {
   "checkout.maxInstallments": 12,
   "checkout.bumpEnabled": true,
   "checkout.pixTtlSeconds": 600,
+  "checkout.testCoupon": { enabled: false, code: "", pixCents: 500 },
   "checkout.theme": {},
   "checkout.recovery.enabled": true,
   "checkout.recovery.firstAfterMinutes": 30,

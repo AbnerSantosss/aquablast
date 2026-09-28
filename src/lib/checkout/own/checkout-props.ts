@@ -3,7 +3,7 @@ import { getSettings } from "@/lib/settings";
 import { CONTACT_EMAIL } from "@/lib/site/constants";
 import { getSupportWhatsapp } from "@/lib/site/support-contact";
 import type { CheckoutPack } from "./catalog";
-import { quoteBoth, type Quote } from "./pricing";
+import { normalizeCoupon, quoteBoth, type Quote } from "./pricing";
 import { getTheme } from "./theme-server";
 import type { Theme } from "./theme";
 
@@ -24,19 +24,22 @@ export interface CheckoutServerProps {
   cardGateway: string | null;
   cardPublicConfig: Record<string, string>;
   quotesInitial: { pix: Quote; card: Quote };
+  /** Cupom de teste vindo da URL (`?cupom=`), normalizado. Vazio sem cupom; o servidor decide se vale. */
+  coupon: string;
   /** Suporte do rodapé: WhatsApp cadastrado no painel ou, sem ele, o e-mail do site (mesma regra da compra confirmada). */
   support: { href: string; external: boolean };
 }
 
-export async function loadCheckoutProps(pack: CheckoutPack, bump: boolean): Promise<{ mode: "proprio" | "zedy"; props: CheckoutServerProps }> {
+export async function loadCheckoutProps(pack: CheckoutPack, bump: boolean, couponRaw?: string): Promise<{ mode: "proprio" | "zedy"; props: CheckoutServerProps }> {
   const s = await getSettings(["checkout.mode", "checkout.maxInstallments", "checkout.pixTtlSeconds", "checkout.bumpEnabled"] as const);
   const mode = s["checkout.mode"] === "zedy" ? "zedy" : "proprio";
   const maxInstallments = Math.max(1, Math.min(12, Math.trunc(s["checkout.maxInstallments"])));
   const bumpEnabled = s["checkout.bumpEnabled"];
   const pixTtlSeconds = s["checkout.pixTtlSeconds"];
+  const coupon = normalizeCoupon(couponRaw).slice(0, 40);
 
   const [pixGw, cardGw] = await Promise.all([gatewayFor("pix"), gatewayFor("card")]);
-  const [quotesInitial, theme, whatsapp] = await Promise.all([quoteBoth(pack, bumpEnabled && bump, maxInstallments), getTheme(), getSupportWhatsapp()]);
+  const [quotesInitial, theme, whatsapp] = await Promise.all([quoteBoth(pack, bumpEnabled && bump, maxInstallments, coupon), getTheme(), getSupportWhatsapp()]);
   const support = whatsapp ? { href: whatsapp.href, external: true } : { href: `mailto:${CONTACT_EMAIL}`, external: false };
   const cardPublicConfig = cardGw ? await cardGw.publicConfig() : {};
 
@@ -46,6 +49,6 @@ export async function loadCheckoutProps(pack: CheckoutPack, bump: boolean): Prom
 
   return {
     mode,
-    props: { theme, methods, maxInstallments, pixTtlSeconds, bumpEnabled, pixGateway: pixGw?.name ?? null, cardGateway: cardGw?.name ?? null, cardPublicConfig, quotesInitial, support },
+    props: { theme, methods, maxInstallments, pixTtlSeconds, bumpEnabled, pixGateway: pixGw?.name ?? null, cardGateway: cardGw?.name ?? null, cardPublicConfig, quotesInitial, coupon, support },
   };
 }

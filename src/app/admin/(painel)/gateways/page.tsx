@@ -10,6 +10,7 @@ import {
   saveIronpaySettings,
   saveMercadopagoSettings,
   saveRoutingSettings,
+  saveTestCouponSettings,
 } from "@/lib/admin/actions/gateways";
 import { getGateway, GATEWAY_LABELS, type GatewayName } from "@/lib/gateways";
 import { describeSecret, getSettings } from "@/lib/settings";
@@ -35,6 +36,7 @@ export default async function GatewaysPage() {
     "gateway.fastpay.apiKey",
     "gateway.postbackToken",
     "checkout.mode",
+    "checkout.testCoupon",
   ] as const);
 
   const ironpayToken = await describeSecret("gateway.ironpay.apiToken");
@@ -51,6 +53,7 @@ export default async function GatewaysPage() {
 
   const appUrl = env().APP_URL.replace(/\/$/, "");
   const postbackToken = s["gateway.postbackToken"];
+  const coupon = s["checkout.testCoupon"];
   const postbackFor = (provider: GatewayName) => `${appUrl}/api/webhooks/gateway/${provider}/${postbackToken || "<gere-um-token>"}`;
 
   return (
@@ -80,6 +83,35 @@ export default async function GatewaysPage() {
           </div>
           <button className="btn" type="submit">
             Salvar modo
+          </button>
+        </ActionForm>
+      </section>
+
+      <section className="card">
+        <div className="card-head">
+          <h2>Cupom de teste (Pix)</h2>
+        </div>
+        <p className="small muted">
+          Para testar o gateway com um Pix real de valor baixo. Ligado, o link <code>{appUrl}/checkout?pack=unit&amp;cupom=CODIGO</code> cobra
+          o valor abaixo no Pix. Só vale no Pix e só com o código na URL. <strong>Desligue depois do teste.</strong>
+        </p>
+        <ActionForm key={`${coupon.enabled}|${coupon.code}|${coupon.pixCents}`} action={saveTestCouponSettings}>
+          <label className="check">
+            <input type="checkbox" name="enabled" defaultChecked={coupon.enabled} />
+            <span>Cupom ligado</span>
+          </label>
+          <div className="routing-grid">
+            <label className="field">
+              <span>Código</span>
+              <input name="code" defaultValue={coupon.code} maxLength={40} autoComplete="off" />
+            </label>
+            <label className="field">
+              <span>Valor do Pix com cupom (R$)</span>
+              <input name="pixReais" inputMode="decimal" defaultValue={(coupon.pixCents / 100).toFixed(2).replace(".", ",")} />
+            </label>
+          </div>
+          <button className="btn" type="submit">
+            Salvar cupom
           </button>
         </ActionForm>
       </section>

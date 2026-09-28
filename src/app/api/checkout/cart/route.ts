@@ -48,7 +48,7 @@ export async function POST(request: Request): Promise<Response> {
 
   try {
     const { cart, created } = await upsertCart(input, request.headers);
-    const quote = await quoteBoth(input.selection.pack, input.bump, Math.max(1, s["checkout.maxInstallments"]));
+    const quote = await quoteBoth(input.selection.pack, input.bump, Math.max(1, s["checkout.maxInstallments"]), input.coupon);
 
     const reachedPayment = input.step === "pagamento";
     if (created || reachedPayment) {

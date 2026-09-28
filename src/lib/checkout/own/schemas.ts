@@ -58,6 +58,8 @@ export const cartSchema = z.strictObject({
   customer: customerSchema.optional(),
   address: addressSchema.optional(),
   tracking: trackingSchema.optional(),
+  /** Cupom de teste (`?cupom=` da URL). O servidor decide se vale; o navegador nunca manda valor. */
+  coupon: z.string().trim().max(40).optional(),
 });
 
 /** Dados do cartão em claro. Só existem na memória da requisição POST /api/checkout/pay. NUNCA gravar nem logar. */
@@ -84,6 +86,8 @@ export const paySchema = z.strictObject({
   cardIssuerId: z.string().max(40).optional(),
   /** Últimos 4 dígitos quando o número não passa pelo servidor (gateway tokeniza). Só para payment_attempts.cardLast4. */
   cardLast4: z.string().regex(/^\d{4}$/).optional(),
+  /** Mesmo cupom de teste do carrinho; só muda o valor do Pix (quote no servidor). */
+  coupon: z.string().trim().max(40).optional(),
 });
 
 export type CartInput = z.infer<typeof cartSchema>;
