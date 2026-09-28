@@ -86,7 +86,10 @@ function assert(cond, msg) {
       const r = await page.goto(`${BASE}/checkout?pack=unit&cor=azul`, { waitUntil: "load", timeout: 45000 });
       assert(r && r.status() === 200, `status ${r ? r.status() : "sem resposta"} em ${page.url()}`);
       const total = await page.locator(".total").innerText();
-      assert(/12x de R\$\s?14,16/.test(total), `total sem a parcela: ${total}`);
+      // Com o cartao desligado no roteamento (2026-09-28: so Pix pela IronPay) nao ha parcela para mostrar.
+      const cfg = await (await ctx.request.get(`${BASE}/api/checkout/config`)).json();
+      if (cfg.card && cfg.card.available) assert(/12x de R\$\s?14,16/.test(total), `total sem a parcela: ${total}`);
+      else assert(/159,90/.test(total) && /Pix/i.test(total), `total sem o valor do Pix: ${total}`);
       assert((await page.locator(".trust-seals li").count()) >= 3, "selos ausentes");
       assert((await page.locator("footer.ck-footer").count()) === 1, "rodape ausente");
       return total.replace(/\s+/g, " ");
