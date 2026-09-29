@@ -6,9 +6,10 @@ import type { Selection } from "@/lib/checkout/own/catalog";
 import { COLOR_LABELS } from "@/lib/site/constants";
 import type { Color } from "@/lib/site/types";
 import { PixLogo } from "./PixLogo";
+import { CouponField } from "./CouponField";
 import type { PaidInfo, PayMethodUi } from "./types";
 
-/** "preview" = antes de escolher a forma (etapas 1 e 2): parcela em destaque e Pix com desconto logo abaixo. */
+/** Antes da etapa de pagamento, o Pix fica em destaque; depois, respeita a forma escolhida. */
 export type PayView = PayMethodUi | "preview";
 
 /**
@@ -25,9 +26,8 @@ export const thumbOf = (c: Color, size: 110 | 610 = 110) => `/thumbs/produto-${c
 
 /**
  * Resumo do pedido (origem app/checkout.tsx, `aside.order-summary`). Todo valor vem de `quotes` (servidor,
- * `quoteBoth`) ou do pedido pago (`paid.amountCents`); aqui só se formata. Combinado com o dono em 2026-09-27
- * ([[2026-09-27-preco-parcela-destaque]]): a PARCELA do cartão fica em destaque e o Pix à vista aparece logo
- * abaixo como desconto; só quando o cliente escolhe o Pix na etapa 3 o total do Pix passa a ser o destaque.
+ * `quoteBoth`) ou do pedido pago (`paid.amountCents`); aqui só se formata. O Pix fica em destaque na prévia,
+ * com o benefício acima do total e o parcelamento abaixo. Na etapa 3 respeita a forma escolhida.
  * O desconto do Pix é a diferença entre os dois totais do servidor (nenhum número digitado aqui).
  */
 export function OrderSummary({
@@ -38,6 +38,9 @@ export function OrderSummary({
   cardEnabled,
   pixEnabled,
   paid,
+  coupon = "",
+  couponBusy = false,
+  onCouponApply,
 }: {
   selection: Selection;
   bump: boolean;
@@ -48,11 +51,14 @@ export function OrderSummary({
   cardEnabled: boolean;
   pixEnabled: boolean;
   paid?: PaidInfo | null;
+  coupon?: string;
+  couponBusy?: boolean;
+  onCouponApply?: (code: string) => Promise<string | null>;
 }) {
   const noMethod = !cardEnabled && !pixEnabled;
   const showCard = cardEnabled || noMethod;
   const showPix = pixEnabled || noMethod;
-  const view: PayMethodUi = paid ? paid.method : payView === "preview" ? (showCard ? "card" : "pix") : payView;
+  const view: PayMethodUi = paid ? paid.method : payView === "preview" ? (showPix ? "pix" : "card") : payView;
   const q = quotes[view];
   const card = quotes.card;
   const pix = quotes.pix;
@@ -64,7 +70,7 @@ export function OrderSummary({
   const listTotal = q.amountCents + couponOff;
   // Preço da seleção original (sem o bump): kit − delta = unidade.
   const basePrice = hasBump ? listTotal - q.bumpDeltaCents : listTotal;
-  const pixSaving = card.amountCents - (pix.amountCents + pix.couponDiscountCents);
+  const pixSaving = card.amountCents - pix.amountCents;
   const [c1, c2] = selection.colors;
 
   const installments = paid ? paid.installments : card.installments;
@@ -91,7 +97,7 @@ export function OrderSummary({
             {isKit && q.bumpSavingCents > 0 ? (
               <s>
                 <span className="ck-u-sr-only">De </span>
-                {money(q.amountCents + q.bumpSavingCents)}
+                {money(listTotal + q.bumpSavingCents)}
               </s>
             ) : null}
             <b>{productPrice}</b>
@@ -99,6 +105,9 @@ export function OrderSummary({
           {isKit && q.bumpSavingCents > 0 ? <em className="save-tag">ECONOMIZE {money(q.bumpSavingCents)}</em> : null}
         </div>
       </div>
+      {!paid && showPix && onCouponApply ? (
+        <CouponField coupon={coupon} applied={!!coupon && pix.couponDiscountCents > 0} busy={couponBusy} onApply={onCouponApply} />
+      ) : null}
       {hasBump ? (
         <div className="bump-summary">
           <span>
@@ -116,7 +125,7 @@ export function OrderSummary({
         ) : null}
         {couponOff > 0 ? (
           <div>
-            <dt>Cupom de teste</dt>
+            <dt>Desconto do cupom no Pix</dt>
             <dd className="green">− {money(couponOff)}</dd>
           </div>
         ) : null}
@@ -126,7 +135,10 @@ export function OrderSummary({
         </div>
       </dl>
       <div className={`total is-${view}`} aria-live="polite">
-        <span>Valor total</span>
+        <div className="ck-total-heading">
+          <span>{view === "pix" ? <PixLogo size={20} /> : <CreditCard size={20} aria-hidden="true" />}{view === "pix" ? "À vista no Pix" : "Total no cartão"}</span>
+          {!paid && view === "pix" && showCard && pixSaving > 0 ? <em>Economize {money(pixSaving)}</em> : null}
+        </div>
         {view === "card" ? (
           <strong>
             <b>
@@ -139,7 +151,7 @@ export function OrderSummary({
         ) : (
           <strong>
             <b>{money(total)}</b>
-            <small>à vista no Pix</small>
+            <small>{paid ? "Valor pago" : "Valor total · frete grátis"}</small>
           </strong>
         )}
       </div>
@@ -152,11 +164,12 @@ export function OrderSummary({
           {pixSaving > 0 ? <em>{money(pixSaving)} de desconto</em> : null}
         </p>
       ) : null}
-      {!paid && view === "pix" && showCard && card.installments > 1 ? (
+      {!paid && view === "pix" && showCard ? (
         <p className="total-alt">
           <CreditCard size={17} aria-hidden="true" />
           <span>
-            ou <b>{card.installments}x de {money(card.installmentCents)}</b> sem juros no cartão
+            {card.installments > 1 ? <>ou <b>{card.installments}x de {money(card.installmentCents)}</b> sem juros no cartão</> : <>ou <b>{money(card.amountCents)}</b> à vista no cartão</>}
+            <small>Total no cartão: {money(card.amountCents)}</small>
           </span>
         </p>
       ) : null}

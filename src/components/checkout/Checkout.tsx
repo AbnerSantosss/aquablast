@@ -27,7 +27,6 @@ import type { CepState, CheckoutInitial, FieldKey, FormData, PaidInfo, PayMethod
 
 const TOKEN_KEY = "ck-cart-token";
 const STEP_NAMES = ["Seus dados", "Entrega", "Pagamento"] as const;
-const STEP_BADGES = ["OFERTA EXCLUSIVA", "FRETE GRÁTIS!", ""];
 const STEP_OF: Record<StepName, number> = { dados: 1, entrega: 2, pagamento: 3 };
 const EMPTY: FormData = { name: "", email: "", phone: "", cpf: "", cep: "", street: "", number: "", extra: "", district: "", city: "", state: "", recipient: "" };
 const ADDRESS_KEYS: FieldKey[] = ["cep", "street", "number", "extra", "district", "city", "state", "recipient"];
@@ -84,7 +83,7 @@ export function Checkout({
   cardPublicConfig,
   cardPending = false,
   quotesInitial,
-  coupon = "",
+  coupon: initialCoupon = "",
   support,
   initial,
   paid,
@@ -112,10 +111,13 @@ export function Checkout({
   const [step, setStep] = useState(initial ? STEP_OF[initial.step] : 1);
   const [data, setData] = useState<FormData>(initial ? { ...initial.customer, ...initial.address } : EMPTY);
   const [bump, setBump] = useState(initial?.bump ?? false);
-  // Cartão abre primeiro quando está ligado: a parcela é o preço em destaque (combinado com o dono em 2026-09-27).
-  // Cartão aguardando gateway: o resumo continua mostrando a parcela até a etapa 3, que abre no Pix (única forma que cobra).
+  // Mantém a seleção inicial da etapa de pagamento; nas etapas anteriores, o resumo destaca o Pix.
+  // Cartão aguardando gateway: a etapa 3 abre no Pix (única forma que cobra).
   const [method, setMethod] = useState<PayMethodUi>(methods.includes("card") && !cardPending ? "card" : methods.includes("pix") ? "pix" : (methods[0] ?? "pix"));
   const [quotes, setQuotes] = useState(quotesInitial);
+  const [coupon, setCoupon] = useState(initialCoupon);
+  const [couponBusy, setCouponBusy] = useState(false);
+  const quoteVersion = useRef(0);
   const [consent, setConsent] = useState<boolean | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -165,6 +167,7 @@ export function Checkout({
   }, [consent]);
 
   async function saveCart(targetStep: CartStep, bumpValue: boolean, opts: { customer?: boolean; address?: boolean } = {}) {
+    const version = ++quoteVersion.current;
     const payload: CartPayload = {
       token: cartToken ?? readTokenFromStorage(),
       selection: { pack: selection.pack, colors: selection.colors },
@@ -194,8 +197,30 @@ export function Checkout({
     if (isApiFail(result)) return result;
     setCartToken(result.token);
     writeTokenToStorage(result.token);
-    setQuotes(result.quotes);
+    if (version === quoteVersion.current) setQuotes(result.quotes);
     return result;
+  }
+
+  async function applyCoupon(code: string): Promise<string | null> {
+    const version = ++quoteVersion.current;
+    setCouponBusy(true);
+    try {
+      const response = await fetch("/api/checkout/quote", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ pack: selection.pack, bump: hasBump, coupon: code }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.ok) return result.error || "Não foi possível aplicar o cupom.";
+      if (version !== quoteVersion.current) return "Seu pedido mudou. Aplique o cupom novamente.";
+      setCoupon(code);
+      setQuotes(result.quotes);
+      return null;
+    } catch {
+      return "Não foi possível validar o cupom. Tente novamente.";
+    } finally {
+      setCouponBusy(false);
+    }
   }
 
   async function lookupCep(cep: string) {
@@ -261,7 +286,7 @@ export function Checkout({
 
   async function next(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (busy) return;
+    if (busy || couponBusy) return;
     if (step === 1) {
       if (!fullName(data.name)) return fail("Informe seu nome completo.", "[name=name]");
       if (!validCPF(data.cpf) && !(cpfMasked && data.cpf === "")) return fail("Confira o CPF informado.", "[name=cpf]");
@@ -305,7 +330,7 @@ export function Checkout({
   }
 
   function handleEmailBlur() {
-    if (consent === null) return; // salvamento parcial (plano 8.7) só depois de o consentimento ser respondido.
+    if (consent === null || couponBusy) return; // salvamento parcial só depois de responder ao consentimento.
     void saveCart("dados", bump, { customer: true });
   }
 
@@ -428,7 +453,7 @@ export function Checkout({
       <ShipBar theme={theme} />
       <TopBar theme={theme} />
       <main className="container ck-main">
-        <Campaign theme={theme} />
+        <Campaign theme={theme} selection={selection} bump={paid ? bump : hasBump} />
         {notice ? (
           <div className="notice" role="alert">
             {notice}{" "}
@@ -465,7 +490,6 @@ export function Checkout({
                         {name}
                         {state === "done" ? <span className="ck-u-sr-only"> (concluída)</span> : null}
                       </h3>
-                      {state === "current" && STEP_BADGES[i] ? <em className="ck-badge">{STEP_BADGES[i]}</em> : null}
                     </div>
                     {state === "done" ? (
                       <div className="ck-done">
@@ -479,7 +503,7 @@ export function Checkout({
                     ) : null}
                     {state === "current" ? (
                       <div className="ck-step-body" ref={panel}>
-                        {body(n)}
+                        <fieldset className="ck-step-fields" disabled={couponBusy}>{body(n)}</fieldset>
                       </div>
                     ) : null}
                   </li>
@@ -495,6 +519,9 @@ export function Checkout({
             cardEnabled={methods.includes("card")}
             pixEnabled={methods.includes("pix")}
             paid={paid ?? null}
+            coupon={coupon}
+            couponBusy={couponBusy || busy}
+            onCouponApply={applyCoupon}
           />
           <TrustSeals methods={methods} maxInstallments={maxInstallments} />
         </div>

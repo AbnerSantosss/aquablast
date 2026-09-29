@@ -24,8 +24,8 @@ async function withPage(fn, query = "pack=unit&cor=azul") {
       withPage(async (page, query) => {
         await L.setSetting("checkout.cardComingSoon", true);
         await L.goCheckout(page, query);
-        await L.waitText(page.locator(".order-summary .total"), /12x de R\$ 14,16/);
-        assert.equal(await page.locator(".trust-seals li", { hasText: "Cartão de crédito" }).count(), 1, "selo do cartao");
+        await L.waitText(page.locator(".order-summary .total-alt"), /12x de R\$ 14,16/);
+        assert.equal(await page.locator(".trust-seals .ck-trust-payments span", { hasText: "Cartão em até 12x" }).count(), 1, "selo do cartao");
         await L.waitText(page.locator("footer.ck-footer .pay-methods"), /Cartão em até 12x/);
         await L.fillDados(page);
         await L.submitDados(page);
@@ -51,7 +51,7 @@ async function withPage(fn, query = "pack=unit&cor=azul") {
         await L.toPayment(page, query);
         await page.locator('.pay-item.is-open input[value="pix"]').waitFor({ timeout: 10000 });
         assert.equal(await page.locator('.pay-item input[value="card"]').count(), 0, "cartao nao pode aparecer");
-        assert.equal(await page.locator(".trust-seals li", { hasText: "Cartão de crédito" }).count(), 0, "selo do cartao");
+        assert.equal(await page.locator(".trust-seals .ck-trust-payments span", { hasText: "Cartão" }).count(), 0, "selo do cartao");
       }),
     );
 

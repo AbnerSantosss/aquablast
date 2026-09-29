@@ -29,10 +29,10 @@ async function withPage(fn, query) {
       withPage(async (page) => {
         // Cartao ignora o cupom.
         await L.waitText(page.locator(".order-summary .total"), /total R\$ 169,90/);
-        assert.equal(await priceDetails(page).getByText("Cupom de teste").count(), 0, "cartao nao pode mostrar cupom");
+        assert.equal(await priceDetails(page).getByText("Desconto do cupom no Pix").count(), 0, "cartao nao pode mostrar cupom");
         await L.choosePix(page);
         await L.waitText(page.locator(".order-summary .total b"), "R$ 5,00");
-        await L.waitText(priceDetails(page), /Cupom de teste\s*− R\$ 154,90/);
+        await L.waitText(priceDetails(page), /Desconto do cupom no Pix\s*− R\$ 154,90/);
         await L.waitText(page.locator(".selected-product"), /R\$ 159,90/);
         await L.shot(page, "c16-cupom-pix");
         await L.btn(page, "FINALIZAR COMPRA").click();
@@ -60,7 +60,7 @@ async function withPage(fn, query) {
         await L.waitText(page.locator(".bump-choice"), "ADICIONADO AO PEDIDO");
         await L.waitText(page.locator(".order-summary .total b"), "R$ 5,00");
         await L.waitText(priceDetails(page), /Subtotal\s*R\$ 249,90/);
-        await L.waitText(priceDetails(page), /Cupom de teste\s*− R\$ 244,90/);
+        await L.waitText(priceDetails(page), /Desconto do cupom no Pix\s*− R\$ 244,90/);
         await L.shot(page, "c16-cupom-bump");
       }, `pack=unit&cor=azul&cupom=${CODE}`),
     );
@@ -69,8 +69,27 @@ async function withPage(fn, query) {
       withPage(async (page) => {
         await L.choosePix(page);
         await L.waitText(page.locator(".order-summary .total b"), "R$ 159,90");
-        assert.equal(await priceDetails(page).getByText("Cupom de teste").count(), 0);
+        assert.equal(await priceDetails(page).getByText("Desconto do cupom no Pix").count(), 0);
       }, "pack=unit&cor=azul&cupom=ERRADO123"),
+    );
+
+    await L.scenario("16e", "Campo de cupom na tela (2026-09-29): codigo errado avisa, certo aplica, remover volta ao preco cheio", () =>
+      withPage(async (page) => {
+        await L.choosePix(page);
+        await page.locator(".ck-coupon-trigger").click();
+        await page.locator("#checkout-coupon").fill("ERRADO123");
+        await page.locator(".ck-coupon-modal button[type=submit]").click();
+        await L.waitText(page.locator("#coupon-feedback"), "Este cupom não está disponível para esta compra.");
+        await page.locator("#checkout-coupon").fill(CODE.toLowerCase());
+        await page.locator(".ck-coupon-modal button[type=submit]").click();
+        await L.waitText(page.locator(".order-summary .total b"), "R$ 5,00");
+        await L.waitText(priceDetails(page), /Desconto do cupom no Pix\s*− R\$ 154,90/);
+        await L.shot(page, "c16-cupom-campo");
+        await page.locator(".ck-coupon-applied button").click();
+        await L.waitText(page.locator(".order-summary .total b"), "R$ 159,90");
+        assert.equal(await priceDetails(page).getByText("Desconto do cupom no Pix").count(), 0);
+        return "errado avisa; certo 5,00; remover 159,90";
+      }, "pack=unit&cor=azul"),
     );
 
     await L.scenario("16d", "Cupom desligado no painel: codigo certo nao da desconto", async () => {
@@ -78,7 +97,7 @@ async function withPage(fn, query) {
       await withPage(async (page) => {
         await L.choosePix(page);
         await L.waitText(page.locator(".order-summary .total b"), "R$ 159,90");
-        assert.equal(await priceDetails(page).getByText("Cupom de teste").count(), 0);
+        assert.equal(await priceDetails(page).getByText("Desconto do cupom no Pix").count(), 0);
       }, `pack=unit&cor=azul&cupom=${CODE}`);
     });
   } finally {

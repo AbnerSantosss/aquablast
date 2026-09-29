@@ -1,0 +1,21 @@
+{
+  "generator": "Built-in image_gen",
+  "date": "2026-09-28",
+  "reference": "public/produto-azul.webp",
+  "outputs": [
+    "public/checkout/campaign-child-azul.webp",
+    "public/checkout/campaign-child-vermelho.webp",
+    "public/checkout/campaign-child-preto.webp"
+  ],
+  "prompt": "Create a premium photorealistic lifestyle advertising background for the AquaBlast toy checkout. Reference image is the EXACT product shape to preserve: a blue plastic electric WATER TOY with black grip, black top scope, round transparent water reservoir under the grip, short chunky body and barrel. Depict one joyful child about 8–10 years old, wearing a teal T-shirt, laughing and playing outside in a sunlit garden with this same blue water toy held naturally, shooting a thin clear water stream toward open lawn. It is a water toy; replace the reference's fantasy fire effect with real water droplets, NO flames. Landscape 1536x1024 composition. Child face, hands and complete recognizable toy are grouped in the RIGHT HALF of the composition, centered around 72% width and 48% height, with generous space around the face and toy for responsive cropping. Left 42% is softly blurred garden, subtle cool dark teal shade suitable for white HTML title overlay. Right side warmly sunlit face, blue/teal highlights, sparkling natural droplets, authentic candid joy, real skin and fabric texture, clean commercial photography. No text, no graphics, no logos added, no watermarks, no second loose product, no gift boxes. Child playing on lawn, not swimming. Keep the exact toy's blue/black parts and round transparent reservoir.",
+  "variants": [
+    {
+      "color": "red",
+      "prompt": "Edit only the color of the WATER TOY in this image to red. Preserve the exact child identity, face, pose, hands, water stream, garden, teal shirt, lighting, camera crop and image dimensions. Change only the blue plastic body panels and blue barrel rim and blue accent trims on the toy to rich red plastic. Keep the black scope and black grip unchanged and preserve the round transparent water reservoir exactly. No other changes, no text, no extra objects. This is a variant of the same AquaBlast children's water toy photo for a checkout."
+    },
+    {
+      "color": "black",
+      "prompt": "Edit only the color of the WATER TOY in this image to black. Preserve the exact child identity, face, pose, hands, water stream, garden, teal shirt, lighting, camera crop and image dimensions. Change only the blue plastic body panels and blue barrel rim and blue accent trims on the toy to matte black plastic with subtle red small accent markings. Keep the black scope and black grip unchanged and preserve the round transparent water reservoir exactly. No other changes, no text, no extra objects. This is a variant of the same AquaBlast children's water toy photo for a checkout."
+    }
+  ]
+}

@@ -51,12 +51,18 @@ export function Footer({
           </div>
         ) : null}
         <nav className="ck-footer-nav" aria-label="Ajuda">
-          <h2>Ajuda</h2>
+          <h2>Atendimento</h2>
           <Link href="/rastrear">Rastrear pedido</Link>
-          <Link href={RETURNS_PATH}>Trocas e devoluções</Link>
+          <Link href="/#duvidas" target="_blank" rel="noopener noreferrer">Perguntas frequentes</Link>
           <a href={support.href} {...(support.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
             Fale com a gente
           </a>
+        </nav>
+        <nav className="ck-footer-nav" aria-label="Políticas da loja">
+          <h2>Políticas da loja</h2>
+          <Link href={RETURNS_PATH} target="_blank" rel="noopener noreferrer">Trocas e devoluções</Link>
+          <Link href="/politica-de-privacidade" target="_blank" rel="noopener noreferrer">Política de privacidade</Link>
+          <Link href="/condicoes-de-compra" target="_blank" rel="noopener noreferrer">Condições de compra</Link>
         </nav>
       </div>
       <div className="ck-footer-bottom">

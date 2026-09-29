@@ -32,6 +32,7 @@ export function StepDados({
   error: ReactNode;
 }) {
   const keepCpf = !!cpfMasked && data.cpf === "";
+  const ready = fullName(data.name) && validEmail(data.email) && validMobile(data.phone) && (validCPF(data.cpf) || keepCpf) && !busy;
   return (
     <form onSubmit={onSubmit}>
       <div className="form-fields">
@@ -68,7 +69,7 @@ export function StepDados({
       </div>
       {error}
       <div className="ck-actions">
-        <button className="primary-button" type="submit" disabled={busy}>
+        <button className={`primary-button${ready ? " is-ready" : ""}`} type="submit" disabled={busy}>
           {buttonLabel}
         </button>
       </div>

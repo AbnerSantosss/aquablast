@@ -1,5 +1,8 @@
 import Image from "next/image";
 import type { Theme } from "@/lib/checkout/own/theme";
+import type { Selection } from "@/lib/checkout/own/catalog";
+import { Gift } from "lucide-react";
+import { colorName, effectiveSelectionClient, thumbOf } from "./OrderSummary";
 
 /**
  * Título com as duas últimas palavras em `<em>` (origem: `O presente para <em>brincar junto.</em>`). O título
@@ -21,19 +24,22 @@ function titleCase(text: string): string {
 }
 
 /**
- * Banner da campanha (origem app/checkout.tsx, `.campaign`). Textos e imagem vêm do tema (painel
- * /admin/checkout); `bannerImage` já passou por `safeImageUrl` no servidor (theme.ts), então é seguro
- * usar em `next/image`. `fill` porque `.campaign-photo` já é um contêiner de tamanho definido em CSS.
+ * A campanha padrão usa o cenário aquático com os produtos da seleção, incluindo a segunda unidade.
+ * Textos e fundos personalizados continuam vindo do tema; as imagens do produto acompanham as cores.
  */
-export function Campaign({ theme }: { theme: Theme }) {
+export function Campaign({ theme, selection, bump = false }: { theme: Theme; selection: Selection; bump?: boolean }) {
   if (!theme.bannerEnabled) return null;
+  const selected = effectiveSelectionClient(selection, bump);
+  const isKit = selected.pack === "kit";
+  const lifestyle = theme.bannerImage === "/checkout/banner-immersive.webp";
+  const background = lifestyle ? `/checkout/campaign-child-${selected.colors[0]}-v2.webp` : theme.bannerImage;
   const [head, tail] = splitTitle(theme.bannerTitle);
   return (
-    <section className="campaign" aria-label={theme.bannerEyebrow ? `Campanha ${titleCase(theme.bannerEyebrow)}` : "Campanha"}>
+    <section className={`campaign campaign-selected ${isKit ? "campaign-kit" : "campaign-unit"}${lifestyle ? " campaign-lifestyle" : ""}`} aria-label={theme.bannerEyebrow ? `Campanha ${titleCase(theme.bannerEyebrow)}` : "Campanha"}>
       <div className="campaign-photo">
         <Image
-          src={theme.bannerImage}
-          alt="AquaBlast azul e preta em um cenário de água azul que preenche todo o banner"
+          src={background}
+          alt={lifestyle ? `Cena ilustrativa de uma criança se divertindo no jardim com o AquaBlast ${colorName(selected.colors[0])}` : ""}
           fill
           sizes="(max-width: 760px) 100vw, 1180px"
           priority
@@ -46,6 +52,11 @@ export function Campaign({ theme }: { theme: Theme }) {
           <em>{tail}</em>
         </h1>
         {theme.bannerSubtitle ? <p>{theme.bannerSubtitle}</p> : null}
+        <div className="campaign-gift"><Gift size={16} aria-hidden="true" />{isKit ? "Diversão para compartilhar" : "Um presente, muitas aventuras"}</div>
+      </div>
+      <div className="campaign-products">
+        {selected.colors.map((color, index) => <Image key={`${index}-${color}`} src={thumbOf(color, 610)} width={280} height={280} alt={`AquaBlast ${colorName(color)}`} priority sizes="(max-width: 600px) 44vw, 280px" />)}
+        <span className="campaign-selection">{isKit ? "Kit com 2" : "1 AquaBlast"} · {selected.colors.map(colorName).join(" + ")}</span>
       </div>
     </section>
   );

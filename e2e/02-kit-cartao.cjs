@@ -19,9 +19,9 @@ async function run(variant) {
     await L.waitText(page.locator(".selected-product"), "Kit com 2 AquaBlast");
     await L.waitText(page.locator(".selected-product .offer s"), /^De R\$ [\d.,]+$/);
     await L.waitText(page.locator(".save-tag"), /^ECONOMIZE R\$ [\d.,]+$/);
-    // Antes de escolher a forma (2026-09-28): parcela do kit no cartao em destaque, Pix com desconto abaixo.
-    await L.waitText(page.locator(".order-summary .total"), /12x de R\$ 21,66 ?sem juros no cartão · total R\$ 259,90/);
-    await L.waitText(page.locator(".order-summary .total-alt.is-pix"), /ou R\$ 249,90 à vista no Pix ?R\$ 10,00 de desconto/);
+    // Antes de escolher a forma (2026-09-29): Pix do kit em destaque, parcela do cartao abaixo.
+    await L.waitText(page.locator(".order-summary .total"), /À vista no Pix\s*Economize R\$ 10,00\s*R\$ 249,90/);
+    await L.waitText(page.locator(".order-summary .total-alt"), /ou 12x de R\$ 21,66 sem juros no cartão\s*Total no cartão: R\$ 259,90/);
     await L.fillDados(page);
     await L.submitDados(page);
     await L.fillEntrega(page);

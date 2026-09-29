@@ -82,14 +82,17 @@ function assert(cond, msg) {
   });
 
   if (MODE === "proprio") {
-    await check("checkout proprio abre com parcela em destaque, selos e rodape", async () => {
+    await check("checkout proprio abre com Pix em destaque, parcela, selos e rodape", async () => {
       const r = await page.goto(`${BASE}/checkout?pack=unit&cor=azul`, { waitUntil: "load", timeout: 45000 });
       assert(r && r.status() === 200, `status ${r ? r.status() : "sem resposta"} em ${page.url()}`);
       const total = await page.locator(".total").innerText();
-      // Cartao ligado ou "aguardando gateway" (checkout.cardComingSoon, 2026-09-28) mostra a parcela; so Pix mostra o valor do Pix.
+      // Desde 2026-09-29 o Pix e o destaque antes da etapa 3; com cartao ligado ou "aguardando gateway" a parcela vem logo abaixo.
+      assert(/159,90/.test(total) && /Pix/i.test(total), `total sem o valor do Pix: ${total}`);
       const cfg = await (await ctx.request.get(`${BASE}/api/checkout/config`)).json();
-      if (cfg.card && (cfg.card.available || cfg.card.comingSoon)) assert(/12x de R\$\s?14,16/.test(total), `total sem a parcela: ${total}`);
-      else assert(/159,90/.test(total) && /Pix/i.test(total), `total sem o valor do Pix: ${total}`);
+      if (cfg.card && (cfg.card.available || cfg.card.comingSoon)) {
+        const alt = await page.locator(".total-alt").innerText();
+        assert(/12x de R\$\s?14,16/.test(alt), `resumo sem a parcela: ${alt}`);
+      }
       assert((await page.locator(".trust-seals li").count()) >= 3, "selos ausentes");
       assert((await page.locator("footer.ck-footer").count()) === 1, "rodape ausente");
       return total.replace(/\s+/g, " ");

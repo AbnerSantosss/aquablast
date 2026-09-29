@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Figtree } from "next/font/google";
 import type { ReactNode } from "react";
 import "@/styles/checkout/checkout.css";
+import "@/styles/checkout/refinements.css";
 
 /**
  * Layout do grupo de rotas (checkout) — fase 8.4 do plano. Vale para /checkout, /checkout/pedido/[token]

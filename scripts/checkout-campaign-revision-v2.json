@@ -1,0 +1,16 @@
+{
+  "date": "2026-09-28",
+  "generator": "Built-in image_gen",
+  "inputs": [
+    "public/checkout/campaign-child-azul.webp",
+    "public/checkout/campaign-child-vermelho.webp",
+    "public/checkout/campaign-child-preto.webp"
+  ],
+  "outputs": [
+    "public/checkout/campaign-child-azul-v2.webp",
+    "public/checkout/campaign-child-vermelho-v2.webp",
+    "public/checkout/campaign-child-preto-v2.webp"
+  ],
+  "prompt": "Use case: precise-object-edit. Edit target: attached existing AquaBlast lifestyle banner. Change ONLY these two details: (1) the toy's muzzle must have a clearly visible bright warm YELLOW LED light glowing inside the tip with a small golden luminous halo, a toy lighting effect, not fire. (2) REMOVE the entire continuous water stream. Replace it with a sequence of 4 short separate transparent water squirts traveling left from the muzzle, with large clearly visible empty air gaps between every squirt. Each water packet is a small irregular elongated blob with a few tiny trailing droplets. Visually unmistakable pulsed sequential bursts, not a connected stream, beam or continuous jet. Keep the child, facial expression, fingers, pose, all toy geometry, toy body color, scope, grip, transparent round tank, garden background, sunlight, camera, crop and composition exactly the same. Photorealistic water, no flames, no sparks, no text, no other changes.",
+  "optimization": "WebP, width 1280, quality 84"
+}
