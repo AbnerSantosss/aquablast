@@ -1,0 +1,56 @@
+/* Ajustes de responsividade da LP (pedido 2026-09-29-revisar-painel-e-responsivo-lp).
+   Regra do dono: nenhum texto, imagem ou cor muda aqui; so tamanho de texto, respiro e encaixe por
+   largura de tela. Carregado por ultimo em (site)/layout.tsx para vencer as camadas do port.
+   Medido com e2e/lp-responsivo.cjs em 360, 390, 768, 1024 e 1440px. */
+
+/* Selo "Escolha a cor" do card da unidade: fica meio para fora da borda de cima do bloco de cor.
+   No desktop ja havia respiro (offer-restyle.css); no celular o selo cobria a 2a linha dos
+   beneficios ("recarregavel", "em tambor") logo acima. */
+@media (max-width: 56.25rem) {
+  #ofertas.offers .offer-card-body > .color-choice[data-unit-cue] {
+    margin-top: 0.75rem;
+  }
+}
+
+/* Kit, celular estreito (ate 420px): a coluna do rotulo tinha 72-80px e "Primeiro brinquedo /
+   Escolha a cor" virava 4 linhas espremidas ao lado das cores. Rotulo em cima, cores na largura toda. */
+@media (max-width: 26.25rem) {
+  #ofertas.offers .kit-step-body.kit-color-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.375rem;
+  }
+  #ofertas.offers .kit-step .choice-row-label small {
+    display: inline;
+    margin: 0 0 0 0.375rem;
+  }
+}
+
+/* Kit, desktop: com os cards de 25rem (adendo R3 do dono) as tres cores do kit tinham 62px e
+   "Vermelho" (65px) encostava e passava da borda. Coluna do rotulo um pouco mais estreita e o nome
+   da cor em .8125rem so nas amostras do kit. */
+@media (min-width: 56.3125rem) {
+  #ofertas .kit-step-body.kit-color-row {
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+  }
+  #ofertas.offers .kit-color-row .color-product-choice > span {
+    font-size: 0.8125rem;
+    letter-spacing: -0.01em;
+  }
+}
+
+/* Texto pequeno demais no celular (medido: 8px no subtitulo da marca, 10px nos sobretitulos e no
+   rodape). Piso de ~11px, sem mudar o desenho: o espacamento de letra da marca cai junto para ela
+   manter a mesma largura sob o "AquaBlast". Vale para a home e para /rastrear (tracking-v47.css
+   tem regra propria da marca; o "body" na frente garante a vitoria independente da ordem). */
+@media (max-width: 42.5rem) {
+  body :is(.aquablast-home, .tracking-page) .brand small {
+    font-size: 0.5625rem;
+    letter-spacing: 0.06rem;
+  }
+  body :is(.aquablast-home, .tracking-page) .eyebrow {
+    font-size: 0.6875rem;
+  }
+  .aquablast-home .footer-bottom {
+    font-size: 0.75rem;
+  }
+}

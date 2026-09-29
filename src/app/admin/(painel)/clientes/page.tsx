@@ -47,7 +47,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
 
       <div className="card fill">
         <div className="table-wrap">
-          <table className="table">
+          <table className="table table-cards">
             <thead>
               <tr>
                 <th>Cliente</th>
@@ -66,7 +66,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
               ) : (
                 list.rows.map((c) => (
                   <tr key={c.email}>
-                    <td>
+                    <td className="tc-top">
                       <Link href={`/admin/pedidos?q=${encodeURIComponent(c.email)}`}>
                         <strong>{c.name ?? c.email}</strong>
                       </Link>
@@ -75,9 +75,15 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
                         {c.phone ? ` · ${formatPhone(c.phone)}` : ""}
                       </span>
                     </td>
-                    <td className="nowrap">{formatDate(c.firstActivityAt)}</td>
-                    <td className="num">{c.paidOrders}</td>
-                    <td className="num">{formatBRL(c.totalSpent)}</td>
+                    <td className="nowrap" data-label="Primeira atividade">
+                      {formatDate(c.firstActivityAt)}
+                    </td>
+                    <td className="num" data-label="Pedidos pagos">
+                      {c.paidOrders}
+                    </td>
+                    <td className="num tc-top tc-end">
+                      <strong>{formatBRL(c.totalSpent)}</strong>
+                    </td>
                   </tr>
                 ))
               )}

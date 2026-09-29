@@ -83,13 +83,13 @@ function Columns({ rows }: { rows: Row[] }) {
   const max = Math.max(1, ...rows.map((r) => r.value));
   return (
     <ol className="cols-chart">
-      {rows.map((r, i) => (
+      {rows.map((r) => (
         <li key={r.label}>
           <span className="cols-value">{r.value}</span>
           <span className="cols-track" aria-hidden="true">
             <span
               className="cols-bar"
-              style={{ "--v": `${Math.max(3, (r.value / max) * 100)}%`, background: SERIES[i % SERIES.length] } as CSSProperties}
+              style={{ "--v": `${Math.max(3, (r.value / max) * 100)}%` } as CSSProperties}
             />
           </span>
           <span className="cols-label">{r.label}</span>
@@ -110,7 +110,7 @@ function Rank({ rows, total, unit }: { rows: Row[]; total: number; unit?: string
           <span className="rank-pos">{i + 1}</span>
           <span className="rank-row">
             <span className="rank-fill" style={{ width: `${Math.max(4, (r.value / max) * 100)}%` }} aria-hidden="true" />
-            <span className="rank-label">
+            <span className="rank-label" title={r.sub ? `${r.label} ${r.sub}` : r.label}>
               {r.label}
               {r.sub ? <span className="rank-sub">{r.sub}</span> : null}
             </span>
@@ -284,8 +284,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </section>
 
         <section className="dash-card dash-top">
-          <h2>Top produtos</h2>
-          <Rank total={data.salesTotal.count} unit="vendido(s)" rows={data.topProducts.map((pr) => ({ label: pr.sku, value: pr.count }))} />
+          <h2>Top produtos (unidades vendidas)</h2>
+          <Rank total={data.salesTotal.count} unit="un." rows={data.topProducts.map((pr) => ({ label: pr.sku, value: pr.count }))} />
         </section>
       </div>
     </>

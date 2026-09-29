@@ -8,6 +8,7 @@ import { conversionEvents } from "@/db/schema";
 import { desc } from "drizzle-orm";
 import { AD_EVENT_FUNNEL, AD_EVENT_LABELS } from "@/lib/tracking-ads/types";
 import { PLAIN_INPUT, SECRET_INPUT } from "@/components/admin/input-props";
+import { formatDateTime } from "@/lib/admin/format";
 
 export const metadata = { title: "Pixels | Painel AquaBlast" };
 
@@ -47,11 +48,13 @@ export default async function PixelsPage() {
   return (
     <div className="stack">
       <div className="page-head">
-        <h1>Pixels</h1>
-        <p className="muted">
-          Meta Conversions API e GA4 Measurement Protocol. Os eventos são enviados pelo <strong>servidor</strong>, direto da
-          compra do checkout próprio — não usam o Google Tag Manager do site nem o pixel do navegador.
-        </p>
+        <div>
+          <h1>Pixels</h1>
+          <p className="sub">
+            Meta Conversions API e GA4 Measurement Protocol. Os eventos são enviados pelo <strong>servidor</strong>, direto da
+            compra do checkout próprio — não usam o Google Tag Manager do site nem o pixel do navegador.
+          </p>
+        </div>
       </div>
 
       <div className="cols-2 split">
@@ -86,20 +89,25 @@ export default async function PixelsPage() {
                   <span className="badge tone-red">Atenção</span> Há um código de teste salvo ({s["ads.meta.testEventCode"]}): as compras reais estão indo como teste.
                 </p>
               ) : null}
-              <button className="btn" type="submit">
-                Salvar Meta
-              </button>
+              <div className="actions">
+                <button type="submit" className="btn btn-primary">
+                  Salvar Meta
+                </button>
+              </div>
             </ActionForm>
-            <ActionForm action={sendMetaTest} className="af-inline-group" autoComplete="off">
+            <h3 className="section-title">Testar envio</h3>
+            <ActionForm action={sendMetaTest} autoComplete="off">
               <EventSelect />
               <label className="field">
                 <span>Código de teste (Gerenciador de Eventos → Eventos de teste)</span>
                 <input name="testEventCode" maxLength={60} placeholder={s["ads.meta.testEventCode"] || "TEST12345"} {...PLAIN_INPUT} />
                 <span className="hint">Vale só para este envio. Vazio: usa o código fixo acima, se houver.</span>
               </label>
-              <button className="btn btn-outline" type="submit">
-                Enviar teste para a Meta
-              </button>
+              <div className="actions">
+                <button type="submit" className="btn btn-ghost">
+                  Enviar teste para a Meta
+                </button>
+              </div>
             </ActionForm>
           </section>
 
@@ -120,16 +128,21 @@ export default async function PixelsPage() {
                 <span>Segredo da API {ga4Secret.configured ? <span className="secret-hint is-on">{ga4Secret.hint}</span> : null}</span>
                 <input name="ads.ga4.apiSecret" placeholder={ga4Secret.configured ? "Deixe em branco para manter" : ""} {...SECRET_INPUT} />
               </label>
-              <button className="btn" type="submit">
-                Salvar GA4
-              </button>
+              <div className="actions">
+                <button type="submit" className="btn btn-primary">
+                  Salvar GA4
+                </button>
+              </div>
             </ActionForm>
-            <ActionForm action={sendGa4Test} className="af-inline-group" autoComplete="off">
+            <h3 className="section-title">Testar envio</h3>
+            <ActionForm action={sendGa4Test} autoComplete="off">
               <EventSelect />
               <p className="small muted">Usa o endpoint de validação do GA4: confere o formato e não grava nada nos relatórios.</p>
-              <button className="btn btn-outline" type="submit">
-                Validar no GA4
-              </button>
+              <div className="actions">
+                <button type="submit" className="btn btn-ghost">
+                  Validar no GA4
+                </button>
+              </div>
             </ActionForm>
           </section>
 
@@ -142,9 +155,11 @@ export default async function PixelsPage() {
                 <input type="checkbox" name="ads.consentRequired" defaultChecked={s["ads.consentRequired"]} />
                 <span>Só enviar eventos com consentimento do comprador (recomendado)</span>
               </label>
-              <button className="btn" type="submit">
-                Salvar
-              </button>
+              <div className="actions">
+                <button type="submit" className="btn btn-primary">
+                  Salvar consentimento
+                </button>
+              </div>
             </ActionForm>
           </section>
         </div>
@@ -156,11 +171,9 @@ export default async function PixelsPage() {
           {events.length === 0 ? (
             <p className="muted small">Nenhum evento registrado ainda.</p>
           ) : (
-            <table className="table">
+            <table className="table table-cards">
               <thead>
                 <tr>
-                  <th>Quando</th>
-                  <th>Destino</th>
                   <th>Evento</th>
                   <th>Status</th>
                   <th>Detalhe</th>
@@ -169,15 +182,18 @@ export default async function PixelsPage() {
               <tbody>
                 {events.map((e) => (
                   <tr key={e.id}>
-                    <td>{new Date(e.sentAt).toLocaleString("pt-BR")}</td>
-                    <td>{DEST_LABEL[e.destination] ?? e.destination}</td>
-                    <td>{e.eventName}</td>
-                    <td>
+                    <td className="tc-top">
+                      {e.eventName}
+                      <span className="cell-sub nowrap">
+                        {DEST_LABEL[e.destination] ?? e.destination} · {formatDateTime(e.sentAt)}
+                      </span>
+                    </td>
+                    <td className="tc-top tc-end">
                       <span className={`badge tone-${e.status === "sent" ? "green" : e.status === "error" ? "red" : "muted"}`}>
                         {STATUS_LABEL[e.status] ?? e.status}
                       </span>
                     </td>
-                    <td className="small muted">{e.detail ?? "—"}</td>
+                    <td className={`small muted evt-detail${e.detail ? "" : " tc-empty"}`}>{e.detail ?? "—"}</td>
                   </tr>
                 ))}
               </tbody>

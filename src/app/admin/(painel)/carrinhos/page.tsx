@@ -85,14 +85,13 @@ export default async function CarrinhosPage({ searchParams }: { searchParams: Pr
 
       <div className="card fill">
         <div className="table-wrap">
-          <table className="table">
+          <table className="table table-cards">
             <thead>
               <tr>
                 <th>Criado em</th>
                 <th>Cliente</th>
-                <th>Abandonou na</th>
                 <th className="num">Valor</th>
-                <th>E-mails enviados</th>
+                <th>E-mails</th>
                 <th>Situação</th>
                 <th>Ações</th>
               </tr>
@@ -100,7 +99,7 @@ export default async function CarrinhosPage({ searchParams }: { searchParams: Pr
             <tbody>
               {list.rows.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="empty">
+                  <td colSpan={6} className="empty">
                     Nenhum carrinho encontrado.
                   </td>
                 </tr>
@@ -110,32 +109,36 @@ export default async function CarrinhosPage({ searchParams }: { searchParams: Pr
                   const canRemind = !!c.customerEmail && !c.unsubscribedAt && c.status !== "converted" && c.status !== "recovered" && c.recoveryEmailCount < 3;
                   return (
                     <tr key={c.id}>
-                      <td className="nowrap">{formatDateTime(c.createdAt)}</td>
-                      <td>
+                      <td className="nowrap tc-meta">{formatDateTime(c.createdAt)}</td>
+                      <td className="tc-top">
                         {c.customerName ?? "—"}
                         <span className="cell-sub">{c.customerEmail ?? formatPhone(c.customerPhone)}</span>
                       </td>
-                      <td>{CART_STEP_LABEL[c.step]}</td>
-                      <td className="num">{formatBRL(c.amountCents / 100)}</td>
-                      <td>{c.recoveryEmailCount} / 3</td>
-                      <td>
-                        <Tone tone={STATUS_TONE[c.status] ?? "gray"}>{CART_STATUS_LABEL[c.status]}</Tone>
+                      <td className="num tc-top tc-end">
+                        <strong>{formatBRL(c.amountCents / 100)}</strong>
+                      </td>
+                      <td className="nowrap" data-label="E-mails">
+                        {c.recoveryEmailCount} / 3
                       </td>
                       <td>
+                        <Tone tone={STATUS_TONE[c.status] ?? "gray"}>{CART_STATUS_LABEL[c.status]}</Tone>
+                        <span className="cell-sub">parou em {CART_STEP_LABEL[c.step]}</span>
+                      </td>
+                      <td className="tc-full">
                         <div className="btn-row">
                           {wa ? (
                             <a className="btn btn-sm btn-ghost" href={wa} target="_blank" rel="noopener noreferrer">
                               WhatsApp
                             </a>
                           ) : null}
-                          <a className="btn btn-sm btn-ghost" href={`/checkout/pedido/${c.token}`} target="_blank" rel="noopener noreferrer">
-                            Abrir carrinho
+                          <a className="btn btn-sm btn-ghost" href={`/checkout/pedido/${c.token}`} target="_blank" rel="noopener noreferrer" title="Abrir o carrinho do cliente em outra aba">
+                            Abrir
                           </a>
                           {canRemind ? (
                             <ActionForm action={sendReminderNow} inline confirm={`Enviar lembrete de carrinho agora para ${c.customerEmail}?`}>
                               <input type="hidden" name="cartId" value={c.id} />
                               <button type="submit" className="btn btn-sm btn-blue">
-                                Enviar lembrete agora
+                                Enviar lembrete
                               </button>
                             </ActionForm>
                           ) : null}

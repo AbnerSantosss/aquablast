@@ -72,7 +72,7 @@ export default async function EmailsPage({ searchParams }: { searchParams: Promi
 
       <div className="card fill">
         <div className="table-wrap">
-          <table className="table">
+          <table className="table table-cards">
             <thead>
               <tr>
                 <th>Quando</th>
@@ -93,18 +93,20 @@ export default async function EmailsPage({ searchParams }: { searchParams: Promi
               ) : (
                 list.rows.map((m) => (
                   <tr key={m.id}>
-                    <td className="nowrap">{formatDateTime(m.sentAt)}</td>
-                    <td className="break">{m.to}</td>
-                    <td>
+                    <td className="nowrap tc-meta">{formatDateTime(m.sentAt)}</td>
+                    <td className="addr tc-top">{m.to}</td>
+                    <td className="tc-full">
                       {m.subject}
                       <span className="cell-sub">
                         {m.provider} · {m.triggeredBy}
                       </span>
                       {m.error ? <span className="cell-sub field-error">{m.error}</span> : null}
                     </td>
-                    <td className="mono">{m.templateKey ?? "—"}</td>
-                    <td>{m.orderId && m.orderNumber ? <Link href={`/admin/pedidos/${m.orderId}`}>{m.orderNumber}</Link> : "—"}</td>
-                    <td>
+                    <td className="mono tc-meta">{m.templateKey ?? "—"}</td>
+                    <td className={`nowrap${m.orderId && m.orderNumber ? "" : " tc-empty"}`} data-label="Pedido">
+                      {m.orderId && m.orderNumber ? <Link href={`/admin/pedidos/${m.orderId}`}>{m.orderNumber}</Link> : "—"}
+                    </td>
+                    <td className="tc-top tc-end">
                       <EmailStatusBadge status={m.status} />
                     </td>
                   </tr>

@@ -27,8 +27,10 @@ export default async function PersonalizarCheckoutPage() {
   return (
     <div className="stack">
       <div className="page-head">
-        <h1>Personalizar checkout</h1>
-        <p className="muted">Aparência, textos e recuperação de carrinho abandonado da tela /checkout.</p>
+        <div>
+          <h1>Personalizar checkout</h1>
+          <p className="sub">Aparência, textos e recuperação de carrinho abandonado da tela /checkout.</p>
+        </div>
       </div>
 
       <div className="cols-2 split">
@@ -167,9 +169,11 @@ export default async function PersonalizarCheckoutPage() {
                 </label>
               </div>
 
-              <button className="btn" type="submit" style={{ marginTop: "0.75rem" }}>
-                Salvar aparência
-              </button>
+              <div className="actions">
+                <button type="submit" className="btn btn-primary">
+                  Salvar aparência
+                </button>
+              </div>
             </ActionForm>
           </section>
 
@@ -197,9 +201,11 @@ export default async function PersonalizarCheckoutPage() {
                 </label>
               </div>
               <p className="small muted">Os prazos precisam ser crescentes (1º &lt; 2º &lt; 3º).</p>
-              <button className="btn" type="submit">
-                Salvar recuperação
-              </button>
+              <div className="actions">
+                <button type="submit" className="btn btn-primary">
+                  Salvar recuperação
+                </button>
+              </div>
             </ActionForm>
           </section>
         </div>

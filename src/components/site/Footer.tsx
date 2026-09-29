@@ -30,7 +30,11 @@ export function Footer({ whatsapp = null }: { whatsapp?: SupportWhatsapp | null 
           <a href="#duvidas">Entrega e uso do produto</a>
           <Link href="/rastrear">Rastrear pedido</Link>
           <Link href={RETURNS_PATH}>Trocas e devoluções</Link>
-          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+          {/* <wbr> depois do @: na coluna estreita do celular o endereço quebra ali, não no meio do domínio. */}
+          <a href={`mailto:${CONTACT_EMAIL}`}>
+            {CONTACT_EMAIL.split("@")[0]}@<wbr />
+            {CONTACT_EMAIL.split("@")[1]}
+          </a>
           {whatsapp ? (
             <a href={whatsapp.href} target="_blank" rel="noopener noreferrer">
               WhatsApp: {whatsapp.label}

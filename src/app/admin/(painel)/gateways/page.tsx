@@ -78,9 +78,11 @@ export default async function GatewaysPage() {
             </select>
           </label>
         </div>
-        <button className="btn" type="submit">
-          Salvar modo
-        </button>
+        <div className="actions">
+          <button type="submit" className="btn btn-primary">
+            Salvar modo
+          </button>
+        </div>
       </ActionForm>
     </section>
   );
@@ -109,9 +111,11 @@ export default async function GatewaysPage() {
             <input name="pixReais" inputMode="decimal" defaultValue={(coupon.pixCents / 100).toFixed(2).replace(".", ",")} />
           </label>
         </div>
-        <button className="btn" type="submit">
-          Salvar cupom
-        </button>
+        <div className="actions">
+          <button type="submit" className="btn btn-primary">
+            Salvar cupom
+          </button>
+        </div>
       </ActionForm>
     </section>
   );
@@ -148,9 +152,11 @@ export default async function GatewaysPage() {
           <input type="checkbox" name="checkout.cardComingSoon" defaultChecked={s["checkout.cardComingSoon"]} />
           <span>Com o cartão desligado, mostrar a opção Cartão com as parcelas (ao abrir, avisa que está em ativação e leva ao Pix)</span>
         </label>
-        <button className="btn" type="submit">
-          Salvar roteamento
-        </button>
+        <div className="actions">
+          <button type="submit" className="btn btn-primary">
+            Salvar roteamento
+          </button>
+        </div>
       </ActionForm>
     </section>
   );
@@ -179,9 +185,11 @@ export default async function GatewaysPage() {
         <p className="small muted">{postbackToken ? "••••" + postbackToken.slice(-4) : "Nenhum token gerado ainda."}</p>
       </details>
       <ActionForm action={regeneratePostbackToken} confirm="Gerar um novo token invalida a URL antiga. Você vai precisar atualizar o cadastro no painel de cada gateway. Continuar?">
-        <button className="btn btn-outline" type="submit">
-          Gerar novo token
-        </button>
+        <div className="actions">
+          <button type="submit" className="btn btn-ghost">
+            Gerar novo token
+          </button>
+        </div>
       </ActionForm>
     </section>
   );
@@ -217,18 +225,22 @@ export default async function GatewaysPage() {
               <input name="gateway.ironpay.productHashKit" defaultValue={s["gateway.ironpay.productHashKit"]} {...PLAIN_INPUT} />
             </label>
           </div>
-          <button className="btn" type="submit">
-            Salvar IronPay
-          </button>
+          <div className="actions">
+            <button type="submit" className="btn btn-primary">
+              Salvar IronPay
+            </button>
+          </div>
         </ActionForm>
         <p className="small muted">
           A IronPay não mostra o offer hash na tela. Com o token e o product hash da unidade salvos, este botão cria as
           ofertas que faltam (unidade e kit) direto na IronPay e preenche os campos. O kit sem product hash usa o da unidade.
         </p>
         <ActionForm action={createIronpayOffers} inline>
-          <button className="btn btn-outline" type="submit">
-            Criar ofertas na IronPay
-          </button>
+          <div className="actions">
+            <button type="submit" className="btn btn-ghost">
+              Criar ofertas na IronPay
+            </button>
+          </div>
         </ActionForm>
       </div>
 
@@ -251,9 +263,11 @@ export default async function GatewaysPage() {
             <span>Webhook secret {mpWebhook.configured ? <span className="secret-hint is-on">{mpWebhook.hint}</span> : null}</span>
             <input name="gateway.mercadopago.webhookSecret" placeholder={mpWebhook.configured ? "Deixe em branco para manter" : ""} {...SECRET_INPUT} />
           </label>
-          <button className="btn" type="submit">
-            Salvar Mercado Pago
-          </button>
+          <div className="actions">
+            <button type="submit" className="btn btn-primary">
+              Salvar Mercado Pago
+            </button>
+          </div>
         </ActionForm>
       </div>
 
@@ -268,9 +282,11 @@ export default async function GatewaysPage() {
             <span>Chave de API {fastpayKey.configured ? <span className="secret-hint is-on">{fastpayKey.hint}</span> : null}</span>
             <input name="gateway.fastpay.apiKey" placeholder={fastpayKey.configured ? "Deixe em branco para manter" : ""} {...SECRET_INPUT} />
           </label>
-          <button className="btn" type="submit">
-            Salvar FastPay
-          </button>
+          <div className="actions">
+            <button type="submit" className="btn btn-primary">
+              Salvar FastPay
+            </button>
+          </div>
         </ActionForm>
       </div>
 
@@ -305,8 +321,10 @@ export default async function GatewaysPage() {
   return (
     <div className="stack">
       <div className="page-head">
-        <h1>Gateways</h1>
-        <p className="muted">Credenciais de pagamento do checkout próprio e escolha de qual gateway processa cada método.</p>
+        <div>
+          <h1>Gateways</h1>
+          <p className="sub">Credenciais de pagamento do checkout próprio e escolha de qual gateway processa cada método.</p>
+        </div>
       </div>
 
       <SectionTabs

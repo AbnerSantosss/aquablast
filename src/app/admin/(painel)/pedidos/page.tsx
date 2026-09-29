@@ -69,6 +69,17 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           <p className="sub">Acompanhe pagamentos, envios e entregas.</p>
         </div>
         <div className="actions">
+          <nav className="tabs" aria-label="Período">
+            {PERIODS.map((p) => (
+              <Link
+                key={p.key || "todos"}
+                className={period === p.key ? "is-active" : ""}
+                href={`/admin/pedidos${qs({ ...params, period: p.key || undefined, from: undefined, to: undefined })}`}
+              >
+                {p.label}
+              </Link>
+            ))}
+          </nav>
           <Link className="btn btn-primary" href="/admin/pedidos/novo">
             + Pedido manual
           </Link>
@@ -77,7 +88,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
 
       <Flash ok={firstParam(sp.ok) || undefined} erro={firstParam(sp.erro) || undefined} />
 
-      <div className="kpis">
+      <div className="kpis kpis-compact">
         <Link className="kpi" href="/admin/pedidos">
           <span className="kpi-label">Hoje</span>
           <span className="kpi-value">{kpis.today}</span>
@@ -102,18 +113,6 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           <span className="kpi-label">Pix pendentes &gt; {kpis.pixLateMinutes} min</span>
           <span className="kpi-value">{kpis.pixLate}</span>
         </Link>
-      </div>
-
-      <div className="tabs">
-        {PERIODS.map((p) => (
-          <Link
-            key={p.key || "todos"}
-            className={period === p.key ? "is-active" : ""}
-            href={`/admin/pedidos${qs({ ...params, period: p.key || undefined, from: undefined, to: undefined })}`}
-          >
-            {p.label}
-          </Link>
-        ))}
       </div>
 
       <form method="get" action="/admin/pedidos" className="card filters">
@@ -167,15 +166,13 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
 
       <div className="card fill">
         <div className="table-wrap">
-          <table className="table">
+          <table className="table table-cards">
             <thead>
               <tr>
                 <th>Pedido</th>
                 <th>Cliente</th>
-                <th>Status</th>
-                <th>Pagamento</th>
-                <th>Forma de pagamento</th>
-                <th>Origem</th>
+                <th>Situação</th>
+                <th>Forma / origem</th>
                 <th className="num">Total</th>
                 <th>Rastreio</th>
                 <th>Criado</th>
@@ -184,33 +181,39 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
             <tbody>
               {list.rows.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="empty">
+                  <td colSpan={7} className="empty">
                     Nenhum pedido encontrado.
                   </td>
                 </tr>
               ) : (
                 list.rows.map((o) => (
                   <tr key={o.id}>
-                    <td className="nowrap">
+                    <td className="nowrap tc-top">
                       <Link href={`/admin/pedidos/${o.id}`}>
                         <strong>{o.orderNumber}</strong>
                       </Link>
                     </td>
-                    <td>
+                    <td className="tc-full">
                       {o.customerName ?? "—"}
                       <span className="cell-sub">{o.customerEmail ?? formatPhone(o.customerPhone)}</span>
                     </td>
                     <td>
-                      <StatusBadge status={o.status} />
+                      <span className="badge-stack">
+                        <PaymentBadge status={o.paymentStatus} />
+                        <StatusBadge status={o.status} />
+                      </span>
                     </td>
-                    <td>
-                      <PaymentBadge status={o.paymentStatus} />
+                    <td className="nowrap tc-meta">
+                      {o.paymentMethod === "pix" ? "Pix" : o.paymentMethod === "card" ? `Cartão${o.installments && o.installments > 1 ? ` ${o.installments}x` : ""}` : o.paymentMethod ?? "—"}
+                      <span className="cell-sub">{ORIGIN_LABEL[o.checkoutProvider] ?? o.checkoutProvider}</span>
                     </td>
-                    <td>{o.paymentMethod === "pix" ? "Pix" : o.paymentMethod === "card" ? `Cartão${o.installments && o.installments > 1 ? ` ${o.installments}x` : ""}` : o.paymentMethod ?? "—"}</td>
-                    <td>{ORIGIN_LABEL[o.checkoutProvider] ?? o.checkoutProvider}</td>
-                    <td className="num">{formatBRL(o.amountTotal)}</td>
-                    <td className="mono">{o.trackingCode ?? "—"}</td>
-                    <td className="nowrap">{formatDateTime(o.createdAt)}</td>
+                    <td className="num tc-top tc-end">
+                      <strong>{formatBRL(o.amountTotal)}</strong>
+                    </td>
+                    <td className={`mono${o.trackingCode ? "" : " tc-empty"}`} data-label="Rastreio">
+                      {o.trackingCode ?? "—"}
+                    </td>
+                    <td className="nowrap tc-meta">{formatDateTime(o.createdAt)}</td>
                   </tr>
                 ))
               )}

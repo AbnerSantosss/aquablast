@@ -55,6 +55,17 @@ export async function getHomeSummary(): Promise<HomeSummary> {
   };
 }
 
+/** "O que fazer agora" do Início: pagos que ainda não saíram (aprovado ou em preparação) e os últimos pedidos. */
+export async function getHomeOrders(): Promise<{ toShip: Order[]; toShipCount: number; latest: Order[] }> {
+  const toShipWhere = and(eq(orders.paymentStatus, "paid"), inArray(orders.status, ["approved", "preparing"]))!;
+  const [toShip, [{ value: toShipCount }], latest] = await Promise.all([
+    db.select().from(orders).where(toShipWhere).orderBy(sql`coalesce(${orders.paidAt}, ${orders.createdAt})`).limit(5),
+    db.select({ value: count() }).from(orders).where(toShipWhere),
+    db.select().from(orders).orderBy(desc(orders.createdAt)).limit(5),
+  ]);
+  return { toShip, toShipCount, latest };
+}
+
 export interface PendingSetupItem {
   label: string;
   href: string;

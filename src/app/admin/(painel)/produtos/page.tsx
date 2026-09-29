@@ -18,8 +18,10 @@ export default async function ProdutosPage() {
   return (
     <div className="stack">
       <div className="page-head">
-        <h1>Produtos</h1>
-        <p className="muted">Preços, parcelamento e order bump do checkout próprio. Não afeta o link da Zedy.</p>
+        <div>
+          <h1>Produtos</h1>
+          <p className="sub">Preços, parcelamento e order bump do checkout próprio. Não afeta o link da Zedy.</p>
+        </div>
       </div>
 
       <div className="panel-cols">
@@ -50,9 +52,11 @@ export default async function ProdutosPage() {
                   <input name="kitCard" defaultValue={(prices.kit.card / 100).toFixed(2).replace(".", ",")} required />
                 </label>
               </div>
-              <button className="btn" type="submit">
-                Salvar preços
-              </button>
+              <div className="actions">
+                <button type="submit" className="btn btn-primary">
+                  Salvar preços
+                </button>
+              </div>
             </ActionForm>
           </section>
 
@@ -65,9 +69,11 @@ export default async function ProdutosPage() {
                 <span>Máximo de parcelas no cartão</span>
                 <input name="maxInstallments" type="number" min={1} max={12} defaultValue={s["checkout.maxInstallments"]} required />
               </label>
-              <button className="btn" type="submit">
-                Salvar
-              </button>
+              <div className="actions">
+                <button type="submit" className="btn btn-primary">
+                  Salvar parcelamento
+                </button>
+              </div>
             </ActionForm>
           </section>
 
@@ -80,9 +86,11 @@ export default async function ProdutosPage() {
                 <input type="checkbox" name="bumpEnabled" defaultChecked={s["checkout.bumpEnabled"]} />
                 <span>Mostrar o order bump (oferta do kit) na tela de pagamento</span>
               </label>
-              <button className="btn" type="submit">
-                Salvar
-              </button>
+              <div className="actions">
+                <button type="submit" className="btn btn-primary">
+                  Salvar order bump
+                </button>
+              </div>
             </ActionForm>
           </section>
         </div>

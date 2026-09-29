@@ -134,6 +134,8 @@
   .ck-footer-nav a { min-height: 44px; }
   .ck-footer-bottom .container { font-size: 12px; gap: 8px; }
 }
+/* O <small> do © herdava o "smaller" do navegador (9,6px no celular); fica no tamanho da linha. */
+.ck-footer-bottom small { font-size: inherit; }
 @media (max-width: 520px) {
   .ck .campaign-selected { min-height: 225px; }
   .ck .campaign-selected .campaign-copy { max-width: 54%; padding: 18px 0 18px 16px; }

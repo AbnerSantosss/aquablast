@@ -214,6 +214,11 @@
   max-height: 22rem;
   overflow: auto;
 }
+/* Detalhe do evento (mensagem de erro da Meta/GA4): quebra dentro da coluna em vez de cortar. */
+.evt-detail {
+  min-width: 10rem;
+  overflow-wrap: anywhere;
+}
 
 .pix-mono-box {
   font-family: var(--mono);

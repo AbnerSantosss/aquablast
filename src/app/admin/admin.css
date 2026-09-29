@@ -168,6 +168,12 @@ body:has(.admin) {
 .nowrap {
   white-space: nowrap;
 }
+/* Endereço de e-mail em tabela: cabe inteiro até 13rem e só depois quebra (o .break cortava
+   no meio mesmo com espaço sobrando). */
+.addr {
+  min-width: 15rem;
+  overflow-wrap: anywhere;
+}
 .right {
   text-align: right;
 }
@@ -394,6 +400,11 @@ body:has(.admin) {
 }
 .page-head .actions {
   margin: 0;
+  align-items: center;
+}
+/* Pílulas de período ao lado da ação principal (Pedidos): sem a margem de baixo das abas soltas. */
+.admin .page-head .tabs {
+  margin: 0;
 }
 .crumbs {
   display: flex;
@@ -495,14 +506,6 @@ body:has(.admin) {
   display: block;
   transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
 }
-/* Faixa de cor no topo: separa o KPI do fundo e dá identidade. */
-.kpi::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--blue), var(--cyan));
-}
 /* KPI que é link é um controle: a borda é o limite dele (4.17:1 contra o fundo). */
 .admin a.kpi {
   border-color: var(--line-strong);
@@ -537,12 +540,56 @@ body:has(.admin) {
   font-size: 0.8rem;
   font-weight: 600;
 }
-.kpi.is-alert::before {
-  background: linear-gradient(90deg, var(--red), var(--orange));
+/* Alerta (Pix atrasado): a borda laranja marca o card; sem faixa decorativa no topo. */
+.admin .kpi.is-alert {
+  border-color: var(--orange-edge);
+  background: color-mix(in srgb, var(--orange) 8%, var(--card-raised));
 }
 /* --orange puro dá 2.80:1 no branco; o tom escuro dá 5.84:1. */
 .kpi.is-alert .kpi-value {
   color: var(--orange-ink);
+}
+/* Celular: 2 KPIs por linha em 390px deixam ~150px para "R$ 2.164,00"; o número encolhe e, no
+   limite, quebra em vez de vazar do card. */
+@media (max-width: 640px) {
+  .kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+  .kpi {
+    padding: 0.7rem 0.8rem;
+  }
+  .kpi-value {
+    font-size: clamp(1.15rem, 5.2vw, 1.5rem);
+    overflow-wrap: anywhere;
+  }
+  .kpi-label {
+    font-size: 0.72rem;
+  }
+}
+/* Faixa compacta (Pedidos): rótulo e número na mesma linha, para sobrar altura para a tabela. */
+.kpis-compact {
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.5rem;
+}
+.kpis-compact .kpi {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.8rem;
+}
+.kpis-compact .kpi-label {
+  min-width: 0;
+}
+.kpis-compact .kpi-value {
+  flex: none;
+  margin-top: 0;
+  font-size: 1.2rem;
+  overflow-wrap: normal;
+}
+.kpis-compact .cell-sub {
+  display: none;
 }
 
 /* ---------- Definições (chave/valor) ---------- */
@@ -594,9 +641,20 @@ body:has(.admin) {
   }
 }
 
-/* Lista de pendências ("Falta configurar" no Início). */
+/* Início: "Para enviar" e "Últimos pedidos" lado a lado, "Falta configurar" embaixo. */
+.home-cols {
+  margin-bottom: 1.25rem;
+}
+.home-cols > .card + .card {
+  margin-top: 0;
+}
+.home-more {
+  margin-top: 0.75rem;
+}
+/* Lista de pendências ("Falta configurar" no Início): em colunas, para não empurrar a tela. */
 .checklist {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
   gap: 0.5rem;
   margin: 0;
   padding: 0;
@@ -697,6 +755,98 @@ body:has(.admin) {
   padding: 2rem 1rem;
   text-align: center;
   color: var(--muted);
+}
+/* Situação do pedido: pagamento e status empilhados numa coluna só (Pedidos). */
+.badge-stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+@media (max-width: 640px) {
+  .badge-stack {
+    flex-flow: row wrap;
+  }
+}
+/* Ações dentro de linha de tabela: lado a lado, nunca empilhadas (Carrinhos). */
+.table .btn-row {
+  flex-wrap: nowrap;
+}
+.table .btn-row .af-inline .af-fields {
+  flex-wrap: nowrap;
+}
+
+/* .table-cards: no celular cada linha vira um cartão. O rótulo vem de data-label na célula.
+   .tc-top sobe a célula para a primeira linha do cartão, .tc-end empurra para a direita,
+   .tc-full ocupa a linha inteira, .tc-hide some no cartão (a informação já está em outra célula). */
+@media (max-width: 640px) {
+  .table-wrap:has(.table-cards) {
+    overflow-x: visible;
+  }
+  .table-cards thead {
+    display: none;
+  }
+  .table-cards,
+  .table-cards tbody {
+    display: block;
+  }
+  .table-cards tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.3rem 0.75rem;
+    padding: 0.75rem 0.25rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .table-cards tbody tr:nth-child(even) {
+    background: transparent;
+  }
+  .table-cards td {
+    display: block;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .table-cards td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .table-cards td.tc-top {
+    order: -1;
+  }
+  .table-cards td.tc-end {
+    margin-left: auto;
+    text-align: right;
+  }
+  .table-cards td.tc-full {
+    flex-basis: 100%;
+  }
+  .table-cards td.tc-hide,
+  .table-cards td.tc-empty {
+    display: none;
+  }
+  .table-cards td.num {
+    text-align: left;
+  }
+  .table-cards td.num.tc-end {
+    text-align: right;
+  }
+  .table-cards td.tc-meta {
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .table-cards td.empty {
+    flex-basis: 100%;
+  }
+  .table-cards .btn-row {
+    flex-wrap: wrap;
+  }
 }
 
 /* ---------- Badges ---------- */
@@ -854,6 +1004,18 @@ body:has(.admin) {
 }
 .actions.tight {
   margin-top: 0.5rem;
+}
+/* Campos empilhados dentro de um ActionForm: o fieldset não tem layout próprio e cada campo colava
+   no de cima. O .actions do formulário ganha o mesmo respiro fora e dentro do fieldset. */
+.af-fields > :is(.field, .check, .grid-2, .form-row, p) + :is(.field, .grid-2, .form-row, p) {
+  margin-top: 0.85rem;
+}
+.af-fields > :is(.field, .grid-2, .form-row, p) + .check {
+  margin-top: 0.75rem;
+}
+.af + p,
+p + .af {
+  margin-top: 0.75rem;
 }
 
 /* ---------- Formulários ---------- */
@@ -1663,11 +1825,13 @@ ul.check li + li {
   width: 100%;
   height: 9rem;
 }
+/* Funil: uma cor só. As etapas são a mesma grandeza caindo; cores diferentes sugeriam categorias. */
 .cols-bar {
   display: block;
   width: 100%;
   height: var(--v);
   border-radius: 0.5rem 0.5rem 0.2rem 0.2rem;
+  background: var(--blue);
 }
 .cols-label {
   font-size: 0.8rem;
@@ -1678,8 +1842,10 @@ ul.check li + li {
 }
 
 /* Lista ordenada com barra */
+/* minmax(0, 1fr): sem isto a coluna do grid cresce até o rótulo inteiro (nowrap) e o valor some. */
 .rank {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.6rem;
   margin: 1rem 0 0;
   padding: 0;
@@ -1732,9 +1898,12 @@ ul.check li + li {
   font-weight: 800;
   color: var(--text);
 }
+/* Rótulo numa linha só (SKU em coluna estreita quebrava letra a letra); o nome inteiro fica no title. */
 .rank-label {
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .rank-sub {
   margin-left: 0.5rem;
@@ -2171,12 +2340,7 @@ ul.check li + li {
   }
   .dash-card .rank-row {
     min-height: 2.1rem;
-    flex-wrap: wrap;
-    row-gap: 0;
-  }
-  /* Coluna estreita (Top produtos): o SKU não quebra letra a letra; se não couber com o valor,
-     o valor desce para a linha de baixo. */
-  .dash-card .rank-label {
-    overflow-wrap: break-word;
+    gap: 0.5rem;
+    padding-inline: 0.6rem;
   }
 }
