@@ -6,11 +6,29 @@ import { describeSecret, getSettings } from "@/lib/settings";
 import { db } from "@/db";
 import { conversionEvents } from "@/db/schema";
 import { desc } from "drizzle-orm";
+import { AD_EVENT_FUNNEL, AD_EVENT_LABELS } from "@/lib/tracking-ads/types";
+import { PLAIN_INPUT, SECRET_INPUT } from "@/components/admin/input-props";
 
 export const metadata = { title: "Pixels | Painel AquaBlast" };
 
 const DEST_LABEL: Record<string, string> = { meta: "Meta", ga4: "GA4" };
 const STATUS_LABEL: Record<string, string> = { sent: "Enviado", error: "Erro", skipped: "Ignorado", sending: "Enviando" };
+
+function EventSelect() {
+  return (
+    <label className="field">
+      <span>Evento</span>
+      <select name="event" defaultValue="all" {...PLAIN_INPUT}>
+        <option value="all">Sequência completa ({AD_EVENT_FUNNEL.join(" → ")})</option>
+        {AD_EVENT_FUNNEL.map((e) => (
+          <option key={e} value={e}>
+            {AD_EVENT_LABELS[e]}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
 
 export default async function PixelsPage() {
   await requireAdmin();
@@ -42,34 +60,45 @@ export default async function PixelsPage() {
             <div className="card-head">
               <h2>Meta Conversions API</h2>
             </div>
-            <ActionForm action={saveMetaSettings}>
+            <ActionForm action={saveMetaSettings} autoComplete="off">
               <label className="check">
                 <input type="checkbox" name="ads.meta.enabled" defaultChecked={s["ads.meta.enabled"]} />
                 <span>Enviar eventos para a Meta</span>
               </label>
               <label className="field">
                 <span>ID do Pixel</span>
-                <input name="ads.meta.pixelId" defaultValue={s["ads.meta.pixelId"]} maxLength={40} />
+                <input name="ads.meta.pixelId" defaultValue={s["ads.meta.pixelId"]} maxLength={40} inputMode="numeric" {...PLAIN_INPUT} />
               </label>
               <label className="field">
                 <span>Token de acesso {metaToken.configured ? <span className="secret-hint is-on">{metaToken.hint}</span> : null}</span>
-                <input name="ads.meta.accessToken" type="password" placeholder={metaToken.configured ? "Deixe em branco para manter" : ""} autoComplete="off" />
+                <input name="ads.meta.accessToken" placeholder={metaToken.configured ? "Deixe em branco para manter" : "EAA..."} {...SECRET_INPUT} />
               </label>
               <label className="field">
-                <span>Código de evento de teste (Gerenciador de Eventos → Eventos de teste)</span>
-                <input name="ads.meta.testEventCode" defaultValue={s["ads.meta.testEventCode"]} maxLength={60} />
+                <span>Código de evento de teste fixo (deixe vazio em produção)</span>
+                <input name="ads.meta.testEventCode" defaultValue={s["ads.meta.testEventCode"]} maxLength={60} {...PLAIN_INPUT} />
+                <span className="hint">
+                  Se preenchido, vai junto em <strong>todos os eventos reais</strong> das compras, que passam a aparecer só em &quot;Eventos de
+                  teste&quot; da Meta. Para testar, use o campo do envio de teste abaixo.
+                </span>
               </label>
+              {s["ads.meta.testEventCode"] ? (
+                <p className="small" role="alert">
+                  <span className="badge tone-red">Atenção</span> Há um código de teste salvo ({s["ads.meta.testEventCode"]}): as compras reais estão indo como teste.
+                </p>
+              ) : null}
               <button className="btn" type="submit">
                 Salvar Meta
               </button>
             </ActionForm>
-            <ActionForm action={sendMetaTest} className="af-inline-group">
+            <ActionForm action={sendMetaTest} className="af-inline-group" autoComplete="off">
+              <EventSelect />
               <label className="field">
-                <span>Código de teste (opcional, usa o salvo acima se vazio)</span>
-                <input name="testEventCode" maxLength={60} />
+                <span>Código de teste (Gerenciador de Eventos → Eventos de teste)</span>
+                <input name="testEventCode" maxLength={60} placeholder={s["ads.meta.testEventCode"] || "TEST12345"} {...PLAIN_INPUT} />
+                <span className="hint">Vale só para este envio. Vazio: usa o código fixo acima, se houver.</span>
               </label>
               <button className="btn btn-outline" type="submit">
-                Enviar evento de teste
+                Enviar teste para a Meta
               </button>
             </ActionForm>
           </section>
@@ -78,26 +107,28 @@ export default async function PixelsPage() {
             <div className="card-head">
               <h2>GA4 Measurement Protocol</h2>
             </div>
-            <ActionForm action={saveGa4Settings}>
+            <ActionForm action={saveGa4Settings} autoComplete="off">
               <label className="check">
                 <input type="checkbox" name="ads.ga4.enabled" defaultChecked={s["ads.ga4.enabled"]} />
                 <span>Enviar eventos para o GA4</span>
               </label>
               <label className="field">
                 <span>ID de medição (G-XXXXXXX)</span>
-                <input name="ads.ga4.measurementId" defaultValue={s["ads.ga4.measurementId"]} maxLength={40} />
+                <input name="ads.ga4.measurementId" defaultValue={s["ads.ga4.measurementId"]} maxLength={40} placeholder="G-XXXXXXX" {...PLAIN_INPUT} />
               </label>
               <label className="field">
                 <span>Segredo da API {ga4Secret.configured ? <span className="secret-hint is-on">{ga4Secret.hint}</span> : null}</span>
-                <input name="ads.ga4.apiSecret" type="password" placeholder={ga4Secret.configured ? "Deixe em branco para manter" : ""} autoComplete="off" />
+                <input name="ads.ga4.apiSecret" placeholder={ga4Secret.configured ? "Deixe em branco para manter" : ""} {...SECRET_INPUT} />
               </label>
               <button className="btn" type="submit">
                 Salvar GA4
               </button>
             </ActionForm>
-            <ActionForm action={sendGa4Test}>
+            <ActionForm action={sendGa4Test} className="af-inline-group" autoComplete="off">
+              <EventSelect />
+              <p className="small muted">Usa o endpoint de validação do GA4: confere o formato e não grava nada nos relatórios.</p>
               <button className="btn btn-outline" type="submit">
-                Validar evento de teste (purchase de exemplo)
+                Validar no GA4
               </button>
             </ActionForm>
           </section>

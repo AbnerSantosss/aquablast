@@ -14,10 +14,13 @@ export function ActionForm({
   confirm,
   inline,
   resultAbove,
+  autoComplete,
 }: {
   action: ActionFn;
   children: ReactNode;
   className?: string;
+  /** "off" nas telas de integração (tokens), para o navegador não oferecer o login do painel. */
+  autoComplete?: "on" | "off";
   /** Texto de confirmação (window.confirm) antes de enviar. */
   confirm?: string;
   /** Layout em linha (botão único). */
@@ -37,7 +40,7 @@ export function ActionForm({
     </div>
   ) : null;
   return (
-    <form action={formAction} onSubmit={onSubmit} className={`af ${inline ? "af-inline" : ""} ${className ?? ""}`} data-pending={pending ? "true" : "false"}>
+    <form action={formAction} onSubmit={onSubmit} className={`af ${inline ? "af-inline" : ""} ${className ?? ""}`} autoComplete={autoComplete} data-pending={pending ? "true" : "false"}>
       {resultAbove ? result : null}
       <fieldset disabled={pending} className="af-fields">
         {children}

@@ -21,6 +21,35 @@ export interface AdIds {
 
 export type TrackEventName = "InitiateCheckout" | "AddPaymentInfo" | "Purchase";
 
+/**
+ * Todos os eventos de anúncio que o site gera, na ordem do funil. PageView e ViewContent saem do GTM no navegador
+ * (wiki aquablast-pixel-meta); os outros três saem do servidor (TrackEventName). O painel de Pixels usa esta lista
+ * para o envio de teste (um evento ou a sequência inteira).
+ */
+export type AdEventName = "PageView" | "ViewContent" | TrackEventName;
+
+export const AD_EVENT_FUNNEL: readonly AdEventName[] = ["PageView", "ViewContent", "InitiateCheckout", "AddPaymentInfo", "Purchase"];
+
+export const AD_EVENT_LABELS: Record<AdEventName, string> = {
+  PageView: "PageView: visita a qualquer página",
+  ViewContent: "ViewContent: viu o produto (home)",
+  InitiateCheckout: "InitiateCheckout: abriu o checkout",
+  AddPaymentInfo: "AddPaymentInfo: chegou no pagamento",
+  Purchase: "Purchase: pagamento confirmado",
+};
+
+/** Dados de exemplo do envio de teste do painel (um produto real do catálogo, pedido fictício). */
+export interface AdTestSample {
+  /** Id da rodada: o mesmo em todos os eventos de uma sequência. */
+  runId: string;
+  sku: string;
+  name: string;
+  variant: string;
+  priceCents: number;
+}
+
+export const isAdEventName =(v: unknown): v is AdEventName => typeof v === "string" && (AD_EVENT_FUNNEL as readonly string[]).includes(v);
+
 export type TrackDestination = "meta" | "ga4";
 
 export interface TrackServerEventArgs {

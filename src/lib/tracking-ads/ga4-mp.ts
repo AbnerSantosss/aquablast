@@ -1,6 +1,6 @@
 import { errorMessage } from "@/lib/log";
 import { getSettings } from "@/lib/settings";
-import type { TrackEventName } from "./types";
+import type { AdEventName, AdTestSample } from "./types";
 
 /**
  * GA4 Measurement Protocol (plano 9.5). SÓ SERVIDOR.
@@ -16,14 +16,16 @@ import type { TrackEventName } from "./types";
 
 const TIMEOUT_MS = 10_000;
 
-export const GA4_EVENT_NAMES: Record<TrackEventName, string> = {
+export const GA4_EVENT_NAMES: Record<AdEventName, string> = {
+  PageView: "page_view",
+  ViewContent: "view_item",
   InitiateCheckout: "begin_checkout",
   AddPaymentInfo: "add_payment_info",
   Purchase: "purchase",
 };
 
 export interface Ga4EventInput {
-  eventName: TrackEventName;
+  eventName: AdEventName;
   eventId: string;
   clientId: string;
   sessionId?: string;
@@ -120,27 +122,49 @@ export async function sendGa4Event(input: Ga4EventInput): Promise<{ ok: boolean;
   }
 }
 
+/** client_id fictício: só para o endpoint de validação, que não grava nada. Evento real sem _ga não é enviado. */
+const VALIDATION_CLIENT_ID = "1234567890.1234567890";
+
+/** Os eventos de teste do painel no formato GA4 (mesmo produto e pedido fictício da Meta). */
+export function ga4TestInputs(events: readonly AdEventName[], sample: AdTestSample): Ga4EventInput[] {
+  const item = { itemId: sample.sku, itemName: sample.name, itemVariant: sample.variant, quantity: 1, priceCents: sample.priceCents };
+  return events.map((name) => ({
+    eventName: name,
+    eventId: `test-${sample.runId}-${name}`,
+    clientId: VALIDATION_CLIENT_ID,
+    ...(name === "PageView" ? {} : { valueCents: sample.priceCents, items: [item] }),
+    ...(name === "Purchase" ? { transactionId: `TESTE-${sample.runId}` } : {}),
+  }));
+}
+
 /**
- * Botão "Enviar evento de teste" do painel de Pixels (plano 11.10) e testes da Fase 14:
- * manda o evento para o endpoint de VALIDAÇÃO (debug/mp/collect), que não grava nada no GA4,
- * e devolve as validationMessages. Sem `input`, valida um purchase de exemplo com client_id fictício
- * (permitido só aqui, porque o endpoint de validação não registra dados).
+ * Botão "Validar no GA4" do painel de Pixels (plano 11.10) e testes da Fase 14:
+ * manda os eventos para o endpoint de VALIDAÇÃO (debug/mp/collect), que não grava nada no GA4,
+ * e devolve as validationMessages. Aceita um evento ou vários (vão juntos num corpo, como o GA4 permite).
+ * Sem `input`, valida um purchase de exemplo com client_id fictício.
  */
-export async function validateGa4Event(input?: Ga4EventInput): Promise<{ ok: boolean; detail?: string; messages: Ga4ValidationMessage[] }> {
+export async function validateGa4Event(input?: Ga4EventInput | Ga4EventInput[]): Promise<{ ok: boolean; detail?: string; messages: Ga4ValidationMessage[] }> {
   let cfg: Ga4Config = { measurementId: "", apiSecret: "" };
   try {
     cfg = await ga4Config();
     const problem = configProblem(cfg);
     if (problem) return { ok: false, detail: problem, messages: [] };
-    const sample: Ga4EventInput = input ?? {
-      eventName: "Purchase",
-      eventId: "pur-TESTE",
-      clientId: "1234567890.1234567890",
-      transactionId: "TESTE-PAINEL",
-      valueCents: 100,
-      items: [{ itemId: "AQB-TESTE", itemName: "Evento de teste do painel", quantity: 1, priceCents: 100 }],
-    };
-    const { status, text } = await post(cfg, buildGa4Body(sample), true);
+    const inputs: Ga4EventInput[] = Array.isArray(input)
+      ? input
+      : [
+          input ?? {
+            eventName: "Purchase",
+            eventId: "pur-TESTE",
+            clientId: VALIDATION_CLIENT_ID,
+            transactionId: "TESTE-PAINEL",
+            valueCents: 100,
+            items: [{ itemId: "AQB-TESTE", itemName: "Evento de teste do painel", quantity: 1, priceCents: 100 }],
+          },
+        ];
+    if (!inputs.length) return { ok: false, detail: "Escolha um evento.", messages: [] };
+    const bodies = inputs.map((i) => buildGa4Body(i));
+    const body = { ...bodies[0], events: bodies.flatMap((b) => b.events as unknown[]) };
+    const { status, text } = await post(cfg, body, true);
     let messages: Ga4ValidationMessage[] = [];
     try {
       const json = JSON.parse(text) as { validationMessages?: Ga4ValidationMessage[] };

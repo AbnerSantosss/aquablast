@@ -2,6 +2,7 @@ import "@/app/admin/checkout-admin.css";
 import { requireAdmin } from "@/lib/auth/session";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { CopyButton } from "@/components/admin/CopyButton";
+import { PLAIN_INPUT, SECRET_INPUT } from "@/components/admin/input-props";
 import {
   createIronpayOffers,
   regeneratePostbackToken,
@@ -190,27 +191,27 @@ export default async function GatewaysPage() {
             <span className={`gw-dot ${configuredByProvider.ironpay ? "is-on" : ""}`} title={configuredByProvider.ironpay ? "Configurado" : "Faltam credenciais"} />
           </div>
           <p className="small muted">Pix e cartão. Cartão em claro (sem tokenização) — o número nunca é salvo por nós.</p>
-          <ActionForm key={`${s["gateway.ironpay.offerHashUnit"]}|${s["gateway.ironpay.offerHashKit"]}|${s["gateway.ironpay.productHashUnit"]}|${s["gateway.ironpay.productHashKit"]}`} action={saveIronpaySettings}>
+          <ActionForm key={`${s["gateway.ironpay.offerHashUnit"]}|${s["gateway.ironpay.offerHashKit"]}|${s["gateway.ironpay.productHashUnit"]}|${s["gateway.ironpay.productHashKit"]}`} action={saveIronpaySettings} autoComplete="off">
             <label className="field">
               <span>Token da API {ironpayToken.configured ? <span className="secret-hint is-on">{ironpayToken.hint}</span> : null}</span>
-              <input name="gateway.ironpay.apiToken" type="password" placeholder={ironpayToken.configured ? "Deixe em branco para manter" : ""} autoComplete="off" />
+              <input name="gateway.ironpay.apiToken" placeholder={ironpayToken.configured ? "Deixe em branco para manter" : ""} {...SECRET_INPUT} />
             </label>
             <div className="grid-2">
               <label className="field">
                 <span>Offer hash — unidade</span>
-                <input name="gateway.ironpay.offerHashUnit" defaultValue={s["gateway.ironpay.offerHashUnit"]} />
+                <input name="gateway.ironpay.offerHashUnit" defaultValue={s["gateway.ironpay.offerHashUnit"]} {...PLAIN_INPUT} />
               </label>
               <label className="field">
                 <span>Offer hash — kit</span>
-                <input name="gateway.ironpay.offerHashKit" defaultValue={s["gateway.ironpay.offerHashKit"]} />
+                <input name="gateway.ironpay.offerHashKit" defaultValue={s["gateway.ironpay.offerHashKit"]} {...PLAIN_INPUT} />
               </label>
               <label className="field">
                 <span>Product hash — unidade</span>
-                <input name="gateway.ironpay.productHashUnit" defaultValue={s["gateway.ironpay.productHashUnit"]} />
+                <input name="gateway.ironpay.productHashUnit" defaultValue={s["gateway.ironpay.productHashUnit"]} {...PLAIN_INPUT} />
               </label>
               <label className="field">
                 <span>Product hash — kit</span>
-                <input name="gateway.ironpay.productHashKit" defaultValue={s["gateway.ironpay.productHashKit"]} />
+                <input name="gateway.ironpay.productHashKit" defaultValue={s["gateway.ironpay.productHashKit"]} {...PLAIN_INPUT} />
               </label>
             </div>
             <button className="btn" type="submit">
@@ -234,18 +235,18 @@ export default async function GatewaysPage() {
             <span className={`gw-dot ${configuredByProvider.mercadopago ? "is-on" : ""}`} title={configuredByProvider.mercadopago ? "Configurado" : "Faltam credenciais"} />
           </div>
           <p className="small muted">Pix e cartão. Cartão só por token (tokenizado no navegador) — o número nunca chega ao servidor.</p>
-          <ActionForm action={saveMercadopagoSettings}>
+          <ActionForm action={saveMercadopagoSettings} autoComplete="off">
             <label className="field">
               <span>Access token {mpToken.configured ? <span className="secret-hint is-on">{mpToken.hint}</span> : null}</span>
-              <input name="gateway.mercadopago.accessToken" type="password" placeholder={mpToken.configured ? "Deixe em branco para manter" : ""} autoComplete="off" />
+              <input name="gateway.mercadopago.accessToken" placeholder={mpToken.configured ? "Deixe em branco para manter" : ""} {...SECRET_INPUT} />
             </label>
             <label className="field">
               <span>Public key</span>
-              <input name="gateway.mercadopago.publicKey" defaultValue={s["gateway.mercadopago.publicKey"]} />
+              <input name="gateway.mercadopago.publicKey" defaultValue={s["gateway.mercadopago.publicKey"]} {...PLAIN_INPUT} />
             </label>
             <label className="field">
               <span>Webhook secret {mpWebhook.configured ? <span className="secret-hint is-on">{mpWebhook.hint}</span> : null}</span>
-              <input name="gateway.mercadopago.webhookSecret" type="password" placeholder={mpWebhook.configured ? "Deixe em branco para manter" : ""} autoComplete="off" />
+              <input name="gateway.mercadopago.webhookSecret" placeholder={mpWebhook.configured ? "Deixe em branco para manter" : ""} {...SECRET_INPUT} />
             </label>
             <button className="btn" type="submit">
               Salvar Mercado Pago
@@ -259,10 +260,10 @@ export default async function GatewaysPage() {
             <span className={`gw-dot ${configuredByProvider.fastpay ? "is-on" : ""}`} title={configuredByProvider.fastpay ? "Configurado" : "Falta a chave"} />
           </div>
           <p className="small muted">Pix e cartão. Cartão em claro. Sem estorno por API — o estorno é feito no painel da FastPay.</p>
-          <ActionForm action={saveFastpaySettings}>
+          <ActionForm action={saveFastpaySettings} autoComplete="off">
             <label className="field">
               <span>Chave de API {fastpayKey.configured ? <span className="secret-hint is-on">{fastpayKey.hint}</span> : null}</span>
-              <input name="gateway.fastpay.apiKey" type="password" placeholder={fastpayKey.configured ? "Deixe em branco para manter" : ""} autoComplete="off" />
+              <input name="gateway.fastpay.apiKey" placeholder={fastpayKey.configured ? "Deixe em branco para manter" : ""} {...SECRET_INPUT} />
             </label>
             <button className="btn" type="submit">
               Salvar FastPay

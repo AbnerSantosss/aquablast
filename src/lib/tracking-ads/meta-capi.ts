@@ -3,7 +3,7 @@ import { sha256Hex } from "@/lib/crypto";
 import { env } from "@/lib/env";
 import { errorMessage } from "@/lib/log";
 import { getSettings } from "@/lib/settings";
-import type { TrackEventName } from "./types";
+import type { AdEventName, AdTestSample } from "./types";
 
 /**
  * Meta Conversions API (plano 9.4). SÓ SERVIDOR.
@@ -35,7 +35,7 @@ export interface MetaHashedUserData {
 }
 
 export interface MetaEventInput {
-  eventName: TrackEventName;
+  eventName: AdEventName;
   eventId: string;
   eventTime: Date;
   sourceUrl?: string;
@@ -57,6 +57,8 @@ export interface MetaEventInput {
 export interface MetaSendResult {
   ok: boolean;
   detail?: string;
+  /** events_received devolvido pela Meta (0 quando falhou). */
+  received?: number;
 }
 
 /* ------------------------------------------------------------------ normalização + hash */
@@ -249,7 +251,7 @@ async function postEvents(cfg: MetaConfig, events: Record<string, unknown>[], te
     }
     const received = typeof json.events_received === "number" ? json.events_received : 0;
     const detail = `Meta HTTP ${res.status}: events_received=${received}${json.fbtrace_id ? ` fbtrace ${json.fbtrace_id}` : ""}${test}`;
-    return { ok: received > 0, detail: scrubSecret(detail, cfg.accessToken) };
+    return { ok: received > 0, detail: scrubSecret(detail, cfg.accessToken), received };
   } catch (err) {
     const timeout = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
     return { ok: false, detail: scrubSecret(timeout ? `Meta: sem resposta em ${TIMEOUT_MS / 1000} s` : `Meta: falha de rede (${errorMessage(err)})`, cfg.accessToken) };
@@ -266,33 +268,56 @@ export async function sendMetaEvent(input: MetaEventInput): Promise<{ ok: boolea
   }
 }
 
+/** Evento de teste no formato de um evento real do site (mesmos campos que o GTM/servidor mandam). */
+function testEventInput(name: AdEventName, i: number, total: number, sample: AdTestSample, base: Pick<MetaEventInput, "hashed" | "clientIp" | "userAgent">): MetaEventInput {
+  const onSite = name === "PageView" || name === "ViewContent";
+  const input: MetaEventInput = {
+    ...base,
+    eventName: name,
+    eventId: `test-${sample.runId}-${name}`,
+    // Um segundo entre os eventos, na ordem do funil, e nunca no futuro (a Meta recusa).
+    eventTime: new Date(Date.now() - (total - 1 - i) * 1000),
+    sourceUrl: defaultSourceUrl(onSite ? "/" : "/checkout"),
+  };
+  if (name === "PageView") return input;
+  input.valueCents = sample.priceCents;
+  input.contentIds = [sample.sku];
+  if (name === "ViewContent") return input;
+  input.contents = [{ id: sample.sku, quantity: 1, itemPriceCents: sample.priceCents }];
+  input.numItems = 1;
+  if (name === "Purchase") input.orderId = `TESTE-${sample.runId}`;
+  return input;
+}
+
 /**
- * Botão "Enviar evento de teste" do painel de Pixels (plano 11.10): manda um PageView para a Meta
- * COM test_event_code (exige o código preenchido no painel, ou passado em `testEventCode`).
- * O evento aparece em Gerenciador de Eventos → Eventos de teste. Não grava em conversion_events.
+ * Botão "Enviar teste" do painel de Pixels: manda para a Meta um evento escolhido ou a sequência do funil
+ * (PageView → ViewContent → InitiateCheckout → AddPaymentInfo → Purchase), num só POST, SEMPRE com test_event_code
+ * (o passado em `testEventCode` ou, vazio, o salvo no painel). Aparece em Gerenciador de Eventos → Eventos de teste.
+ * Não grava em conversion_events. ok só quando a Meta recebeu todos os eventos enviados.
  */
-export async function sendMetaTestEvent(opts: { clientIp?: string; userAgent?: string; testEventCode?: string } = {}): Promise<{ ok: boolean; detail?: string }> {
+export async function sendMetaTestEvents(opts: {
+  events: readonly AdEventName[];
+  sample: AdTestSample;
+  clientIp?: string;
+  userAgent?: string;
+  testEventCode?: string;
+}): Promise<MetaSendResult> {
   try {
     const cfg = await metaConfig();
-    const code = (opts.testEventCode ?? cfg.testEventCode).trim();
-    if (!code) return { ok: false, detail: "Preencha o código de evento de teste (Gerenciador de Eventos → Eventos de teste) antes de enviar." };
-    const now = new Date();
-    const ev = {
-      event_name: "PageView",
-      event_time: Math.floor(now.getTime() / 1000),
-      event_id: `test-${now.getTime().toString(36)}`,
-      action_source: "website",
-      event_source_url: defaultSourceUrl("/checkout"),
-      user_data: userDataOf({
-        eventName: "InitiateCheckout",
-        eventId: "",
-        eventTime: now,
-        hashed: hashMetaUserData({ externalId: "painel-teste", country: "br" }),
-        clientIp: opts.clientIp,
-        userAgent: opts.userAgent?.trim() || "AquaBlast painel (evento de teste)",
-      }),
+    const code = (opts.testEventCode || cfg.testEventCode).trim();
+    if (!code) return { ok: false, detail: "Preencha o código de teste (Gerenciador de Eventos → Eventos de teste) antes de enviar." };
+    if (!opts.events.length) return { ok: false, detail: "Escolha um evento." };
+    const base = {
+      hashed: hashMetaUserData({ externalId: `painel-teste-${opts.sample.runId}`, country: "br" }),
+      clientIp: opts.clientIp,
+      userAgent: opts.userAgent?.trim() || "AquaBlast painel (evento de teste)",
     };
-    return await postEvents(cfg, [ev], code);
+    const total = opts.events.length;
+    const events = opts.events.map((name, i) => buildMetaEvent(testEventInput(name, i, total, opts.sample, base)));
+    const r = await postEvents(cfg, events, code);
+    const received = r.received ?? 0;
+    const names = opts.events.join(" → ");
+    return { ok: r.ok && received === total, detail: `${names}. ${r.detail ?? ""}`.trim().slice(0, 500), received };
   } catch (err) {
     return { ok: false, detail: `Meta: ${errorMessage(err)}`.slice(0, 500) };
   }

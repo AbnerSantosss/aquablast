@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth/session";
 import { ensureBootstrap } from "@/lib/bootstrap";
 import { actorOf, audit } from "@/lib/admin/audit";
 import { bool, num, str } from "@/lib/admin/form";
+import { looksLikeEmail, rejectPanelPassword } from "@/lib/admin/secret-guard";
 import { fail, ok, type ActionResult } from "@/lib/admin/types";
 import { getGateway, isGatewayName } from "@/lib/gateways";
 import { getOrderById } from "@/lib/orders/service";
@@ -27,7 +28,7 @@ type Patch = Partial<SettingsMap>;
 async function begin() {
   const session = await requireAdmin();
   await ensureBootstrap();
-  return { actor: actorOf(session) };
+  return { adminId: session.sub, actor: actorOf(session) };
 }
 
 async function apply(actor: string, section: string, patch: Patch): Promise<void> {
@@ -55,15 +56,37 @@ export async function saveRoutingSettings(_prev: ActionResult, fd: FormData): Pr
   return ok("Roteamento de pagamento salvo.");
 }
 
+/**
+ * Recusa o formulário quando o navegador pôs o login do painel nas credenciais (29/09, tela de Pixels):
+ * segredo igual à senha do painel, ou e-mail num campo de hash/chave. Sem isso o Pix quebraria sem aviso.
+ */
+async function autofillProblem(adminId: string, secrets: Record<string, string>, plain: Record<string, string>): Promise<string | null> {
+  const email = Object.entries(plain).find(([, v]) => looksLikeEmail(v));
+  if (email) return `O campo "${email[0]}" está com um e-mail (preenchimento automático do navegador). Apague e cole o valor certo.`;
+  return rejectPanelPassword(adminId, secrets);
+}
+
 export async function saveIronpaySettings(_prev: ActionResult, fd: FormData): Promise<ActionResult> {
-  const { actor } = await begin();
-  await apply(actor, "gateway.ironpay", {
+  const { adminId, actor } = await begin();
+  const patch = {
     "gateway.ironpay.apiToken": str(fd, "gateway.ironpay.apiToken", 500),
     "gateway.ironpay.offerHashUnit": str(fd, "gateway.ironpay.offerHashUnit", 200),
     "gateway.ironpay.offerHashKit": str(fd, "gateway.ironpay.offerHashKit", 200),
     "gateway.ironpay.productHashUnit": str(fd, "gateway.ironpay.productHashUnit", 200),
     "gateway.ironpay.productHashKit": str(fd, "gateway.ironpay.productHashKit", 200),
-  });
+  };
+  const problem = await autofillProblem(
+    adminId,
+    { "Token da API": patch["gateway.ironpay.apiToken"] },
+    {
+      "Offer hash — unidade": patch["gateway.ironpay.offerHashUnit"],
+      "Offer hash — kit": patch["gateway.ironpay.offerHashKit"],
+      "Product hash — unidade": patch["gateway.ironpay.productHashUnit"],
+      "Product hash — kit": patch["gateway.ironpay.productHashKit"],
+    },
+  );
+  if (problem) return fail(problem);
+  await apply(actor, "gateway.ironpay", patch);
   return ok("Credenciais da IronPay salvas. Segredo em branco foi mantido.");
 }
 
@@ -102,20 +125,28 @@ export async function createIronpayOffers(_prev: ActionResult, fd: FormData): Pr
 }
 
 export async function saveMercadopagoSettings(_prev: ActionResult, fd: FormData): Promise<ActionResult> {
-  const { actor } = await begin();
-  await apply(actor, "gateway.mercadopago", {
+  const { adminId, actor } = await begin();
+  const patch = {
     "gateway.mercadopago.accessToken": str(fd, "gateway.mercadopago.accessToken", 500),
     "gateway.mercadopago.publicKey": str(fd, "gateway.mercadopago.publicKey", 300),
     "gateway.mercadopago.webhookSecret": str(fd, "gateway.mercadopago.webhookSecret", 500),
-  });
+  };
+  const problem = await autofillProblem(
+    adminId,
+    { "Access token": patch["gateway.mercadopago.accessToken"], "Webhook secret": patch["gateway.mercadopago.webhookSecret"] },
+    { "Public key": patch["gateway.mercadopago.publicKey"] },
+  );
+  if (problem) return fail(problem);
+  await apply(actor, "gateway.mercadopago", patch);
   return ok("Credenciais do Mercado Pago salvas. Segredos em branco foram mantidos.");
 }
 
 export async function saveFastpaySettings(_prev: ActionResult, fd: FormData): Promise<ActionResult> {
-  const { actor } = await begin();
-  await apply(actor, "gateway.fastpay", {
-    "gateway.fastpay.apiKey": str(fd, "gateway.fastpay.apiKey", 500),
-  });
+  const { adminId, actor } = await begin();
+  const apiKey = str(fd, "gateway.fastpay.apiKey", 500);
+  const problem = await autofillProblem(adminId, { "Chave de API": apiKey }, {});
+  if (problem) return fail(problem);
+  await apply(actor, "gateway.fastpay", { "gateway.fastpay.apiKey": apiKey });
   return ok("Credencial da FastPay salva. Segredo em branco foi mantido.");
 }
 
