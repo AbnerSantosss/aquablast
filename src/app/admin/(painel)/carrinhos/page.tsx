@@ -83,7 +83,7 @@ export default async function CarrinhosPage({ searchParams }: { searchParams: Pr
         </div>
       </form>
 
-      <div className="card">
+      <div className="card fill">
         <div className="table-wrap">
           <table className="table">
             <thead>

@@ -45,7 +45,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
         </div>
       </form>
 
-      <div className="card">
+      <div className="card fill">
         <div className="table-wrap">
           <table className="table">
             <thead>

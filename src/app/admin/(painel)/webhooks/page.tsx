@@ -58,7 +58,7 @@ export default async function WebhooksPage({ searchParams }: { searchParams: Pro
         ))}
       </div>
 
-      <div className="card">
+      <div className="card fill">
         <div className="table-wrap">
           <table className="table">
             <thead>

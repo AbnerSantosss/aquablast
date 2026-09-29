@@ -54,7 +54,7 @@ export default async function PixelsPage() {
         </p>
       </div>
 
-      <div className="cols-2">
+      <div className="cols-2 split">
         <div className="stack">
           <section className="card">
             <div className="card-head">

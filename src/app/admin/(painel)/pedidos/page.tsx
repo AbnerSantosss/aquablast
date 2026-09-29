@@ -165,7 +165,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
         </div>
       </form>
 
-      <div className="card">
+      <div className="card fill">
         <div className="table-wrap">
           <table className="table">
             <thead>
@@ -191,7 +191,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
               ) : (
                 list.rows.map((o) => (
                   <tr key={o.id}>
-                    <td>
+                    <td className="nowrap">
                       <Link href={`/admin/pedidos/${o.id}`}>
                         <strong>{o.orderNumber}</strong>
                       </Link>

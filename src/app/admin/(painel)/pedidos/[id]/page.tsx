@@ -116,7 +116,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
 
       <Flash ok={firstParam(sp.ok) || undefined} erro={firstParam(sp.erro) || undefined} />
 
-      <div className="cols-2">
+      <div className="cols-2 split">
         <div className="stack">
           {/* ---------- Cliente ---------- */}
           <section className="card">

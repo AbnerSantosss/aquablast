@@ -37,7 +37,7 @@ export default async function WebhookPage({ params }: { params: Promise<{ id: st
         </div>
       </div>
 
-      <div className="cols-2">
+      <div className="cols-2 split">
         <div className="stack">
           <section className="card">
             <div className="card-head">

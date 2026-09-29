@@ -70,7 +70,7 @@ export default async function EmailsPage({ searchParams }: { searchParams: Promi
         </div>
       </form>
 
-      <div className="card">
+      <div className="card fill">
         <div className="table-wrap">
           <table className="table">
             <thead>

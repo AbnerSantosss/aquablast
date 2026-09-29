@@ -31,7 +31,7 @@ export default async function PersonalizarCheckoutPage() {
         <p className="muted">Aparência, textos e recuperação de carrinho abandonado da tela /checkout.</p>
       </div>
 
-      <div className="cols-2">
+      <div className="cols-2 split">
         <div className="stack">
           <section className="card">
             <div className="card-head">

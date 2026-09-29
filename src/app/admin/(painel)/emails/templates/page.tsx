@@ -23,7 +23,7 @@ export default async function TemplatesPage() {
           <p className="sub">O toggle controla só o envio automático. Reenvios manuais pelo pedido sempre funcionam.</p>
         </div>
       </div>
-      <div className="card tpl-list">
+      <div className="card tpl-list fill">
         <div className="table-wrap">
           <table className="table">
             <thead>

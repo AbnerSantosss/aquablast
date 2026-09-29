@@ -36,7 +36,7 @@ export function TemplateEditor({
   const previewSubject = render(subject, sample);
 
   return (
-    <div className="tpl-editor">
+    <div className="tpl-editor split">
       <form action={saveAction} className="card tpl-form" id="tpl-form">
         <input type="hidden" name="key" value={templateKey} />
         <label className="field">

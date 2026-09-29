@@ -403,7 +403,9 @@ body:has(.admin) {
   font-size: 0.85rem;
   color: var(--muted);
 }
-.section-title {
+/* .admin .section-title: o h2 genérico (.admin h2) zerava a margem e trocava tamanho e cor, e o
+   título colava no campo de cima. */
+.admin .section-title {
   margin: 1.25rem 0 0.75rem;
   font-size: 0.8rem;
   font-weight: 800;
@@ -411,7 +413,7 @@ body:has(.admin) {
   text-transform: uppercase;
   color: var(--muted);
 }
-.section-title:first-child {
+.admin .section-title:first-child {
   margin-top: 0;
 }
 
@@ -1217,22 +1219,26 @@ ul.check li + li {
   gap: 0.35rem;
   margin-bottom: 1rem;
 }
-.tabs a {
+/* Links (filtro de período) e botões (SectionTabs, uma seção por vez) têm o mesmo visual de pílula. */
+.tabs :is(a, button) {
   padding: 0.35rem 0.75rem;
   border-radius: 999px;
   border: 1px solid var(--line-strong);
   background: var(--card);
   color: var(--navy);
+  font: inherit;
   font-size: 0.85rem;
   font-weight: 700;
+  line-height: 1.5;
   text-decoration: none !important;
+  cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
-.tabs a:hover {
+.tabs :is(a, button):hover {
   background: var(--pale);
   border-color: var(--navy);
 }
-.tabs a.is-active {
+.tabs :is(a, button).is-active {
   background: var(--navy);
   border-color: var(--navy);
   color: #fff;
@@ -1465,6 +1471,19 @@ ul.check li + li {
 }
 .order-form .af-fields {
   display: block;
+}
+/* Rodapé do formulário: aviso de confirmação e botão na mesma linha quando cabe. */
+.form-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  margin-top: 1rem;
+}
+.form-foot > .check,
+.form-foot > .actions {
+  margin: 0;
 }
 .tpl-list .row-desc {
   color: var(--muted);
@@ -1767,12 +1786,12 @@ ul.check li + li {
 @media (max-width: 900px), (pointer: coarse) {
   .btn,
   .btn-sm,
-  .tabs a,
+  .tabs :is(a, button),
   .toc a,
   .chip {
     min-height: 2.75rem;
   }
-  .tabs a,
+  .tabs :is(a, button),
   .toc a,
   .chip {
     display: inline-flex;
@@ -1824,5 +1843,340 @@ ul.check li + li {
   }
   .content {
     background-attachment: scroll, scroll;
+  }
+}
+
+/* ---------- Abas de seção (SectionTabs) ---------- */
+.section-tabs {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.tab-panel[hidden] {
+  display: none !important;
+}
+.tab-panel > .card + .card {
+  margin-top: 1.25rem;
+}
+/* .panel-cols: duas colunas no computador; no celular empilha com o mesmo respiro entre os cards. */
+.panel-cols > * + * {
+  margin-top: 1.25rem;
+}
+
+/* ---------- Computador: a tela cabe na janela (pedido 2026-09-29-painel-100vh-desktop) ----------
+   A janela nunca rola inteira: menu e área de conteúdo têm altura da tela e rolagem própria.
+   Cabeçalho, abas, filtros e botões ficam sempre à vista; quem rola é só a região de dados:
+   .fill   = bloco que ocupa o resto da altura (listas: a tabela rola, o cabeçalho dela fica grudado);
+   .split  = duas colunas que rolam cada uma por conta própria (detalhe do pedido, Pixels, editor...);
+   SectionTabs = uma seção por vez (Configurações, Gateways).
+   Se algo ainda não couber (janela baixa, muito conteúdo), rola dentro da área de conteúdo, não a janela.
+   Celular (até 900px) e janela muito baixa ficam como antes. */
+@media (min-width: 901px) and (min-height: 560px) {
+  .shell {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .sidebar {
+    height: 100%;
+    overflow-y: auto;
+    gap: 1rem;
+    padding: 1.1rem 0.75rem 1rem;
+    scrollbar-width: thin;
+    scrollbar-color: #ffffff59 transparent;
+  }
+  .brand {
+    font-size: 1.35rem;
+  }
+  .nav,
+  .nav-group {
+    gap: 0.125rem;
+  }
+  .nav-group {
+    margin-top: 0.45rem;
+  }
+  .nav-link {
+    gap: 0.55rem;
+    padding: 0.42rem 0.75rem;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+  .nav-group-label {
+    padding: 0 0.75rem;
+    margin-bottom: 0.1rem;
+  }
+  .sidebar-footer {
+    gap: 0.5rem;
+    padding-top: 0.65rem;
+  }
+  .content {
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 1.25rem clamp(1rem, 2.2vw, 2rem);
+  }
+  .content > *,
+  .content > .stack > * {
+    flex-shrink: 0;
+  }
+  .content > .stack {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .content,
+  .fill > .table-wrap,
+  .split > *,
+  .tab-panel,
+  .dash-card .rank,
+  .evt-log {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+
+  /* Densidade: menos respiro vertical, mesma paleta e fontes. */
+  .admin h1 {
+    font-size: 1.4rem;
+  }
+  .page-head {
+    margin-bottom: 1rem;
+  }
+  .page-head .sub {
+    margin-top: 0.15rem;
+  }
+  .crumbs {
+    margin-bottom: 0.4rem;
+  }
+  .card {
+    padding: 1rem 1.15rem;
+  }
+  .table-wrap {
+    margin: 0 -1.15rem;
+    padding: 0 1.15rem;
+  }
+  .card + .card,
+  .tab-panel > .card + .card {
+    margin-top: 1rem;
+  }
+  .stack,
+  .cols-2,
+  .tpl-editor {
+    gap: 1rem;
+  }
+  .card-head {
+    margin-bottom: 0.75rem;
+  }
+  .kpis {
+    margin-bottom: 1rem;
+  }
+  .kpi {
+    padding: 0.65rem 0.9rem;
+  }
+  .kpi-value {
+    font-size: 1.5rem;
+  }
+  .tabs {
+    margin-bottom: 0.75rem;
+  }
+  .filters {
+    margin-bottom: 1rem;
+  }
+  .filters.card {
+    padding-block: 0.75rem;
+  }
+  .pagination {
+    margin-top: 0.75rem;
+  }
+  .table th,
+  .table td {
+    padding: 0.5rem 0.6rem;
+  }
+
+  /* .fill: encolhe até caber (nunca abaixo de ~12rem) e a tabela rola dentro dele.
+     flex-basis auto: lista curta não vira um card vazio da altura da tela. */
+  .admin .fill {
+    flex: 0 1 auto;
+    min-height: 12rem;
+    display: flex;
+    flex-direction: column;
+  }
+  .admin .fill > * {
+    flex-shrink: 0;
+  }
+  .admin .fill > .table-wrap {
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow: auto;
+  }
+  /* Cabeçalho da tabela grudado no topo da área que rola. A borda vira sombra: com border-collapse a
+     borda de uma célula grudada não acompanha a rolagem. */
+  .fill .table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    border-bottom: 0;
+    box-shadow: inset 0 -2px 0 var(--line-strong);
+  }
+
+  /* Abas de seção: a barra fica fixa e o painel rola. */
+  .content > .section-tabs,
+  .stack > .section-tabs {
+    flex: 1 1 0;
+    min-height: 16rem;
+  }
+  .section-tabs > .tabs {
+    flex-shrink: 0;
+  }
+  .tab-panel {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    margin: -0.35rem -0.5rem 0;
+    padding: 0.35rem 0.5rem 1rem;
+  }
+  /* Duas colunas dentro de um painel de aba (seções longas de Configurações e Gateways). */
+  .panel-cols {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: start;
+  }
+  .panel-cols > * + *,
+  .panel-cols > .card + .card {
+    margin-top: 0;
+  }
+  /* Dentro de um único card (formulário), as duas colunas precisam de mais respiro que os campos do
+     grid-2 de cada uma; senão parecem uma grade só de quatro colunas. */
+  .card .panel-cols {
+    column-gap: 2.25rem;
+  }
+}
+
+/* .split: as colunas ocupam o resto da altura e cada uma rola sozinha. Só a partir de 1101px, onde
+   .cols-2 e .tpl-editor têm duas colunas; abaixo disso rola a área de conteúdo. O recuo compensado
+   deixa a sombra dos cards aparecer dentro da área que rola. */
+@media (min-width: 1101px) and (min-height: 560px) {
+  .admin .split {
+    flex: 1 1 0;
+    min-height: 16rem;
+    grid-template-rows: minmax(0, 1fr);
+    align-items: stretch;
+  }
+  .split > * {
+    position: static;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    margin: -0.35rem -0.5rem 0;
+    padding: 0.35rem 0.5rem 1rem;
+  }
+  .split > .card {
+    margin: 0;
+    padding: 1rem 1.15rem;
+  }
+  /* Log de eventos de Pixels ocupa a coluna inteira (fora daqui ele tem 22rem). */
+  .split > .evt-log {
+    max-height: none;
+  }
+  /* Editor de template: a prévia acompanha a altura da coluna em vez dos 640px fixos. */
+  .split > .tpl-preview {
+    display: flex;
+    flex-direction: column;
+  }
+  .split .preview-frame {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 16rem;
+  }
+}
+
+/* Dashboard no computador largo: 4 colunas x 3 linhas, as duas de baixo dividem a altura que sobra.
+   Gráficos com altura flexível; rankings rolam dentro do card. Entre 901 e 1200px vale a grade de 2
+   colunas de cima, com a rolagem da área de conteúdo. */
+@media (min-width: 1201px) and (min-height: 600px) {
+  .content > .dash-grid {
+    flex: 1 1 0;
+    min-height: 28rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: auto minmax(min-content, 1fr) minmax(min-content, 1fr);
+    grid-template-areas:
+      "sales ticket pix bump"
+      "funnel funnel methods inst"
+      "states states top side";
+  }
+  .dash-grid > .dash-sales { grid-area: sales; }
+  .dash-grid > .dash-ticket { grid-area: ticket; }
+  .dash-grid > .dash-pix { grid-area: pix; }
+  .dash-grid > .dash-bump { grid-area: bump; }
+  .dash-grid > .dash-funnel { grid-area: funnel; }
+  .dash-grid > .dash-methods { grid-area: methods; }
+  .dash-grid > .dash-inst { grid-area: inst; }
+  .dash-grid > .dash-states { grid-area: states; }
+  .dash-grid > .dash-top { grid-area: top; }
+  .dash-grid > .dash-side { grid-area: side; }
+  .dash-grid > * {
+    min-height: 0;
+  }
+  .dash-card {
+    padding: 0.9rem 1.1rem 1rem;
+  }
+  .admin .dash-value {
+    margin-top: 0.35rem;
+    font-size: 1.6rem;
+  }
+  .admin .dash-empty {
+    padding: 0.75rem 0;
+  }
+  .meter {
+    margin-top: 0.6rem;
+  }
+  .dash-stack {
+    grid-template-rows: repeat(2, minmax(min-content, 1fr));
+  }
+  .dash-funnel .cols-chart {
+    flex: 1 1 0;
+    min-height: 0;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+  }
+  .dash-funnel .cols-track {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 2.5rem;
+  }
+  .dash-card .donut {
+    flex-wrap: nowrap;
+    gap: 0.9rem;
+    margin-top: 0.75rem;
+  }
+  .dash-card .donut-svg {
+    width: 5.5rem;
+    height: 5.5rem;
+  }
+  .dash-card .legend {
+    gap: 0.35rem;
+  }
+  .dash-card .rank {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    align-content: start;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+    padding-right: 0.25rem;
+  }
+  .dash-card .rank-row {
+    min-height: 2.1rem;
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+  /* Coluna estreita (Top produtos): o SKU não quebra letra a letra; se não couber com o valor,
+     o valor desce para a linha de baixo. */
+  .dash-card .rank-label {
+    overflow-wrap: break-word;
   }
 }

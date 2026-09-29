@@ -193,18 +193,18 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       ) : null}
 
       <div className="dash-grid">
-        <section className="dash-card">
+        <section className="dash-card dash-sales">
           <h2>Vendas totais</h2>
           <p className="dash-value">{formatBRL(data.salesTotal.amount)}</p>
           <p className="dash-sub">{data.salesTotal.count} pedido(s) pago(s)</p>
         </section>
 
-        <section className="dash-card">
+        <section className="dash-card dash-ticket">
           <h2>Ticket médio</h2>
           <p className="dash-value">{data.ticketMedio === null ? "—" : formatBRL(data.ticketMedio)}</p>
         </section>
 
-        <section className="dash-card">
+        <section className="dash-card dash-pix">
           <h2>Conversão de Pix</h2>
           <p className="dash-value">{pct(data.pixConversion.paid, data.pixConversion.generated)}</p>
           <p className="dash-sub">
@@ -213,7 +213,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <Meter value={data.pixConversion.paid} max={data.pixConversion.generated} />
         </section>
 
-        <section className="dash-card span-2">
+        <section className="dash-card span-2 dash-funnel">
           <h2>Conversão do checkout</h2>
           <p className="dash-value">{pct(data.funnel.pagaram, data.funnel.criados)}</p>
           <Columns
@@ -227,7 +227,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           />
         </section>
 
-        <div className="dash-stack">
+        <div className="dash-stack dash-side">
           <section className="dash-card">
             <h2>Carrinhos abandonados</h2>
             <p className="dash-value">{data.abandonedCarts.count}</p>
@@ -241,7 +241,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </section>
         </div>
 
-        <section className="dash-card">
+        <section className="dash-card dash-methods">
           <h2>Formas de pagamento</h2>
           <Donut
             variant="pie"
@@ -254,7 +254,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           />
         </section>
 
-        <section className="dash-card">
+        <section className="dash-card dash-inst">
           <h2>Parcelamentos (cartão)</h2>
           <Donut
             variant="ring"
@@ -263,7 +263,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           />
         </section>
 
-        <section className="dash-card">
+        <section className="dash-card dash-bump">
           <h2>Vendas por order bump</h2>
           {data.bump.count > 0 ? (
             <>
@@ -275,7 +275,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           )}
         </section>
 
-        <section className="dash-card span-2">
+        <section className="dash-card span-2 dash-states">
           <h2>Vendas por estado</h2>
           <Rank
             total={data.salesTotal.count}
@@ -283,7 +283,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           />
         </section>
 
-        <section className="dash-card">
+        <section className="dash-card dash-top">
           <h2>Top produtos</h2>
           <Rank total={data.salesTotal.count} unit="vendido(s)" rows={data.topProducts.map((pr) => ({ label: pr.sku, value: pr.count }))} />
         </section>
