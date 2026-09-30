@@ -62,6 +62,8 @@ export interface MetaSendResult {
   detail?: string;
   /** events_received devolvido pela Meta (0 quando falhou). */
   received?: number;
+  /** Corpo enviado (data + test_event_code). Não contém o token, que vai na URL. Mostrado no painel. */
+  payload?: Record<string, unknown>;
 }
 
 /* ------------------------------------------------------------------ normalização + hash */
@@ -251,19 +253,19 @@ async function postEvents(cfg: MetaConfig, events: Record<string, unknown>[], te
     if (!res.ok || json.error) {
       const e = json.error;
       const msg = e ? `${e.message ?? "erro"}${e.code ? ` [code ${e.code}${e.error_subcode ? `/${e.error_subcode}` : ""}]` : ""}${e.fbtrace_id ? ` fbtrace ${e.fbtrace_id}` : ""}` : text.slice(0, 200);
-      return { ok: false, detail: scrubSecret(`Meta HTTP ${res.status}: ${msg}${test}`, cfg.accessToken) };
+      return { ok: false, detail: scrubSecret(`Meta HTTP ${res.status}: ${msg}${test}`, cfg.accessToken), payload: body };
     }
     const received = typeof json.events_received === "number" ? json.events_received : 0;
     const detail = `Meta HTTP ${res.status}: events_received=${received}${json.fbtrace_id ? ` fbtrace ${json.fbtrace_id}` : ""}${test}`;
-    return { ok: received > 0, detail: scrubSecret(detail, cfg.accessToken), received };
+    return { ok: received > 0, detail: scrubSecret(detail, cfg.accessToken), received, payload: body };
   } catch (err) {
     const timeout = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
-    return { ok: false, detail: scrubSecret(timeout ? `Meta: sem resposta em ${TIMEOUT_MS / 1000} s` : `Meta: falha de rede (${errorMessage(err)})`, cfg.accessToken) };
+    return { ok: false, detail: scrubSecret(timeout ? `Meta: sem resposta em ${TIMEOUT_MS / 1000} s` : `Meta: falha de rede (${errorMessage(err)})`, cfg.accessToken), payload: body };
   }
 }
 
 /** Envia um evento para a CAPI. Nunca lança. */
-export async function sendMetaEvent(input: MetaEventInput): Promise<{ ok: boolean; detail?: string }> {
+export async function sendMetaEvent(input: MetaEventInput): Promise<MetaSendResult> {
   try {
     const cfg = await metaConfig();
     return await postEvents(cfg, [buildMetaEvent(input)], effectiveTestEventCode(cfg));

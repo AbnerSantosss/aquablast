@@ -24,6 +24,51 @@ const META_EVENT_HELP: Record<MetaServerEvent, string> = {
   Purchase: "pagamento aprovado",
 };
 
+/** Campos de user_data que a Meta usa para casar o evento com a pessoa (resumo acima do JSON). */
+const USER_DATA_LABEL: [string, string][] = [
+  ["fbc", "fbc (clique no anúncio)"],
+  ["fbp", "fbp (navegador)"],
+  ["em", "e-mail"],
+  ["ph", "telefone"],
+  ["external_id", "id externo"],
+  ["client_ip_address", "IP"],
+  ["client_user_agent", "navegador (user agent)"],
+];
+
+/** user_data do 1º evento do corpo enviado à Meta ({ data: [ { user_data } ] }). */
+function userDataOf(payload: Record<string, unknown> | null): Record<string, unknown> | null {
+  const data = payload?.data;
+  if (!Array.isArray(data)) return null;
+  const first: unknown = data[0];
+  if (!first || typeof first !== "object") return null;
+  const ud = (first as Record<string, unknown>).user_data;
+  return ud && typeof ud === "object" ? (ud as Record<string, unknown>) : null;
+}
+
+/** "Ver payload": o que foi enviado à Meta. Resumo de user_data (tem/não tem) e o JSON inteiro, sem token. */
+function PayloadView({ payload }: { payload: Record<string, unknown> | null }) {
+  if (!payload) return null;
+  const ud = userDataOf(payload);
+  return (
+    <details className="evt-payload">
+      <summary>Ver payload enviado</summary>
+      {ud ? (
+        <ul className="evt-ud">
+          {USER_DATA_LABEL.map(([key, label]) => {
+            const has = ud[key] !== undefined && ud[key] !== "" && !(Array.isArray(ud[key]) && (ud[key] as unknown[]).length === 0);
+            return (
+              <li key={key} className={has ? "is-on" : "is-off"}>
+                {has ? "✓" : "✗"} {label}
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+      <pre className="pix-mono-box evt-json">{JSON.stringify(payload, null, 2)}</pre>
+    </details>
+  );
+}
+
 function EventSelect() {
   return (
     <label className="field">
@@ -211,6 +256,11 @@ export default async function PixelsPage() {
           <div className="card-head">
             <h2>Últimos eventos enviados</h2>
           </div>
+          <p className="muted small">
+            Em cada evento da Meta, &quot;Ver payload enviado&quot; mostra o corpo exato que foi para a API de Conversões (o token não
+            vai no corpo). E-mail, telefone e nome saem com hash SHA-256; fbc, fbp, IP e navegador saem como estão, que é o que a
+            Meta pede. Eventos enviados antes de 30/09/2026 não têm payload gravado.
+          </p>
           {events.length === 0 ? (
             <p className="muted small">Nenhum evento registrado ainda.</p>
           ) : (
@@ -236,7 +286,10 @@ export default async function PixelsPage() {
                         {STATUS_LABEL[e.status] ?? e.status}
                       </span>
                     </td>
-                    <td className={`small muted evt-detail${e.detail ? "" : " tc-empty"}`}>{e.detail ?? "—"}</td>
+                    <td className={`small muted evt-detail${e.detail || e.payload ? "" : " tc-empty"}`}>
+                      {e.detail ?? "—"}
+                      <PayloadView payload={e.payload} />
+                    </td>
                   </tr>
                 ))}
               </tbody>

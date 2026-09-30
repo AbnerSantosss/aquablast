@@ -186,10 +186,10 @@ async function claim(dest: TrackDestination, args: TrackServerEventArgs, ctx: Ev
   return { claimed: false, existing: row?.status ?? "já registrado" };
 }
 
-async function finish(dest: TrackDestination, args: TrackServerEventArgs, status: RowStatus, detail: string): Promise<void> {
+async function finish(dest: TrackDestination, args: TrackServerEventArgs, status: RowStatus, detail: string, payload?: Record<string, unknown>): Promise<void> {
   await db
     .update(conversionEvents)
-    .set({ status, detail: detail.slice(0, 500), sentAt: new Date() })
+    .set({ status, detail: detail.slice(0, 500), sentAt: new Date(), ...(payload ? { payload } : {}) })
     .where(and(eq(conversionEvents.destination, dest), eq(conversionEvents.eventName, args.name), eq(conversionEvents.eventId, args.eventId)));
 }
 
@@ -244,14 +244,14 @@ async function runDestination(dest: TrackDestination, args: TrackServerEventArgs
     const c = await claim(dest, args, ctx, "sending", null);
     if (!c.claimed) return { destination: dest, status: "skipped", detail: `duplicado: evento já registrado (${c.existing})` };
 
-    let result: { ok: boolean; detail?: string };
+    let result: { ok: boolean; detail?: string; payload?: Record<string, unknown> };
     try {
       result = dest === "meta" ? await sendMetaEvent(metaInput(args, ctx)) : await sendGa4Event(ga4Input(args, ctx));
     } catch (err) {
       result = { ok: false, detail: `${dest}: ${errorMessage(err)}` };
     }
     const detail = (result.detail ?? (result.ok ? "enviado" : "falhou")).slice(0, 500);
-    await finish(dest, args, result.ok ? "sent" : "error", detail);
+    await finish(dest, args, result.ok ? "sent" : "error", detail, result.payload);
     if (!result.ok) log.warn("tracking-ads: envio falhou", { destination: dest, event: args.name, eventId: args.eventId, detail });
     return { destination: dest, status: result.ok ? "sent" : "error", detail };
   } catch (err) {

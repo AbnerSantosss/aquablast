@@ -78,7 +78,7 @@ export async function saveMetaSettings(_prev: ActionResult, fd: FormData): Promi
 /** Testa o token salvo e devolve a frase para o dono. Nunca contém o token. */
 async function metaTokenStatus(actor: string): Promise<string> {
   const r = await runVerification("meta", actor);
-  if (r.ok) return ` Token ativo e funcionando (${r.message}).`;
+  if (r.ok) return ` Token ativo e funcionando: ${r.message}.`;
   if (r.message === "token não configurado") return " Falta colar o token de acesso.";
   if (/^(Meta recusou|o envio também falhou|o token não pode ler)/.test(r.message)) return ` O token não funcionou: ${r.message}.`;
   return ` Token salvo, mas não foi possível falar com a Meta agora: ${r.message}.`;

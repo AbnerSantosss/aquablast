@@ -404,6 +404,8 @@ export const conversionEvents = pgTable(
     eventId: text("event_id").notNull(),
     status: text("status").notNull(), // sent | error | skipped
     detail: text("detail"),
+    /** Corpo JSON enviado ao destino (sem token: o token da Meta vai na URL). user_data já vai com hash. */
+    payload: jsonb("payload").$type<Record<string, unknown>>(),
     sentAt: timestamp("sent_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [uniqueIndex("conversion_events_dedupe_idx").on(t.destination, t.eventName, t.eventId)],

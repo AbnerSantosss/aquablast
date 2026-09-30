@@ -211,8 +211,36 @@
 }
 
 .evt-log {
-  max-height: 22rem;
+  max-height: 32rem;
   overflow: auto;
+}
+/* "Ver payload enviado" (Pixels): resumo de user_data + JSON rolável, sem esticar a tabela. */
+.evt-payload {
+  margin-top: 0.4rem;
+}
+.evt-payload summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.evt-ud {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin: 0.4rem 0;
+  padding: 0;
+}
+.evt-ud .is-on {
+  color: var(--green);
+}
+.evt-ud .is-off {
+  color: var(--red);
+}
+.evt-json {
+  max-height: 18rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  margin: 0;
 }
 /* Detalhe do evento (mensagem de erro da Meta/GA4): quebra dentro da coluna em vez de cortar. */
 .evt-detail {
