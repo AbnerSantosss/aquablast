@@ -328,6 +328,37 @@ export async function sendMetaTestEvents(opts: {
 }
 
 /**
+ * "(#100) Missing Permission" (ou code 10/200) no GET do pixel: o token não pode LER o pixel, o que não diz
+ * se ele pode ENVIAR eventos. Visto em 2026-09-30 com o token gerado para a API de Conversões.
+ * Token inválido/vencido vem com code 190 e continua sendo falha.
+ */
+function isReadPermissionError(e: { message?: string; code?: number }): boolean {
+  return e.code === 10 || e.code === 200 || (e.code === 100 && /missing permission/i.test(e.message ?? ""));
+}
+
+/**
+ * Plano B do Verificar: com código de teste salvo, manda 1 PageView com test_event_code (aparece em
+ * Eventos de teste) e dá ok se a Meta recebeu. Sem código, não envia nada e diz o que fazer.
+ */
+async function verifyBySending(cfg: MetaConfig): Promise<{ ok: boolean; message: string }> {
+  if (!cfg.testEventCode) {
+    return { ok: false, message: "o token não pode ler o pixel; preencha o código de evento de teste e salve de novo para testar o envio" };
+  }
+  const runId = Date.now().toString(36);
+  const event = buildMetaEvent({
+    eventName: "PageView",
+    eventId: `verificar-${runId}`,
+    eventTime: new Date(),
+    sourceUrl: defaultSourceUrl("/"),
+    hashed: hashMetaUserData({ externalId: `painel-verificar-${runId}`, country: "br" }),
+    userAgent: "AquaBlast painel (verificar token)",
+  });
+  const r = await postEvents(cfg, [event], cfg.testEventCode);
+  if (r.ok) return { ok: true, message: `envio confirmado: 1 evento de teste chegou (${cfg.testEventCode})` };
+  return { ok: false, message: scrubSecret(`o envio também falhou: ${r.detail ?? "sem detalhe"}`, cfg.accessToken).slice(0, 150) };
+}
+
+/**
  * "Verificar" do token no painel de Pixels: GET /<versão>/<pixelId>?fields=id,name (só leitura, não envia evento).
  * Token vai no header Authorization (não na URL). A mensagem nunca contém o token; no sucesso traz o nome do pixel.
  */
@@ -353,6 +384,7 @@ export async function verifyMetaConnection(): Promise<{ ok: boolean; message: st
     }
     if (!res.ok || json.error || json.id !== cfg.pixelId) {
       const e = json.error;
+      if (e && isReadPermissionError(e)) return await verifyBySending(cfg);
       const why = e ? `${e.message ?? "erro"}${e.code ? ` [code ${e.code}]` : ""}` : `HTTP ${res.status}`;
       return { ok: false, message: scrubSecret(`Meta recusou: ${why}`, token).slice(0, 150) };
     }
