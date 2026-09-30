@@ -5,6 +5,7 @@ import { formatBRL, formatDateTime, formatPhone, whatsappLink } from "@/lib/admi
 import { isColor, selectionFromCart, titleOf, variantOf } from "@/lib/checkout/own/catalog";
 import { env } from "@/lib/env";
 import { errorMessage, log } from "@/lib/log";
+import { pushCheckoutEvent, type AlertSummary } from "@/lib/push/checkout-push";
 import { getSettings, type AdminAlertEvent } from "@/lib/settings";
 import { COLOR_LABELS } from "@/lib/site/constants";
 import { getEmailProvider } from "./provider";
@@ -21,6 +22,8 @@ import { escapeHtml, htmlToText } from "./templates";
  * - Cartão: só bandeira, final e parcelas. Número, validade e CVV nunca chegam aqui.
  * - Nunca lança: quem chama está dentro de `after()` ou do fluxo de pagamento.
  * - HTML fixo (não entra nos modelos editáveis); fica no email_log com `template_key = alerta_<evento>`.
+ * - Push do app do painel (ajuste do dono, 2026-09-30): os mesmos eventos, pelo mesmo gancho, em paralelo e
+ *   independente do e-mail (lib/push/checkout-push.ts). Liga/desliga fino em `alerts.pushEvents`.
  */
 
 export type CheckoutAlertEvent = Exclude<AdminAlertEvent, "atraso">;
@@ -138,11 +141,52 @@ async function alreadySent(templateKey: string, a: CheckoutAlert): Promise<boole
   return !!found;
 }
 
-/** Manda o aviso do evento para a equipe, se ligado e com destinatário. Nunca lança. */
+function centsOf(a: CheckoutAlert): number | null {
+  const { cart, order, attempt } = a;
+  return attempt?.amountCents ?? (order ? Math.round(Number(order.amountTotal) * 100) : (cart?.amountCents ?? null));
+}
+
+function cityOf(a: CheckoutAlert): string {
+  const { cart, order } = a;
+  return [cart?.addressCity ?? order?.addressCity, cart?.addressState ?? order?.addressState].filter(Boolean).join("/");
+}
+
+/** Resumo curto do evento para o push (sem nome, e-mail nem telefone: a notificação aparece na tela bloqueada). */
+function summaryOf(a: CheckoutAlert): AlertSummary {
+  const cents = centsOf(a);
+  return {
+    product: productOf(a.order, a.cart),
+    payment: a.attempt || a.order?.paymentMethod ? paymentOf(a.attempt, a.order) : "",
+    value: cents !== null && Number.isFinite(cents) ? formatBRL(cents / 100) : "",
+    city: cityOf(a),
+    attemptLabel: a.attempt ? (ATTEMPT_LABEL[a.attempt.status] ?? a.attempt.status.toUpperCase()) : "",
+  };
+}
+
+/**
+ * Manda o aviso do evento para a equipe, se ligado em `alerts.events`: e-mail (com destinatário) e push
+ * (com aparelho inscrito), em paralelo e independentes. Nunca lança.
+ */
 export async function notifyCheckoutEvent(a: CheckoutAlert): Promise<void> {
-  const templateKey = `alerta_${a.event}`;
   try {
     if (!(await adminAlertEnabled(a.event))) return;
+  } catch (err) {
+    log.error("aviso do checkout: falha ao ler a configuração", { event: a.event, error: errorMessage(err) });
+    return;
+  }
+  let summary: AlertSummary | null = null;
+  try {
+    summary = summaryOf(a);
+  } catch (err) {
+    log.warn("aviso do checkout: resumo do push falhou", { event: a.event, error: errorMessage(err) });
+  }
+  await Promise.all([emailCheckoutEvent(a), summary ? pushCheckoutEvent(a, summary) : Promise.resolve()]);
+}
+
+/** Parte do e-mail do aviso (o toggle `alerts.events` já foi conferido). Nunca lança. */
+async function emailCheckoutEvent(a: CheckoutAlert): Promise<void> {
+  const templateKey = `alerta_${a.event}`;
+  try {
     const to = await adminAlertRecipient();
     if (!to) return;
     if (await alreadySent(templateKey, a)) return;
@@ -153,13 +197,13 @@ export async function notifyCheckoutEvent(a: CheckoutAlert): Promise<void> {
     const name = order?.customerName ?? cart?.customerName ?? "";
     const email = order?.customerEmail ?? cart?.customerEmail ?? "";
     const phone = order?.customerPhone ?? cart?.customerPhone ?? "";
-    const cents = attempt?.amountCents ?? (order ? Math.round(Number(order.amountTotal) * 100) : (cart?.amountCents ?? null));
+    const cents = centsOf(a);
     const value = cents !== null && Number.isFinite(cents) ? formatBRL(cents / 100) : "";
     const who = name || email || "visitante (ainda sem dados)";
     const subject = subjectOf(a, who, value, store);
 
     const wa = whatsappLink(phone);
-    const city = [cart?.addressCity ?? order?.addressCity, cart?.addressState ?? order?.addressState].filter(Boolean).join("/");
+    const city = cityOf(a);
     const utm = cart?.utm ?? null;
     const origin = utm ? [utm.utm_source, utm.utm_campaign].filter(Boolean).join(" · ") : "";
     const rows = [

@@ -2366,3 +2366,170 @@ ul.check li + li {
     padding-inline: 0.6rem;
   }
 }
+
+/* ---------- App do painel (PWA /admin/app + aviso de venda), 2026-09-30 ---------- */
+.pwa-status {
+  margin: 0 0 1rem;
+  font-weight: 700;
+}
+.pwa-status[data-status="on"] {
+  color: var(--green-ink);
+}
+.pwa-status[data-status="denied"],
+.pwa-status[data-status="unsupported"] {
+  color: var(--orange-ink);
+}
+.pwa-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+/* Em 360px os botões ocupam a largura toda em vez de estourar (white-space: nowrap do .btn). */
+@media (max-width: 480px) {
+  .pwa-actions .btn {
+    flex: 1 1 100%;
+    white-space: normal;
+  }
+}
+.pwa-msg {
+  margin: 0.9rem 0 0;
+}
+.pwa-note {
+  margin: 1rem 0 0;
+}
+.pwa-sales {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.pwa-sale {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--zebra);
+  color: var(--text);
+  text-decoration: none;
+}
+.pwa-sale:hover {
+  background: var(--row-hover);
+}
+.pwa-sale-time {
+  font-weight: 800;
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pwa-sale-main {
+  display: grid;
+  min-width: 0;
+}
+.pwa-sale-main strong,
+.pwa-sale-main span {
+  overflow-wrap: anywhere;
+}
+.pwa-sale-value {
+  font-weight: 900;
+  color: var(--green-ink);
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .pwa-sale {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .pwa-sale-time {
+    grid-column: 1 / -1;
+    font-size: 0.8rem;
+  }
+}
+.pwa-steps,
+.pwa-events {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.5rem;
+}
+.pwa-events {
+  margin-bottom: 0.75rem;
+}
+.pwa-toasts {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 60;
+  display: grid;
+  gap: 0.6rem;
+  width: min(22rem, calc(100vw - 2rem));
+  pointer-events: none;
+}
+.pwa-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: var(--radius-sm);
+  background: var(--deep);
+  color: #fff;
+  box-shadow: var(--shadow-raised);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  animation: pwa-toast-in 0.2s ease-out;
+}
+/* Venda: fundo verde inteiro (não só uma faixa lateral), para diferenciar de relance dos outros avisos. */
+.pwa-toast.is-sale {
+  background: #0f6b3f;
+  border-color: rgba(61, 220, 132, 0.55);
+}
+.pwa-toast-text {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1;
+}
+.pwa-toast-text strong {
+  font-size: 1rem;
+}
+.pwa-toast-text span {
+  font-size: 0.85rem;
+  opacity: 0.92;
+  overflow-wrap: anywhere;
+}
+.admin .pwa-toast-link {
+  justify-self: start;
+  margin-top: 0.25rem;
+  color: var(--cyan);
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+.pwa-toast-close {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+.pwa-toast-close:hover,
+.pwa-toast-close:focus-visible {
+  background: #ffffff26;
+}
+@keyframes pwa-toast-in {
+  from {
+    transform: translateY(0.5rem);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pwa-toast {
+    animation: none;
+  }
+}

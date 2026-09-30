@@ -412,3 +412,43 @@ export const conversionEvents = pgTable(
 export type CheckoutCart = typeof checkoutCarts.$inferSelect;
 export type PaymentAttempt = typeof paymentAttempts.$inferSelect;
 export type ConversionEvent = typeof conversionEvents.$inferSelect;
+
+/**
+ * Aparelhos inscritos no Web Push do app do painel (PWA /admin). Uma linha por navegador/aparelho.
+ * p256dh e auth são as chaves PÚBLICAS do navegador (RFC 8291) - não são segredo nosso.
+ * 404/410 do serviço de push apagam a linha; outras falhas só somam failCount.
+ */
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    endpoint: text("endpoint").notNull(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    userAgent: text("user_agent"),
+    adminUserId: uuid("admin_user_id").references(() => adminUsers.id, { onDelete: "cascade" }),
+    email: text("email"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    lastOkAt: timestamp("last_ok_at", { withTimezone: true }),
+    failCount: integer("fail_count").default(0).notNull(),
+  },
+  (t) => [uniqueIndex("push_subscriptions_endpoint_idx").on(t.endpoint)],
+);
+
+/**
+ * Trava de "não repetir" dos avisos push: inicio/pagamento uma vez por carrinho, pago uma vez por pedido.
+ * dedupe_key = "<evento>:<cartId|orderId>". Separada do email_log de propósito: push e e-mail são independentes.
+ */
+export const pushAlerts = pgTable(
+  "push_alerts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    dedupeKey: text("dedupe_key").notNull(),
+    event: text("event").notNull(),
+    sentCount: integer("sent_count").default(0).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("push_alerts_dedupe_idx").on(t.dedupeKey)],
+);
+
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;

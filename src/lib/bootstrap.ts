@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { adminUsers } from "@/db/schema";
 import { ensureDefaultTemplates } from "@/lib/email/templates";
 import { env } from "@/lib/env";
+import { ensureVapidKeys } from "@/lib/push/send";
 import { seedSettingsFromEnv } from "@/lib/settings";
 
 declare global {
@@ -30,6 +31,8 @@ async function run(): Promise<void> {
   await migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
   await ensureDefaultTemplates();
   await seedSettingsFromEnv();
+  // Par VAPID do push do app do painel: gerado uma vez e guardado nas settings (privada cifrada). Nunca lança.
+  await ensureVapidKeys();
   const e = env();
   const existing = await db.query.adminUsers.findFirst();
   if (!existing && e.ADMIN_EMAIL && e.ADMIN_PASSWORD) {

@@ -40,6 +40,7 @@ const ROUTES = [
   "/admin/webhooks",
   { from: "/admin/webhooks", link: /^\/admin\/webhooks\/[^/?#]+$/, name: "/admin/webhooks/[id]" },
   "/admin/configuracoes",
+  "/admin/app",
   // Abas por hash (SectionTabs): cada uma e medida sozinha; o SecretField com selo deixa abas mais altas.
   ...["email", "pix", "rastreio", "envios", "checkout", "acesso", "admin"].map((t) => `/admin/configuracoes#${t}`),
 ];

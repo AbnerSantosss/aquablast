@@ -70,6 +70,15 @@ export interface SettingsMap {
   "alerts.adminEmail": string;
   /** Quais avisos saem por e-mail (ADMIN_ALERT_EVENTS). Lista vazia = nenhum. */
   "alerts.events": AdminAlertEvent[];
+  /**
+   * Quais avisos também saem por push no app do painel (PWA /admin). Só vale o que TAMBÉM está em
+   * `alerts.events` (o toggle geral). "atraso" não tem push. Lista vazia = nenhum push.
+   */
+  "alerts.pushEvents": AdminAlertEvent[];
+  /** Chave VAPID pública (P-256, ponto não comprimido em base64url). Gerada no bootstrap (lib/push/vapid.ts). */
+  "push.vapid.publicKey": string;
+  /** Chave VAPID privada (PKCS#8 DER em base64url). Segredo: fica cifrada. Gerada no bootstrap. */
+  "push.vapid.privateKey": string; // secret
   "store.supportEmail": string;
   "store.trackingPageUrl": string;
   "accessCode.validityDays": number;
@@ -145,6 +154,7 @@ const SECRET_KEYS: ReadonlySet<SettingKey> = new Set<SettingKey>([
   "gateway.postbackToken",
   "ads.meta.accessToken",
   "ads.ga4.apiSecret",
+  "push.vapid.privateKey",
 ]);
 
 export function isSecretKey(key: SettingKey): boolean {
@@ -181,6 +191,9 @@ export const DEFAULTS: SettingsMap = {
   "orders.slaDays": 3,
   "alerts.adminEmail": "",
   "alerts.events": [...ADMIN_ALERT_EVENTS],
+  "alerts.pushEvents": ADMIN_ALERT_EVENTS.filter((e) => e !== "atraso"),
+  "push.vapid.publicKey": "",
+  "push.vapid.privateKey": "",
 
   "checkout.mode": "zedy",
   "checkout.prices": { unit: { pix: 15990, card: 16990 }, kit: { pix: 24990, card: 25990 } },

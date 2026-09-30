@@ -96,6 +96,7 @@ export default async function SettingsPage() {
     "orders.slaDays",
     "alerts.adminEmail",
     "alerts.events",
+    "alerts.pushEvents",
   ] as const);
   // WhatsApp: só o que está gravado (vazio sem linha). getSettings() devolveria o
   // DEFAULT do código, e salvar "Loja" gravaria esse número não confirmado, que iria ao site.
@@ -286,6 +287,7 @@ export default async function SettingsPage() {
   );
 
   const alertEvents: readonly string[] = s["alerts.events"];
+  const pushEvents: readonly string[] = s["alerts.pushEvents"];
   const envios = (
     <section className="card">
       <div className="card-head">
@@ -313,6 +315,19 @@ export default async function SettingsPage() {
             {ADMIN_ALERT_EVENTS.map((ev) => (
               <label key={ev} className="check">
                 <input type="checkbox" name="alerts.events" value={ev} defaultChecked={alertEvents.includes(ev)} />
+                <span>{ALERT_EVENT_LABELS[ev]}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <fieldset className="field" style={{ border: 0, padding: 0, margin: "0.4rem 0 0" }}>
+          <span>
+            Também no celular (push do <Link href="/admin/app">app do painel</Link>): só vale para o que estiver marcado acima
+          </span>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem 1.2rem" }}>
+            {ADMIN_ALERT_EVENTS.filter((ev) => ev !== "atraso").map((ev) => (
+              <label key={ev} className="check">
+                <input type="checkbox" name="alerts.pushEvents" value={ev} defaultChecked={pushEvents.includes(ev)} />
                 <span>{ALERT_EVENT_LABELS[ev]}</span>
               </label>
             ))}

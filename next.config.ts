@@ -52,6 +52,17 @@ const nextConfig: NextConfig = {
       { source: "/api/(.*)", headers: [{ key: "Cache-Control", value: "private, no-store" }] },
       { source: "/admin/(.*)", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }, { key: "Cache-Control", value: "private, no-store" }] },
       { source: "/rastrear", headers: [{ key: "X-Robots-Tag", value: "noindex" }] },
+      // App do painel (PWA): o SW precisa ser buscado sempre fresco (senão uma versão velha fica presa até 24 h);
+      // o manifest fica fora de /admin/ de propósito, porque o navegador o busca SEM cookie e o proxy redirecionaria.
+      {
+        source: "/admin-sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
+      { source: "/admin-app/manifest.webmanifest", headers: [{ key: "Content-Type", value: "application/manifest+json" }, { key: "Cache-Control", value: "no-cache" }] },
       // `:path*` também casa com "/checkout" sem nada depois.
       { source: "/checkout/:path*", headers: [...checkoutHeaders, { key: "Content-Security-Policy", value: checkoutCsp }] },
       { source: "/api/checkout/:path*", headers: checkoutHeaders },

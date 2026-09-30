@@ -116,10 +116,14 @@ export async function saveShippingSettings(_prev: ActionResult, fd: FormData): P
   if (adminEmail && !isEmail(adminEmail)) return fail("E-mail para avisos inválido. Deixe vazio para usar o e-mail de login do painel (ADMIN_EMAIL).");
   const picked = new Set(fd.getAll("alerts.events").map(String));
   const events = ADMIN_ALERT_EVENTS.filter((ev) => picked.has(ev));
+  // Push do app do painel (2026-09-30): quais eventos também vão para o celular. "atraso" não tem push.
+  const pickedPush = new Set(fd.getAll("alerts.pushEvents").map(String));
+  const pushEvents = ADMIN_ALERT_EVENTS.filter((ev) => ev !== "atraso" && pickedPush.has(ev));
   await apply(actor, "envios", {
     "orders.slaDays": int(fd, "orders.slaDays", 3, 1, 30),
     "alerts.adminEmail": adminEmail,
     "alerts.events": events,
+    "alerts.pushEvents": pushEvents,
   });
   revalidatePath("/admin", "layout");
   const to = adminEmail || (env().ADMIN_EMAIL ?? "").trim().toLowerCase();

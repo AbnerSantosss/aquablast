@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { Shell } from "@/components/admin/Shell";
+import { AdminPwa } from "@/components/admin/pwa/AdminPwa";
 import { getShipmentCounts } from "@/lib/admin/queries";
 import { log, errorMessage } from "@/lib/log";
 import { getActiveAdminSession } from "@/lib/auth/session";
@@ -23,6 +24,8 @@ export default async function PainelLayout({ children }: { children: ReactNode }
   return (
     <Shell admin={{ name: session.name, email: session.email }} slaLate={slaLate}>
       {children}
+      {/* App do painel (PWA): service worker, aviso de venda com som e polling de 20 s. */}
+      <AdminPwa />
     </Shell>
   );
 }

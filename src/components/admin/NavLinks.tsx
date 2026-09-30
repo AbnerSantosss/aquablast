@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BellRing,
   CreditCard,
   Home,
   LayoutDashboard,
@@ -58,6 +59,8 @@ const NAV: NavEntry[] = [
   },
   { kind: "item", item: { href: "/admin/webhooks", label: "Webhooks", icon: Webhook, match: (p) => p.startsWith("/admin/webhooks") } },
   { kind: "item", item: { href: "/admin/configuracoes", label: "Configurações", icon: Settings, match: (p) => p.startsWith("/admin/configuracoes") } },
+  // App instalável + avisos no celular (PWA, pedido do dono em 2026-09-30).
+  { kind: "item", item: { href: "/admin/app", label: "App e avisos", icon: BellRing, match: (p) => p.startsWith("/admin/app") } },
 ];
 
 function NavLink({ item, pathname, count = 0 }: { item: NavItem; pathname: string; count?: number }) {

@@ -9,7 +9,7 @@ const { spawn, spawnSync } = require("child_process");
 const net = require("net");
 const path = require("path");
 
-const FILES = ["01-unidade-pix", "02-kit-cartao", "03-editar", "04-cep-manual", "05-celular-360", "06-07-relogio", "08-15-fluxos", "16-cupom", "17-cartao-aguardando", "18-envios-sla", "19-bump-cor-qr", "20-integracoes-meta", "api-14-5"];
+const FILES = ["01-unidade-pix", "02-kit-cartao", "03-editar", "04-cep-manual", "05-celular-360", "06-07-relogio", "08-15-fluxos", "16-cupom", "17-cartao-aguardando", "18-envios-sla", "19-bump-cor-qr", "20-integracoes-meta", "21-app-vendas", "api-14-5"];
 
 const portOpen = (port) =>
   new Promise((resolve) => {

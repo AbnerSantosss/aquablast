@@ -1,0 +1,19 @@
+{
+  "id": "/admin",
+  "name": "AquaBlast Painel",
+  "short_name": "AquaBlast",
+  "description": "Painel da AquaBlast: pedidos, checkout e avisos de venda.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["business", "productivity"],
+  "start_url": "/admin",
+  "scope": "/admin",
+  "display": "standalone",
+  "background_color": "#032644",
+  "theme_color": "#063760",
+  "icons": [
+    { "src": "/admin-app/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/admin-app/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/admin-app/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

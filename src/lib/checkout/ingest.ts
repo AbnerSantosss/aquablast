@@ -1,6 +1,8 @@
 import { and, eq } from "drizzle-orm";
+import { after } from "next/server";
 import { db } from "@/db";
 import { orders, webhookDeliveries, type Order } from "@/db/schema";
+import { notifyCheckoutEvent } from "@/lib/email/checkout-alerts";
 import { sendOrderEmail } from "@/lib/email/send";
 import { applyPaymentStatus } from "@/lib/orders/payment";
 import { addOrderEvent, encryptDocument, generateOrderNumber, getOrderById, updateOrderFields } from "@/lib/orders/service";
@@ -82,6 +84,13 @@ export async function ingestCheckoutWebhook(deliveryId: string, payload: unknown
   if (applied.becamePaid && order.checkoutProvider !== OWN_PROVIDER && (await zedyPurchaseEnabled())) {
     await trackServerEvent({ name: "Purchase", eventId: `pur-${order.orderNumber}`, order });
     detail.push("Purchase repassado ao rastreamento de anúncios (ver conversion_events)");
+  }
+
+  // Aviso "pago" da Zedy (e-mail + push do app do painel), como o onOrderPaid faz no checkout próprio.
+  // Uma vez por pedido (email_log / push_alerts); depois da resposta, para não atrasar o webhook.
+  if (applied.becamePaid && order.checkoutProvider !== OWN_PROVIDER) {
+    const paidOrder = order;
+    after(() => notifyCheckoutEvent({ event: "pago", order: paidOrder }));
   }
 
   if (isNew && order.paymentStatus === "pending" && order.pixCode) {
