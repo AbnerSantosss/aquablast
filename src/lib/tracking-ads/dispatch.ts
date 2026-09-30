@@ -24,7 +24,9 @@ import type { TrackDestination, TrackResult, TrackServerEventArgs } from "./type
  *   4. Atualiza a linha: "sent" ou "error" + detalhe (HTTP e mensagem; NUNCA o token).
  * Status possíveis da linha: sending (transitório) | sent | error | skipped.
  *
- * Ids (determinísticos, ver types.ts): ic-<cart.token>, api-<cart.token>, pur-<order.orderNumber>.
+ * Ids (determinísticos, ver types.ts): ic-<visit> (ou ic-<cart.token>), api-<cart.token>, pur-<order.orderNumber>.
+ * InitiateCheckout sai na ABERTURA do checkout (args.visit, sem carrinho) e o carrinho repete o mesmo ic-<visit>:
+ * a reserva em conversion_events deixa passar só o primeiro.
  */
 
 const STALE_SENDING_MS = 5 * 60_000;
@@ -73,6 +75,7 @@ interface EventContext {
   gaSessionId?: string;
   clientIp?: string;
   userAgent?: string;
+  sourceUrl?: string;
 }
 
 const pick = (...vals: (string | null | undefined)[]): string | undefined => {
@@ -101,7 +104,7 @@ async function buildContext(args: TrackServerEventArgs): Promise<EventContext | 
   const order = args.order ?? null;
   let cart = args.cart ?? null;
   if (!cart && order?.cartId) cart = await getCartById(order.cartId);
-  if (!cart && !order) return null;
+  if (!cart && !order) return args.visit ? visitContext(args.visit) : null;
 
   // Consentimento: do pedido quando existe (copiado do carrinho na hora de pagar), senão do carrinho.
   const consent = order ? order.trackingConsent : (cart?.consent ?? false);
@@ -148,6 +151,26 @@ async function buildContext(args: TrackServerEventArgs): Promise<EventContext | 
     gaSessionId: pick(order?.gaSessionId, idsFromCart?.gaSessionId),
     clientIp: pick(order?.clientIp, cart?.clientIp),
     userAgent: pick(order?.userAgent, cart?.userAgent),
+  };
+}
+
+/** Checkout aberto sem carrinho: 1 item (o pacote escolhido), nenhum dado pessoal além do id de visitante. */
+function visitContext(v: NonNullable<TrackServerEventArgs["visit"]>): EventContext {
+  return {
+    consent: v.consent,
+    cartId: null,
+    orderId: null,
+    eventTime: new Date(),
+    valueCents: v.valueCents,
+    items: [{ id: skuOf(v.selection), name: titleOf(v.selection), variant: variantOf(v.selection), quantity: 1, priceCents: v.valueCents }],
+    user: { externalId: v.visitorId ?? null },
+    fbp: v.fbp,
+    fbc: v.fbc,
+    gaClientId: v.gaClientId,
+    gaSessionId: v.gaSessionId,
+    clientIp: v.clientIp,
+    userAgent: v.userAgent,
+    sourceUrl: v.sourceUrl,
   };
 }
 
@@ -207,7 +230,7 @@ function metaInput(args: TrackServerEventArgs, ctx: EventContext): MetaEventInpu
     eventName: args.name,
     eventId: args.eventId,
     eventTime: ctx.eventTime,
-    sourceUrl: defaultSourceUrl("/checkout"),
+    sourceUrl: ctx.sourceUrl ?? defaultSourceUrl("/checkout"),
     hashed: hashMetaUserData({ ...ctx.user, country: "br" }),
     fbp: ctx.fbp,
     fbc: ctx.fbc,

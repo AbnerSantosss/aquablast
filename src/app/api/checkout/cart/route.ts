@@ -14,7 +14,9 @@ import { fail, json, originAllowed, readJson, tooMany } from "../_lib/http";
 /**
  * POST /api/checkout/cart (plano 7.1) — cria/atualiza o carrinho a cada etapa do checkout.
  * O navegador manda seleção, etapa, dados, endereço e os ids de anúncio lidos no navegador; nunca valor.
- * Rastreamento 100% no servidor: InitiateCheckout (`ic-<token>`) quando o carrinho nasce e
+ * Rastreamento 100% no servidor: InitiateCheckout quando o carrinho nasce (`ic-<visit>`, o mesmo id que
+ * /api/checkout/opened já mandou ao abrir a página, então a reserva em conversion_events não envia de novo; sem
+ * `visit`, `ic-<token>`) e
  * AddPaymentInfo (`api-<token>`) quando chega na etapa de pagamento, ambos depois da resposta (`after`).
  * Aviso por e-mail à equipe (checkout-alerts): "chegou no pagamento", uma vez por carrinho. O "checkout aberto"
  * saiu daqui em 2026-09-30 e foi para POST /api/checkout/opened (dispara ao abrir a página, antes do e-mail).
@@ -57,7 +59,7 @@ export async function POST(request: Request): Promise<Response> {
     if (created || reachedPayment) {
       after(async () => {
         try {
-          if (created) await trackServerEvent({ name: "InitiateCheckout", eventId: `ic-${cart.token}`, cart });
+          if (created) await trackServerEvent({ name: "InitiateCheckout", eventId: `ic-${input.visit ?? cart.token}`, cart });
           if (reachedPayment) await trackServerEvent({ name: "AddPaymentInfo", eventId: `api-${cart.token}`, cart });
         } catch (err) {
           log.error("checkout cart: falha no rastreamento", { cartId: cart.id, error: errorMessage(err) });

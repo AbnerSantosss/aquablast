@@ -14,7 +14,7 @@ const STORAGE_KEY = "ck-consent";
 
 export type ConsentValue = "accepted" | "declined";
 
-function readStored(): ConsentValue | null {
+export function readStored(): ConsentValue | null {
   try {
     const v = window.localStorage.getItem(STORAGE_KEY);
     return v === "accepted" || v === "declined" ? v : null;

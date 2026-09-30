@@ -48,6 +48,8 @@ export interface CartPayload {
   tracking?: CartTrackingInput;
   /** Cupom de teste (`?cupom=`); só vai quando existe. */
   coupon?: string;
+  /** Id da visita (o mesmo de postOpened): o InitiateCheckout do carrinho usa o mesmo event_id da abertura. */
+  visit?: string;
 }
 
 async function parseJson<T>(res: Response): Promise<T | ApiFail> {
@@ -72,10 +74,10 @@ export async function postCart(payload: CartPayload): Promise<CartResponse | Api
 }
 
 /**
- * Avisa o servidor que o checkout foi aberto (aviso "checkout aberto" da equipe). Fogo e esquece: não
+ * Avisa o servidor que o checkout foi aberto (aviso "checkout aberto" da equipe e InitiateCheckout pelo servidor). Fogo e esquece: não
  * trava a tela nem mostra erro.
  */
-export function postOpened(payload: { visit: string; selection: CartSelectionInput; coupon?: string; source?: string; campaign?: string }): void {
+export function postOpened(payload: { visit: string; selection: CartSelectionInput; coupon?: string; source?: string; campaign?: string; consent?: boolean }): void {
   try {
     void fetch("/api/checkout/opened", {
       method: "POST",

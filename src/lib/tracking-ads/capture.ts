@@ -3,10 +3,10 @@
 // (cookies _fbp/_fbc/_ga/_ga_<id>, ?fbclid, ?gclid, utm_*) para a UI mandar em cartSchema.tracking junto com `consent`.
 // NÃO existe dataLayer, pushCheckoutEvent nem pixel aqui: os eventos do checkout saem só do servidor (trackServerEvent).
 // Nunca grava cookie, nunca chama rede. Quem chama decide o consentimento: sem consentimento, a UI não deve mandar o resultado.
+import { GA4_STREAM_COOKIE_ID, parseGaClientId, parseGaSessionId } from "./ga-cookies";
 import type { AdIds } from "./types";
 
-/** Id do fluxo GA4 do site (G-P63V467VHL) sem o "G-": nome do cookie de sessão é `_ga_<isto>`. */
-const GA4_STREAM_COOKIE_ID = "P63V467VHL";
+export { parseGaClientId, parseGaSessionId };
 
 const MAX = { fbp: 200, fbc: 500, ga: 100, gclid: 200, utmKey: 40, utmValue: 200 } as const;
 
@@ -32,26 +32,6 @@ const clean = (v: string | null | undefined, max: number): string | undefined =>
   const s = (v ?? "").trim();
   return s && s.length <= max ? s : undefined;
 };
-
-/** `_ga` = "GA1.1.<a>.<b>" → client_id "<a>.<b>". */
-export function parseGaClientId(cookie: string | undefined): string | undefined {
-  if (!cookie) return undefined;
-  const parts = cookie.split(".");
-  if (parts.length < 4) return undefined;
-  const a = parts[parts.length - 2];
-  const b = parts[parts.length - 1];
-  return /^\d+$/.test(a) && /^\d+$/.test(b) ? `${a}.${b}` : undefined;
-}
-
-/** `_ga_<id>` = "GS1.1.<session_id>.<n>..." ou "GS2.1.s<session_id>$o..$g..$t.." → session_id. */
-export function parseGaSessionId(cookie: string | undefined): string | undefined {
-  if (!cookie) return undefined;
-  const parts = cookie.split(".");
-  if (parts.length < 3) return undefined;
-  const third = parts[2];
-  const m = parts[0] === "GS2" ? /^s(\d+)/.exec(third) : /^(\d+)$/.exec(third);
-  return m ? m[1] : undefined;
-}
 
 /** `_fbc` válido: "fb.<n>.<timestamp>.<fbclid>". */
 const FBC_RE = /^fb\.\d\.\d{10,13}\..+$/;

@@ -62,6 +62,8 @@ export const cartSchema = z.strictObject({
   tracking: trackingSchema.optional(),
   /** Cupom de teste (`?cupom=` da URL). O servidor decide se vale; o navegador nunca manda valor. */
   coupon: z.string().trim().max(40).optional(),
+  /** Id da visita ao checkout (sessionStorage, o mesmo de /api/checkout/opened): InitiateCheckout usa `ic-<visit>`. */
+  visit: z.string().regex(/^[A-Za-z0-9-]{8,64}$/).optional(),
 });
 
 /** Dados do cartão em claro. Só existem na memória da requisição POST /api/checkout/pay. NUNCA gravar nem logar. */

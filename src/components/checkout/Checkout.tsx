@@ -11,7 +11,7 @@ import { themeVars } from "@/lib/checkout/own/theme";
 import { readAdIds } from "@/lib/tracking-ads/capture";
 import { isApiFail, postCart, postOpened, type CartPayload, type CartStep, type CartTrackingInput } from "./api";
 import { Campaign } from "./Campaign";
-import { ConsentBanner } from "./ConsentBanner";
+import { ConsentBanner, readStored } from "./ConsentBanner";
 import { ErrorBox, fullName, UFS } from "./Field";
 import { Footer } from "./Footer";
 import { colorName, OrderSummary, type PayView } from "./OrderSummary";
@@ -161,6 +161,7 @@ export function Checkout({
   // Aviso "checkout aberto" para a equipe (2026-09-30). Uma vez por aba (id de visita no sessionStorage); o
   // servidor ainda limita por visita e por IP. Não roda na tela de pedido já pago.
   const openedSent = useRef(false);
+  const visitId = useRef("");
   useEffect(() => {
     if (paid || openedSent.current) return;
     openedSent.current = true;
@@ -175,6 +176,9 @@ export function Checkout({
       visit = typeof crypto.randomUUID === "function" ? crypto.randomUUID() : "";
     }
     if (!visit) return;
+    visitId.current = visit;
+    // Resposta do banner já salva numa visita anterior; sem ela o servidor segue `ads.consentRequired`.
+    const stored = readStored();
     const q = new URLSearchParams(window.location.search);
     const source = q.get("utm_source")?.slice(0, 80);
     const campaign = q.get("utm_campaign")?.slice(0, 120);
@@ -184,6 +188,7 @@ export function Checkout({
       ...(initialCoupon ? { coupon: initialCoupon } : {}),
       ...(source ? { source } : {}),
       ...(campaign ? { campaign } : {}),
+      ...(stored ? { consent: stored === "accepted" } : {}),
     });
   }, [paid, selection.pack, selection.colors, initialCoupon]);
 
@@ -207,6 +212,7 @@ export function Checkout({
       ...(bumpValue && bumpColorValue ? { bumpColor: bumpColorValue } : {}),
       tracking: buildTracking(),
       ...(coupon ? { coupon } : {}),
+      ...(visitId.current ? { visit: visitId.current } : {}),
     };
     if (opts.customer && (data.name || data.email || data.phone || data.cpf)) {
       // Carrinho retomado com CPF vazio: não reenvia o campo — o servidor mantém o CPF cifrado gravado.

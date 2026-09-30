@@ -2,6 +2,7 @@
 // Rastreamento de anúncios 100% no servidor (decisão do dono, 2026-09-27 03h16): Meta CAPI + GA4 Measurement Protocol.
 // Sem GTM, sem dataLayer, sem pixel no navegador para os eventos do checkout. O navegador só LÊ identificadores.
 import type { CheckoutCart, Order } from "@/db/schema";
+import type { Selection } from "@/lib/checkout/own/catalog";
 
 /** Identificadores lidos no navegador por readAdIds() e enviados junto do carrinho (cartSchema.tracking). */
 export interface AdIds {
@@ -52,15 +53,39 @@ export const isAdEventName =(v: unknown): v is AdEventName => typeof v === "stri
 
 export type TrackDestination = "meta" | "ga4";
 
+/**
+ * Checkout aberto, antes de existir carrinho (POST /api/checkout/opened, 2026-09-30). Sem dado pessoal: só a
+ * seleção, o preço no Pix e o que a própria requisição traz (IP, navegador, cookies de anúncio).
+ */
+export interface TrackVisit {
+  /** Já resolvido pela rota: aceito no banner ou `ads.consentRequired` desligado. */
+  consent: boolean;
+  selection: Selection;
+  valueCents: number;
+  /** Cookie de visitante do site (visitor.ts): vira o external_id com hash. */
+  visitorId?: string;
+  sourceUrl?: string;
+  fbp?: string;
+  fbc?: string;
+  gaClientId?: string;
+  gaSessionId?: string;
+  clientIp?: string;
+  userAgent?: string;
+}
+
 export interface TrackServerEventArgs {
   name: TrackEventName;
   /**
    * Id determinístico para deduplicação (unique em conversion_events: destination + eventName + eventId):
-   * InitiateCheckout → `ic-<cart.token>`, AddPaymentInfo → `api-<cart.token>`, Purchase → `pur-<order.orderNumber>`.
+   * InitiateCheckout → `ic-<visit>` (id da visita ao checkout, sessionStorage; o mesmo na abertura e no carrinho)
+   * ou `ic-<cart.token>` quando o navegador não mandou a visita; AddPaymentInfo → `api-<cart.token>`;
+   * Purchase → `pur-<order.orderNumber>`.
    */
   eventId: string;
   cart?: CheckoutCart;
   order?: Order;
+  /** Só sem carrinho e sem pedido: o checkout acabou de abrir. */
+  visit?: TrackVisit;
 }
 
 export interface TrackResult {
