@@ -1,0 +1,29 @@
+[
+  {
+    "id": "icone-a",
+    "out": "scripts/icone-app/opcao-a.png",
+    "width": 1024,
+    "height": 1024,
+    "aspectRatio": "1:1",
+    "model": "openai/gpt-5.4-image-2",
+    "prompt": "Premium mobile app icon, square 1:1, full-bleed background edge to edge (no rounded corners, no border, no frame, no mockup). Background: rich smooth vertical gradient from ocean blue #0a4a7e at the top to deep navy #032644 at the bottom, with a very subtle soft radial light behind the center. Center subject: one glossy 3D water droplet in bright cyan (gradient #63e1ff at the top to #00aef0 at the bottom), crisp specular highlight on the upper left, soft caustic light inside, a small elegant water splash crown with a few tiny droplets around its base. The whole subject stays inside the central 60% of the square (safe zone), with generous empty margin around it. Clean, modern, polished, like a top App Store icon, high contrast, sharp edges, no noise. Absolutely no text, no letters, no numbers, no words, no logos, no watermark."
+  },
+  {
+    "id": "icone-b",
+    "out": "scripts/icone-app/opcao-b.png",
+    "width": 1024,
+    "height": 1024,
+    "aspectRatio": "1:1",
+    "model": "openai/gpt-5.4-image-2",
+    "prompt": "Premium mobile app icon for a sales dashboard, square 1:1, full-bleed background edge to edge (no rounded corners, no border, no frame, no mockup). Background: smooth gradient from ocean blue #0a4a7e at the top to deep navy #032644 at the bottom. Center subject: a glossy 3D water droplet in bright cyan (#63e1ff to #00aef0) with a crisp white specular highlight, and inside the droplet a simple bold white upward trending arrow (sales going up), clean and minimal. A soft cyan glow under the droplet. The whole subject stays inside the central 60% of the square (safe zone), with generous empty margin around it. Modern, polished, friendly, like a top App Store icon, sharp edges, no noise. Absolutely no text, no letters, no numbers, no words, no currency symbols, no logos, no watermark."
+  },
+  {
+    "id": "icone-c",
+    "out": "scripts/icone-app/opcao-c.png",
+    "width": 1024,
+    "height": 1024,
+    "aspectRatio": "1:1",
+    "model": "openai/gpt-5.4-image-2",
+    "prompt": "Premium mobile app icon, square 1:1, full-bleed background edge to edge (no rounded corners, no border, no frame, no mockup). Background: smooth gradient from deep navy #063760 to #032644 with a subtle diagonal shine. Center subject: a bright cyan glossy 3D water droplet (#63e1ff to #00aef0) morphing at its top into a playful water splash, with a small golden coin sparkle next to it, celebrating a new sale. Soft clay-3D style, rounded friendly shapes, crisp highlights. The whole subject stays inside the central 60% of the square (safe zone), with generous empty margin around it. Modern, polished, like a top App Store icon, sharp edges, no noise. Absolutely no text, no letters, no numbers, no words, no currency symbols, no logos, no watermark."
+  }
+]

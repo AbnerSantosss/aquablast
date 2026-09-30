@@ -150,12 +150,20 @@ function circleMask(width, height) {
 
 async function save(job, image, sharp) {
   const out = resolve(root, job.out);
-  // Pastas permitidas: fundos do painel e selos do checkout (checkout-selos-prompts.json, 2026-09-28).
-  const allowed = [resolve(root, "public", "admin-bg"), resolve(root, "public", "checkout", "selos")];
+  // Pastas permitidas: fundos do painel, selos do checkout (checkout-selos-prompts.json, 2026-09-28) e o
+  // icone mestre do app do painel (icone-app-prompts.json, 2026-09-30; vira os PNGs em gen-icones-app.mjs).
+  const allowed = [resolve(root, "public", "admin-bg"), resolve(root, "public", "checkout", "selos"), resolve(root, "scripts", "icone-app")];
   if (!allowed.some((dir) => out.startsWith(dir))) {
-    throw new Error("saida fora de public/admin-bg/ e public/checkout/selos/");
+    throw new Error("saida fora de public/admin-bg/, public/checkout/selos/ e scripts/icone-app/");
   }
   mkdirSync(dirname(out), { recursive: true });
+
+  // Mestre do icone: PNG sem perda, quadrado cheio (o recorte arredondado/maskable e feito depois).
+  if (sharp && out.endsWith(".png")) {
+    const png = await sharp(image.buffer).resize(job.width, job.height, { fit: "cover", position: "centre" }).flatten({ background: "#032644" }).png({ compressionLevel: 9 }).toBuffer();
+    writeFileSync(out, png);
+    return { out, note: `${job.width}x${job.height} png ${(png.length / 1024).toFixed(1)} KB` };
+  }
 
   if (!sharp) {
     const ext = image.mime === "image/jpeg" ? "jpg" : image.mime.split("/")[1];

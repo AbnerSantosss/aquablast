@@ -10,9 +10,15 @@
  *   badge-96.png                 - Android: silhueta branca em fundo transparente (o sistema usa só o alfa)
  *
  * Rodar: node scripts/gen-icones-app.mjs
+ *
+ * Icone ilustrado (2026-09-30, pedido do dono "use o ChatGPT imagem para deixar bonito"): se existir
+ * scripts/icone-app/mestre.png (1024, quadrado cheio, gerado por `node scripts/gen-admin-fundos.mjs
+ * --provedor openrouter --prompts icone-app-prompts.json`, modelo openai/gpt-5.4-image-2), os icones do app
+ * saem dele; o desenho em SVG abaixo vira so a reserva. O badge continua em SVG (o Android usa so o alfa).
+ * Trocar o icone muda o APK: gerar outro no PWABuilder (ver wiki aquablast-app-vendas-pwa).
  */
 import sharp from "sharp";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -67,9 +73,36 @@ const jobs = [
   ["badge-96.png", badge(96)],
 ];
 
+const master = path.join(root, "scripts", "icone-app", "mestre.png");
+sharp.cache(false);
+
+/** Icone a partir do mestre: "rounded" recorta cantos de 22% (icone "any"); sem isso, quadrado cheio. */
+async function fromMaster(size, { rounded }) {
+  // Icone "any" (cantos arredondados): corta 10% de cada lado para a gota aparecer maior no tamanho pequeno.
+  // O maskable precisa da margem inteira (o Android recorta em circulo de 80%).
+  const meta = await sharp(master).metadata();
+  const m = rounded ? Math.round(meta.width * 0.1) : 0;
+  const img = sharp(master).extract({ left: m, top: m, width: meta.width - 2 * m, height: meta.height - 2 * m }).resize(size, size, { fit: "cover" });
+  if (!rounded) return img.flatten({ background: "#032644" }).png({ compressionLevel: 9 }).toBuffer();
+  const r = Math.round(size * 0.22);
+  const mask = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${size}" height="${size}" rx="${r}" fill="#000"/></svg>`);
+  return img.composite([{ input: mask, blend: "dest-in" }]).png({ compressionLevel: 9 }).toBuffer();
+}
+
+const fromMasterJobs = {
+  "icon-192.png": () => fromMaster(192, { rounded: true }),
+  "icon-512.png": () => fromMaster(512, { rounded: true }),
+  // O mestre ja deixa o desenho nos 60% centrais: cabe no circulo seguro (80%) do maskable.
+  "icon-maskable-512.png": () => fromMaster(512, { rounded: false }),
+  "apple-touch-icon.png": () => fromMaster(180, { rounded: false }),
+};
+const useMaster = existsSync(master);
+process.stdout.write(useMaster ? "usando scripts/icone-app/mestre.png\n" : "sem mestre: desenho em SVG\n");
+
 for (const [name, svg] of jobs) {
   const file = path.join(out, name);
-  await sharp(Buffer.from(svg)).png({ compressionLevel: 9 }).toFile(file);
+  const buffer = useMaster && fromMasterJobs[name] ? await fromMasterJobs[name]() : await sharp(Buffer.from(svg)).png({ compressionLevel: 9 }).toBuffer();
+  await sharp(buffer).toFile(file);
   const meta = await sharp(file).metadata();
   process.stdout.write(`${name}: ${meta.width}x${meta.height}\n`);
 }
