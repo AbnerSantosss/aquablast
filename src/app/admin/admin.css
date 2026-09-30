@@ -1874,6 +1874,12 @@ ul.check li + li {
 .admin .dash-operation {
   margin-bottom: 1rem;
 }
+/* Com o funil em cima, a grade não cabe mais na altura da tela: base "auto" (a altura do conteúdo)
+   em vez de 0, senão ela encolhe para os 28rem e os cards passam uns por cima dos outros. A área de
+   conteúdo rola. */
+.content > .dash-operation + .dash-grid {
+  flex: 1 0 auto;
+}
 .admin .dash-operation .cols-track {
   height: 7rem;
 }
