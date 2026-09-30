@@ -9,7 +9,8 @@ import { rejectPanelPassword } from "@/lib/admin/secret-guard";
 import { fail, ok, type ActionResult } from "@/lib/admin/types";
 import { headers } from "next/headers";
 import { clientIp } from "@/lib/rate-limit";
-import { getSetting, isSecretKey, setSetting, type SettingKey, type SettingsMap } from "@/lib/settings";
+import { getSetting, isSecretKey, META_SERVER_EVENTS, setSetting, type SettingKey, type SettingsMap } from "@/lib/settings";
+import { refreshIntegration } from "@/lib/admin/integrations/verify";
 import { orderItemOf } from "@/lib/checkout/own/catalog";
 import { sendMetaTestEvents } from "@/lib/tracking-ads/meta-capi";
 import { ga4TestInputs, validateGa4Event } from "@/lib/tracking-ads/ga4-mp";
@@ -51,14 +52,25 @@ export async function saveMetaSettings(_prev: ActionResult, fd: FormData): Promi
     return fail("Token de acesso inválido: o token da Meta começa com EAA e não tem espaços. O token salvo foi mantido.");
   }
   if (testEventCode && !/^[A-Za-z0-9]{3,60}$/.test(testEventCode)) return fail("Código de evento de teste inválido (formato TEST12345).");
+  const testMode = bool(fd, "ads.meta.testMode");
+  if (testMode && !testEventCode) return fail("Para enviar como evento de teste, preencha o código de evento de teste.");
+  // Checkboxes "Eventos que o site envia": ausente = desmarcado. Só os três que o servidor conhece.
+  const events = META_SERVER_EVENTS.filter((e) => fd.getAll("ads.meta.events").includes(e));
+  const before = await getSetting("ads.meta.pixelId");
   await apply(actor, "ads.meta", {
     "ads.meta.enabled": bool(fd, "ads.meta.enabled"),
     "ads.meta.pixelId": pixelId,
     "ads.meta.accessToken": accessToken,
     "ads.meta.testEventCode": testEventCode,
+    "ads.meta.testMode": testMode,
+    "ads.meta.events": events,
   });
-  const warn = testEventCode ? " Atenção: com o código de teste salvo, TODOS os eventos reais vão para Eventos de teste. Apague-o ao terminar." : "";
-  return ok(`Configurações da Meta salvas. O token em branco foi mantido.${warn}`);
+  // Token novo ou pixel trocado: o selo antigo não vale mais; verifica de novo (GET do pixel, sem enviar evento).
+  const changed = Boolean(accessToken) || before.trim() !== pixelId;
+  const verified = await refreshIntegration("meta", actor, { changed, verify: Boolean(pixelId) });
+  const warn = testMode ? " Atenção: modo teste ligado, os eventos reais vão para Eventos de teste. Desmarque ao terminar." : "";
+  const none = events.length ? "" : " Nenhum evento marcado: o site não envia nada para a Meta.";
+  return ok(`Configurações da Meta salvas. Token em branco é mantido.${verified}${warn}${none}`);
 }
 
 export async function saveGa4Settings(_prev: ActionResult, fd: FormData): Promise<ActionResult> {

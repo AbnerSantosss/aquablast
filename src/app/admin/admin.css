@@ -1375,6 +1375,28 @@ ul.check li + li {
   color: var(--green-ink);
   font-weight: 700;
 }
+/* SecretField (components/admin/SecretField.tsx): máscara + selo numa linha, botões Trocar/Verificar abaixo. Sem cor nova. */
+.secret-row,
+.secret-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.5rem;
+  min-width: 0;
+}
+.secret-mask {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  color: var(--navy);
+  background: var(--pale);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 0.2rem 0.5rem;
+  overflow-wrap: anywhere;
+}
+.secret-row .badge {
+  white-space: normal;
+}
 .tabs {
   display: flex;
   flex-wrap: wrap;

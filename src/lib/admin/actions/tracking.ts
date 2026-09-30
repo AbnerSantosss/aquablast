@@ -78,17 +78,30 @@ export async function saveTracking(_prev: ActionResult, formData: FormData): Pro
     }
   }
 
-  if (changed && current.customerEmail) {
+  // Feedback do e-mail ao cliente vem primeiro na mensagem: é o que o operador precisa saber na hora
+  // (usado igual no detalhe do pedido e na aba Pendentes de /admin/envios).
+  let mailSent = false;
+  let head: string;
+  if (!changed) {
+    head = "Rastreio salvo · código igual ao anterior, e-mail não reenviado";
+    mailSent = true;
+  } else if (!current.customerEmail) {
+    head = "Rastreio salvo, e-mail NÃO enviado: pedido sem e-mail do cliente";
+  } else {
     // O e-mail de envio leva o código de acesso; como o código em claro não é armazenado, um novo é emitido.
     const { code } = await issueAccessCode(current.id, actor);
     const r = await sendOrderEmail(current, "shipped", { automatic: true, accessCode: code, triggeredBy: actor });
-    notes.push(r.ok ? "E-mail de envio enviado com novo código de acesso." : `E-mail de envio não enviado: ${r.error ?? r.skipped}.`);
+    mailSent = r.ok;
+    head = r.ok ? `Rastreio salvo · e-mail enviado para ${current.customerEmail}` : `Rastreio salvo, e-mail NÃO enviado: ${r.error ?? r.skipped ?? "motivo desconhecido"}`;
   }
 
   revalidatePath(`/admin/pedidos/${order.id}`);
   revalidatePath("/admin/pedidos");
+  revalidatePath("/admin/envios");
   revalidatePath("/admin");
-  return ok(`Rastreio salvo. ${notes.join(" ")}`);
+  const message = `${head}. ${notes.join(" ")}`.trim();
+  // O rastreio foi gravado nos dois casos; o erro só sinaliza que o cliente não foi avisado.
+  return mailSent ? ok(message) : fail(message);
 }
 
 export async function syncTrackingNow(_prev: ActionResult, formData: FormData): Promise<ActionResult> {

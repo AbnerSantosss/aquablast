@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { and, desc, eq } from "drizzle-orm";
 import { after } from "next/server";
 import { db } from "@/db";
-import { paymentAttempts, type CheckoutCart, type Order } from "@/db/schema";
+import { checkoutCarts, paymentAttempts, type CheckoutCart, type Order } from "@/db/schema";
 import { ensureBootstrap } from "@/lib/bootstrap";
 import { getCartByToken } from "@/lib/checkout/own/cart";
 import { selectionFromCart, skuOf, titleOf } from "@/lib/checkout/own/catalog";
@@ -18,6 +18,7 @@ import { errorMessage, log } from "@/lib/log";
 import { applyPaymentStatus } from "@/lib/orders/payment";
 import { addOrderEvent, getOrderById, updateOrderFields } from "@/lib/orders/service";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { pixQrForScreen } from "@/lib/pix/qr";
 import { getSettings } from "@/lib/settings";
 import { appUrl, fail, json, originAllowed, readJson, tooMany } from "../_lib/http";
 import { onOrderPaid, postbackUrlFor } from "../_lib/sync";
@@ -148,6 +149,15 @@ export async function POST(request: Request): Promise<Response> {
 
   const bump = s["checkout.bumpEnabled"] && input.bump;
   const sel = selectionFromCart(cart);
+  if (bump && sel.pack === "unit") {
+    // A 2ª unidade tem cor própria (não repete a da 1ª). Sem cor não cobra: a tela bloqueia antes, isto é a trava do servidor.
+    if (!input.bumpColor) return fail(400, "Escolha a cor da 2ª unidade.", { field: "bumpColor" });
+    const colors = [sel.colors[0], input.bumpColor];
+    if (cart.colors[0] !== colors[0] || cart.colors[1] !== colors[1] || cart.colors.length !== 2) {
+      await db.update(checkoutCarts).set({ colors, bumpAccepted: true, updatedAt: new Date() }).where(eq(checkoutCarts.id, cart.id));
+      cart.colors = colors; // SKU, itens do pedido e reusablePix leem colors[1]
+    }
+  }
   const q = await quote(sel.pack, input.method, bump, input.installments, input.coupon);
   if (input.method === "card" && input.installments > q.installments) return fail(400, "Número de parcelas indisponível.", { field: "installments" });
 
@@ -165,7 +175,7 @@ export async function POST(request: Request): Promise<Response> {
         status: "pending",
         orderNumber: existing.orderNumber,
         publicToken: existing.publicToken,
-        pix: { code: existing.pixCode, qrUrl: existing.pixQrUrl, expiresAt: existing.pixExpiresAt.toISOString() },
+        pix: { code: existing.pixCode, qrUrl: pixQrForScreen(existing.pixCode, existing.pixQrUrl), expiresAt: existing.pixExpiresAt.toISOString() },
         message: null,
       });
     }
@@ -292,7 +302,7 @@ export async function POST(request: Request): Promise<Response> {
         log.error("checkout pay: falha no e-mail do Pix", { orderId, error: errorMessage(err) });
       }
     });
-    return payResponse(200, { ok: true, status: "pending", ...base, pix: { code: result.pix.code, qrUrl: result.pix.qrUrl ?? null, expiresAt: expiresAt.toISOString() }, message: null });
+    return payResponse(200, { ok: true, status: "pending", ...base, pix: { code: result.pix.code, qrUrl: pixQrForScreen(result.pix.code, result.pix.qrUrl), expiresAt: expiresAt.toISOString() }, message: null });
   }
 
   if (result.status === "pending") {

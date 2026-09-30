@@ -13,12 +13,13 @@ import type { PaidInfo, PayMethodUi } from "./types";
 export type PayView = PayMethodUi | "preview";
 
 /**
- * O bump (2ª unidade) sempre repete a cor da 1ª: `checkout_carts`/`orders` não têm campo para a cor da 2ª
- * unidade do bump — só `bump: boolean` (order.ts `effectiveSelection`). Por isso não há seletor de cor no bump.
+ * Seleção que a tela mostra. Unidade + bump vira kit com a cor que o cliente escolheu para a 2ª unidade
+ * (gravada em `checkout_carts.colors[1]`, lida por order.ts `effectiveSelection`). Bump marcado ainda sem cor
+ * continua mostrando só a 1ª unidade: a cor da 2ª é obrigatória antes de pagar (2026-09-30).
  */
-export function effectiveSelectionClient(selection: Selection, bump: boolean): Selection {
+export function effectiveSelectionClient(selection: Selection, bump: boolean, bumpColor: Color | null = null): Selection {
   if (selection.pack === "kit") return selection;
-  return bump ? { pack: "kit", colors: [selection.colors[0], selection.colors[0]] } : selection;
+  return bump && bumpColor ? { pack: "kit", colors: [selection.colors[0], bumpColor] } : selection;
 }
 
 export const colorName = (c: Color) => COLOR_LABELS[c].toLowerCase();
@@ -33,6 +34,7 @@ export const thumbOf = (c: Color, size: 110 | 610 = 110) => `/thumbs/produto-${c
 export function OrderSummary({
   selection,
   bump,
+  bumpColor = null,
   quotes,
   payView,
   cardEnabled,
@@ -44,6 +46,8 @@ export function OrderSummary({
 }: {
   selection: Selection;
   bump: boolean;
+  /** Cor da 2ª unidade do bump; null enquanto o cliente não escolheu. */
+  bumpColor?: Color | null;
   quotes: { pix: Quote; card: Quote };
   /** Forma em destaque: a paga, a escolhida na etapa 3 ou "preview" antes dela. */
   payView: PayView;
@@ -111,7 +115,7 @@ export function OrderSummary({
       {hasBump ? (
         <div className="bump-summary">
           <span>
-            <Check size={15} aria-hidden="true" /> + 1 AquaBlast {colorName(c1)}
+            <Check size={15} aria-hidden="true" /> + 1 AquaBlast {bumpColor ? colorName(bumpColor) : "· cor a escolher"}
           </span>
           <b>{money(q.bumpDeltaCents)}</b>
         </div>

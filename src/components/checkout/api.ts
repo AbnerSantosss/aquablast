@@ -40,6 +40,8 @@ export interface CartPayload {
   selection: CartSelectionInput;
   step: CartStep;
   bump: boolean;
+  /** Cor da 2ª unidade (só com bump). Pode faltar enquanto o cliente escolhe; o pagamento exige. */
+  bumpColor?: string;
   /** `cpf` fica de fora no carrinho retomado (plano 8.8) enquanto a pessoa não digitar um novo: o servidor mantém o gravado. */
   customer?: { name: string; email: string; phone: string; cpf?: string };
   address?: { cep: string; street: string; number: string; extra?: string; district: string; city: string; state: string; recipient: string };
@@ -74,6 +76,8 @@ export interface PayPayload {
   method: "pix" | "card";
   installments: number;
   bump: boolean;
+  /** Obrigatória com bump: sem ela o servidor responde 400. */
+  bumpColor?: string;
   card?: CardFormData;
   cardToken?: string;
   cardBrand?: string;

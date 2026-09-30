@@ -1,7 +1,8 @@
-import { and, count, desc, eq, gte, ilike, inArray, isNotNull, lt, ne, or, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, lt, ne, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { adminUsers, emailLog, orders, webhookDeliveries, type Order, type OrderStatus, type PaymentStatus } from "@/db/schema";
 import { getSetting } from "@/lib/settings";
+import { slaLateCutoff } from "@/lib/orders/sla";
 import { dayBounds, startOfDaySP } from "./format";
 import { PAGE_SIZE } from "./types";
 
@@ -191,4 +192,56 @@ export async function listAdmins() {
     orderBy: [adminUsers.createdAt],
     columns: { id: true, email: true, name: true, createdAt: true, lastLoginAt: true, disabledAt: true },
   });
+}
+
+// ---------- Envios (prazo de postagem) ----------
+
+/** Pago, aprovado ou em preparação e ainda sem código de rastreio: o que falta postar. */
+export function pendingShipmentWhere(): SQL {
+  return and(
+    eq(orders.paymentStatus, "paid"),
+    inArray(orders.status, ["approved", "preparing"]),
+    sql`coalesce(${orders.trackingCode}, '') = ''`,
+  )!;
+}
+
+/** Data que conta para o prazo: o pagamento. Pedido antigo sem paidAt usa a criação. */
+export const shipmentPaidDate = () => sql`coalesce(${orders.paidAt}, ${orders.createdAt})`;
+export const shipmentPaidAt = (o: Pick<Order, "paidAt" | "createdAt">): Date => o.paidAt ?? o.createdAt;
+
+/** Pendentes de postagem, do pagamento mais antigo para o mais novo. */
+export async function listPendingShipments(limit = 200): Promise<{ rows: Order[]; total: number }> {
+  const where = pendingShipmentWhere();
+  const [rows, [{ value: total }]] = await Promise.all([
+    db.select().from(orders).where(where).orderBy(asc(shipmentPaidDate())).limit(limit),
+    db.select({ value: count() }).from(orders).where(where),
+  ]);
+  return { rows, total };
+}
+
+/** Pedidos com código de rastreio, do envio mais recente para o mais antigo. */
+export async function listSentShipments(f: { page?: number }): Promise<{ rows: Order[]; total: number; page: number; pages: number }> {
+  const where = sql`coalesce(${orders.trackingCode}, '') <> ''`;
+  const [{ value: total }] = await db.select({ value: count() }).from(orders).where(where);
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.min(pages, Math.max(1, f.page ?? 1));
+  const rows = await db
+    .select()
+    .from(orders)
+    .where(where)
+    .orderBy(desc(sql`coalesce(${orders.shippedAt}, ${orders.updatedAt})`))
+    .limit(PAGE_SIZE)
+    .offset((page - 1) * PAGE_SIZE);
+  return { rows, total, page, pages };
+}
+
+/** Contagem do menu e do Início: pendentes de postagem e quantos já passaram do prazo. */
+export async function getShipmentCounts(): Promise<{ pending: number; late: number; slaDays: number }> {
+  const slaDays = await getSetting("orders.slaDays");
+  const where = pendingShipmentWhere();
+  const [[{ value: pending }], [{ value: late }]] = await Promise.all([
+    db.select({ value: count() }).from(orders).where(where),
+    db.select({ value: count() }).from(orders).where(and(where, lt(shipmentPaidDate(), slaLateCutoff(slaDays)))),
+  ]);
+  return { pending, late, slaDays };
 }

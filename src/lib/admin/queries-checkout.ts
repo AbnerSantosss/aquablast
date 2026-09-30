@@ -6,6 +6,7 @@ import { checkoutCarts, orders, paymentAttempts, type CheckoutCart, type Order }
 import { getGateway, isGatewayName } from "@/lib/gateways";
 import { getSettings } from "@/lib/settings";
 import { dayBounds, startOfDaySP } from "./format";
+import { pendingShipmentWhere } from "./queries";
 import { PAGE_SIZE } from "./types";
 
 function escapeLike(s: string): string {
@@ -55,9 +56,12 @@ export async function getHomeSummary(): Promise<HomeSummary> {
   };
 }
 
-/** "O que fazer agora" do Início: pagos que ainda não saíram (aprovado ou em preparação) e os últimos pedidos. */
+/**
+ * "O que fazer agora" do Início: pagos que ainda não saíram (aprovado ou em preparação, sem código de
+ * rastreio) e os últimos pedidos. Mesma regra da aba Pendentes de /admin/envios.
+ */
 export async function getHomeOrders(): Promise<{ toShip: Order[]; toShipCount: number; latest: Order[] }> {
-  const toShipWhere = and(eq(orders.paymentStatus, "paid"), inArray(orders.status, ["approved", "preparing"]))!;
+  const toShipWhere = pendingShipmentWhere();
   const [toShip, [{ value: toShipCount }], latest] = await Promise.all([
     db.select().from(orders).where(toShipWhere).orderBy(sql`coalesce(${orders.paidAt}, ${orders.createdAt})`).limit(5),
     db.select({ value: count() }).from(orders).where(toShipWhere),

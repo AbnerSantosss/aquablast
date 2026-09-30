@@ -12,10 +12,19 @@ function formatBRL(v: string | number | null | undefined): string {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+/**
+ * URL absoluta a partir de APP_URL. Aceita caminho com ou sem "/" inicial ("rastrear" virava
+ * "http://hostrastrear") e devolve como está o que já começa com http(s).
+ */
+export function absoluteUrl(pathOrUrl: string): string {
+  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  const base = env().APP_URL.replace(/\/+$/, "");
+  return `${base}/${pathOrUrl.replace(/^\/+/, "")}`;
+}
+
 export async function buildVars(order: Order, extra: { accessCode?: string } = {}): Promise<Record<string, string>> {
   const s = await getSettings(["store.name", "store.supportWhatsapp", "store.supportEmail", "store.trackingPageUrl"] as const);
-  const base = env().APP_URL.replace(/\/$/, "");
-  const trackingPath = s["store.trackingPageUrl"].startsWith("http") ? s["store.trackingPageUrl"] : base + s["store.trackingPageUrl"];
+  const trackingPath = absoluteUrl(s["store.trackingPageUrl"] || "/rastrear");
   const link = extra.accessCode ? `${trackingPath}?codigo=${encodeURIComponent(extra.accessCode)}` : trackingPath;
   const name = order.customerName ?? "";
   const items = (order.items ?? []).map((i) => `${i.quantity}× ${escapeHtml(i.name)}${i.variant ? ` (${escapeHtml(i.variant)})` : ""}`).join("<br>");
@@ -27,6 +36,7 @@ export async function buildVars(order: Order, extra: { accessCode?: string } = {
     link_rastreio: link,
     codigo_transportadora: escapeHtml(order.trackingCode ?? ""),
     transportadora: escapeHtml(order.carrierName ?? ""),
+    link_transportadora: escapeHtml(order.trackingUrl ?? ""),
     pix_copia_cola: escapeHtml(order.pixCode ?? ""),
     link_pagamento: order.paymentUrl ?? "",
     valor: formatBRL(order.amountTotal),
@@ -137,6 +147,44 @@ export async function sendAdminPasswordResetEmail(to: string, resetUrl: string):
     const raw = err instanceof Error ? err.message : String(err);
     const message = raw.split(resetUrl).join("[link]").replace(/token=[^\s&"'<>]+/gi, "token=[redigido]").slice(0, 1000);
     await db.insert(emailLog).values({ to, templateKey, subject, provider: s["email.provider"], status: "error", error: message, triggeredBy });
+    return { ok: false, error: message };
+  }
+}
+
+/**
+ * Alerta interno de prazo de postagem vencido (template `admin_sla_atrasado`), para `alerts.adminEmail`.
+ * Respeita o toggle `enabled`: com o template desligado o alerta não sai (skipped) e o cron não marca o pedido.
+ * Fica no email_log ligado ao pedido, com o destinatário da equipe.
+ */
+export async function sendAdminSlaAlert(
+  order: Order,
+  to: string,
+  info: { paidAt: Date; daysLate: number; slaDays: number; paidAtLabel: string },
+): Promise<SendResult> {
+  const tpl = await getTemplate("admin_sla_atrasado");
+  if (!tpl.enabled) return { ok: false, skipped: "Template admin_sla_atrasado desligado" };
+  const base = await buildVars(order);
+  const vars: Record<string, string> = {
+    ...base,
+    cliente: escapeHtml([order.customerName, order.customerEmail].filter(Boolean).join(" · ") || "—"),
+    pago_em: escapeHtml(info.paidAtLabel),
+    dias_atraso: String(info.daysLate),
+    prazo_dias: String(info.slaDays),
+    link_admin: absoluteUrl(`/admin/pedidos/${order.id}`),
+  };
+  const subject = renderTemplate(tpl.subject, vars);
+  const html = renderTemplate(tpl.bodyHtml, vars);
+  const s = await getSettings(["email.provider"] as const);
+  const templateKey = "admin_sla_atrasado";
+  const triggeredBy = "cron:sla";
+  try {
+    const provider = await getEmailProvider();
+    const { messageId } = await provider.send({ to, subject, html, text: htmlToText(html) });
+    await db.insert(emailLog).values({ orderId: order.id, to, templateKey, subject, provider: provider.kind, status: "sent", messageId, triggeredBy });
+    return { ok: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await db.insert(emailLog).values({ orderId: order.id, to, templateKey, subject, provider: s["email.provider"], status: "error", error: message, triggeredBy });
     return { ok: false, error: message };
   }
 }

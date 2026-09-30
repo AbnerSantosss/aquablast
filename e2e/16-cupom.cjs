@@ -58,6 +58,7 @@ async function withPage(fn, query) {
         await L.choosePix(page);
         await page.locator(".bump-choice").click();
         await L.waitText(page.locator(".bump-choice"), "ADICIONADO AO PEDIDO");
+        await page.locator('input[name="bump-color"][value="azul"]').check();
         await L.waitText(page.locator(".order-summary .total b"), "R$ 5,00");
         await L.waitText(priceDetails(page), /Subtotal\s*R\$ 249,90/);
         await L.waitText(priceDetails(page), /Desconto do cupom no Pix\s*− R\$ 244,90/);

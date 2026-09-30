@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import { Check, CircleAlert, Copy, LoaderCircle, RefreshCw, Timer } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { money } from "@/lib/checkout/own/masks";
 import { getStatus, isApiFail, postPay, postSimulatePaid } from "./api";
 import { DemoQr, PaySeals } from "./PaySeals";
+import { PixQr } from "./PixQr";
 import type { PixResult } from "./types";
 import { pad2, ttlLabel, useClock } from "./useClock";
 
@@ -15,13 +15,18 @@ import { pad2, ttlLabel, useClock } from "./useClock";
  * consultado a cada 5 s em GET /api/checkout/status (pausado com a aba oculta) até expirar.
  *
  * QR (plano 8.6): gateway `simulado` → o QR de demonstração da origem (o código "SIMULADO-NAO-PAGUE-..." também
- * não é pagável); gateway real com `qrUrl` → a imagem do gateway (`unoptimized`, pode ser data: URI); gateway
- * real sem `qrUrl` → só o copia e cola (`.ck-pix.no-qr`), nunca um QR falso. "Simular pagamento aprovado" só
+ * não é pagável); gateway real → `<PixQr>` com a imagem que o servidor mandou: a do gateway (data:image) ou, desde
+ * 2026-09-30, o SVG gerado do próprio copia-e-cola (src/lib/pix/qr.ts). Sem `qrUrl` → só o copia e cola
+ * (`.ck-pix.no-qr`), nunca um QR falso.
+ * Bump sem cor da 2ª unidade: FINALIZAR COMPRA não cobra; chama `onBlocked` (a etapa rola e foca a escolha da cor). "Simular pagamento aprovado" só
  * existe com o `simulado`. A validade ("vale por 10 minutos") sai de `checkout.pixTtlSeconds`.
  */
 export function PixPay({
   cartToken,
   bump,
+  bumpColor = null,
+  blocked = false,
+  onBlocked,
   coupon,
   amountCents,
   ttlSeconds,
@@ -31,6 +36,11 @@ export function PixPay({
 }: {
   cartToken: string;
   bump: boolean;
+  /** Cor da 2ª unidade; vai junto no POST quando há bump. */
+  bumpColor?: string | null;
+  /** Falta escolher a cor da 2ª unidade: o botão não cobra. */
+  blocked?: boolean;
+  onBlocked?: () => void;
   coupon: string;
   amountCents: number;
   ttlSeconds: number;
@@ -72,10 +82,14 @@ export function PixPay({
   }, [phase, expired, publicToken]);
 
   async function generate() {
+    if (blocked) {
+      onBlocked?.();
+      return;
+    }
     setPhase("loading");
     setCopyMsg(null);
     setError("");
-    const result = await postPay({ cartToken, method: "pix", installments: 1, bump, ...(coupon ? { coupon } : {}) });
+    const result = await postPay({ cartToken, method: "pix", installments: 1, bump, ...(bump && bumpColor ? { bumpColor } : {}), ...(coupon ? { coupon } : {}) });
     if (isApiFail(result)) {
       setError(result.message ?? result.error);
       setPhase(pix ? "ready" : "idle");
@@ -141,7 +155,7 @@ export function PixPay({
           <Timer size={15} aria-hidden="true" />O código Pix é gerado na hora e vale por {ttl}.
         </p>
         {errorBox}
-        <button type="button" className="primary-button ck-pay-btn" onClick={() => void generate()} disabled={phase === "loading"}>
+        <button type="button" className="primary-button ck-pay-btn" onClick={() => void generate()} disabled={phase === "loading"} aria-disabled={blocked || undefined}>
           {phase === "loading" ? (
             <>
               <LoaderCircle className="spin" size={19} aria-hidden="true" />
@@ -159,13 +173,11 @@ export function PixPay({
   const qr = testMode ? (
     <DemoQr seed={pix.code} dim={expired} />
   ) : pix.qrUrl ? (
-    <figure className={`ck-qr${expired ? " is-dim" : ""}`}>
-      <Image src={pix.qrUrl} alt="QR Code Pix" width={196} height={196} unoptimized />
-    </figure>
+    <PixQr src={pix.qrUrl} dim={expired} />
   ) : null;
 
   return (
-    <div className={`ck-pix${qr ? "" : " no-qr"}`}>
+    <div className={`ck-pix${qr ? "" : " no-qr"}${qr && !testMode ? " has-real-qr" : ""}`}>
       {qr}
       <div className="ck-pix-info">
         {expired ? (

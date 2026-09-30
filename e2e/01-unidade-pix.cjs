@@ -58,8 +58,11 @@ async function run(variant = { width: 1440, height: 900, tag: "desktop" }) {
     await L.waitText(page.locator(".order-bump .bump-price"), "+ R$ 90,00");
     await page.locator(".bump-choice").click();
     await L.waitText(page.locator(".bump-choice"), "ADICIONADO AO PEDIDO");
+    // Desde 2026-09-30 a 2a unidade pede a cor (sem cor pre-escolhida); aqui preto, diferente da 1a (azul).
+    await L.waitText(page.locator(".bump-color-alert"), "Escolha a cor para continuar");
+    await page.locator('input[name="bump-color"][value="preto"]').check();
     await L.waitText(page.locator(".order-summary .total b"), "R$ 249,90");
-    await L.waitText(page.locator(".bump-summary"), /\+ 1 AquaBlast azul.*R\$ 90,00/);
+    await L.waitText(page.locator(".bump-summary"), /\+ 1 AquaBlast preto.*R\$ 90,00/);
     await L.noHorizontalScroll(page);
 
     await L.btn(page, "FINALIZAR COMPRA").click();

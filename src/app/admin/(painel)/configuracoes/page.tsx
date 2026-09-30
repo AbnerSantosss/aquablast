@@ -5,10 +5,13 @@ import { Tone } from "@/components/admin/Badge";
 import { ChangePasswordForm } from "@/components/admin/ChangePasswordForm";
 import { CopyButton } from "@/components/admin/CopyButton";
 import { PasswordInput } from "@/components/admin/PasswordInput";
+import { SecretField, secretBadge } from "@/components/admin/SecretField";
 import { SectionTabs } from "@/components/admin/SectionTabs";
 import { requireAdmin } from "@/lib/auth/session";
 import { env } from "@/lib/env";
 import { describeSecret, getSettings } from "@/lib/settings";
+import { verifyIntegrationAction } from "@/lib/admin/actions/integrations";
+import { getIntegrationStatus } from "@/lib/admin/integrations/status";
 import { getStoredSupportWhatsapp } from "@/lib/site/support-contact";
 import { CARRIERS } from "@/lib/tracking/provider";
 import { PASSWORD_MAX, PASSWORD_MIN } from "@/lib/admin/schemas/auth";
@@ -18,6 +21,7 @@ import {
   saveCheckoutSettings,
   saveEmailSettings,
   savePixReminderSettings,
+  saveShippingSettings,
   saveStoreSettings,
   saveTrackingSettings,
   testEmailDelivery,
@@ -56,10 +60,6 @@ const FIELD_NAMES = [
   "carrierName",
 ];
 
-function SecretHint({ s }: { s: { configured: boolean; hint: string } }) {
-  return <span className={`secret-hint ${s.configured ? "is-on" : ""}`}>{s.configured ? `configurado ${s.hint} · deixe em branco para manter` : "não configurado"}</span>;
-}
-
 export default async function SettingsPage() {
   const session = await requireAdmin();
   const s = await getSettings([
@@ -83,10 +83,12 @@ export default async function SettingsPage() {
     "checkout.fieldMap",
     "checkout.signatureHeader",
     "accessCode.validityDays",
+    "orders.slaDays",
+    "alerts.adminEmail",
   ] as const);
   // WhatsApp: só o que está gravado (vazio sem linha). getSettings() devolveria o
   // DEFAULT do código, e salvar "Loja" gravaria esse número não confirmado, que iria ao site.
-  const [smtpPass, resendKey, brevoKey, trackKey, whSecret, admins, storedWhatsapp] = await Promise.all([
+  const [smtpPass, resendKey, brevoKey, trackKey, whSecret, admins, storedWhatsapp, status] = await Promise.all([
     describeSecret("email.smtp.pass"),
     describeSecret("email.resend.apiKey"),
     describeSecret("email.brevo.apiKey"),
@@ -94,7 +96,15 @@ export default async function SettingsPage() {
     describeSecret("checkout.webhookSecret"),
     listAdmins(),
     getStoredSupportWhatsapp(),
+    getIntegrationStatus(),
   ]);
+  // Selo e "Verificar" do e-mail valem só para o provedor selecionado (é ele que verifyEmailConnection testa).
+  const emailProvider = s["email.provider"];
+  const emailSecretProps = (provider: string) =>
+    emailProvider === provider
+      ? { status: status.email, verifyAction: verifyIntegrationAction }
+      : { help: "A verificação vale para o provedor selecionado acima." };
+  const emailBadge = status.email ? secretBadge(true, true, status.email) : null;
   const e = env();
   const base = e.APP_URL.replace(/\/$/, "");
   const checkoutWebhookUrl = `${base}/api/webhooks/checkout/${e.CHECKOUT_WEBHOOK_TOKEN}`;
@@ -181,36 +191,27 @@ export default async function SettingsPage() {
             <span>Porta</span>
             <input name="email.smtp.port" type="number" defaultValue={s["email.smtp.port"]} min={1} max={65535} />
           </label>
-          <label className="field">
-            <span>Usuário</span>
-            <input name="email.smtp.user" defaultValue={s["email.smtp.user"]} maxLength={254} autoComplete="off" />
-          </label>
-          <label className="field">
-            <span>Senha</span>
-            <input name="email.smtp.pass" type="password" autoComplete="new-password" maxLength={500} placeholder={smtpPass.configured ? "••••••••" : ""} />
-            <SecretHint s={smtpPass} />
-          </label>
+          {/* Usuário + "Conexão segura" empilhados ao lado da Senha (máscara, selo e botões ocupam 3 linhas): cabe em 1366x768. */}
+          <div>
+            <label className="field">
+              <span>Usuário</span>
+              <input name="email.smtp.user" defaultValue={s["email.smtp.user"]} maxLength={254} autoComplete="off" />
+            </label>
+            <label className="check" style={{ marginTop: "0.6rem" }}>
+              <input type="checkbox" name="email.smtp.secure" defaultChecked={s["email.smtp.secure"]} />
+              <span>SSL/TLS (porta 465); desmarcado = STARTTLS (587)</span>
+            </label>
+          </div>
+          <SecretField name="email.smtp.pass" label="Senha" secret={smtpPass} verifiable {...emailSecretProps("smtp")} />
         </div>
-        <label className="check">
-          <input type="checkbox" name="email.smtp.secure" defaultChecked={s["email.smtp.secure"]} />
-          <span>Conexão segura (SSL/TLS na porta 465; desmarque para STARTTLS na 587)</span>
-        </label>
         </div>
 
         <div>
         <h3 className="section-title">Resend</h3>
-        <label className="field">
-          <span>API key</span>
-          <input name="email.resend.apiKey" type="password" autoComplete="new-password" maxLength={500} placeholder={resendKey.configured ? "••••••••" : "re_…"} />
-          <SecretHint s={resendKey} />
-        </label>
+        <SecretField name="email.resend.apiKey" label="API key" secret={resendKey} verifiable placeholder="re_…" {...emailSecretProps("resend")} />
 
         <h3 className="section-title">Brevo</h3>
-        <label className="field">
-          <span>API key</span>
-          <input name="email.brevo.apiKey" type="password" autoComplete="new-password" maxLength={500} placeholder={brevoKey.configured ? "••••••••" : "xkeysib-…"} />
-          <SecretHint s={brevoKey} />
-        </label>
+        <SecretField name="email.brevo.apiKey" label="API key" secret={brevoKey} verifiable placeholder="xkeysib-…" {...emailSecretProps("brevo")} />
         </div>
         </div>
 
@@ -220,16 +221,29 @@ export default async function SettingsPage() {
           </button>
         </div>
       </ActionForm>
-      <h3 className="section-title">Testar envio</h3>
+      {/* Sem título próprio (o rótulo do campo diz o que é): a aba cabe em 1366x768 sem rolar. */}
+      <div className="form-row" style={{ gap: "0.5rem 1.5rem", marginTop: "0.75rem", alignItems: "flex-start" }}>
       <ActionForm action={testEmailDelivery} inline>
-        <label className="field">
-          <span>Para</span>
-          <input name="to" type="email" defaultValue={session.email} maxLength={254} style={{ width: "16rem", maxWidth: "100%" }} />
-        </label>
+        <input name="to" type="email" aria-label="Enviar e-mail de teste para" defaultValue={session.email} maxLength={254} style={{ width: "16rem", maxWidth: "100%" }} />
         <button type="submit" className="btn btn-ghost">
           Enviar e-mail de teste
         </button>
       </ActionForm>
+      {/* Verificar conexão: só abre a conexão com o provedor salvo (SMTP/Resend/Brevo), sem mandar e-mail. */}
+      <ActionForm action={verifyIntegrationAction} inline>
+        <input type="hidden" name="field" value="email" />
+        <button type="submit" className="btn btn-ghost">
+          Verificar conexão
+        </button>
+        {emailBadge ? (
+          <span className={`badge tone-${emailBadge.tone}`} data-testid="email-status">
+            {emailBadge.text}
+          </span>
+        ) : (
+          <span className="muted small">Conexão ainda não verificada.</span>
+        )}
+      </ActionForm>
+      </div>
     </section>
   );
 
@@ -259,6 +273,35 @@ export default async function SettingsPage() {
     </section>
   );
 
+  const envios = (
+    <section className="card">
+      <div className="card-head">
+        <h2>Envios</h2>
+        <p className="muted small">
+          Prazo para postar depois do pagamento. Pedido pago sem rastreio além do prazo fica vermelho em <Link href="/admin/envios">Envios</Link> e no Início, e
+          gera um único e-mail de alerta por pedido para o endereço abaixo (vazio = só o aviso no painel).
+        </p>
+      </div>
+      <ActionForm action={saveShippingSettings}>
+        <div className="grid-2">
+          <label className="field">
+            <span>Prazo de postagem (dias após o pagamento)</span>
+            <input name="orders.slaDays" type="number" min={1} max={30} required defaultValue={s["orders.slaDays"]} />
+          </label>
+          <label className="field">
+            <span>E-mail para alertas de atraso</span>
+            <input name="alerts.adminEmail" type="email" maxLength={254} autoComplete="off" placeholder="voce@exemplo.com" defaultValue={s["alerts.adminEmail"]} />
+          </label>
+        </div>
+        <div className="actions tight">
+          <button type="submit" className="btn btn-primary">
+            Salvar envios
+          </button>
+        </div>
+      </ActionForm>
+    </section>
+  );
+
   const rastreio = (
     <section className="card">
       <div className="card-head">
@@ -274,11 +317,7 @@ export default async function SettingsPage() {
               <option value="manual">Manual (sem integração)</option>
             </select>
           </label>
-          <label className="field">
-            <span>API key do 17TRACK</span>
-            <input name="tracking.17track.apiKey" type="password" autoComplete="new-password" maxLength={500} placeholder={trackKey.configured ? "••••••••" : ""} />
-            <SecretHint s={trackKey} />
-          </label>
+          <SecretField name="tracking.17track.apiKey" label="API key do 17TRACK" secret={trackKey} status={status["tracking.17track"]} verifiable verifyAction={verifyIntegrationAction} />
           <label className="field">
             <span>Transportadora padrão</span>
             <select name="tracking.17track.defaultCarrier" defaultValue={String(s["tracking.17track.defaultCarrier"])}>
@@ -347,11 +386,10 @@ export default async function SettingsPage() {
                 <input name="checkout.signatureHeader" defaultValue={s["checkout.signatureHeader"]} maxLength={100} placeholder="x-signature" />
                 <span className="hint">Se a plataforma assina o corpo com HMAC, informe o header e o segredo.</span>
               </label>
-              <label className="field span-2">
-                <span>Segredo do webhook (opcional)</span>
-                <input name="checkout.webhookSecret" type="password" autoComplete="new-password" maxLength={500} placeholder={whSecret.configured ? "••••••••" : ""} />
-                <SecretHint s={whSecret} />
-              </label>
+              {/* Sem verificação: o segredo HMAC só é conferido quando a plataforma manda um webhook. */}
+              <div className="span-2">
+                <SecretField name="checkout.webhookSecret" label="Segredo do webhook (opcional)" secret={whSecret} verifiable={false} />
+              </div>
             </div>
           </div>
           <div>
@@ -498,6 +536,7 @@ export default async function SettingsPage() {
           { id: "email", label: "E-mail", content: email },
           { id: "pix", label: "Lembrete de Pix", content: pix },
           { id: "rastreio", label: "Rastreio", content: rastreio },
+          { id: "envios", label: "Envios", content: envios },
           { id: "checkout", label: "Checkout", content: checkout },
           { id: "acesso", label: "Código de acesso", content: acesso },
           { id: "admin", label: "Administradores", content: admin },

@@ -3,7 +3,10 @@ import { requireAdmin } from "@/lib/auth/session";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { CopyButton } from "@/components/admin/CopyButton";
 import { SectionTabs } from "@/components/admin/SectionTabs";
-import { PLAIN_INPUT, SECRET_INPUT } from "@/components/admin/input-props";
+import { PLAIN_INPUT } from "@/components/admin/input-props";
+import { SecretField } from "@/components/admin/SecretField";
+import { verifyIntegrationAction } from "@/lib/admin/actions/integrations";
+import { getIntegrationStatus } from "@/lib/admin/integrations/status";
 import {
   createIronpayOffers,
   regeneratePostbackToken,
@@ -46,6 +49,7 @@ export default async function GatewaysPage() {
   const mpToken = await describeSecret("gateway.mercadopago.accessToken");
   const mpWebhook = await describeSecret("gateway.mercadopago.webhookSecret");
   const fastpayKey = await describeSecret("gateway.fastpay.apiKey");
+  const status = await getIntegrationStatus();
 
   const configuredByProvider: Record<GatewayName, boolean> = {
     ironpay: await getGateway("ironpay").configured(),
@@ -203,10 +207,8 @@ export default async function GatewaysPage() {
         </div>
         <p className="small muted">Pix e cartão. Cartão em claro (sem tokenização) — o número nunca é salvo por nós.</p>
         <ActionForm key={`${s["gateway.ironpay.offerHashUnit"]}|${s["gateway.ironpay.offerHashKit"]}|${s["gateway.ironpay.productHashUnit"]}|${s["gateway.ironpay.productHashKit"]}`} action={saveIronpaySettings} autoComplete="off">
-          <label className="field">
-            <span>Token da API {ironpayToken.configured ? <span className="secret-hint is-on">{ironpayToken.hint}</span> : null}</span>
-            <input name="gateway.ironpay.apiToken" placeholder={ironpayToken.configured ? "Deixe em branco para manter" : ""} {...SECRET_INPUT} />
-          </label>
+          {/* Sem Verificar: a IronPay não documenta GET só de leitura sem hash de transação (nada de criar cobrança para testar). */}
+          <SecretField name="gateway.ironpay.apiToken" label="Token da API" secret={ironpayToken} verifiable={false} />
           <div className="grid-2">
             <label className="field">
               <span>Offer hash — unidade</span>
@@ -251,18 +253,20 @@ export default async function GatewaysPage() {
         </div>
         <p className="small muted">Pix e cartão. Cartão só por token (tokenizado no navegador) — o número nunca chega ao servidor.</p>
         <ActionForm action={saveMercadopagoSettings} autoComplete="off">
-          <label className="field">
-            <span>Access token {mpToken.configured ? <span className="secret-hint is-on">{mpToken.hint}</span> : null}</span>
-            <input name="gateway.mercadopago.accessToken" placeholder={mpToken.configured ? "Deixe em branco para manter" : ""} {...SECRET_INPUT} />
-          </label>
+          <SecretField
+            name="gateway.mercadopago.accessToken"
+            label="Access token"
+            secret={mpToken}
+            status={status["gateway.mercadopago"]}
+            verifiable
+            verifyAction={verifyIntegrationAction}
+            placeholder="APP_USR-..."
+          />
           <label className="field">
             <span>Public key</span>
             <input name="gateway.mercadopago.publicKey" defaultValue={s["gateway.mercadopago.publicKey"]} {...PLAIN_INPUT} />
           </label>
-          <label className="field">
-            <span>Webhook secret {mpWebhook.configured ? <span className="secret-hint is-on">{mpWebhook.hint}</span> : null}</span>
-            <input name="gateway.mercadopago.webhookSecret" placeholder={mpWebhook.configured ? "Deixe em branco para manter" : ""} {...SECRET_INPUT} />
-          </label>
+          <SecretField name="gateway.mercadopago.webhookSecret" label="Webhook secret" secret={mpWebhook} verifiable={false} help="Confere a assinatura dos avisos que chegam; não há teste sem um aviso real." />
           <div className="actions">
             <button type="submit" className="btn btn-primary">
               Salvar Mercado Pago
@@ -278,10 +282,14 @@ export default async function GatewaysPage() {
         </div>
         <p className="small muted">Pix e cartão. Cartão em claro. Sem estorno por API — o estorno é feito no painel da FastPay.</p>
         <ActionForm action={saveFastpaySettings} autoComplete="off">
-          <label className="field">
-            <span>Chave de API {fastpayKey.configured ? <span className="secret-hint is-on">{fastpayKey.hint}</span> : null}</span>
-            <input name="gateway.fastpay.apiKey" placeholder={fastpayKey.configured ? "Deixe em branco para manter" : ""} {...SECRET_INPUT} />
-          </label>
+          <SecretField
+            name="gateway.fastpay.apiKey"
+            label="Chave de API"
+            secret={fastpayKey}
+            status={status["gateway.fastpay"]}
+            verifiable
+            verifyAction={verifyIntegrationAction}
+          />
           <div className="actions">
             <button type="submit" className="btn btn-primary">
               Salvar FastPay

@@ -28,10 +28,14 @@ function parseExp(v: string): { month: number; year: number } | null {
  * NÚMERO (antes da fase 14 iam como texto e o servidor respondia 400 em todo pagamento com cartão).
  * Recusa: limpa número e CVV (plano 8.7). Regra dura: nunca logar nem gravar número, validade ou CVV.
  * O aviso "use o cartão de teste" só aparece com o gateway `simulado`; no modo real, o aviso de segurança.
+ * Bump sem cor da 2ª unidade (`blocked`): o envio não cobra e chama `onBlocked` (a etapa rola e foca a escolha da cor).
  */
 export function CardPay({
   cartToken,
   bump,
+  bumpColor = null,
+  blocked = false,
+  onBlocked,
   amountCents,
   maxInstallments,
   gateway,
@@ -43,6 +47,10 @@ export function CardPay({
 }: {
   cartToken: string;
   bump: boolean;
+  /** Cor da 2ª unidade; vai junto no POST quando há bump. */
+  bumpColor?: string | null;
+  blocked?: boolean;
+  onBlocked?: () => void;
   amountCents: number;
   maxInstallments: number;
   gateway: string | null;
@@ -86,6 +94,10 @@ export function CardPay({
   async function pay(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (busy) return;
+    if (blocked) {
+      onBlocked?.();
+      return;
+    }
     const exp = parseExp(f.exp);
     if (!validLuhn(digits)) return fail("Número do cartão inválido. Confira os dígitos.", "cc-number");
     if (!exp || !validCardExpiry(exp.month, exp.year)) return fail("Validade inválida ou vencida. Use o formato MM/AA.", "cc-exp");
@@ -95,6 +107,7 @@ export function CardPay({
     setError("");
     setBusy(true);
     const installments = Number(inst);
+    const extra = bump && bumpColor ? { bumpColor } : {};
     const card: CardFormData = { number: digits, holderName: f.name.trim(), expMonth: exp.month, expYear: exp.year, cvv: f.cvv, holderCpf: onlyDigits(f.cpf) };
     try {
       const tokenizes = gateway ? gatewayTokenizes(gateway as GatewayName) : false;
@@ -106,6 +119,7 @@ export function CardPay({
                 method: "card",
                 installments,
                 bump,
+                ...extra,
                 cardToken: t.token,
                 cardBrand: t.brand,
                 cardPaymentMethodId: t.paymentMethodId,
@@ -113,7 +127,7 @@ export function CardPay({
                 cardLast4: cardLast4(digits),
               }),
             )
-          : await postPay({ cartToken, method: "card", installments, bump, card });
+          : await postPay({ cartToken, method: "card", installments, bump, ...extra, card });
       if (isApiFail(result)) {
         if (result.status === "refused" || result.status === "error") setF((p) => ({ ...p, number: "", cvv: "" }));
         setError(result.message ?? result.error);
@@ -197,7 +211,7 @@ export function CardPay({
           {error}
         </p>
       ) : null}
-      <button type="submit" className="primary-button ck-pay-btn" disabled={busy}>
+      <button type="submit" className="primary-button ck-pay-btn" disabled={busy} aria-disabled={blocked || undefined}>
         {busy ? (
           <>
             <LoaderCircle className="spin" size={19} aria-hidden="true" />

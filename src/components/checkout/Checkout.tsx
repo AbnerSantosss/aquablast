@@ -23,6 +23,7 @@ import { StepPagamento } from "./StepPagamento";
 import { SuccessView } from "./SuccessView";
 import { TopBar } from "./TopBar";
 import { TrustSeals } from "./TrustSeals";
+import type { Color } from "@/lib/site/types";
 import type { CepState, CheckoutInitial, FieldKey, FormData, PaidInfo, PayMethodUi, StepName } from "./types";
 
 const TOKEN_KEY = "ck-cart-token";
@@ -111,6 +112,8 @@ export function Checkout({
   const [step, setStep] = useState(initial ? STEP_OF[initial.step] : 1);
   const [data, setData] = useState<FormData>(initial ? { ...initial.customer, ...initial.address } : EMPTY);
   const [bump, setBump] = useState(initial?.bump ?? false);
+  // Cor da 2ª unidade do bump: nunca pré-escolhida; desmarcar o bump limpa. Sem ela o pagamento fica bloqueado.
+  const [bumpColor, setBumpColor] = useState<Color | null>(initial?.bump ? (initial.bumpColor ?? null) : null);
   // Mantém a seleção inicial da etapa de pagamento; nas etapas anteriores, o resumo destaca o Pix.
   // Cartão aguardando gateway: a etapa 3 abre no Pix (única forma que cobra).
   const [method, setMethod] = useState<PayMethodUi>(methods.includes("card") && !cardPending ? "card" : methods.includes("pix") ? "pix" : (methods[0] ?? "pix"));
@@ -166,13 +169,14 @@ export function Checkout({
     }
   }, [consent]);
 
-  async function saveCart(targetStep: CartStep, bumpValue: boolean, opts: { customer?: boolean; address?: boolean } = {}) {
+  async function saveCart(targetStep: CartStep, bumpValue: boolean, opts: { customer?: boolean; address?: boolean } = {}, bumpColorValue: Color | null = bumpColor) {
     const version = ++quoteVersion.current;
     const payload: CartPayload = {
       token: cartToken ?? readTokenFromStorage(),
       selection: { pack: selection.pack, colors: selection.colors },
       step: targetStep,
       bump: bumpValue,
+      ...(bumpValue && bumpColorValue ? { bumpColor: bumpColorValue } : {}),
       tracking: buildTracking(),
       ...(coupon ? { coupon } : {}),
     };
@@ -336,10 +340,20 @@ export function Checkout({
 
   function handleBumpChange(value: boolean) {
     setBump(value);
+    const color = value ? bumpColor : null;
+    if (!value) setBumpColor(null);
     setError("");
     setNotice(null);
-    void saveCart("pagamento", value, { customer: true, address: true }).then((result) => {
+    void saveCart("pagamento", value, { customer: true, address: true }, color).then((result) => {
       if (isApiFail(result)) setNotice("Não foi possível atualizar o total agora. Os valores abaixo podem estar desatualizados.");
+    });
+  }
+
+  function handleBumpColorChange(color: Color) {
+    setBumpColor(color);
+    setError("");
+    void saveCart("pagamento", true, { customer: true, address: true }, color).then((result) => {
+      if (isApiFail(result)) setNotice("Não foi possível salvar a cor agora. Ela vai junto quando você finalizar a compra.");
     });
   }
 
@@ -358,7 +372,7 @@ export function Checkout({
     selection.pack === "kit"
       ? [`Kit com 2 AquaBlast (1 ${colorName(c1)} + 1 ${colorName(c2 ?? c1)})`]
       : paidKit
-        ? [`1 AquaBlast ${colorName(c1)}`, `+ 1 AquaBlast ${colorName(c1)} (oferta do kit)`]
+        ? [`1 AquaBlast ${colorName(c1)}`, `+ 1 AquaBlast ${colorName(bumpColor ?? c1)} (oferta do kit)`]
         : [`1 AquaBlast ${colorName(c1)}`];
   const address = `${data.street}, ${data.number}${data.extra ? ` · ${data.extra}` : ""} · ${data.district} · ${data.city}/${data.state} · CEP ${data.cep}`;
   const paidPer = paid ? Math.round(paid.amountCents / Math.max(1, paid.installments)) : 0;
@@ -429,6 +443,8 @@ export function Checkout({
         canBump={canBump}
         bump={bump}
         onBumpChange={handleBumpChange}
+        bumpColor={bumpColor}
+        onBumpColorChange={handleBumpColorChange}
         quotes={quotes}
         coupon={coupon}
         methods={methods}
@@ -453,7 +469,7 @@ export function Checkout({
       <ShipBar theme={theme} />
       <TopBar theme={theme} />
       <main className="container ck-main">
-        <Campaign theme={theme} selection={selection} bump={paid ? bump : hasBump} />
+        <Campaign theme={theme} selection={selection} bump={paid ? bump : hasBump} bumpColor={bumpColor} />
         {notice ? (
           <div className="notice" role="alert">
             {notice}{" "}
@@ -514,6 +530,7 @@ export function Checkout({
           <OrderSummary
             selection={selection}
             bump={paid ? bump : hasBump}
+            bumpColor={bumpColor}
             quotes={quotes}
             payView={payView}
             cardEnabled={methods.includes("card")}

@@ -125,6 +125,8 @@ export const orders = pgTable(
     adminNotes: text("admin_notes"),
     lastReminderAt: timestamp("last_reminder_at", { withTimezone: true }),
     reminderCount: integer("reminder_count").default(0).notNull(),
+    /** Quando o admin foi avisado por e-mail de que o pedido passou do SLA de postagem (um aviso por pedido). */
+    slaAlertedAt: timestamp("sla_alerted_at", { withTimezone: true }),
   },
   (t) => [
     uniqueIndex("orders_order_number_idx").on(t.orderNumber),

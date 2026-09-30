@@ -9,7 +9,8 @@ import { invalidateOpenPasswordResets } from "@/lib/auth/password-reset";
 import { createAdminSession, requireAdmin } from "@/lib/auth/session";
 import { ensureBootstrap } from "@/lib/bootstrap";
 import { sendTestEmail } from "@/lib/email/send";
-import { isSecretKey, setSetting, type SettingKey, type SettingsMap } from "@/lib/settings";
+import { getSettings, isSecretKey, setSetting, type SettingKey, type SettingsMap } from "@/lib/settings";
+import { refreshIntegration } from "@/lib/admin/integrations/verify";
 import { getStoredSupportWhatsapp } from "@/lib/site/support-contact";
 import { CARRIERS } from "@/lib/tracking/provider";
 import { actorOf, audit } from "@/lib/admin/audit";
@@ -88,8 +89,14 @@ export async function saveEmailSettings(_prev: ActionResult, fd: FormData): Prom
   } else {
     patch["email.brevo.apiKey"] = str(fd, "email.brevo.apiKey", 500);
   }
+  // Selo "Conectado": segredo novo ou dado de conexão trocado invalida a verificação antiga e verifica de novo.
+  const connKeys = ["email.provider", "email.from.address", "email.smtp.host", "email.smtp.port", "email.smtp.secure", "email.smtp.user"] as const;
+  const before = await getSettings(connKeys);
+  const secretTyped = Boolean(patch["email.smtp.pass"] || patch["email.resend.apiKey"] || patch["email.brevo.apiKey"]);
+  const connChanged = connKeys.some((k) => k in patch && patch[k] !== before[k]);
   await apply(actor, "email", patch);
-  return ok("Configurações de e-mail salvas. Segredos em branco foram mantidos.");
+  const verified = await refreshIntegration("email", actor, { changed: secretTyped || connChanged, verify: true });
+  return ok(`Configurações de e-mail salvas. Segredos em branco foram mantidos.${verified}`);
 }
 
 export async function savePixReminderSettings(_prev: ActionResult, fd: FormData): Promise<ActionResult> {
@@ -101,18 +108,34 @@ export async function savePixReminderSettings(_prev: ActionResult, fd: FormData)
   return ok("Lembrete de Pix salvo.");
 }
 
+/** Bloco "Envios": prazo de postagem (SLA) e e-mail que recebe o alerta de pedido atrasado. */
+export async function saveShippingSettings(_prev: ActionResult, fd: FormData): Promise<ActionResult> {
+  const { actor } = await begin();
+  const adminEmail = str(fd, "alerts.adminEmail", 254).toLowerCase();
+  if (adminEmail && !isEmail(adminEmail)) return fail("E-mail para alertas inválido. Deixe vazio para não receber alertas.");
+  await apply(actor, "envios", {
+    "orders.slaDays": int(fd, "orders.slaDays", 3, 1, 30),
+    "alerts.adminEmail": adminEmail,
+  });
+  revalidatePath("/admin", "layout");
+  return ok(adminEmail ? `Envios salvo. Alertas de atraso vão para ${adminEmail}.` : "Envios salvo. Sem e-mail para alertas: o atraso aparece só no painel.");
+}
+
 export async function saveTrackingSettings(_prev: ActionResult, fd: FormData): Promise<ActionResult> {
   const { actor } = await begin();
   const provider = str(fd, "tracking.provider", 20);
   if (provider !== "17track" && provider !== "manual") return fail("Provedor inválido.");
   const carrier = Number(str(fd, "tracking.17track.defaultCarrier", 20));
+  const apiKey = str(fd, "tracking.17track.apiKey", 500);
   await apply(actor, "tracking", {
     "tracking.provider": provider,
-    "tracking.17track.apiKey": str(fd, "tracking.17track.apiKey", 500),
+    "tracking.17track.apiKey": apiKey,
     "tracking.17track.defaultCarrier": CARRIERS.some((c) => c.code === carrier) ? carrier : 101332,
     "tracking.syncIntervalMinutes": int(fd, "tracking.syncIntervalMinutes", 60, 5, 60 * 24),
   });
-  return ok("Configurações de rastreio salvas.");
+  // Chave nova do 17TRACK: verifica já (getquota, não gasta cota).
+  const verified = await refreshIntegration("tracking.17track", actor, { changed: Boolean(apiKey), verify: true });
+  return ok(`Configurações de rastreio salvas.${verified}`);
 }
 
 export async function saveCheckoutSettings(_prev: ActionResult, fd: FormData): Promise<ActionResult> {

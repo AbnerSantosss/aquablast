@@ -7,10 +7,22 @@ import { env } from "./env";
 /**
  * Configurações editáveis no painel. Cada chave tem um tipo e um flag de sigilo.
  * Valores sigilosos são cifrados em repouso e nunca voltam inteiros para a UI
- * (o painel mostra só "configurado" + últimos 4 caracteres).
+ * (o painel mostra só a máscara de describeSecret(): 4 primeiros + •••• + 4 últimos).
  */
 export type EmailProviderKind = "smtp" | "resend" | "brevo";
 export type TrackingProviderKind = "17track" | "manual";
+
+/** Eventos do servidor que podem ir para a Meta (API de Conversões). */
+export type MetaServerEvent = "InitiateCheckout" | "AddPaymentInfo" | "Purchase";
+export const META_SERVER_EVENTS: readonly MetaServerEvent[] = ["InitiateCheckout", "AddPaymentInfo", "Purchase"];
+
+/**
+ * Resultado da última verificação real de uma integração (painel > selo do SecretField).
+ * Chaves usadas: "email", "meta", "gateway.mercadopago", "gateway.ironpay", "gateway.fastpay", "tracking.17track".
+ * `at` é ISO 8601. `message` é curta e nunca ecoa a chave.
+ */
+export type IntegrationStatusEntry = { ok: boolean; at: string; message?: string };
+export type IntegrationStatusMap = Record<string, IntegrationStatusEntry>;
 
 export interface SettingsMap {
   "email.provider": EmailProviderKind;
@@ -43,6 +55,10 @@ export interface SettingsMap {
 
   "store.name": string;
   "store.supportWhatsapp": string;
+  /** SLA de postagem: dias corridos depois de `paidAt` para o pedido ter código de rastreio. */
+  "orders.slaDays": number;
+  /** E-mail que recebe os alertas do painel (pedido atrasado no SLA). Vazio = só avisa no painel. */
+  "alerts.adminEmail": string;
   "store.supportEmail": string;
   "store.trackingPageUrl": string;
   "accessCode.validityDays": number;
@@ -90,10 +106,17 @@ export interface SettingsMap {
   "ads.meta.pixelId": string;
   "ads.meta.accessToken": string; // secret
   "ads.meta.testEventCode": string;
+  /** Quais eventos do servidor vão para a Meta (o gateway pode mandar o Purchase direto). */
+  "ads.meta.events": MetaServerEvent[];
+  /** Liga o envio com `test_event_code`. O código fica salvo mesmo desligado. */
+  "ads.meta.testMode": boolean;
   "ads.ga4.enabled": boolean;
   "ads.ga4.measurementId": string;
   "ads.ga4.apiSecret": string; // secret
   "ads.consentRequired": boolean;
+
+  /** Última verificação por integração (ver IntegrationStatusMap). Use lib/admin/integrations/status.ts. */
+  "integrations.status": IntegrationStatusMap;
 }
 
 export type SettingKey = keyof SettingsMap;
@@ -144,6 +167,8 @@ export const DEFAULTS: SettingsMap = {
   "store.supportEmail": "contato@aquablast.com.br",
   "store.trackingPageUrl": "/rastrear",
   "accessCode.validityDays": 180,
+  "orders.slaDays": 3,
+  "alerts.adminEmail": "",
 
   "checkout.mode": "zedy",
   "checkout.prices": { unit: { pix: 15990, card: 16990 }, kit: { pix: 24990, card: 25990 } },
@@ -173,10 +198,13 @@ export const DEFAULTS: SettingsMap = {
   "ads.meta.pixelId": "",
   "ads.meta.accessToken": "",
   "ads.meta.testEventCode": "",
+  "ads.meta.events": ["InitiateCheckout", "AddPaymentInfo", "Purchase"],
+  "ads.meta.testMode": false,
   "ads.ga4.enabled": false,
   "ads.ga4.measurementId": "",
   "ads.ga4.apiSecret": "",
   "ads.consentRequired": true,
+  "integrations.status": {},
 };
 
 export async function getSetting<K extends SettingKey>(key: K): Promise<SettingsMap[K]> {
@@ -192,7 +220,31 @@ export async function getSetting<K extends SettingKey>(key: K): Promise<Settings
   // O Drizzle aplica JSON.parse de novo no jsonb: texto só de dígitos (ex.: o WhatsApp
   // "5581999999999") volta como número, e escapeHtml() dos e-mails quebraria com número.
   if (typeof DEFAULTS[key] === "string" && typeof row.value === "number") return String(row.value) as SettingsMap[K];
-  return row.value as SettingsMap[K];
+  return normalizeStored(DEFAULTS[key], row.value) as SettingsMap[K];
+}
+
+/**
+ * Confere o formato do valor lido do jsonb contra o DEFAULT da chave (armadilha do Drizzle: ver
+ * wiki/decisoes/armadilhas.md, "jsonb do Drizzle"). Valor de formato errado volta ao DEFAULT em vez de
+ * quebrar quem lê (ex.: `.includes` num `ads.meta.events` que não é lista).
+ */
+function normalizeStored(def: unknown, value: unknown): unknown {
+  if (typeof def === "number") {
+    if (typeof value === "number") return value;
+    const n = typeof value === "string" && value.trim() !== "" ? Number(value) : NaN;
+    return Number.isFinite(n) ? n : def;
+  }
+  if (typeof def === "boolean") {
+    if (typeof value === "boolean") return value;
+    if (value === "true") return true;
+    if (value === "false") return false;
+    return def;
+  }
+  if (Array.isArray(def)) return Array.isArray(value) ? value : def;
+  if (def !== null && typeof def === "object") {
+    return value !== null && typeof value === "object" && !Array.isArray(value) ? value : def;
+  }
+  return value;
 }
 
 export async function getSettings<K extends SettingKey>(keys: readonly K[]): Promise<Pick<SettingsMap, K>> {
@@ -213,11 +265,25 @@ export async function setSetting<K extends SettingKey>(key: K, value: SettingsMa
     });
 }
 
-/** Para a UI: nunca devolve o segredo, só se está configurado e um sufixo. */
-export async function describeSecret(key: SettingKey): Promise<{ configured: boolean; hint: string }> {
+/** Descrição de um segredo para a UI. Nunca contém o valor inteiro. */
+export type SecretDescription = { configured: boolean; hint: string; masked: string };
+
+/**
+ * Máscara do segredo para exibir no painel: 4 primeiros + "••••••••" + 4 últimos.
+ * Com menos de 12 caracteres, mostrar 8 deixaria à vista 2/3 ou mais da chave: aí só "••••" + 2 últimos.
+ */
+export function maskSecret(v: string): string {
+  if (!v) return "";
+  if (v.length <= 4) return "••••"; // curto demais: 2 últimos já seriam metade da chave
+  if (v.length < 12) return "••••" + v.slice(-2);
+  return v.slice(0, 4) + "••••••••" + v.slice(-4);
+}
+
+/** Para a UI: nunca devolve o segredo, só se está configurado, um sufixo (`hint`) e a máscara (`masked`). */
+export async function describeSecret(key: SettingKey): Promise<SecretDescription> {
   const v = String((await getSetting(key)) ?? "");
-  if (!v) return { configured: false, hint: "" };
-  return { configured: true, hint: v.length > 4 ? "••••" + v.slice(-4) : "••••" };
+  if (!v) return { configured: false, hint: "", masked: "" };
+  return { configured: true, hint: v.length > 4 ? "••••" + v.slice(-4) : "••••", masked: maskSecret(v) };
 }
 
 /**

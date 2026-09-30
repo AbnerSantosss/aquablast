@@ -15,6 +15,7 @@ import { db } from "@/db";
 import { paymentAttempts } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createIronpayOffer } from "@/lib/gateways/ironpay";
+import { refreshIntegration } from "@/lib/admin/integrations/verify";
 import { getSetting, isSecretKey, setSetting, type SettingKey, type SettingsMap } from "@/lib/settings";
 
 /**
@@ -138,7 +139,10 @@ export async function saveMercadopagoSettings(_prev: ActionResult, fd: FormData)
   );
   if (problem) return fail(problem);
   await apply(actor, "gateway.mercadopago", patch);
-  return ok("Credenciais do Mercado Pago salvas. Segredos em branco foram mantidos.");
+  // Token novo: selo antigo não vale; verifica já (GET /users/me, só leitura).
+  const token = patch["gateway.mercadopago.accessToken"];
+  const verified = await refreshIntegration("gateway.mercadopago", actor, { changed: Boolean(token), verify: true });
+  return ok(`Credenciais do Mercado Pago salvas. Segredos em branco foram mantidos.${verified}`);
 }
 
 export async function saveFastpaySettings(_prev: ActionResult, fd: FormData): Promise<ActionResult> {
@@ -147,7 +151,9 @@ export async function saveFastpaySettings(_prev: ActionResult, fd: FormData): Pr
   const problem = await autofillProblem(adminId, { "Chave de API": apiKey }, {});
   if (problem) return fail(problem);
   await apply(actor, "gateway.fastpay", { "gateway.fastpay.apiKey": apiKey });
-  return ok("Credencial da FastPay salva. Segredo em branco foi mantido.");
+  // Chave nova: verifica já (GET da lista de cobranças com 1 item, só leitura).
+  const verified = await refreshIntegration("gateway.fastpay", actor, { changed: Boolean(apiKey), verify: true });
+  return ok(`Credencial da FastPay salva. Segredo em branco foi mantido.${verified}`);
 }
 
 /** Gera um novo token aleatório para a URL do postback (`/api/webhooks/gateway/<provider>/<token>`). */

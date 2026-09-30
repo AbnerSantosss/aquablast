@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PaymentBadge } from "@/components/admin/Badge";
 import { Flash } from "@/components/admin/Flash";
+import { SlaBadge } from "@/components/admin/SlaBadge";
 import { requireAdmin } from "@/lib/auth/session";
 import { firstParam, formatBRL, formatDateTime } from "@/lib/admin/format";
-import { getKpis } from "@/lib/admin/queries";
+import { getKpis, getShipmentCounts, shipmentPaidAt } from "@/lib/admin/queries";
 import { getHomeOrders, getHomeSummary, getPendingSetup } from "@/lib/admin/queries-checkout";
 
 export const metadata: Metadata = { title: "Início" };
@@ -14,7 +15,8 @@ type SP = Record<string, string | string[] | undefined>;
 export default async function HomePage({ searchParams }: { searchParams: Promise<SP> }) {
   await requireAdmin();
   const sp = await searchParams;
-  const [summary, kpis, home, pending] = await Promise.all([getHomeSummary(), getKpis(), getHomeOrders(), getPendingSetup()]);
+  const [summary, kpis, home, pending, ship] = await Promise.all([getHomeSummary(), getKpis(), getHomeOrders(), getPendingSetup(), getShipmentCounts()]);
+  const now = new Date();
 
   return (
     <>
@@ -26,6 +28,13 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       </div>
 
       <Flash ok={firstParam(sp.ok) || undefined} erro={firstParam(sp.erro) || undefined} />
+
+      {ship.late > 0 ? (
+        <div className="flash is-err" role="alert">
+          {ship.late} pedido(s) passaram do prazo de postagem ({ship.slaDays} {ship.slaDays === 1 ? "dia" : "dias"} após o pagamento).{" "}
+          <Link href="/admin/envios">Ver pedidos para enviar</Link>
+        </div>
+      ) : null}
 
       <div className="kpis">
         <Link className="kpi" href="/admin/pedidos?paymentStatus=paid">
@@ -57,7 +66,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         <section className="card">
           <div className="card-head">
             <h2>Para enviar {home.toShipCount > 0 ? <span className="badge tone-orange">{home.toShipCount}</span> : null}</h2>
-            <p className="small muted">Pagos que ainda não saíram, do mais antigo para o mais novo.</p>
+            <p className="small muted">Pagos sem código de rastreio, do mais antigo para o mais novo.</p>
           </div>
           {home.toShip.length === 0 ? (
             <p className="muted small">Nenhum pedido pago esperando envio.</p>
@@ -69,7 +78,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                     <th>Pedido</th>
                     <th>Cliente</th>
                     <th className="num">Total</th>
-                    <th>Pago em</th>
+                    <th>Pago em / prazo</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -82,16 +91,21 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                       </td>
                       <td className="tc-full">{o.customerName ?? "—"}</td>
                       <td className="num tc-top tc-end">{formatBRL(o.amountTotal)}</td>
-                      <td className="nowrap tc-meta">{formatDateTime(o.paidAt ?? o.createdAt)}</td>
+                      {/* Data em cima, selo embaixo: lado a lado a coluna espremia o nome do cliente em 3 linhas e o Início rolava em 1366x768. */}
+                      <td data-label="Pago em">
+                        <span className="small muted nowrap">{formatDateTime(shipmentPaidAt(o))}</span>
+                        <br />
+                        <SlaBadge paidAt={shipmentPaidAt(o)} slaDays={ship.slaDays} now={now} />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           )}
-          {home.toShipCount > home.toShip.length ? (
+          {home.toShipCount > 0 ? (
             <p className="small home-more">
-              <Link href="/admin/pedidos?paymentStatus=paid">Ver os {home.toShipCount} pedidos pagos</Link>
+              <Link href="/admin/envios">{home.toShipCount > home.toShip.length ? `Ver os ${home.toShipCount} pedidos para enviar` : "Abrir Envios e cadastrar o rastreio"}</Link>
             </p>
           ) : null}
         </section>

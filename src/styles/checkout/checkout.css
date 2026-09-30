@@ -2665,3 +2665,158 @@ body:has(.ck-root) {
   }
 
 }
+
+/* ===== 2026-09-30 (etapa C): cor da 2ª unidade no bump + QR do Pix gerado do copia-e-cola ===== */
+/* Bump: escolha da cor da 2ª unidade. Radios nativos invisíveis por cima do cartão (alvo >= 44 px). */
+.ck .bump-colors {
+  padding: 0 14px 12px;
+}
+.ck .bump-colors-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--c-text);
+}
+.ck .bump-color-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.ck .bump-color {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 6px 8px;
+  border: 2px solid var(--c-line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--c-text);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ck .bump-color input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.ck .bump-color img {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+.ck .bump-color.is-selected {
+  border-color: var(--c-button);
+  background: var(--c-ok-bg);
+  box-shadow: inset 0 0 0 1px var(--c-button);
+}
+.ck .bump-color:has(input:focus-visible) {
+  outline: 3px solid var(--c-accent);
+  outline-offset: 2px;
+}
+/* Aviso sempre no DOM (aria-live só anuncia mudança em região que já existe); vazio não ocupa espaço. */
+.ck .bump-color-alert {
+  margin: 0 14px 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fdecea;
+  color: #a4190f;
+  font-size: 13px;
+  font-weight: 700;
+}
+.ck .bump-color-alert:empty {
+  margin: 0;
+  padding: 0;
+}
+.ck .order-bump.needs-color {
+  border-style: solid;
+  border-color: var(--c-timer);
+}
+.ck .order-bump.is-nudged {
+  box-shadow: 0 0 0 4px rgba(217, 45, 32, 0.22);
+}
+.ck .ck-pay-btn[aria-disabled="true"] {
+  opacity: 0.6;
+}
+@media (max-width: 480px) {
+  .ck .bump-color {
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 4px;
+    font-size: 13px;
+  }
+  .ck .bump-color img {
+    width: 32px;
+    height: 32px;
+  }
+}
+/* QR real (gateway ou gerado do copia-e-cola): 240 px, empilhado acima do código no computador. */
+.ck-pix.has-real-qr {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ck-qr-real .ck-qr-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.ck-qr.ck-qr-real img {
+  width: 240px;
+  max-width: 100%;
+  height: auto;
+}
+.ck-qr.ck-qr-real figcaption {
+  font-size: 14px;
+  color: var(--c-text);
+}
+.ck-qr-toggle {
+  display: none;
+}
+/* Celular: quem paga costuma estar no mesmo aparelho. Copia-e-cola primeiro; o QR fica atrás de "Mostrar QR Code". */
+@media (max-width: 760px) {
+  .ck-pix.has-real-qr .ck-qr-real {
+    order: 2;
+    width: 100%;
+  }
+  .ck-qr-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid var(--c-line);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--c-text);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    align-self: stretch;
+  }
+  /* O ícone é svg dentro de .ck-qr: sem isto herda o tamanho/borda do QR de demonstração (.ck-qr svg). */
+  .ck-qr .ck-qr-toggle svg {
+    width: 18px;
+    max-width: none;
+    height: 18px;
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+  .ck-qr-real:not(.is-open) .ck-qr-box {
+    display: none;
+  }
+  .ck-qr-real.is-open .ck-qr-box {
+    margin-top: 10px;
+  }
+}

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { Theme } from "@/lib/checkout/own/theme";
 import type { Selection } from "@/lib/checkout/own/catalog";
+import type { Color } from "@/lib/site/types";
 import { Gift } from "lucide-react";
 import { colorName, effectiveSelectionClient, thumbOf } from "./OrderSummary";
 
@@ -27,9 +28,9 @@ function titleCase(text: string): string {
  * A campanha padrão usa o cenário aquático com os produtos da seleção, incluindo a segunda unidade.
  * Textos e fundos personalizados continuam vindo do tema; as imagens do produto acompanham as cores.
  */
-export function Campaign({ theme, selection, bump = false }: { theme: Theme; selection: Selection; bump?: boolean }) {
+export function Campaign({ theme, selection, bump = false, bumpColor = null }: { theme: Theme; selection: Selection; bump?: boolean; bumpColor?: Color | null }) {
   if (!theme.bannerEnabled) return null;
-  const selected = effectiveSelectionClient(selection, bump);
+  const selected = effectiveSelectionClient(selection, bump, bumpColor);
   const isKit = selected.pack === "kit";
   const lifestyle = theme.bannerImage === "/checkout/banner-immersive.webp";
   const background = lifestyle ? `/checkout/campaign-child-${selected.colors[0]}-v2.webp` : theme.bannerImage;

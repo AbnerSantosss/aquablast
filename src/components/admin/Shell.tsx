@@ -3,7 +3,8 @@ import type { ReactNode } from "react";
 import { logout } from "@/lib/admin/actions/auth";
 import { NavLinks } from "./NavLinks";
 
-export function Shell({ admin, children }: { admin: { name: string; email: string }; children: ReactNode }) {
+/** `slaLate`: pedidos que passaram do prazo de postagem, mostrado como badge no item "Envios" do menu. */
+export function Shell({ admin, slaLate = 0, children }: { admin: { name: string; email: string }; slaLate?: number; children: ReactNode }) {
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -12,7 +13,7 @@ export function Shell({ admin, children }: { admin: { name: string; email: strin
           <b>Blast</b>
           <small>painel</small>
         </Link>
-        <NavLinks />
+        <NavLinks slaLate={slaLate} />
         <div className="sidebar-footer">
           <div className="admin-id">
             <strong>{admin.name}</strong>

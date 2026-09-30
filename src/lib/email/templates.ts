@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { emailTemplates, type EmailTemplate } from "@/db/schema";
 
@@ -14,7 +14,8 @@ export type TemplateKey =
   | "cart_abandoned_2"
   | "cart_abandoned_3"
   | "payment_refused"
-  | "pix_expired";
+  | "pix_expired"
+  | "admin_sla_atrasado";
 
 /** Placeholders aceitos no assunto e no corpo. Documentados na tela de edição. */
 export const PLACEHOLDERS = [
@@ -35,6 +36,12 @@ export const PLACEHOLDERS = [
   "{{link_carrinho}}",
   "{{etapa}}",
   "{{link_descadastro}}",
+  "{{link_transportadora}}",
+  "{{cliente}}",
+  "{{pago_em}}",
+  "{{dias_atraso}}",
+  "{{prazo_dias}}",
+  "{{link_admin}}",
 ] as const;
 
 /**
@@ -61,6 +68,19 @@ const wrap = (inner: string) => `
 
 const btn = (href: string, label: string) =>
   `<p style="margin:22px 0;"><a href="${href}" style="display:inline-block;background:#f97316;color:#fff;text-decoration:none;font-weight:900;padding:14px 26px;border-radius:999px;font-size:16px;">${label}</a></p>`;
+
+/** Moldura dos e-mails internos (para a equipe): sem a frase da campanha nem o rodapé de suporte ao cliente. */
+const wrapInternal = (inner: string) => `
+<div style="margin:0;padding:24px 12px;background:#eaf6fb;font-family:Arial,Helvetica,sans-serif;color:#0f2c3a;">
+  <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:20px;padding:24px 28px;font-size:15px;line-height:1.55;">
+    <p style="margin:0 0 14px;font-size:13px;font-weight:700;color:#4b6675;">Painel {{loja}} · aviso interno</p>
+    ${inner}
+  </div>
+</div>`;
+
+/** Link discreto para o site da transportadora (fica abaixo do botão principal de rastreio). */
+const carrierLink = (href: string) =>
+  `<p style="margin:0 0 14px;font-size:14px;">Ou acompanhe direto no site da transportadora: <a href="${href}" style="color:#0284c7;font-weight:700;">abrir rastreio da {{transportadora}}</a></p>`;
 
 const code = (v: string) =>
   `<p style="margin:14px 0;padding:14px 16px;background:#f1f5f9;border:1px dashed #94a3b8;border-radius:12px;font-family:Consolas,monospace;font-size:15px;word-break:break-all;">${v}</p>`;
@@ -121,6 +141,7 @@ export const DEFAULT_TEMPLATES: Record<TemplateKey, { name: string; description:
       <p>Acompanhe a entrega em tempo real com o seu código de acesso:</p>
       ${code("{{codigo_acesso}}")}
       ${btn("{{link_rastreio}}", "Acompanhar entrega")}
+      ${carrierLink("{{link_transportadora}}")}
     `),
   },
   out_for_delivery: {
@@ -225,7 +246,31 @@ export const DEFAULT_TEMPLATES: Record<TemplateKey, { name: string; description:
       <p style="font-size:14px;color:#4b6675;">Se você já pagou, ignore este e-mail: a confirmação chega em instantes.</p>
     `),
   },
+  admin_sla_atrasado: {
+    name: "Alerta interno: pedido passou do prazo de postagem",
+    description:
+      "Vai para o e-mail de alertas (Configurações → Envios), não para o cliente. Um e-mail por pedido, enviado pelo cron /api/cron/reminders quando o pedido pago continua sem rastreio depois do prazo.",
+    subject: "[{{loja}}] Pedido {{pedido}} passou do prazo de postagem ({{dias_atraso}} dia(s) de atraso)",
+    enabled: true,
+    bodyHtml: wrapInternal(`
+      <h1 style="font-size:22px;margin:0 0 12px;">Pedido {{pedido}} ainda não foi postado</h1>
+      <p>O prazo de postagem é de <strong>{{prazo_dias}} dia(s)</strong> após o pagamento e este pedido continua sem código de rastreio.</p>
+      <p><strong>Cliente:</strong> {{cliente}}<br><strong>Pago em:</strong> {{pago_em}}<br><strong>Atraso:</strong> {{dias_atraso}} dia(s)<br><strong>Itens:</strong><br>{{itens}}</p>
+      ${btn("{{link_admin}}", "Abrir o pedido no painel")}
+      <p style="font-size:14px;color:#4b6675;">Este alerta vai uma única vez por pedido. Cadastre o rastreio em Envios para o pedido sair da lista de pendentes.</p>
+    `),
+  },
 };
+
+/** Corpo padrão do "Pedido enviado" antes do link da transportadora (2026-09-30), para atualizar linhas não editadas. */
+const SHIPPED_BODY_V1 = wrap(`
+      <h1 style="font-size:24px;margin:0 0 12px;">Seu AquaBlast está a caminho, {{primeiro_nome}}!</h1>
+      <p>O pedido <strong>{{pedido}}</strong> foi entregue à transportadora <strong>{{transportadora}}</strong>.</p>
+      <p><strong>Código de rastreio:</strong> {{codigo_transportadora}}</p>
+      <p>Acompanhe a entrega em tempo real com o seu código de acesso:</p>
+      ${code("{{codigo_acesso}}")}
+      ${btn("{{link_rastreio}}", "Acompanhar entrega")}
+    `);
 
 export async function ensureDefaultTemplates(): Promise<void> {
   for (const [key, t] of Object.entries(DEFAULT_TEMPLATES)) {
@@ -234,6 +279,12 @@ export async function ensureDefaultTemplates(): Promise<void> {
       .values({ key, name: t.name, description: t.description, subject: t.subject, bodyHtml: t.bodyHtml, enabled: t.enabled })
       .onConflictDoNothing();
   }
+  // "Pedido enviado" ganhou o link da transportadora: atualiza só a linha que ainda está com o corpo
+  // padrão antigo (se o dono editou o template, a versão dele fica intacta).
+  await db
+    .update(emailTemplates)
+    .set({ bodyHtml: DEFAULT_TEMPLATES.shipped.bodyHtml, updatedAt: new Date() })
+    .where(and(eq(emailTemplates.key, "shipped"), eq(emailTemplates.bodyHtml, SHIPPED_BODY_V1)));
 }
 
 export async function getTemplate(key: TemplateKey): Promise<EmailTemplate> {

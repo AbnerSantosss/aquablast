@@ -4,9 +4,10 @@ import Image from "next/image";
 import { Check, CreditCard } from "lucide-react";
 import { ErrorBox } from "./Field";
 import { PixLogo } from "./PixLogo";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { money } from "@/lib/checkout/own/masks";
 import type { Quote } from "@/lib/checkout/own/pricing";
+import { COLOR_KEYS, COLOR_LABELS } from "@/lib/site/constants";
 import type { Color } from "@/lib/site/types";
 import { CardPay } from "./CardPay";
 import { CardPending } from "./CardPending";
@@ -19,8 +20,13 @@ import type { PayMethodUi } from "./types";
  * Etapa 3 — Pagamento (origem app/checkout.tsx, `body(3)`): aviso de modo de teste, order bump e o acordeão
  * Cartão/Pix (`.pay-acc`, cada forma num cartão e só a escolhida aberta), mesmas classes e textos.
  * Diferenças permitidas (tabela 8.6): o aviso de teste só aparece quando o gateway da forma escolhida é
- * `simulado`; o bump repete a cor da 1ª unidade (não existe campo para outra cor) com a foto dessa cor; valores
- * vêm do servidor. Abrir o Cartão com o ponteiro leva o foco ao número do cartão (quem trata é o Checkout).
+ * `simulado`; valores vêm do servidor. Abrir o Cartão com o ponteiro leva o foco ao número do cartão (quem trata
+ * é o Checkout).
+ *
+ * Bump (pedido do dono, 2026-09-30): "Leve também a 2ª AquaBlast" sem citar a cor da 1ª. Ao marcar aparece a
+ * escolha da cor da 2ª unidade (radios nativos, alvo >= 44 px), SEM cor pré-escolhida. Sem cor: o bump fica em
+ * destaque com "Escolha a cor para continuar" (aria-live) e Pix/cartão não cobram — clicar neles rola até o bump
+ * e foca a 1ª cor. Com cor, a miniatura vira a foto dessa cor. Desmarcar limpa a cor (o Checkout cuida).
  */
 export function StepPagamento({
   cartToken,
@@ -28,6 +34,8 @@ export function StepPagamento({
   canBump,
   bump,
   onBumpChange,
+  bumpColor,
+  onBumpColorChange,
   quotes,
   coupon,
   methods,
@@ -48,6 +56,8 @@ export function StepPagamento({
   canBump: boolean;
   bump: boolean;
   onBumpChange: (value: boolean) => void;
+  bumpColor: Color | null;
+  onBumpColorChange: (color: Color) => void;
   quotes: { pix: Quote; card: Quote };
   coupon: string;
   methods: PayMethodUi[];
@@ -67,6 +77,20 @@ export function StepPagamento({
   const q = quotes[method];
   const testMode = (method === "pix" ? pixGateway : cardGateway) === "simulado";
   const hasBump = canBump && bump;
+  const missingColor = hasBump && !bumpColor;
+  const colorsRef = useRef<HTMLDivElement>(null);
+  const [nudged, setNudged] = useState(false);
+
+  // Pix/cartão clicados sem a cor da 2ª unidade: leva o cliente até a escolha, sem cobrar nada.
+  function requireColor() {
+    setNudged(true);
+    const box = colorsRef.current;
+    if (!box) return;
+    const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    box.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "center" });
+    box.querySelector<HTMLInputElement>("input[type=radio]")?.focus({ preventScroll: true });
+  }
+  const shown = hasBump && bumpColor ? bumpColor : color;
 
   const options = (
     [
@@ -93,23 +117,49 @@ export function StepPagamento({
     <div className="payment-content">
       {testMode ? <TestModeNote /> : null}
       {canBump ? (
-        <section className={`order-bump ${hasBump ? "added" : ""}`} aria-label="Oferta opcional: segunda unidade">
+        <section className={`order-bump${hasBump ? " added" : ""}${missingColor ? " needs-color" : ""}${missingColor && nudged ? " is-nudged" : ""}`} aria-label="Oferta opcional: segunda unidade">
           <label className="bump-choice">
             <span className={`ck-checkbox${hasBump ? " is-checked" : ""}`}>
-              <input type="checkbox" checked={hasBump} onChange={(e) => onBumpChange(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={hasBump}
+                onChange={(e) => {
+                  setNudged(false);
+                  onBumpChange(e.target.checked);
+                }}
+              />
               {hasBump ? <Check aria-hidden="true" size={15} /> : null}
             </span>
             <span>{hasBump ? "ADICIONADO AO PEDIDO" : "SIM, QUERO ADICIONAR A SEGUNDA UNIDADE"}</span>
           </label>
           <div className="bump-product">
-            <Image src={thumbOf(color, 610)} width={92} height={92} alt={`AquaBlast ${colorName(color)}`} />
+            <Image src={thumbOf(shown, 610)} width={92} height={92} alt={hasBump && bumpColor ? `2ª AquaBlast ${colorName(bumpColor)}` : "AquaBlast"} />
             <div>
               <em className="bump-tag">OFERTA DO KIT</em>
-              <h4>Leve também uma AquaBlast {colorName(color)}</h4>
+              <h4>Leve também a 2ª AquaBlast</h4>
               <strong className="bump-price">+ {money(q.bumpDeltaCents)}</strong>
               {q.bumpSavingCents > 0 ? <small>Economize {money(q.bumpSavingCents)} em relação à unidade avulsa</small> : null}
             </div>
           </div>
+          {hasBump ? (
+            <div className="bump-colors" ref={colorsRef}>
+              <p className="bump-colors-title" id="bump-color-title">
+                Escolha a cor da 2ª unidade:
+              </p>
+              <div className="bump-color-options" role="radiogroup" aria-labelledby="bump-color-title" aria-required="true" aria-invalid={missingColor || undefined} aria-describedby="bump-color-alert">
+                {COLOR_KEYS.map((c) => (
+                  <label key={c} className={`bump-color${bumpColor === c ? " is-selected" : ""}`}>
+                    <input type="radio" name="bump-color" value={c} checked={bumpColor === c} onChange={() => onBumpColorChange(c)} />
+                    <Image src={thumbOf(c)} width={36} height={36} alt="" />
+                    <span>{COLOR_LABELS[c]}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          <p className="bump-color-alert" id="bump-color-alert" aria-live="polite">
+            {missingColor ? "Escolha a cor para continuar" : ""}
+          </p>
         </section>
       ) : null}
       <div
@@ -153,6 +203,9 @@ export function StepPagamento({
                   <CardPay
                     cartToken={cartToken}
                     bump={hasBump}
+                    bumpColor={bumpColor}
+                    blocked={missingColor}
+                    onBlocked={requireColor}
                     amountCents={quotes.card.amountCents}
                     maxInstallments={maxInstallments}
                     gateway={cardGateway}
@@ -164,9 +217,12 @@ export function StepPagamento({
                   />
                 ) : (
                   <PixPay
-                    key={`${hasBump ? "kit" : "un"}-${quotes.pix.amountCents}`}
+                    key={`${hasBump ? `kit-${bumpColor ?? "sem-cor"}` : "un"}-${quotes.pix.amountCents}`}
                     cartToken={cartToken}
                     bump={hasBump}
+                    bumpColor={bumpColor}
+                    blocked={missingColor}
+                    onBlocked={requireColor}
                     coupon={coupon}
                     amountCents={quotes.pix.amountCents}
                     ttlSeconds={pixTtlSeconds}

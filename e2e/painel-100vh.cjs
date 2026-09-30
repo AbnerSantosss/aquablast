@@ -24,6 +24,8 @@ const ROUTES = [
   "/admin/pedidos",
   "/admin/pedidos/novo",
   { from: "/admin/pedidos", link: /^\/admin\/pedidos\/(?!novo)[^/?#]+$/, name: "/admin/pedidos/[id]" },
+  "/admin/envios",
+  "/admin/envios?aba=enviados",
   "/admin/carrinhos",
   "/admin/clientes",
   "/admin/produtos",
@@ -32,10 +34,14 @@ const ROUTES = [
   "/admin/emails/templates",
   { from: "/admin/emails/templates", link: /^\/admin\/emails\/templates\/[^/?#]+$/, name: "/admin/emails/templates/[key]" },
   "/admin/gateways",
+  "/admin/gateways#credenciais",
+  "/admin/gateways#postback",
   "/admin/checkout",
   "/admin/webhooks",
   { from: "/admin/webhooks", link: /^\/admin\/webhooks\/[^/?#]+$/, name: "/admin/webhooks/[id]" },
   "/admin/configuracoes",
+  // Abas por hash (SectionTabs): cada uma e medida sozinha; o SecretField com selo deixa abas mais altas.
+  ...["email", "pix", "rastreio", "envios", "checkout", "acesso", "admin"].map((t) => `/admin/configuracoes#${t}`),
 ];
 
 async function resolve(page, r) {

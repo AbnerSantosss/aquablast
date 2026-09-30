@@ -68,6 +68,16 @@ export async function getCartById(id: string): Promise<CheckoutCart | null> {
 }
 
 /**
+ * Cores gravadas no carrinho. Unidade + bump com cor escolhida = [cor da 1ª, cor da 2ª] (o kit efetivo lê colors[1]).
+ * Bump marcado ainda sem cor fica só com a 1ª: o pagamento recusa até o cliente escolher.
+ */
+export function cartColorsOf(input: Pick<CartInput, "selection" | "bump" | "bumpColor">): string[] {
+  if (input.selection.pack !== "unit") return input.selection.colors;
+  const first = input.selection.colors[0];
+  return input.bump && input.bumpColor ? [first, input.bumpColor] : [first];
+}
+
+/**
  * Cria ou atualiza o carrinho. `created === true` quando nasceu um carrinho novo (é aí que a rota dispara InitiateCheckout).
  * O CPF entra cifrado (encryptDocument); telefone e CEP só dígitos; e-mail minúsculo.
  */
@@ -80,12 +90,13 @@ export async function upsertCart(input: CartInput, headers: Headers): Promise<{ 
 
   const q = await quote(input.selection.pack, "pix", input.bump, 1);
   const now = new Date();
+  const colors = cartColorsOf(input);
 
   const patch: Partial<typeof checkoutCarts.$inferInsert> = {
     status: "open",
     step: input.step,
     pack: input.selection.pack,
-    colors: input.selection.colors,
+    colors,
     bumpAccepted: input.bump,
     amountCents: q.amountCents,
     clientIp: clientIp(headers).slice(0, 80) || null,
@@ -124,7 +135,7 @@ export async function upsertCart(input: CartInput, headers: Headers): Promise<{ 
       ...patch,
       token: randomToken(24),
       pack: input.selection.pack,
-      colors: input.selection.colors,
+      colors,
       amountCents: q.amountCents,
       consent,
     })

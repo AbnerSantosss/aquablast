@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { Check, CircleAlert, Copy, Timer } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStatus } from "./api";
+import { PixQr } from "./PixQr";
 import { pad2, useClock } from "./useClock";
 
 /**
@@ -65,12 +65,8 @@ export function PixWatch({ code, qrUrl, expiresAt, publicToken }: { code: string
   const left = now === null ? null : Math.max(0, Math.ceil((expiresMs - now) / 1000));
 
   return (
-    <div className={`ck-pix${qrUrl ? "" : " no-qr"}`}>
-      {qrUrl ? (
-        <figure className="ck-qr">
-          <Image src={qrUrl} alt="QR Code Pix" width={196} height={196} unoptimized />
-        </figure>
-      ) : null}
+    <div className={`ck-pix${qrUrl ? " has-real-qr" : " no-qr"}`}>
+      {qrUrl ? <PixQr src={qrUrl} /> : null}
       <div className="ck-pix-info">
         <div className="ck-pix-head">
           <p>Pague com Pix</p>

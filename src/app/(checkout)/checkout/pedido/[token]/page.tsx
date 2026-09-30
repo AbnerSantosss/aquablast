@@ -5,12 +5,13 @@ import { PixWatch } from "@/components/checkout/PixWatch";
 import type { CheckoutInitial, StepName } from "@/components/checkout/types";
 import { ensureBootstrap } from "@/lib/bootstrap";
 import { getCartByToken } from "@/lib/checkout/own/cart";
-import { selectionFromCart } from "@/lib/checkout/own/catalog";
+import { isColor, selectionFromCart } from "@/lib/checkout/own/catalog";
 import { loadCheckoutProps } from "@/lib/checkout/own/checkout-props";
 import { maskCEP, maskPhone, money } from "@/lib/checkout/own/masks";
 import { getLastPaidAttempt, getOrderByPublicToken } from "@/lib/checkout/own/order";
 import { getTheme } from "@/lib/checkout/own/theme-server";
 import { getOrderById, maskedDocument } from "@/lib/orders/service";
+import { pixQrForScreen } from "@/lib/pix/qr";
 import { getSupportWhatsapp } from "@/lib/site/support-contact";
 import { CONTACT_EMAIL, zedyUrlFromSelection } from "@/lib/site/constants";
 import type { CheckoutCart, Order } from "@/db/schema";
@@ -76,6 +77,8 @@ function initialFromCart(cart: CheckoutCart, bumpEnabled: boolean): CheckoutInit
       recipient: cart.recipient ?? cart.customerName ?? "",
     },
     bump: bumpEnabled && cart.bumpAccepted,
+    // Cor da 2ª unidade escolhida antes (colors[1]); sem ela o bump reabre marcado e pede a cor de novo.
+    bumpColor: bumpEnabled && cart.bumpAccepted && cart.pack === "unit" && isColor(cart.colors[1]) ? cart.colors[1] : null,
   };
 }
 
@@ -177,7 +180,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ token: 
           </p>
           <p>{body}</p>
           {showPixWatch && order.pixCode ? (
-            <PixWatch code={order.pixCode} qrUrl={order.pixQrUrl} expiresAt={order.pixExpiresAt!.toISOString()} publicToken={token} />
+            <PixWatch code={order.pixCode} qrUrl={pixQrForScreen(order.pixCode, order.pixQrUrl)} expiresAt={order.pixExpiresAt!.toISOString()} publicToken={token} />
           ) : null}
           {whatsapp ? (
             <p>

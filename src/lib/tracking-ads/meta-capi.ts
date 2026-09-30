@@ -3,6 +3,7 @@ import { sha256Hex } from "@/lib/crypto";
 import { env } from "@/lib/env";
 import { errorMessage } from "@/lib/log";
 import { getSettings } from "@/lib/settings";
+import { effectiveTestEventCode, metaRequestBody } from "./meta-body";
 import type { AdEventName, AdTestSample } from "./types";
 
 /**
@@ -12,7 +13,9 @@ import type { AdEventName, AdTestSample } from "./types";
  * - Dados pessoais vão normalizados + SHA-256 (sha256Hex). CPF NUNCA é enviado, nem com hash.
  * - client_ip_address, client_user_agent, fbp e fbc vão SEM hash (é o que a Meta exige).
  * - Campo vazio é omitido (nunca manda hash de string vazia).
- * - test_event_code só entra no corpo quando ads.meta.testEventCode está preenchido (em produção: vazio).
+ * - test_event_code só vai junto dos eventos reais com o checkbox "Enviar como evento de teste"
+ *   (ads.meta.testMode) ligado E o código preenchido (meta-body.ts). O código pode ficar salvo em produção.
+ *   "Testar envio" (sendMetaTestEvents) sempre usa o código.
  * - O access token nunca aparece em log, detalhe ou exceção (scrubSecret).
  * - Timeout de 10 s. Quem chama (dispatch.ts) trata falha como "error" e nunca derruba a compra.
  */
@@ -194,14 +197,16 @@ interface MetaConfig {
   pixelId: string;
   accessToken: string;
   testEventCode: string;
+  testMode: boolean;
 }
 
 async function metaConfig(): Promise<MetaConfig> {
-  const s = await getSettings(["ads.meta.pixelId", "ads.meta.accessToken", "ads.meta.testEventCode"] as const);
+  const s = await getSettings(["ads.meta.pixelId", "ads.meta.accessToken", "ads.meta.testEventCode", "ads.meta.testMode"] as const);
   return {
     pixelId: String(s["ads.meta.pixelId"] ?? "").trim(),
     accessToken: String(s["ads.meta.accessToken"] ?? "").trim(),
     testEventCode: String(s["ads.meta.testEventCode"] ?? "").trim(),
+    testMode: s["ads.meta.testMode"] === true,
   };
 }
 
@@ -225,8 +230,7 @@ async function postEvents(cfg: MetaConfig, events: Record<string, unknown>[], te
 
   const url = new URL(`https://graph.facebook.com/${META_GRAPH_VERSION}/${cfg.pixelId}/events`);
   url.searchParams.set("access_token", cfg.accessToken);
-  const body: Record<string, unknown> = { data: events };
-  if (testEventCode) body.test_event_code = testEventCode;
+  const body = metaRequestBody(events, testEventCode);
 
   try {
     const res = await fetch(url, {
@@ -262,7 +266,7 @@ async function postEvents(cfg: MetaConfig, events: Record<string, unknown>[], te
 export async function sendMetaEvent(input: MetaEventInput): Promise<{ ok: boolean; detail?: string }> {
   try {
     const cfg = await metaConfig();
-    return await postEvents(cfg, [buildMetaEvent(input)], cfg.testEventCode);
+    return await postEvents(cfg, [buildMetaEvent(input)], effectiveTestEventCode(cfg));
   } catch (err) {
     return { ok: false, detail: `Meta: ${errorMessage(err)}`.slice(0, 500) };
   }
@@ -320,5 +324,41 @@ export async function sendMetaTestEvents(opts: {
     return { ok: r.ok && received === total, detail: `${names}. ${r.detail ?? ""}`.trim().slice(0, 500), received };
   } catch (err) {
     return { ok: false, detail: `Meta: ${errorMessage(err)}`.slice(0, 500) };
+  }
+}
+
+/**
+ * "Verificar" do token no painel de Pixels: GET /<versão>/<pixelId>?fields=id,name (só leitura, não envia evento).
+ * Token vai no header Authorization (não na URL). A mensagem nunca contém o token; no sucesso traz o nome do pixel.
+ */
+export async function verifyMetaConnection(): Promise<{ ok: boolean; message: string }> {
+  let token = "";
+  try {
+    const cfg = await metaConfig();
+    token = cfg.accessToken;
+    if (!/^\d{5,25}$/.test(cfg.pixelId)) return { ok: false, message: "Pixel ID vazio ou inválido" };
+    if (!cfg.accessToken) return { ok: false, message: "token não configurado" };
+    const url = new URL(`https://graph.facebook.com/${META_GRAPH_VERSION}/${cfg.pixelId}`);
+    url.searchParams.set("fields", "id,name");
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${cfg.accessToken}` },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+      cache: "no-store",
+    });
+    let json: { id?: string; name?: string; error?: { message?: string; code?: number } } = {};
+    try {
+      json = (await res.json()) as typeof json;
+    } catch {
+      json = {};
+    }
+    if (!res.ok || json.error || json.id !== cfg.pixelId) {
+      const e = json.error;
+      const why = e ? `${e.message ?? "erro"}${e.code ? ` [code ${e.code}]` : ""}` : `HTTP ${res.status}`;
+      return { ok: false, message: scrubSecret(`Meta recusou: ${why}`, token).slice(0, 150) };
+    }
+    return { ok: true, message: json.name ? `pixel "${json.name.slice(0, 60)}"` : "pixel encontrado" };
+  } catch (err) {
+    const timeout = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
+    return { ok: false, message: scrubSecret(timeout ? `sem resposta em ${TIMEOUT_MS / 1000} s` : `falha de rede (${errorMessage(err)})`, token).slice(0, 150) };
   }
 }

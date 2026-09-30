@@ -234,8 +234,10 @@ function ga4Input(args: TrackServerEventArgs, ctx: EventContext): Ga4EventInput 
   };
 }
 
-async function runDestination(dest: TrackDestination, args: TrackServerEventArgs, ctx: EventContext, consentRequired: boolean): Promise<TrackResult> {
+async function runDestination(dest: TrackDestination, args: TrackServerEventArgs, ctx: EventContext, consentRequired: boolean, eventAllowed = true): Promise<TrackResult> {
   try {
+    // Evento desmarcado em Pixels (ads.meta.events): ex. o gateway já manda o Purchase direto para a Meta.
+    if (!eventAllowed) return await skip(dest, args, ctx, "evento desmarcado no painel (Pixels)");
     if (consentRequired && !ctx.consent) return await skip(dest, args, ctx, "sem consentimento");
     if (dest === "ga4" && !ctx.gaClientId) return await skip(dest, args, ctx, "sem client_id (cookie _ga ausente)");
 
@@ -270,7 +272,7 @@ async function runDestination(dest: TrackDestination, args: TrackServerEventArgs
 export async function trackServerEventDetailed(args: TrackServerEventArgs): Promise<TrackResult[]> {
   try {
     if (!args.eventId?.trim()) return [];
-    const s = await getSettings(["ads.meta.enabled", "ads.ga4.enabled", "ads.consentRequired"] as const);
+    const s = await getSettings(["ads.meta.enabled", "ads.ga4.enabled", "ads.consentRequired", "ads.meta.events"] as const);
     const destinations: TrackDestination[] = [];
     if (s["ads.meta.enabled"] === true) destinations.push("meta");
     if (s["ads.ga4.enabled"] === true) destinations.push("ga4");
@@ -281,7 +283,9 @@ export async function trackServerEventDetailed(args: TrackServerEventArgs): Prom
 
     const consentRequired = s["ads.consentRequired"] !== false;
     const results: TrackResult[] = [];
-    for (const dest of destinations) results.push(await runDestination(dest, args, ctx, consentRequired));
+    // Lista de eventos da Meta vale só para a Meta; GA4 segue mandando os três.
+    const metaEvents: readonly string[] = Array.isArray(s["ads.meta.events"]) ? s["ads.meta.events"] : [];
+    for (const dest of destinations) results.push(await runDestination(dest, args, ctx, consentRequired, dest !== "meta" || metaEvents.includes(args.name)));
     return results;
   } catch (err) {
     log.error("tracking-ads: falha ao disparar evento", { event: args.name, eventId: args.eventId, detail: errorMessage(err) });

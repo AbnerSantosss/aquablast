@@ -57,7 +57,7 @@ A política "chegou quebrado, enviamos outro sem custo" existe e é publicada em
 - Painel `/admin`: pedidos, carrinhos, clientes, e-mails, webhooks, templates, produtos, gateways, pixels, personalizar checkout, configurações.
 - **Preços e parcelamento não moram neste arquivo.** A fonte é o painel (Produtos) e os preços mudam. Qualquer valor na tela vem de lá.
 - Escolha guiada: o cliente escolhe a cor (e as duas cores no kit) antes de comprar. O botão Comprar nunca trava; ele guia até a escolha.
-- Pixel Meta e GA4 são enviados pelo navegador e pelo servidor. Um código de evento de teste salvo no painel vai junto em todos os eventos reais, então fica vazio fora de teste.
+- Pixel Meta e GA4 são enviados pelo navegador e pelo servidor. O código de evento de teste salvo no painel só vai junto nos eventos reais com a caixa "Enviar como evento de teste" marcada (ads.meta.testMode, com aviso vermelho enquanto ligada); desmarcada, o código fica guardado e as compras vão para os relatórios. O "Testar envio" usa o código sempre. Em Pixels, a Meta recebe pelo servidor só os eventos marcados (InitiateCheckout, AddPaymentInfo, Purchase): se o gateway já manda a compra para a Meta, Purchase fica desmarcado para não contar duas vezes.
 
 ## Brand Commitments
 

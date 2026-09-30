@@ -1,4 +1,5 @@
 import type { Quote } from "@/lib/checkout/own/pricing";
+import type { Color } from "@/lib/site/types";
 
 /** Tipos compartilhados entre os componentes do checkout próprio (fase 8). */
 
@@ -43,6 +44,8 @@ export interface CheckoutInitial {
   cpfMasked: string | null;
   address: AddressData;
   bump: boolean;
+  /** Cor da 2ª unidade do bump (colors[1] do carrinho). null = bump sem cor ainda: a tela pede de novo. */
+  bumpColor?: Color | null;
 }
 
 /**

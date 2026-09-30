@@ -55,6 +55,8 @@ export const cartSchema = z.strictObject({
   selection: selectionSchema,
   step: z.enum(["dados", "entrega", "pagamento"]),
   bump: z.boolean().default(false),
+  /** Cor da 2ª unidade do bump (só com pack "unit"). Vai para colors[1] do carrinho; pode faltar enquanto o cliente escolhe. */
+  bumpColor: colorSchema.optional(),
   customer: customerSchema.optional(),
   address: addressSchema.optional(),
   tracking: trackingSchema.optional(),
@@ -77,6 +79,8 @@ export const paySchema = z.strictObject({
   method: z.enum(["pix", "card"]),
   installments: z.number().int().min(1).max(12).default(1),
   bump: z.boolean().default(false),
+  /** Cor da 2ª unidade. Com bump e sem cor o pagamento recusa (400 "Escolha a cor da 2ª unidade"). */
+  bumpColor: colorSchema.optional(),
   /** Só quando o gateway do cartão NÃO tokeniza no navegador (IronPay; FastPay se não tiver tokenização). */
   card: cardSchema.optional(),
   /** Só quando o gateway tokeniza no navegador (Mercado Pago): resultado de tokenizeCard(). */

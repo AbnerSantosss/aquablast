@@ -11,14 +11,16 @@ import {
   Settings,
   ShoppingCart,
   Target,
+  Truck,
   Users,
   Webhook,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import "@/app/admin/envios-admin.css";
 
-type NavItem = { href: string; label: string; icon: LucideIcon; match: (p: string) => boolean };
+type NavItem = { href: string; label: string; icon: LucideIcon; match: (p: string) => boolean; badge?: "slaLate" };
 type NavEntry = { kind: "item"; item: NavItem } | { kind: "group"; label: string; items: NavItem[] };
 
 /**
@@ -34,6 +36,7 @@ const NAV: NavEntry[] = [
     label: "Pedidos",
     items: [
       { href: "/admin/pedidos", label: "Vendas", icon: Receipt, match: (p) => p.startsWith("/admin/pedidos") },
+      { href: "/admin/envios", label: "Envios", icon: Truck, match: (p) => p.startsWith("/admin/envios"), badge: "slaLate" },
       { href: "/admin/carrinhos", label: "Carrinhos abandonados", icon: ShoppingCart, match: (p) => p.startsWith("/admin/carrinhos") },
       { href: "/admin/clientes", label: "Clientes", icon: Users, match: (p) => p.startsWith("/admin/clientes") },
     ],
@@ -57,18 +60,26 @@ const NAV: NavEntry[] = [
   { kind: "item", item: { href: "/admin/configuracoes", label: "Configurações", icon: Settings, match: (p) => p.startsWith("/admin/configuracoes") } },
 ];
 
-function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
+function NavLink({ item, pathname, count = 0 }: { item: NavItem; pathname: string; count?: number }) {
   const active = item.match(pathname);
   const Icon = item.icon;
+  const late = item.badge === "slaLate" && count > 0;
   return (
     <Link href={item.href} className={`nav-link ${active ? "is-active" : ""}`} aria-current={active ? "page" : undefined}>
       <Icon size={16} aria-hidden="true" />
       <span>{item.label}</span>
+      {late ? (
+        <span className="nav-badge" title={`${count} pedido(s) passaram do prazo de postagem`}>
+          {count}
+          <span className="nav-badge-sr"> {count === 1 ? "pedido atrasado" : "pedidos atrasados"}</span>
+        </span>
+      ) : null}
     </Link>
   );
 }
 
-export function NavLinks() {
+/** `slaLate`: pedidos pagos sem rastreio que passaram do prazo de postagem (calculado no layout, no servidor). */
+export function NavLinks({ slaLate = 0 }: { slaLate?: number }) {
   const pathname = usePathname() ?? "";
   return (
     <nav className="nav" aria-label="Seções do painel">
@@ -79,7 +90,7 @@ export function NavLinks() {
           <div className="nav-group" key={`group-${i}`}>
             <span className="nav-group-label">{entry.label}</span>
             {entry.items.map((item) => (
-              <NavLink key={item.href} item={item} pathname={pathname} />
+              <NavLink key={item.href} item={item} pathname={pathname} count={item.badge === "slaLate" ? slaLate : 0} />
             ))}
           </div>
         ),

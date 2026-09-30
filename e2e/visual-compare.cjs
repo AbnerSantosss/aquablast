@@ -127,6 +127,9 @@ const STEPS = [
     await p.locator(".pay-head", { hasText: "Pix" }).click();
     await p.locator(".bump-choice").click();
     await p.locator(".bump-choice", { hasText: "ADICIONADO AO PEDIDO" }).waitFor();
+    // So o nosso pede a cor da 2a unidade (2026-09-30); a origem nao tem o seletor.
+    const cor = p.locator('input[name="bump-color"]').first();
+    if (await cor.count()) await cor.check();
   }],
   ["4-pix-gerado", async (p) => {
     await p.locator(".ck-pix-start .ck-pay-btn").click();
