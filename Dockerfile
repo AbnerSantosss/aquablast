@@ -38,7 +38,11 @@ WORKDIR /app
 ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0 \
-    NEXT_TELEMETRY_DISABLED=1
+    NEXT_TELEMETRY_DISABLED=1 \
+    NODE_OPTIONS=--dns-result-order=ipv4first
+# ipv4first (2026-09-30): o "Verificar" da Meta dava "fetch failed" para graph.facebook.com, enquanto a
+# IronPay respondia. Hipótese mais comum: a Facebook devolve IPv6 primeiro e o container não tem rota
+# IPv6. Tentar IPv4 antes não quebra nada; o errorMessage (src/lib/log.ts) agora mostra a causa real.
 
 RUN addgroup -S -g 1001 nodejs && adduser -S -u 1001 -G nodejs nextjs
 

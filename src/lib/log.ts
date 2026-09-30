@@ -16,8 +16,16 @@ export const log = {
   error: (msg: string, meta?: Meta): void => write("error", msg, meta),
 };
 
-/** Extrai uma mensagem legível de qualquer valor lançado. */
+/**
+ * Extrai uma mensagem legível de qualquer valor lançado.
+ * O fetch do Node só diz "fetch failed"; o motivo real (ENOTFOUND, ETIMEDOUT, ENETUNREACH...) vem em
+ * `cause`. Sem ele, o painel mostrava "falha de rede (fetch failed)" e não dava para saber o que corrigir.
+ */
 export function errorMessage(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  return String(err);
+  if (!(err instanceof Error)) return String(err);
+  const cause: unknown = err.cause;
+  if (!(cause instanceof Error)) return err.message;
+  const code = (cause as Error & { code?: unknown }).code;
+  const detail = [typeof code === "string" ? code : "", cause.message].filter(Boolean).join(" ");
+  return detail ? `${err.message}: ${detail}`.slice(0, 200) : err.message;
 }
