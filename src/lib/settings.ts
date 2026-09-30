@@ -297,11 +297,13 @@ export type SecretDescription = { configured: boolean; hint: string; masked: str
 /**
  * Máscara do segredo para exibir no painel: 4 primeiros + "••••••••" + 4 últimos.
  * Com menos de 12 caracteres, mostrar 8 deixaria à vista 2/3 ou mais da chave: aí só "••••" + 2 últimos.
+ * Até 24 caracteres (ex.: senha de app do Gmail, 16) só os 4 últimos: com 4+4 metade ficava à vista.
  */
 export function maskSecret(v: string): string {
   if (!v) return "";
   if (v.length <= 4) return "••••"; // curto demais: 2 últimos já seriam metade da chave
   if (v.length < 12) return "••••" + v.slice(-2);
+  if (v.length <= 24) return "••••••••" + v.slice(-4);
   return v.slice(0, 4) + "••••••••" + v.slice(-4);
 }
 
