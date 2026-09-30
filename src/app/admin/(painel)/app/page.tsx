@@ -8,7 +8,7 @@ import { getSettings, type AdminAlertEvent } from "@/lib/settings";
 export const metadata: Metadata = { title: "App e avisos" };
 
 const EVENT_SHORT: Record<AdminAlertEvent, string> = {
-  inicio: "checkout iniciado",
+  inicio: "checkout aberto",
   pagamento: "chegou no pagamento",
   pix: "Pix gerado",
   cartao: "cartão (aprovado, em análise, recusado)",

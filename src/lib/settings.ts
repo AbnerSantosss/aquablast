@@ -18,7 +18,7 @@ export const META_SERVER_EVENTS: readonly MetaServerEvent[] = ["InitiateCheckout
 
 /**
  * Avisos por e-mail para a equipe (`alerts.events`), do início do checkout ao atraso de postagem.
- * inicio = carrinho novo; pagamento = chegou na etapa de pagamento; pix = Pix gerado; cartao = cada
+ * inicio = página do checkout aberta (POST /api/checkout/opened, desde 2026-09-30); pagamento = chegou na etapa de pagamento; pix = Pix gerado; cartao = cada
  * tentativa no cartão (aprovada, recusada, em análise ou com erro); falha = o gateway não cobrou (erro, chave
  * recusada, timeout, Pix sem código, forma de pagamento indisponível); pago = pedido pago; atraso = SLA vencido.
  */

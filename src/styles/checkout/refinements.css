@@ -182,3 +182,14 @@
   .ck .campaign-lifestyle .campaign-photo { aspect-ratio: 1.55; }
   .ck .campaign-lifestyle h1 { font-size: 25px; }
 }
+
+/* Linha da empresa (razão social · CNPJ · endereço) embaixo do "© ano loja" - Decreto 7.962/2013 (2026-09-30). */
+.ck-footer-bottom small .ck-company,
+.oc-footer small .ck-company {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+}

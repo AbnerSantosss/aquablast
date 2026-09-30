@@ -436,7 +436,7 @@ export const pushSubscriptions = pgTable(
 );
 
 /**
- * Trava de "não repetir" dos avisos push: inicio/pagamento uma vez por carrinho, pago uma vez por pedido.
+ * Trava de "não repetir" dos avisos push: pagamento uma vez por carrinho (inicio: limite por visita na rota /api/checkout/opened), pago uma vez por pedido.
  * dedupe_key = "<evento>:<cartId|orderId>". Separada do email_log de propósito: push e e-mail são independentes.
  */
 export const pushAlerts = pgTable(

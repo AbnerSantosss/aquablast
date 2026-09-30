@@ -71,6 +71,25 @@ export async function postCart(payload: CartPayload): Promise<CartResponse | Api
   }
 }
 
+/**
+ * Avisa o servidor que o checkout foi aberto (aviso "checkout aberto" da equipe). Fogo e esquece: não
+ * trava a tela nem mostra erro.
+ */
+export function postOpened(payload: { visit: string; selection: CartSelectionInput; coupon?: string; source?: string; campaign?: string }): void {
+  try {
+    void fetch("/api/checkout/opened", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+      // Lê o corpo: sem isso o Chromium não fecha a requisição e o "networkidle" dos testes nunca chega.
+      .then((res) => res.text())
+      .catch(() => undefined);
+  } catch {
+    // navegador sem fetch: o aviso é opcional.
+  }
+}
+
 export interface PayPayload {
   cartToken: string;
   method: "pix" | "card";

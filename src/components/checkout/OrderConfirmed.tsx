@@ -4,6 +4,7 @@ import { ArrowLeft, BadgeCheck, Check, Headset, Lock, Mail, PackageCheck, Packag
 import type { OrderStatus } from "@/db/schema";
 import { themeVars, type Theme } from "@/lib/checkout/own/theme";
 import { RETURNS_PATH } from "@/lib/site/constants";
+import { CompanyLine } from "./Footer";
 import { TestModeNote } from "./PaySeals";
 import { Brand } from "./TopBar";
 
@@ -201,6 +202,7 @@ export function OrderConfirmed({
           <p>{theme.footerText}</p>
           <small>
             © {year} {theme.storeName}
+            <CompanyLine theme={theme} />
           </small>
         </div>
       </footer>

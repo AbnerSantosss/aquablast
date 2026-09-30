@@ -9,7 +9,7 @@ import type { Quote } from "@/lib/checkout/own/pricing";
 import type { Theme } from "@/lib/checkout/own/theme";
 import { themeVars } from "@/lib/checkout/own/theme";
 import { readAdIds } from "@/lib/tracking-ads/capture";
-import { isApiFail, postCart, type CartPayload, type CartStep, type CartTrackingInput } from "./api";
+import { isApiFail, postCart, postOpened, type CartPayload, type CartStep, type CartTrackingInput } from "./api";
 import { Campaign } from "./Campaign";
 import { ConsentBanner } from "./ConsentBanner";
 import { ErrorBox, fullName, UFS } from "./Field";
@@ -158,6 +158,34 @@ export function Checkout({
     panel.current?.querySelector<HTMLElement>(sel)?.focus();
   }, [cepState, addrOk, method]);
   useEffect(() => () => cepReq.current?.abort(), []);
+  // Aviso "checkout aberto" para a equipe (2026-09-30). Uma vez por aba (id de visita no sessionStorage); o
+  // servidor ainda limita por visita e por IP. Não roda na tela de pedido já pago.
+  const openedSent = useRef(false);
+  useEffect(() => {
+    if (paid || openedSent.current) return;
+    openedSent.current = true;
+    let visit = "";
+    try {
+      visit = sessionStorage.getItem("aqb-ck-visit") ?? "";
+      if (!visit) {
+        visit = crypto.randomUUID();
+        sessionStorage.setItem("aqb-ck-visit", visit);
+      }
+    } catch {
+      visit = typeof crypto.randomUUID === "function" ? crypto.randomUUID() : "";
+    }
+    if (!visit) return;
+    const q = new URLSearchParams(window.location.search);
+    const source = q.get("utm_source")?.slice(0, 80);
+    const campaign = q.get("utm_campaign")?.slice(0, 120);
+    postOpened({
+      visit,
+      selection: { pack: selection.pack, colors: selection.colors },
+      ...(initialCoupon ? { coupon: initialCoupon } : {}),
+      ...(source ? { source } : {}),
+      ...(campaign ? { campaign } : {}),
+    });
+  }, [paid, selection.pack, selection.colors, initialCoupon]);
 
   const buildTracking = useCallback((): CartTrackingInput | undefined => {
     if (consent === null) return undefined;

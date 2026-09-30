@@ -11,6 +11,16 @@ import type { PayMethodUi } from "./types";
  * existe"). O bloco "Formas de pagamento" é o mesmo que ficava embaixo dos selos: só lista o que está ligado no
  * painel. Suporte = WhatsApp do painel ou, sem ele, o e-mail do site (mesma regra da compra confirmada).
  */
+/** "Razão social · CNPJ · endereço" do tema; some quando CNPJ e endereço estão vazios. */
+export function CompanyLine({ theme }: { theme: Theme }) {
+  const parts = [
+    theme.companyCnpj || theme.companyAddress ? theme.companyName || theme.storeName : "",
+    theme.companyCnpj ? `CNPJ ${theme.companyCnpj}` : "",
+    theme.companyAddress,
+  ].filter(Boolean);
+  return parts.length ? <span className="ck-company">{parts.join(" · ")}</span> : null;
+}
+
 export function Footer({
   theme,
   year,
@@ -69,6 +79,7 @@ export function Footer({
         <div className="container">
           <small>
             © {year} {theme.storeName}
+            <CompanyLine theme={theme} />
           </small>
           <span>
             <LockKeyhole size={14} aria-hidden="true" />

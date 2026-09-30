@@ -169,6 +169,28 @@ export default async function PersonalizarCheckoutPage() {
                 </label>
               </div>
 
+              <h3 className="small" style={{ marginTop: "0.75rem" }}>
+                Dados da empresa no rodapé
+              </h3>
+              <p className="muted small">
+                A lei do comércio eletrônico (Decreto 7.962/2013) pede nome empresarial, CNPJ e endereço visíveis na loja. Sem razão
+                social, o rodapé usa o nome da loja.
+              </p>
+              <div className="grid-2">
+                <label className="field span-2">
+                  <span>Razão social</span>
+                  <input name="companyName" defaultValue={theme.companyName} maxLength={120} />
+                </label>
+                <label className="field">
+                  <span>CNPJ</span>
+                  <input name="companyCnpj" defaultValue={theme.companyCnpj} maxLength={18} inputMode="numeric" placeholder="00.000.000/0000-00" />
+                </label>
+                <label className="field span-2">
+                  <span>Endereço</span>
+                  <input name="companyAddress" defaultValue={theme.companyAddress} maxLength={160} />
+                </label>
+              </div>
+
               <div className="actions">
                 <button type="submit" className="btn btn-primary">
                   Salvar aparência

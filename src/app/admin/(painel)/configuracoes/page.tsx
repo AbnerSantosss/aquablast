@@ -61,7 +61,7 @@ const FIELD_NAMES = [
 ];
 
 const ALERT_EVENT_LABELS: Record<AdminAlertEvent, string> = {
-  inicio: "alguém inicia o checkout",
+  inicio: "alguém abre o checkout (antes de digitar dados)",
   pagamento: "chega na etapa de pagamento",
   pix: "gera um Pix",
   cartao: "tenta pagar no cartão (aprovado, em análise ou recusado)",

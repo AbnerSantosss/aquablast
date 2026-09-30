@@ -11,7 +11,7 @@ import { countSubscriptions, sendPush, type PushMessage } from "./send";
  * Push do app do painel para os MESMOS eventos dos avisos por e-mail (ajuste do dono, 2026-09-30).
  * Chamado por notifyCheckoutEvent (lib/email/checkout-alerts.ts), em paralelo e independente do e-mail:
  * um sai mesmo se o outro falhar. Só roda se o evento está ligado em `alerts.events` (conferido lá) E em
- * `alerts.pushEvents`. Não repete: inicio/pagamento uma vez por carrinho, pago uma vez por pedido
+ * `alerts.pushEvents`. Não repete: inicio uma vez por visita (limite na rota /api/checkout/opened), pagamento uma vez por carrinho, pago uma vez por pedido
  * (tabela push_alerts). Nunca dado de cartão além de bandeira/final/parcelas (já vem assim no resumo).
  */
 
@@ -33,7 +33,7 @@ function titleOf(a: CheckoutAlert, s: AlertSummary): string {
     case "pago":
       return s.value ? `💰 Venda! ${s.value}` : "💰 Venda!";
     case "inicio":
-      return "🛒 Checkout iniciado";
+      return "🛒 Checkout aberto";
     case "pagamento":
       return "🧾 Chegou no pagamento";
     case "pix":

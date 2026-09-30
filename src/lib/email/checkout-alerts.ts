@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { emailLog, type CheckoutCart, type Order } from "@/db/schema";
 import { formatBRL, formatDateTime, formatPhone, whatsappLink } from "@/lib/admin/format";
-import { isColor, selectionFromCart, titleOf, variantOf } from "@/lib/checkout/own/catalog";
+import { isColor, selectionFromCart, titleOf, variantOf, type Selection } from "@/lib/checkout/own/catalog";
 import { env } from "@/lib/env";
 import { errorMessage, log } from "@/lib/log";
 import { pushCheckoutEvent, type AlertSummary } from "@/lib/push/checkout-push";
@@ -13,7 +13,7 @@ import { absoluteUrl } from "./send";
 import { escapeHtml, htmlToText } from "./templates";
 
 /**
- * Avisos por e-mail para a equipe durante o checkout (pedido do dono, 2026-09-30): carrinho novo,
+ * Avisos por e-mail para a equipe durante o checkout (pedido do dono, 2026-09-30): checkout aberto,
  * chegada na etapa de pagamento, Pix gerado, cada tentativa no cartão, falha do gateway e pedido pago.
  *
  * - Destino: `alerts.adminEmail`; vazio = `ADMIN_EMAIL` do ambiente (o login do painel), para o
@@ -48,6 +48,11 @@ export interface CheckoutAlert {
   attempt?: CheckoutAlertAttempt | null;
   /** Só no evento `falha`: o que deu errado, em texto curto (nunca dado de cartão). */
   problem?: string | null;
+  /**
+   * Só no evento `inicio`: a página do checkout foi aberta (POST /api/checkout/opened), antes de existir
+   * carrinho. Desde 2026-09-30 o `inicio` sai daqui, e não mais quando o carrinho nasce no e-mail digitado.
+   */
+  visit?: { selection: Selection; amountCents: number | null; origin?: string } | null;
 }
 
 /** Quem recebe os avisos da equipe: o e-mail do painel ou, vazio, o ADMIN_EMAIL do ambiente. */
@@ -76,9 +81,9 @@ function colorLabel(c: string | undefined): string {
   return c && isColor(c) ? COLOR_LABELS[c] : "";
 }
 
-function productOf(order: Order | null | undefined, cart: CheckoutCart | null | undefined): string {
+function productOf(order: Order | null | undefined, cart: CheckoutCart | null | undefined, visit?: CheckoutAlert["visit"]): string {
   if (order?.items?.length) return order.items.map((i) => `${i.quantity}× ${i.name}${i.variant ? ` (${i.variant})` : ""}`).join(" + ");
-  if (!cart) return "—";
+  if (!cart) return visit ? `${titleOf(visit.selection)} (${variantOf(visit.selection)})` : "—";
   const sel = selectionFromCart(cart);
   let text = `${titleOf(sel)} (${variantOf(sel)})`;
   if (sel.pack === "unit" && cart.bumpAccepted) text += ` + 2ª unidade${colorLabel(cart.colors[1]) ? ` (${colorLabel(cart.colors[1])})` : " (cor ainda não escolhida)"}`;
@@ -102,7 +107,7 @@ function subjectOf(a: CheckoutAlert, who: string, value: string, store: string):
   const parts = (...p: string[]) => p.filter(Boolean).join(" · ");
   switch (a.event) {
     case "inicio":
-      return `[${store}] Checkout iniciado: ${parts(who, value)}`;
+      return `[${store}] Checkout aberto: ${parts(who, value)}`;
     case "pagamento":
       return `[${store}] Chegou no pagamento: ${parts(who, value)}`;
     case "pix":
@@ -117,7 +122,7 @@ function subjectOf(a: CheckoutAlert, who: string, value: string, store: string):
 }
 
 const EVENT_TITLE: Record<CheckoutAlertEvent, string> = {
-  inicio: "Alguém começou o checkout",
+  inicio: "Alguém abriu o checkout",
   pagamento: "Cliente chegou na etapa de pagamento",
   pix: "Pix gerado (aguardando pagamento)",
   cartao: "Tentativa de pagamento no cartão",
@@ -142,8 +147,8 @@ async function alreadySent(templateKey: string, a: CheckoutAlert): Promise<boole
 }
 
 function centsOf(a: CheckoutAlert): number | null {
-  const { cart, order, attempt } = a;
-  return attempt?.amountCents ?? (order ? Math.round(Number(order.amountTotal) * 100) : (cart?.amountCents ?? null));
+  const { cart, order, attempt, visit } = a;
+  return attempt?.amountCents ?? (order ? Math.round(Number(order.amountTotal) * 100) : (cart?.amountCents ?? visit?.amountCents ?? null));
 }
 
 function cityOf(a: CheckoutAlert): string {
@@ -155,7 +160,7 @@ function cityOf(a: CheckoutAlert): string {
 function summaryOf(a: CheckoutAlert): AlertSummary {
   const cents = centsOf(a);
   return {
-    product: productOf(a.order, a.cart),
+    product: productOf(a.order, a.cart, a.visit),
     payment: a.attempt || a.order?.paymentMethod ? paymentOf(a.attempt, a.order) : "",
     value: cents !== null && Number.isFinite(cents) ? formatBRL(cents / 100) : "",
     city: cityOf(a),
@@ -205,13 +210,13 @@ async function emailCheckoutEvent(a: CheckoutAlert): Promise<void> {
     const wa = whatsappLink(phone);
     const city = cityOf(a);
     const utm = cart?.utm ?? null;
-    const origin = utm ? [utm.utm_source, utm.utm_campaign].filter(Boolean).join(" · ") : "";
+    const origin = utm ? [utm.utm_source, utm.utm_campaign].filter(Boolean).join(" · ") : (a.visit?.origin ?? "");
     const rows = [
       row("Quando", escapeHtml(formatDateTime(new Date()))),
       row("Cliente", escapeHtml(name || "— (ainda não preencheu)")),
       email ? row("E-mail", escapeHtml(email)) : "",
       phone ? row("WhatsApp", wa ? `<a href="${escapeHtml(wa)}">${escapeHtml(formatPhone(phone))}</a>` : escapeHtml(formatPhone(phone))) : "",
-      row("Produto", escapeHtml(productOf(order, cart))),
+      row("Produto", escapeHtml(productOf(order, cart, a.visit))),
       value ? row("Valor", escapeHtml(value)) : "",
       attempt || order?.paymentMethod ? row("Pagamento", escapeHtml(paymentOf(attempt, order))) : "",
       attempt && a.event === "cartao" ? row("Resultado", `<strong>${escapeHtml(ATTEMPT_LABEL[attempt.status] ?? attempt.status)}</strong>`) : "",

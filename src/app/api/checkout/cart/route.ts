@@ -16,7 +16,8 @@ import { fail, json, originAllowed, readJson, tooMany } from "../_lib/http";
  * O navegador manda seleção, etapa, dados, endereço e os ids de anúncio lidos no navegador; nunca valor.
  * Rastreamento 100% no servidor: InitiateCheckout (`ic-<token>`) quando o carrinho nasce e
  * AddPaymentInfo (`api-<token>`) quando chega na etapa de pagamento, ambos depois da resposta (`after`).
- * Avisos por e-mail à equipe (checkout-alerts): "checkout iniciado" e "chegou no pagamento", uma vez por carrinho.
+ * Aviso por e-mail à equipe (checkout-alerts): "chegou no pagamento", uma vez por carrinho. O "checkout aberto"
+ * saiu daqui em 2026-09-30 e foi para POST /api/checkout/opened (dispara ao abrir a página, antes do e-mail).
  * O upsertCart grava IP e user-agent da requisição e só guarda ids de anúncio com consentimento.
  */
 export const dynamic = "force-dynamic";
@@ -61,7 +62,6 @@ export async function POST(request: Request): Promise<Response> {
         } catch (err) {
           log.error("checkout cart: falha no rastreamento", { cartId: cart.id, error: errorMessage(err) });
         }
-        if (created) await notifyCheckoutEvent({ event: "inicio", cart });
         if (reachedPayment) await notifyCheckoutEvent({ event: "pagamento", cart });
       });
     }

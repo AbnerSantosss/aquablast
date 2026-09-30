@@ -29,6 +29,11 @@ export const themeDefaults = {
   buttonLabel: "CONTINUAR",
   badgeText: "FRETE FULL GRÁTIS",
   footerText: "Momentos que viram boas lembranças.",
+  // Identificação da empresa no rodapé (Decreto 7.962/2013). Informados pelo dono em 2026-09-30; a razão social
+  // ainda não foi informada, então fica vazia e o rodapé usa o nome da loja.
+  companyName: "",
+  companyCnpj: "55.212.611/0001-95",
+  companyAddress: "Rua Trajano, nº 199, andares 02 e 03, Centro, Florianópolis/SC, CEP 88010-010",
 };
 
 const hexColor = z.string().trim().regex(/^#[0-9a-fA-F]{6}$/, { error: "use uma cor no formato #RRGGBB (ex.: #06a64a)." });
@@ -103,6 +108,11 @@ export const themeSchema = z.strictObject({
   buttonLabel: text(30, 1).default(themeDefaults.buttonLabel),
   badgeText: text(30).default(themeDefaults.badgeText),
   footerText: text(120).default(themeDefaults.footerText),
+  companyName: text(120).default(themeDefaults.companyName),
+  companyCnpj: text(18)
+    .refine((v) => v === "" || /^\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}$/.test(v), { error: "use o formato 00.000.000/0000-00 (ou deixe vazio)." })
+    .default(themeDefaults.companyCnpj),
+  companyAddress: text(160).default(themeDefaults.companyAddress),
 });
 
 export type Theme = z.infer<typeof themeSchema>;
@@ -130,6 +140,9 @@ export const themeFieldLabels: Record<keyof Theme, string> = {
   buttonLabel: "Texto do botão",
   badgeText: "Selo da etapa",
   footerText: "Texto do rodapé",
+  companyName: "Razão social",
+  companyCnpj: "CNPJ",
+  companyAddress: "Endereço da empresa",
 };
 
 /** Converte o primeiro erro do zod numa mensagem em pt-BR que diz qual campo do tema está inválido. */
