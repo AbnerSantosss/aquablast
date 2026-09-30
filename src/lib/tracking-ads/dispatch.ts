@@ -76,6 +76,15 @@ interface EventContext {
   clientIp?: string;
   userAgent?: string;
   sourceUrl?: string;
+  /** Só utm_* (sem gclid), só no Purchase. */
+  utm?: Record<string, string>;
+}
+
+/** Só as chaves utm_* (o gclid, guardado junto em `utm`, é do Google e não vai para a Meta). */
+function utmOnly(utm: Record<string, string> | null | undefined): Record<string, string> | undefined {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(utm ?? {})) if (/^utm_[a-z_]{1,30}$/.test(k) && v?.trim()) out[k] = v.trim();
+  return Object.keys(out).length ? out : undefined;
 }
 
 const pick = (...vals: (string | null | undefined)[]): string | undefined => {
@@ -151,6 +160,7 @@ async function buildContext(args: TrackServerEventArgs): Promise<EventContext | 
     gaSessionId: pick(order?.gaSessionId, idsFromCart?.gaSessionId),
     clientIp: pick(order?.clientIp, cart?.clientIp),
     userAgent: pick(order?.userAgent, cart?.userAgent),
+    utm: args.name === "Purchase" ? utmOnly(order?.utm ?? cart?.utm) : undefined,
   };
 }
 
@@ -241,6 +251,7 @@ function metaInput(args: TrackServerEventArgs, ctx: EventContext): MetaEventInpu
     contents: ctx.items.map((i) => ({ id: i.id, quantity: i.quantity, itemPriceCents: i.priceCents })),
     numItems: numItems || undefined,
     orderId: ctx.transactionId,
+    utm: ctx.utm,
   };
 }
 

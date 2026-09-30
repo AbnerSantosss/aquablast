@@ -55,6 +55,8 @@ export interface MetaEventInput {
   orderId?: string;
   /** Itens para custom_data.contents. */
   contents?: { id: string; quantity: number; itemPriceCents: number }[];
+  /** utm_* da visita que virou a compra (só Purchase). Vão em custom_data como parâmetros próprios. */
+  utm?: Record<string, string>;
 }
 
 export interface MetaSendResult {
@@ -172,6 +174,7 @@ export function buildMetaEvent(input: MetaEventInput): Record<string, unknown> {
   }
   if (input.contents?.length) custom.contents = input.contents.map((c) => ({ id: c.id, quantity: c.quantity, item_price: reais(c.itemPriceCents) }));
   if (typeof input.numItems === "number") custom.num_items = input.numItems;
+  for (const [k, v] of Object.entries(input.utm ?? {})) if (/^utm_[a-z_]{1,30}$/.test(k) && v && !(k in custom)) custom[k] = v.slice(0, 200);
 
   const ev: Record<string, unknown> = {
     event_name: input.eventName,

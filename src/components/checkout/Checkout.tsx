@@ -86,6 +86,7 @@ export function Checkout({
   quotesInitial,
   coupon: initialCoupon = "",
   support,
+  consentRequired = true,
   initial,
   paid,
 }: {
@@ -104,6 +105,8 @@ export function Checkout({
   /** Cupom de teste da URL (`?cupom=`): vai junto em cada POST; o valor sai sempre do servidor. */
   coupon?: string;
   support: { href: string; external: boolean };
+  /** `ads.consentRequired` do painel. Desligado: sem banner, identificadores de anúncio lidos sempre. */
+  consentRequired?: boolean;
   initial?: CheckoutInitial;
   paid?: PaidInfo;
 }) {
@@ -578,7 +581,7 @@ export function Checkout({
         </div>
       </main>
       <Footer theme={theme} year={year} methods={methods} maxInstallments={maxInstallments} support={support} />
-      {paid ? null : <ConsentBanner requireConsent onDecide={setConsent} />}
+      {paid ? null : <ConsentBanner requireConsent={consentRequired} onDecide={setConsent} />}
     </div>
   );
 }

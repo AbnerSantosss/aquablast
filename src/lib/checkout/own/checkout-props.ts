@@ -30,10 +30,12 @@ export interface CheckoutServerProps {
   coupon: string;
   /** Suporte do rodapé: WhatsApp cadastrado no painel ou, sem ele, o e-mail do site (mesma regra da compra confirmada). */
   support: { href: string; external: boolean };
+  /** `ads.consentRequired`: desligado, o banner de cookies não aparece e os identificadores de anúncio vão sempre. */
+  consentRequired: boolean;
 }
 
 export async function loadCheckoutProps(pack: CheckoutPack, bump: boolean, couponRaw?: string): Promise<{ mode: "proprio" | "zedy"; props: CheckoutServerProps }> {
-  const s = await getSettings(["checkout.mode", "checkout.maxInstallments", "checkout.pixTtlSeconds", "checkout.bumpEnabled", "checkout.cardComingSoon"] as const);
+  const s = await getSettings(["checkout.mode", "checkout.maxInstallments", "checkout.pixTtlSeconds", "checkout.bumpEnabled", "checkout.cardComingSoon", "ads.consentRequired"] as const);
   const mode = s["checkout.mode"] === "zedy" ? "zedy" : "proprio";
   const maxInstallments = Math.max(1, Math.min(12, Math.trunc(s["checkout.maxInstallments"])));
   const bumpEnabled = s["checkout.bumpEnabled"];
@@ -52,6 +54,6 @@ export async function loadCheckoutProps(pack: CheckoutPack, bump: boolean, coupo
 
   return {
     mode,
-    props: { theme, methods, maxInstallments, pixTtlSeconds, bumpEnabled, pixGateway: pixGw?.name ?? null, cardGateway: cardGw?.name ?? null, cardPublicConfig, cardPending, quotesInitial, coupon, support },
+    props: { theme, methods, maxInstallments, pixTtlSeconds, bumpEnabled, pixGateway: pixGw?.name ?? null, cardGateway: cardGw?.name ?? null, cardPublicConfig, cardPending, quotesInitial, coupon, support, consentRequired: s["ads.consentRequired"] !== false },
   };
 }
