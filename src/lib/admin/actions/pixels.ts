@@ -10,7 +10,7 @@ import { fail, ok, type ActionResult } from "@/lib/admin/types";
 import { headers } from "next/headers";
 import { clientIp } from "@/lib/rate-limit";
 import { getSetting, isSecretKey, META_SERVER_EVENTS, setSetting, type SettingKey, type SettingsMap } from "@/lib/settings";
-import { refreshIntegration } from "@/lib/admin/integrations/verify";
+import { refreshIntegration, runVerification } from "@/lib/admin/integrations/verify";
 import { orderItemOf } from "@/lib/checkout/own/catalog";
 import { sendMetaTestEvents } from "@/lib/tracking-ads/meta-capi";
 import { ga4TestInputs, validateGa4Event } from "@/lib/tracking-ads/ga4-mp";
@@ -65,12 +65,23 @@ export async function saveMetaSettings(_prev: ActionResult, fd: FormData): Promi
     "ads.meta.testMode": testMode,
     "ads.meta.events": events,
   });
-  // Token novo ou pixel trocado: o selo antigo não vale mais; verifica de novo (GET do pixel, sem enviar evento).
+  // Com pixel preenchido, todo salvar testa o token (GET do pixel, sem enviar evento) e diz o estado dele.
+  // Pedido do dono (2026-09-30): a mensagem fixa "Token em branco é mantido" confundia; ele quer ver se o
+  // token está ativo. Campo do token vazio continua mantendo o token salvo (não apaga).
   const changed = Boolean(accessToken) || before.trim() !== pixelId;
-  const verified = await refreshIntegration("meta", actor, { changed, verify: Boolean(pixelId) });
+  const tokenStatus = pixelId ? await metaTokenStatus(actor) : await refreshIntegration("meta", actor, { changed, verify: false });
   const warn = testMode ? " Atenção: modo teste ligado, os eventos reais vão para Eventos de teste. Desmarque ao terminar." : "";
   const none = events.length ? "" : " Nenhum evento marcado: o site não envia nada para a Meta.";
-  return ok(`Configurações da Meta salvas. Token em branco é mantido.${verified}${warn}${none}`);
+  return ok(`Configurações da Meta salvas.${tokenStatus}${warn}${none}`);
+}
+
+/** Testa o token salvo e devolve a frase para o dono. Nunca contém o token. */
+async function metaTokenStatus(actor: string): Promise<string> {
+  const r = await runVerification("meta", actor);
+  if (r.ok) return ` Token ativo e funcionando (${r.message}).`;
+  if (r.message === "token não configurado") return " Falta colar o token de acesso.";
+  if (r.message.startsWith("Meta recusou")) return ` O token não funcionou: ${r.message}.`;
+  return ` Token salvo, mas não foi possível falar com a Meta agora: ${r.message}.`;
 }
 
 export async function saveGa4Settings(_prev: ActionResult, fd: FormData): Promise<ActionResult> {
