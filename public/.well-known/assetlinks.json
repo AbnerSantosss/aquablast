@@ -4,7 +4,7 @@
     "target": {
       "namespace": "android_app",
       "package_name": "br.com.aquablastbrasil.twa",
-      "sha256_cert_fingerprints": ["65:3C:90:9B:04:B2:53:02:16:1E:CD:5A:A2:05:91:FD:CC:51:35:20:59:B1:C6:60:F1:52:16:52:CB:0A:48:E2"]
+      "sha256_cert_fingerprints": ["05:D6:11:93:80:42:CB:5F:4A:E0:96:3C:29:7D:8D:10:73:F8:86:8B:02:3C:76:59:0F:0F:5F:EE:21:97:1B:74"]
     }
   }
 ]
