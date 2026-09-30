@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, CreditCard, Eye, FileText, Funnel, Info, ShoppingBag, ShoppingCart, Users, type LucideIcon } from "lucide-react";
+import { ArrowRight, CalendarDays, ChevronRight, CreditCard, Eye, FileText, Funnel, Info, ShoppingBag, ShoppingCart, Users, type LucideIcon } from "lucide-react";
 import { OperationFunnelChart } from "@/components/admin/dashboard/OperationFunnelChart";
 import { requireAdmin } from "@/lib/auth/session";
 import { firstParam, formatBRL, formatDateTime, qs } from "@/lib/admin/format";
@@ -207,6 +207,11 @@ function OperationFunnel({ stages }: { stages: OpStage[] }) {
 
 const METHOD_LABEL: Record<string, string> = { pix: "Pix", card: "Cartão" };
 
+/** AAAA-MM-DD no fuso de São Paulo (o mesmo dos presets do dashboardRange). */
+function isoDaySP(d: Date): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
+}
+
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<SP> }) {
   await requireAdmin();
   const sp = await searchParams;
@@ -217,6 +222,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const data: DashboardData = await getDashboardData(range);
 
   const linkFor = (preset: string) => `/admin/dashboard${qs({ preset })}`;
+  // Datas do período atual (dia de São Paulo) para o seletor do topo: "até" é o último dia incluído.
+  const rangeFrom = isoDaySP(range.start);
+  const rangeTo = isoDaySP(new Date(range.end.getTime() - 1));
 
   return (
     <>
@@ -225,6 +233,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <h1>Dashboard</h1>
           <p className="sub">Vendas, conversão e formas de pagamento do checkout próprio.</p>
         </div>
+        {/* Filtro por data (pedido do dono, 2026-09-30): sempre visível no topo, como na imagem de referência. */}
+        <form method="get" action="/admin/dashboard" className="dash-range" key={`${rangeFrom}_${rangeTo}`}>
+          <input type="hidden" name="preset" value="livre" />
+          <CalendarDays size={18} strokeWidth={2.2} aria-hidden="true" />
+          <input type="date" name="from" aria-label="De" defaultValue={rangeFrom} max={isoDaySP(new Date())} required />
+          <span aria-hidden="true">–</span>
+          <input type="date" name="to" aria-label="Até" defaultValue={rangeTo} max={isoDaySP(new Date())} required />
+          <button type="submit" aria-label="Aplicar período">
+            <ChevronRight size={18} strokeWidth={2.4} aria-hidden="true" />
+          </button>
+        </form>
       </div>
 
       <div className="tabs">
@@ -233,31 +252,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             {p.label}
           </Link>
         ))}
-        <Link className={range.preset === "livre" ? "is-active" : ""} href={linkFor("livre")}>
+        <Link
+          className={range.preset === "livre" ? "is-active" : ""}
+          href={`/admin/dashboard${qs({ preset: "livre", from: from || rangeFrom, to: to || rangeTo })}`}
+        >
           Período livre
         </Link>
       </div>
-
-      {range.preset === "livre" ? (
-        <form method="get" action="/admin/dashboard" className="card filters">
-          <div className="form-row">
-            <input type="hidden" name="preset" value="livre" />
-            <label className="field">
-              <span>De</span>
-              <input type="date" name="from" defaultValue={from} />
-            </label>
-            <label className="field">
-              <span>Até</span>
-              <input type="date" name="to" defaultValue={to} />
-            </label>
-            <div className="btn-row">
-              <button type="submit" className="btn btn-blue">
-                Aplicar
-              </button>
-            </div>
-          </div>
-        </form>
-      ) : null}
 
       <section className="dash-card dash-operation">
         <div className="op-head">

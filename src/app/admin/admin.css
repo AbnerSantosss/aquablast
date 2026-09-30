@@ -1880,6 +1880,52 @@ ul.check li + li {
 .content > .dash-operation + .dash-grid {
   flex: 1 0 auto;
 }
+/* Filtro por data no topo do dashboard (pedido do dono, 30/09): calendário, De – Até e seta para aplicar. */
+.dash-range {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.4rem 0.35rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--card);
+  box-shadow: 0 2px 8px rgba(6, 55, 96, 0.08);
+  color: var(--navy);
+  font-weight: 800;
+}
+.dash-range input[type="date"] {
+  width: auto;
+  min-width: 0;
+  padding: 0.2rem 0.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--navy);
+  font: inherit;
+  font-size: 0.9rem;
+}
+.dash-range button {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: var(--blue);
+  color: #fff;
+  cursor: pointer;
+}
+.dash-range button:hover {
+  background: var(--navy);
+}
+@media (max-width: 520px) {
+  .dash-range {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .dash-range input[type="date"] {
+    flex: 1 1 7rem;
+  }
+}
 /* Cabeçalho do funil: ícone, título com o selo de conversão e a dica à direita (imagem do dono, 30/09). */
 .op-head {
   display: flex;

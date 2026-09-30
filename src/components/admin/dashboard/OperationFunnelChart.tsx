@@ -10,7 +10,8 @@ export interface FunnelStage {
 
 /**
  * Desenho do "Funil da operação" (pedido do dono, 2026-09-30: "o funil literalmente tem que ter um
- * formato de um funil"). Horizontal, uma faixa por etapa, na mesma ordem e largura dos cards de cima.
+ * formato de um funil"). Horizontal, uma faixa por etapa, na mesma ordem e largura dos cards de cima
+ * (spacing = gap de 1.5rem do .op-steps, assim cada faixa fica embaixo do seu card no desktop).
  * Azul escuro -> azul da marca, a última (compraram) no verde; todas com 4.5:1 ou mais contra o
  * número branco dentro da faixa.
  */
@@ -25,7 +26,7 @@ export function OperationFunnelChart({ stages }: { stages: FunnelStage[] }) {
         direction="horizontal"
         interpolation="smooth"
         shapeBlending={0.66}
-        spacing={3}
+        spacing={24}
         margin={{ top: 6, right: 0, bottom: 6, left: 0 }}
         colors={COLORS}
         fillOpacity={1}
@@ -38,6 +39,8 @@ export function OperationFunnelChart({ stages }: { stages: FunnelStage[] }) {
         motionConfig="gentle"
         theme={{
           text: { fontFamily: "Nunito, system-ui, sans-serif", fontSize: 14, fontWeight: 800 },
+          // No modo horizontal o nivo 0.99 desenha os separadores mesmo com enable*Separators=false.
+          grid: { line: { stroke: "transparent", strokeWidth: 0 } },
           tooltip: { container: { borderRadius: 10, fontSize: 13 } },
         }}
         tooltip={({ part }) => (
