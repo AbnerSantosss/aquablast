@@ -54,7 +54,7 @@ export async function saveMetaSettings(_prev: ActionResult, fd: FormData): Promi
   if (testEventCode && !/^[A-Za-z0-9]{3,60}$/.test(testEventCode)) return fail("Código de evento de teste inválido (formato TEST12345).");
   const testMode = bool(fd, "ads.meta.testMode");
   if (testMode && !testEventCode) return fail("Para enviar como evento de teste, preencha o código de evento de teste.");
-  // Checkboxes "Eventos que o site envia": ausente = desmarcado. Só os três que o servidor conhece.
+  // Checkboxes "Eventos que o site envia": ausente = desmarcado. Só os que o servidor conhece (META_SERVER_EVENTS).
   const events = META_SERVER_EVENTS.filter((e) => fd.getAll("ads.meta.events").includes(e));
   const before = await getSetting("ads.meta.pixelId");
   await apply(actor, "ads.meta", {

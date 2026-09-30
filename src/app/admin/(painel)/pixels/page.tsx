@@ -7,7 +7,7 @@ import { getIntegrationStatus } from "@/lib/admin/integrations/status";
 import { describeSecret, getSettings, META_SERVER_EVENTS, type MetaServerEvent } from "@/lib/settings";
 import { db } from "@/db";
 import { conversionEvents } from "@/db/schema";
-import { desc } from "drizzle-orm";
+import { desc, inArray, notInArray } from "drizzle-orm";
 import { AD_EVENT_FUNNEL, AD_EVENT_LABELS } from "@/lib/tracking-ads/types";
 import { PLAIN_INPUT } from "@/components/admin/input-props";
 import { SecretField } from "@/components/admin/SecretField";
@@ -17,8 +17,10 @@ export const metadata = { title: "Pixels | Painel AquaBlast" };
 
 const DEST_LABEL: Record<string, string> = { meta: "Meta", ga4: "GA4" };
 const STATUS_LABEL: Record<string, string> = { sent: "Enviado", error: "Erro", skipped: "Ignorado", sending: "Enviando" };
-/** Quando cada evento sai do servidor (api/checkout/cart e sync.ts). */
+/** Quando cada evento sai do servidor (api/track/page, api/checkout/cart e sync.ts). */
 const META_EVENT_HELP: Record<MetaServerEvent, string> = {
+  PageView: "visitou qualquer página do site",
+  ViewContent: "abriu a página do produto",
   InitiateCheckout: "começou o checkout",
   AddPaymentInfo: "chegou ao pagamento",
   Purchase: "pagamento aprovado",
@@ -85,6 +87,46 @@ function EventSelect() {
   );
 }
 
+const PAGE_EVENTS = ["PageView", "ViewContent"];
+
+type EventRow = typeof conversionEvents.$inferSelect;
+
+function EventTable({ events, empty }: { events: EventRow[]; empty: string }) {
+  if (events.length === 0) return <p className="muted small">{empty}</p>;
+  return (
+    <table className="table table-cards">
+      <thead>
+        <tr>
+          <th>Evento</th>
+          <th>Status</th>
+          <th>Detalhe</th>
+        </tr>
+      </thead>
+      <tbody>
+        {events.map((e) => (
+          <tr key={e.id}>
+            <td className="tc-top">
+              {e.eventName}
+              <span className="cell-sub nowrap">
+                {DEST_LABEL[e.destination] ?? e.destination} · {formatDateTime(e.sentAt)}
+              </span>
+            </td>
+            <td className="tc-top tc-end">
+              <span className={`badge tone-${e.status === "sent" ? "green" : e.status === "error" ? "red" : "muted"}`}>
+                {STATUS_LABEL[e.status] ?? e.status}
+              </span>
+            </td>
+            <td className={`small muted evt-detail${e.detail || e.payload ? "" : " tc-empty"}`}>
+              {e.detail ?? "—"}
+              <PayloadView payload={e.payload} />
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 export default async function PixelsPage() {
   await requireAdmin();
   const s = await getSettings([
@@ -99,7 +141,10 @@ export default async function PixelsPage() {
   ] as const);
   const [metaToken, ga4Secret, status] = await Promise.all([describeSecret("ads.meta.accessToken"), describeSecret("ads.ga4.apiSecret"), getIntegrationStatus()]);
   const metaEvents: readonly string[] = Array.isArray(s["ads.meta.events"]) ? s["ads.meta.events"] : [];
-  const events = await db.query.conversionEvents.findMany({ orderBy: [desc(conversionEvents.sentAt)], limit: 30 });
+  const [events, pageEvents] = await Promise.all([
+    db.query.conversionEvents.findMany({ where: notInArray(conversionEvents.eventName, PAGE_EVENTS), orderBy: [desc(conversionEvents.sentAt)], limit: 30 }),
+    db.query.conversionEvents.findMany({ where: inArray(conversionEvents.eventName, PAGE_EVENTS), orderBy: [desc(conversionEvents.sentAt)], limit: 30 }),
+  ]);
 
   return (
     <div className="stack">
@@ -151,7 +196,9 @@ export default async function PixelsPage() {
                 </div>
                 <span className="hint">
                   Se o gateway de pagamento já envia a compra direto para a Meta, desmarque Purchase aqui para não contar a venda duas vezes.
-                  PageView e ViewContent (visitas e página do produto) vêm do Google Tag Manager do site, não daqui.
+                  PageView e ViewContent também saem do navegador (Pixel no Google Tag Manager) com o mesmo id de evento, e a Meta
+                  junta os dois: marcar aqui não duplica a contagem, só dá à Meta a cópia do servidor (que bloqueador de anúncio
+                  não barra).
                 </span>
               </div>
               <label className="field">
@@ -243,6 +290,10 @@ export default async function PixelsPage() {
                 <input type="checkbox" name="ads.consentRequired" defaultChecked={s["ads.consentRequired"]} />
                 <span>Só enviar eventos com consentimento do comprador (recomendado)</span>
               </label>
+              <p className="hint">
+                Vale para os eventos do checkout. PageView e ViewContent seguem o Pixel do navegador, que já dispara na página sem
+                pedir consentimento.
+              </p>
               <div className="actions">
                 <button type="submit" className="btn btn-primary">
                   Salvar consentimento
@@ -252,50 +303,30 @@ export default async function PixelsPage() {
           </section>
         </div>
 
-        <section className="card evt-log">
-          <div className="card-head">
-            <h2>Últimos eventos enviados</h2>
-          </div>
-          <p className="muted small">
-            Em cada evento da Meta, &quot;Ver payload enviado&quot; mostra o corpo exato que foi para a API de Conversões (o token não
-            vai no corpo). E-mail, telefone e nome saem com hash SHA-256; fbc, fbp, IP e navegador saem como estão, que é o que a
-            Meta pede. Eventos enviados antes de 30/09/2026 não têm payload gravado.
-          </p>
-          {events.length === 0 ? (
-            <p className="muted small">Nenhum evento registrado ainda.</p>
-          ) : (
-            <table className="table table-cards">
-              <thead>
-                <tr>
-                  <th>Evento</th>
-                  <th>Status</th>
-                  <th>Detalhe</th>
-                </tr>
-              </thead>
-              <tbody>
-                {events.map((e) => (
-                  <tr key={e.id}>
-                    <td className="tc-top">
-                      {e.eventName}
-                      <span className="cell-sub nowrap">
-                        {DEST_LABEL[e.destination] ?? e.destination} · {formatDateTime(e.sentAt)}
-                      </span>
-                    </td>
-                    <td className="tc-top tc-end">
-                      <span className={`badge tone-${e.status === "sent" ? "green" : e.status === "error" ? "red" : "muted"}`}>
-                        {STATUS_LABEL[e.status] ?? e.status}
-                      </span>
-                    </td>
-                    <td className={`small muted evt-detail${e.detail || e.payload ? "" : " tc-empty"}`}>
-                      {e.detail ?? "—"}
-                      <PayloadView payload={e.payload} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </section>
+        <div className="stack">
+          <section className="card evt-log">
+            <div className="card-head">
+              <h2>Últimos eventos do checkout</h2>
+            </div>
+            <p className="muted small">
+              Em cada evento da Meta, &quot;Ver payload enviado&quot; mostra o corpo exato que foi para a API de Conversões (o token
+              não vai no corpo). E-mail, telefone e nome saem com hash SHA-256; fbc, fbp, IP e navegador saem como estão, que é o
+              que a Meta pede. Eventos enviados antes de 30/09/2026 não têm payload gravado.
+            </p>
+            <EventTable events={events} empty="Nenhum evento do checkout registrado ainda." />
+          </section>
+
+          <section className="card evt-log">
+            <div className="card-head">
+              <h2>Últimas visitas enviadas (PageView e ViewContent)</h2>
+            </div>
+            <p className="muted small">
+              Uma linha por página carregada, com o mesmo id de evento que o Pixel do navegador mandou. Ficam guardadas só as dos
+              últimos 7 dias.
+            </p>
+            <EventTable events={pageEvents} empty="Nenhuma visita enviada ainda. Marque PageView e ViewContent acima para enviar." />
+          </section>
+        </div>
       </div>
     </div>
   );

@@ -99,6 +99,25 @@ export function audioUnlocked(): boolean {
   return unlocked;
 }
 
+/** Chave do "som de venda com o painel aberto" (App e avisos). Vale só neste aparelho; padrão: ligado. */
+const SOUND_PREF_KEY = "aqb:saleSound";
+
+export function saleSoundEnabled(): boolean {
+  try {
+    return window.localStorage.getItem(SOUND_PREF_KEY) !== "off";
+  } catch {
+    return true;
+  }
+}
+
+export function setSaleSoundEnabled(on: boolean): void {
+  try {
+    window.localStorage.setItem(SOUND_PREF_KEY, on ? "on" : "off");
+  } catch {
+    // modo privado sem armazenamento: fica o padrão (ligado)
+  }
+}
+
 /** Toca a caixa registradora. Devolve false se o navegador bloqueou (ainda sem toque na página). */
 export async function playSaleSound(): Promise<boolean> {
   try {

@@ -1821,7 +1821,7 @@ ul.check li + li {
 /* Colunas do funil */
 .cols-chart {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr));
   gap: 0.75rem;
   margin: 1.25rem 0 0;
   padding: 1rem 0 0;
@@ -1860,6 +1860,28 @@ ul.check li + li {
   font-weight: 600;
   line-height: 1.25;
   text-align: center;
+  color: var(--muted);
+}
+
+.cols-sub {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--blue);
+}
+/* Funil da operação: fora da grade (que tem posições fixas), largura toda, acima dela. */
+.admin .dash-operation {
+  margin-bottom: 1rem;
+}
+.admin .dash-operation .cols-track {
+  height: 7rem;
+}
+.admin .dash-note {
+  margin-top: 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.45;
   color: var(--muted);
 }
 
@@ -2393,6 +2415,13 @@ ul.check li + li {
 }
 .pwa-msg {
   margin: 0.9rem 0 0;
+}
+.pwa-steps {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted);
 }
 .pwa-note {
   margin: 1rem 0 0;

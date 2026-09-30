@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { preload } from "react-dom";
 import { GoogleTagManager, GoogleTagManagerNoScript } from "@/components/site/GoogleTagManager";
+import { PageTracker } from "@/components/site/PageTracker";
+import { pageEventIdsCode } from "@/components/site/page-event-ids";
 // Mesma ordem do <head> do index.html original.
 import "@/styles/site/style.css";
 import "@/styles/site/offer-cards.css";
@@ -48,7 +50,10 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <GoogleTagManagerNoScript />
+      {/* Antes do GTM: event_id do PageView/ViewContent, o mesmo no Pixel e na API de Conversões. */}
+      <script id="aqb-evt" dangerouslySetInnerHTML={{ __html: pageEventIdsCode }} />
       <GoogleTagManager />
+      <PageTracker />
       {children}
     </>
   );

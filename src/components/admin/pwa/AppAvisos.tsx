@@ -12,6 +12,9 @@ import {
   getInstallPrompt,
   isStandalone,
   playSaleSound,
+  saleSoundEnabled,
+  SALE_SOUND_URL,
+  setSaleSoundEnabled,
   pushSupported,
   registerAdminSw,
   sameKey,
@@ -79,6 +82,7 @@ export function AppAvisos({ initialSales }: { initialSales: RecentSale[] }) {
   const [sales, setSales] = useState<RecentSale[]>(initialSales);
   const [installable, setInstallable] = useState(false);
   const [standalone, setStandalone] = useState(false);
+  const [soundOn, setSoundOn] = useState(true);
 
   useEffect(() => {
     let alive = true;
@@ -88,6 +92,7 @@ export function AppAvisos({ initialSales }: { initialSales: RecentSale[] }) {
       setStatus(st);
       setStandalone(isStandalone());
       setInstallable(!!getInstallPrompt());
+      setSoundOn(saleSoundEnabled());
     });
     const onInstall = () => setInstallable(!!getInstallPrompt());
     const onSale = (e: Event) => {
@@ -184,6 +189,11 @@ export function AppAvisos({ initialSales }: { initialSales: RecentSale[] }) {
     setMsg(played ? { ok: true, text: "Som de venda tocado." } : { ok: false, text: "O navegador bloqueou o som. Toque na página e tente de novo." });
   }
 
+  function toggleSound(on: boolean) {
+    setSoundOn(on);
+    setSaleSoundEnabled(on);
+  }
+
   async function install() {
     const p = getInstallPrompt();
     if (!p) return;
@@ -231,8 +241,36 @@ export function AppAvisos({ initialSales }: { initialSales: RecentSale[] }) {
         {msg ? <p className={`flash ${msg.ok ? "is-ok" : "is-err"} pwa-msg`}>{msg.text}</p> : null}
         <p className="muted small pwa-note">
           Com o painel aberto, venda nova toca a caixa registradora (a página confere a cada 20 s). Com o app fechado chega a notificação do
-          celular, com o som padrão do aparelho. Quais eventos avisam: <Link href="/admin/configuracoes">Configurações &gt; Envios</Link>.
+          celular, com o som do aparelho (veja &quot;Som da venda&quot; abaixo). Quais eventos avisam: <Link href="/admin/configuracoes">Configurações &gt; Envios</Link>.
         </p>
+      </section>
+
+      <section className="card pwa-card">
+        <div className="card-head">
+          <h2>Som da venda</h2>
+        </div>
+        <label className="check">
+          <input type="checkbox" checked={soundOn} onChange={(e) => toggleSound(e.target.checked)} />
+          <span>Tocar a caixa registradora quando entrar venda com o painel aberto (só neste aparelho)</span>
+        </label>
+        <p className="muted small pwa-note">
+          <strong>Com o app fechado</strong> quem toca é o celular, não o site: nenhum site ou app instalado pelo navegador consegue
+          escolher o som da notificação. No Android dá para trocar pelo som da caixa registradora:
+        </p>
+        <ol className="pwa-steps small">
+          <li>
+            Baixe o som: <a href={SALE_SOUND_URL} download="aquablast-venda.mp3">aquablast-venda.mp3</a> (fica na pasta Downloads).
+          </li>
+          <li>
+            Abra <strong>Configurações &gt; Apps &gt; AquaBlast</strong> (se o app não aparecer, use <strong>Chrome</strong>) &gt;{" "}
+            <strong>Notificações</strong>.
+          </li>
+          <li>
+            Toque na categoria dos avisos (no Chrome, <strong>Sites</strong> &gt; aquablastbrasil.com.br) &gt; <strong>Som</strong> e
+            escolha o arquivo baixado. Os nomes mudam um pouco de marca para marca de celular.
+          </li>
+        </ol>
+        <p className="muted small pwa-note">No iPhone não dá para trocar: a notificação usa sempre o som padrão do iOS.</p>
       </section>
 
       <section className="card">

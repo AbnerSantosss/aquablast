@@ -22,8 +22,8 @@ export interface AdIds {
 export type TrackEventName = "InitiateCheckout" | "AddPaymentInfo" | "Purchase";
 
 /**
- * Todos os eventos de anúncio que o site gera, na ordem do funil. PageView e ViewContent saem do GTM no navegador
- * (wiki aquablast-pixel-meta); os outros três saem do servidor (TrackEventName). O painel de Pixels usa esta lista
+ * Todos os eventos de anúncio que o site gera, na ordem do funil. PageView e ViewContent saem do GTM no navegador e,
+ * com o mesmo event_id, de /api/track/page (page-events.ts); os outros três saem do servidor (TrackEventName). O painel usa esta lista
  * para o envio de teste (um evento ou a sequência inteira).
  */
 export type AdEventName = "PageView" | "ViewContent" | TrackEventName;

@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/session";
-import { firstParam, formatBRL, qs } from "@/lib/admin/format";
+import { firstParam, formatBRL, formatDateTime, qs } from "@/lib/admin/format";
 import { dashboardRange, getDashboardData, type DashboardData } from "@/lib/admin/queries-checkout";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -78,11 +78,11 @@ function Donut({ rows, variant, title }: { rows: Row[]; variant: "pie" | "ring";
   );
 }
 
-/** Colunas verticais do funil do checkout. */
+/** Colunas verticais dos funis (checkout e operação). `sub` = % sobre a etapa anterior. */
 function Columns({ rows }: { rows: Row[] }) {
   const max = Math.max(1, ...rows.map((r) => r.value));
   return (
-    <ol className="cols-chart">
+    <ol className="cols-chart" style={{ "--n": rows.length } as CSSProperties}>
       {rows.map((r) => (
         <li key={r.label}>
           <span className="cols-value">{r.value}</span>
@@ -92,7 +92,10 @@ function Columns({ rows }: { rows: Row[] }) {
               style={{ "--v": `${Math.max(3, (r.value / max) * 100)}%` } as CSSProperties}
             />
           </span>
-          <span className="cols-label">{r.label}</span>
+          <span className="cols-label">
+            {r.label}
+            {r.sub ? <span className="cols-sub">{r.sub}</span> : null}
+          </span>
         </li>
       ))}
     </ol>
@@ -136,6 +139,11 @@ function Meter({ value, max }: { value: number; max: number }) {
 function pct(a: number, b: number): string {
   if (b <= 0) return "—";
   return `${Math.round((a / b) * 100)}%`;
+}
+
+/** Cada etapa com o % que passou da etapa anterior (a primeira não tem). */
+function withStepPct(rows: Row[]): Row[] {
+  return rows.map((r, i) => (i === 0 ? r : { ...r, sub: `${pct(r.value, rows[i - 1].value)} da anterior` }));
 }
 
 const METHOD_LABEL: Record<string, string> = { pix: "Pix", card: "Cartão" };
@@ -191,6 +199,29 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </div>
         </form>
       ) : null}
+
+      <section className="dash-card dash-operation">
+        <h2>Funil da operação</h2>
+        <p className="dash-value">{pct(data.funnel.pagaram, data.traffic.visitantes)}</p>
+        <p className="dash-sub">
+          dos visitantes compraram · {data.traffic.paginas} página(s) vista(s) no site
+        </p>
+        <Columns
+          rows={withStepPct([
+            { label: "Visitantes", value: data.traffic.visitantes },
+            { label: "Viram o produto", value: data.traffic.viramProduto },
+            { label: "Abriram o checkout", value: data.traffic.abriramCheckout },
+            { label: "Preencheram os dados", value: data.funnel.criados },
+            { label: "Chegaram no pagamento", value: data.funnel.chegaramPagamento },
+            { label: "Compraram", value: data.funnel.pagaram },
+          ])}
+        />
+        <p className="dash-note">
+          Visitantes são pessoas diferentes (um navegador conta uma vez no período); robôs não entram.
+          {data.traffic.desde ? ` Visitas contadas desde ${formatDateTime(data.traffic.desde)}.` : " Nenhuma visita contada ainda."} As
+          três últimas etapas contam carrinhos do checkout, como no card &quot;Conversão do checkout&quot;.
+        </p>
+      </section>
 
       <div className="dash-grid">
         <section className="dash-card dash-sales">

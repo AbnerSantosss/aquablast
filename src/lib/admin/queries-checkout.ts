@@ -1,8 +1,9 @@
 // Consultas do painel para Início, Dashboard, Carrinhos abandonados e Clientes (Fase 11.3-11.6).
 // Só leitura. Nada aqui inventa métrica que não exista nos dados (sem "visitantes online", sem lucro líquido).
-import { and, count, desc, eq, gte, ilike, inArray, isNotNull, lt, or, sql, type SQL } from "drizzle-orm";
+import { and, count, countDistinct, desc, eq, gte, ilike, inArray, isNotNull, lt, min, ne, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
-import { checkoutCarts, orders, paymentAttempts, type CheckoutCart, type Order } from "@/db/schema";
+import { checkoutCarts, orders, paymentAttempts, siteVisits, type CheckoutCart, type Order } from "@/db/schema";
+import { CHECKOUT_PATH } from "@/lib/tracking-ads/page-events";
 import { getGateway, isGatewayName } from "@/lib/gateways";
 import { getSettings } from "@/lib/settings";
 import { dayBounds, startOfDaySP } from "./format";
@@ -146,6 +147,11 @@ export interface DashboardData {
   ticketMedio: number | null;
   pixConversion: { generated: number; paid: number };
   funnel: { criados: number; comDados: number; comEndereco: number; chegaramPagamento: number; pagaram: number };
+  /**
+   * Topo do "Funil da operação" (site_visits). Pessoas distintas pelo cookie aqb_vid: visitantes, quem viu o produto,
+   * quem abriu o checkout. `paginas` = páginas carregadas no site (sem o checkout). `desde` = primeira visita gravada.
+   */
+  traffic: { visitantes: number; viramProduto: number; abriramCheckout: number; paginas: number; desde: Date | null };
   paymentMethods: { method: string; count: number; amount: number }[];
   installments: { installments: number; count: number }[];
   bump: { count: number; amount: number };
@@ -229,6 +235,21 @@ export async function getDashboardData(range: { start: Date; end: Date }): Promi
     cartCount(eq(checkoutCarts.status, "recovered")),
   ]);
 
+  const visitCond = and(gte(siteVisits.createdAt, start), lt(siteVisits.createdAt, end))! as SQL;
+  const [[trafficRow], [firstVisit]] = await Promise.all([
+    db
+      .select({
+        visitantes: countDistinct(siteVisits.visitorId),
+        viramProduto: sql<number>`count(distinct ${siteVisits.visitorId}) filter (where ${siteVisits.viewedProduct})`.mapWith(Number),
+        abriramCheckout: sql<number>`count(distinct ${siteVisits.visitorId}) filter (where ${eq(siteVisits.path, CHECKOUT_PATH)})`.mapWith(Number),
+        paginas: sql<number>`count(*) filter (where ${ne(siteVisits.path, CHECKOUT_PATH)})`.mapWith(Number),
+      })
+      .from(siteVisits)
+      .where(visitCond),
+    db.select({ desde: min(siteVisits.createdAt) }).from(siteVisits),
+  ]);
+  const traffic = { ...trafficRow, desde: firstVisit?.desde ?? null };
+
   const pixGeneratedCond = and(eq(paymentAttempts.method, "pix"), gte(paymentAttempts.createdAt, start), lt(paymentAttempts.createdAt, end))!;
   const [{ value: pixGenerated }] = await db.select({ value: count() }).from(paymentAttempts).where(pixGeneratedCond);
   const [{ value: pixPaid }] = await db
@@ -241,6 +262,7 @@ export async function getDashboardData(range: { start: Date; end: Date }): Promi
     ticketMedio,
     pixConversion: { generated: pixGenerated, paid: pixPaid },
     funnel: { criados: criadosValue, comDados, comEndereco, chegaramPagamento, pagaram },
+    traffic,
     paymentMethods,
     installments,
     bump,

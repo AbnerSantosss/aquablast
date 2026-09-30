@@ -10,6 +10,7 @@ import {
   announce,
   markSeen,
   playSaleSound,
+  saleSoundEnabled,
   registerAdminSw,
   saleToAnnouncement,
   setInstallPrompt,
@@ -46,7 +47,7 @@ export function AdminPwa() {
     function onSale(e: Event) {
       const detail = (e as CustomEvent<SaleAnnouncement>).detail;
       if (!detail) return;
-      if (detail.sound) void playSaleSound();
+      if (detail.sound && saleSoundEnabled()) void playSaleSound();
       const key = ++counter.current;
       setToasts((list) => [...list.slice(-2), { ...detail, key }]);
       window.setTimeout(() => setToasts((list) => list.filter((t) => t.key !== key)), 9000);

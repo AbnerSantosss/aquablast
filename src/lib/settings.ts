@@ -13,8 +13,9 @@ export type EmailProviderKind = "smtp" | "resend" | "brevo";
 export type TrackingProviderKind = "17track" | "manual";
 
 /** Eventos do servidor que podem ir para a Meta (API de Conversões). */
-export type MetaServerEvent = "InitiateCheckout" | "AddPaymentInfo" | "Purchase";
-export const META_SERVER_EVENTS: readonly MetaServerEvent[] = ["InitiateCheckout", "AddPaymentInfo", "Purchase"];
+export type MetaServerEvent = "PageView" | "ViewContent" | "InitiateCheckout" | "AddPaymentInfo" | "Purchase";
+/** PageView e ViewContent saem de /api/track/page (visita ao site), com o mesmo event_id do Pixel do navegador. */
+export const META_SERVER_EVENTS: readonly MetaServerEvent[] = ["PageView", "ViewContent", "InitiateCheckout", "AddPaymentInfo", "Purchase"];
 
 /**
  * Avisos por e-mail para a equipe (`alerts.events`), do início do checkout ao atraso de postagem.

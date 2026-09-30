@@ -411,6 +411,27 @@ export const conversionEvents = pgTable(
   (t) => [uniqueIndex("conversion_events_dedupe_idx").on(t.destination, t.eventName, t.eventId)],
 );
 
+/**
+ * Visitas ao site público (uma linha por carregamento de página), gravadas por POST /api/track/page.
+ * Alimenta o topo do funil do dashboard (visitantes → viram o produto) e o PageView/ViewContent da CAPI.
+ * Sem dado pessoal: visitor_id é um id aleatório do cookie aqb_vid, não o IP.
+ */
+export const siteVisits = pgTable(
+  "site_visits",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** event_id do PageView (o mesmo que o Pixel do navegador manda, para a Meta deduplicar). */
+    eventId: text("event_id").notNull(),
+    visitorId: text("visitor_id").notNull(),
+    path: text("path").notNull(),
+    /** Carregou a página do produto (home): houve ViewContent. */
+    viewedProduct: boolean("viewed_product").default(false).notNull(),
+    utmSource: text("utm_source"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("site_visits_event_idx").on(t.eventId), index("site_visits_created_idx").on(t.createdAt)],
+);
+
 export type CheckoutCart = typeof checkoutCarts.$inferSelect;
 export type PaymentAttempt = typeof paymentAttempts.$inferSelect;
 export type ConversionEvent = typeof conversionEvents.$inferSelect;

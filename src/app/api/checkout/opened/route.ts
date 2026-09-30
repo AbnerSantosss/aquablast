@@ -6,6 +6,8 @@ import { selectionSchema } from "@/lib/checkout/own/schemas";
 import { notifyCheckoutEvent } from "@/lib/email/checkout-alerts";
 import { errorMessage, log } from "@/lib/log";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { recordCheckoutOpen } from "@/lib/tracking-ads/page-events";
+import { visitorId } from "@/lib/tracking-ads/visitor";
 import { fail, json, originAllowed, readJson, tooMany } from "../_lib/http";
 
 /**
@@ -42,6 +44,13 @@ export async function POST(request: Request): Promise<Response> {
   const parsed = openedSchema.safeParse(body.data);
   if (!parsed.success) return fail(400, "Requisição inválida.");
   const input = parsed.data;
+
+  // Funil do dashboard ("abriram o checkout"): antes do limite de avisos, que é só para o e-mail/push.
+  try {
+    await recordCheckoutOpen(input.visit, await visitorId(), input.source);
+  } catch (err) {
+    log.warn("checkout aberto: visita não gravada", { error: errorMessage(err) });
+  }
 
   const perVisit = await rateLimit(`ck:open:v:${input.visit}`, 1, 6 * 3600);
   if (!perVisit.allowed) return json({ ok: true });
