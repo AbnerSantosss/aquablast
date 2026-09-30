@@ -11,6 +11,7 @@ import { createOrderFromCart, effectiveSelection } from "@/lib/checkout/own/orde
 import { quote, type Quote } from "@/lib/checkout/own/pricing";
 import { describeInputError, paySchema, type PayInput } from "@/lib/checkout/own/schemas";
 import { decryptText } from "@/lib/crypto";
+import { notifyCheckoutEvent, type CheckoutAlert } from "@/lib/email/checkout-alerts";
 import { sendOrderEmail } from "@/lib/email/send";
 import { isProd } from "@/lib/env";
 import { gatewayFor, type ChargeInput, type ChargeResult, type Gateway } from "@/lib/gateways";
@@ -35,6 +36,8 @@ import { onOrderPaid, postbackUrlFor } from "../_lib/sync";
  *   Gateway que não tokeniza (IronPay, simulado...): exige `card` e valida Luhn, validade, CVV e CPF do titular.
  * - Rate limit: 10 por IP e 5 por carrinho a cada 10 minutos.
  * - O valor vem sempre de quote() no servidor. Cartão recusado NÃO cancela o pedido.
+ * - Avisos à equipe por e-mail (checkout-alerts, depois da resposta): Pix gerado, cada tentativa no cartão
+ *   (aprovada, em análise, recusada) e "falha" quando o gateway não cobrou ou a forma de pagamento está fora.
  */
 export const dynamic = "force-dynamic";
 
@@ -79,6 +82,11 @@ function checkCard(input: PayInput, gw: Gateway): CardCheck {
   if (!/^\d{3,4}$/.test(card.cvv)) return bad("Código de segurança (CVV) inválido.", "card.cvv");
   if (!validCPF(card.holderCpf)) return bad("CPF do titular do cartão inválido.", "card.holderCpf");
   return { ok: true, brand: cardBrandOf(number), last4: cardLast4(number) };
+}
+
+/** Aviso à equipe depois da resposta; notifyCheckoutEvent nunca lança. */
+function alertTeam(a: CheckoutAlert): void {
+  after(() => notifyCheckoutEvent(a));
 }
 
 function hasCustomerAndAddress(cart: CheckoutCart): boolean {
@@ -142,7 +150,10 @@ export async function POST(request: Request): Promise<Response> {
   if (!hasCustomerAndAddress(cart)) return fail(409, "Complete seus dados e o endereço antes de pagar.");
 
   const gw = await gatewayFor(input.method);
-  if (!gw) return fail(503, "Esta forma de pagamento está indisponível. Escolha outra.");
+  if (!gw) {
+    alertTeam({ event: "falha", cart, attempt: { method: input.method, status: "error" }, problem: `Nenhum gateway ativo e configurado para ${input.method === "pix" ? "Pix" : "cartão"} (confira /admin/gateways).` });
+    return fail(503, "Esta forma de pagamento está indisponível. Escolha outra.");
+  }
 
   const card = checkCard(input, gw);
   if (!card.ok) return card.response;
@@ -164,6 +175,7 @@ export async function POST(request: Request): Promise<Response> {
   const postbackUrl = await postbackUrlFor(gw.name);
   if (!postbackUrl) {
     log.error("checkout pay: gateway.postbackToken vazio; gere o token no painel", { gateway: gw.name });
+    alertTeam({ event: "falha", cart, attempt: { method: input.method, status: "error", gateway: gw.name }, problem: "Token de postback vazio: gere o token em /admin/gateways." });
     return fail(503, "Esta forma de pagamento está indisponível. Escolha outra.");
   }
 
@@ -194,6 +206,7 @@ export async function POST(request: Request): Promise<Response> {
     ({ order } = await createOrderFromCart(cart, q));
   } catch (err) {
     log.error("checkout pay: falha ao criar pedido", { cartId: cart.id, error: errorMessage(err) });
+    alertTeam({ event: "falha", cart, attempt: { method: input.method, status: "error", amountCents: q.amountCents, gateway: gw.name }, problem: "Não foi possível criar o pedido (erro interno; veja os logs)." });
     return fail(500, GENERIC_ERROR);
   }
 
@@ -274,6 +287,18 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const base = { orderNumber: order.orderNumber, publicToken: order.publicToken };
+  const attempt = {
+    method: input.method,
+    status: result.status,
+    amountCents: q.amountCents,
+    installments: input.method === "card" ? q.installments : null,
+    cardBrand: result.cardBrand ?? card.brand,
+    cardLast4: card.last4,
+    reason: result.reason ? scrub(result.reason) : null,
+    gateway: gw.name,
+  };
+  // Cartão aprovado, em análise ou recusado: um aviso por tentativa. Erro do gateway vira "falha" (lá embaixo).
+  if (input.method === "card" && result.status !== "error") alertTeam({ event: "cartao", cart, order, attempt });
 
   if (result.status === "paid") {
     const applied = await applyPaymentStatus({ orderId: order.id, paymentStatus: "paid", source: "checkout", dedupeKey: `own:${attemptId}` });
@@ -284,6 +309,7 @@ export async function POST(request: Request): Promise<Response> {
   if (result.status === "pending" && input.method === "pix") {
     if (!result.pix?.code) {
       log.error("checkout pay: Pix pendente sem código", { attemptId, gateway: gw.name });
+      alertTeam({ event: "falha", cart, order, attempt, problem: "O gateway aceitou o Pix mas não devolveu o código copia-e-cola." });
       return payResponse(502, { ok: false, status: "error", ...base, pix: null, message: GENERIC_ERROR });
     }
     const expiresAt = result.pix.expiresAt instanceof Date && !Number.isNaN(result.pix.expiresAt.getTime()) ? result.pix.expiresAt : new Date(Date.now() + s["checkout.pixTtlSeconds"] * 1000);
@@ -294,6 +320,7 @@ export async function POST(request: Request): Promise<Response> {
       paymentUrl: appUrl(`/checkout/pedido/${order.publicToken}`),
     });
     const orderId = order.id;
+    alertTeam({ event: "pix", cart, order, attempt });
     after(async () => {
       try {
         const fresh = await getOrderById(orderId);
@@ -317,5 +344,6 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   log.warn("checkout pay: cobrança não criada", { attemptId, gateway: gw.name, status: result.status, reason: result.reason ? scrub(result.reason) : undefined });
+  alertTeam({ event: "falha", cart, order, attempt, problem: `O gateway ${gw.name} não criou a cobrança (${input.method === "pix" ? "Pix" : "cartão"}). O comprador viu a mensagem de erro.` });
   return payResponse(502, { ok: false, status: "error", ...base, pix: null, message: result.message ?? GENERIC_ERROR });
 }

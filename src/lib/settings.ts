@@ -17,6 +17,15 @@ export type MetaServerEvent = "InitiateCheckout" | "AddPaymentInfo" | "Purchase"
 export const META_SERVER_EVENTS: readonly MetaServerEvent[] = ["InitiateCheckout", "AddPaymentInfo", "Purchase"];
 
 /**
+ * Avisos por e-mail para a equipe (`alerts.events`), do início do checkout ao atraso de postagem.
+ * inicio = carrinho novo; pagamento = chegou na etapa de pagamento; pix = Pix gerado; cartao = cada
+ * tentativa no cartão (aprovada, recusada, em análise ou com erro); falha = o gateway não cobrou (erro, chave
+ * recusada, timeout, Pix sem código, forma de pagamento indisponível); pago = pedido pago; atraso = SLA vencido.
+ */
+export type AdminAlertEvent = "inicio" | "pagamento" | "pix" | "cartao" | "falha" | "pago" | "atraso";
+export const ADMIN_ALERT_EVENTS: readonly AdminAlertEvent[] = ["inicio", "pagamento", "pix", "cartao", "falha", "pago", "atraso"];
+
+/**
  * Resultado da última verificação real de uma integração (painel > selo do SecretField).
  * Chaves usadas: "email", "meta", "gateway.mercadopago", "gateway.ironpay", "gateway.fastpay", "tracking.17track".
  * `at` é ISO 8601. `message` é curta e nunca ecoa a chave.
@@ -57,8 +66,10 @@ export interface SettingsMap {
   "store.supportWhatsapp": string;
   /** SLA de postagem: dias corridos depois de `paidAt` para o pedido ter código de rastreio. */
   "orders.slaDays": number;
-  /** E-mail que recebe os alertas do painel (pedido atrasado no SLA). Vazio = só avisa no painel. */
+  /** E-mail que recebe os alertas da equipe. Vazio = usa o ADMIN_EMAIL do ambiente (ver adminAlertRecipient). */
   "alerts.adminEmail": string;
+  /** Quais avisos saem por e-mail (ADMIN_ALERT_EVENTS). Lista vazia = nenhum. */
+  "alerts.events": AdminAlertEvent[];
   "store.supportEmail": string;
   "store.trackingPageUrl": string;
   "accessCode.validityDays": number;
@@ -169,6 +180,7 @@ export const DEFAULTS: SettingsMap = {
   "accessCode.validityDays": 180,
   "orders.slaDays": 3,
   "alerts.adminEmail": "",
+  "alerts.events": [...ADMIN_ALERT_EVENTS],
 
   "checkout.mode": "zedy",
   "checkout.prices": { unit: { pix: 15990, card: 16990 }, kit: { pix: 24990, card: 25990 } },
@@ -183,7 +195,7 @@ export const DEFAULTS: SettingsMap = {
   "checkout.recovery.secondAfterMinutes": 1440,
   "checkout.recovery.thirdAfterMinutes": 4320,
   "gateway.pix": "simulado",
-  "gateway.card": "simulado",
+  "gateway.card": "fastpay",
   "gateway.ironpay.apiToken": "",
   "gateway.ironpay.offerHashUnit": "",
   "gateway.ironpay.offerHashKit": "",

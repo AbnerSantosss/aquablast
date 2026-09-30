@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { db } from "@/db";
 import { paymentAttempts, type Order, type PaymentAttempt } from "@/db/schema";
 import { getCartById, markCartConverted } from "@/lib/checkout/own/cart";
+import { notifyCheckoutEvent } from "@/lib/email/checkout-alerts";
 import { env } from "@/lib/env";
 import type { GatewayName, GatewayStatus, StatusResult } from "@/lib/gateways";
 import { errorMessage, log } from "@/lib/log";
@@ -28,7 +29,10 @@ export async function postbackUrlFor(gateway: GatewayName): Promise<string | nul
   return `${base}/api/webhooks/gateway/${gateway}/${encodeURIComponent(token)}`;
 }
 
-/** Pedido pago pela primeira vez: carrinho convertido + Purchase (id `pur-<orderNumber>`), depois da resposta. */
+/**
+ * Pedido pago pela primeira vez: carrinho convertido + Purchase (id `pur-<orderNumber>`) + aviso "pedido pago"
+ * à equipe (uma vez por pedido), depois da resposta.
+ */
 export async function onOrderPaid(order: Order): Promise<void> {
   if (order.cartId) await markCartConverted(order.cartId, order.id);
   const cartId = order.cartId;
@@ -39,6 +43,8 @@ export async function onOrderPaid(order: Order): Promise<void> {
     } catch (err) {
       log.error("checkout: falha ao disparar Purchase", { orderId: order.id, error: errorMessage(err) });
     }
+    const cart = cartId ? await getCartById(cartId).catch(() => null) : null;
+    await notifyCheckoutEvent({ event: "pago", order, cart });
   });
 }
 
@@ -101,6 +107,17 @@ export async function syncAttempt(attempt: PaymentAttempt, st: StatusResult, sou
   } else if (next === "refused" && attempt.status !== "refused") {
     await addOrderEvent({ orderId: order.id, title: "Pagamento recusado", description: "O pagamento não foi autorizado. O pedido continua aguardando pagamento.", source, dedupeKey: `${dedupeKey}:refused` });
     detail.push("pagamento recusado (pedido continua pendente)");
+    if (attempt.method === "card") {
+      // Cartão que estava em análise e o gateway recusou depois: avisa a equipe.
+      const recused = order;
+      after(() =>
+        notifyCheckoutEvent({
+          event: "cartao",
+          order: recused,
+          attempt: { method: "card", status: "refused", amountCents: attempt.amountCents, installments: attempt.installments, cardBrand: attempt.cardBrand, cardLast4: attempt.cardLast4, reason: st.reason ? st.reason.slice(0, 200) : null, gateway: attempt.provider },
+        }),
+      );
+    }
   }
 
   return { order, attemptStatus: next, detail };

@@ -29,6 +29,13 @@
       "when": 1790745869516,
       "tag": "0003_orders_sla_alerted_at",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790750590573,
+      "tag": "0004_card_gateway_fastpay",
+      "breakpoints": true
     }
   ]
 }

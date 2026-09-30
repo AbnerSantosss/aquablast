@@ -9,7 +9,7 @@ import { SecretField, secretBadge } from "@/components/admin/SecretField";
 import { SectionTabs } from "@/components/admin/SectionTabs";
 import { requireAdmin } from "@/lib/auth/session";
 import { env } from "@/lib/env";
-import { describeSecret, getSettings } from "@/lib/settings";
+import { ADMIN_ALERT_EVENTS, describeSecret, getSettings, type AdminAlertEvent } from "@/lib/settings";
 import { verifyIntegrationAction } from "@/lib/admin/actions/integrations";
 import { getIntegrationStatus } from "@/lib/admin/integrations/status";
 import { getStoredSupportWhatsapp } from "@/lib/site/support-contact";
@@ -60,6 +60,16 @@ const FIELD_NAMES = [
   "carrierName",
 ];
 
+const ALERT_EVENT_LABELS: Record<AdminAlertEvent, string> = {
+  inicio: "alguém inicia o checkout",
+  pagamento: "chega na etapa de pagamento",
+  pix: "gera um Pix",
+  cartao: "tenta pagar no cartão (aprovado, em análise ou recusado)",
+  falha: "o gateway falha ou a forma de pagamento está fora",
+  pago: "o pedido é pago",
+  atraso: "a postagem passa do prazo",
+};
+
 export default async function SettingsPage() {
   const session = await requireAdmin();
   const s = await getSettings([
@@ -85,6 +95,7 @@ export default async function SettingsPage() {
     "accessCode.validityDays",
     "orders.slaDays",
     "alerts.adminEmail",
+    "alerts.events",
   ] as const);
   // WhatsApp: só o que está gravado (vazio sem linha). getSettings() devolveria o
   // DEFAULT do código, e salvar "Loja" gravaria esse número não confirmado, que iria ao site.
@@ -106,6 +117,7 @@ export default async function SettingsPage() {
       : { help: "A verificação vale para o provedor selecionado acima." };
   const emailBadge = status.email ? secretBadge(true, true, status.email) : null;
   const e = env();
+  const adminEmailEnv = (e.ADMIN_EMAIL ?? "").trim().toLowerCase();
   const base = e.APP_URL.replace(/\/$/, "");
   const checkoutWebhookUrl = `${base}/api/webhooks/checkout/${e.CHECKOUT_WEBHOOK_TOKEN}`;
   const trackingWebhookUrl = `${base}/api/webhooks/tracking`;
@@ -273,13 +285,15 @@ export default async function SettingsPage() {
     </section>
   );
 
+  const alertEvents: readonly string[] = s["alerts.events"];
   const envios = (
     <section className="card">
       <div className="card-head">
-        <h2>Envios</h2>
+        <h2>Envios e avisos por e-mail</h2>
         <p className="muted small">
           Prazo para postar depois do pagamento. Pedido pago sem rastreio além do prazo fica vermelho em <Link href="/admin/envios">Envios</Link> e no Início, e
-          gera um único e-mail de alerta por pedido para o endereço abaixo (vazio = só o aviso no painel).
+          gera um único e-mail de alerta por pedido. Os avisos marcados abaixo chegam no e-mail da equipe (vazio = e-mail de login do painel,{" "}
+          <code>ADMIN_EMAIL</code>).
         </p>
       </div>
       <ActionForm action={saveShippingSettings}>
@@ -289,10 +303,21 @@ export default async function SettingsPage() {
             <input name="orders.slaDays" type="number" min={1} max={30} required defaultValue={s["orders.slaDays"]} />
           </label>
           <label className="field">
-            <span>E-mail para alertas de atraso</span>
-            <input name="alerts.adminEmail" type="email" maxLength={254} autoComplete="off" placeholder="voce@exemplo.com" defaultValue={s["alerts.adminEmail"]} />
+            <span>E-mail que recebe os avisos</span>
+            <input name="alerts.adminEmail" type="email" maxLength={254} autoComplete="off" placeholder={adminEmailEnv || "voce@exemplo.com"} defaultValue={s["alerts.adminEmail"]} />
           </label>
         </div>
+        <fieldset className="field" style={{ border: 0, padding: 0, margin: "0.4rem 0 0" }}>
+          <span>Avisar por e-mail quando</span>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem 1.2rem" }}>
+            {ADMIN_ALERT_EVENTS.map((ev) => (
+              <label key={ev} className="check">
+                <input type="checkbox" name="alerts.events" value={ev} defaultChecked={alertEvents.includes(ev)} />
+                <span>{ALERT_EVENT_LABELS[ev]}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <div className="actions tight">
           <button type="submit" className="btn btn-primary">
             Salvar envios

@@ -280,11 +280,14 @@ export default async function GatewaysPage() {
           <h3>FastPay</h3>
           <span className={`gw-dot ${configuredByProvider.fastpay ? "is-on" : ""}`} title={configuredByProvider.fastpay ? "Configurado" : "Falta a chave"} />
         </div>
-        <p className="small muted">Pix e cartão. Cartão em claro. Sem estorno por API — o estorno é feito no painel da FastPay.</p>
+        <p className="small muted">
+          Pix e cartão; é o gateway padrão do cartão. Cartão em claro. Sem estorno por API — o estorno é feito no painel da FastPay. Cole a{" "}
+          <strong>Chave Secreta</strong> (começa com <code>sk_</code>); a Chave Pública (<code>pk_</code>) não é usada.
+        </p>
         <ActionForm action={saveFastpaySettings} autoComplete="off">
           <SecretField
             name="gateway.fastpay.apiKey"
-            label="Chave de API"
+            label="Chave Secreta (sk_…)"
             secret={fastpayKey}
             status={status["gateway.fastpay"]}
             verifiable

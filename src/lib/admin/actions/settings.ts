@@ -9,7 +9,8 @@ import { invalidateOpenPasswordResets } from "@/lib/auth/password-reset";
 import { createAdminSession, requireAdmin } from "@/lib/auth/session";
 import { ensureBootstrap } from "@/lib/bootstrap";
 import { sendTestEmail } from "@/lib/email/send";
-import { getSettings, isSecretKey, setSetting, type SettingKey, type SettingsMap } from "@/lib/settings";
+import { env } from "@/lib/env";
+import { ADMIN_ALERT_EVENTS, getSettings, isSecretKey, setSetting, type SettingKey, type SettingsMap } from "@/lib/settings";
 import { refreshIntegration } from "@/lib/admin/integrations/verify";
 import { getStoredSupportWhatsapp } from "@/lib/site/support-contact";
 import { CARRIERS } from "@/lib/tracking/provider";
@@ -112,13 +113,18 @@ export async function savePixReminderSettings(_prev: ActionResult, fd: FormData)
 export async function saveShippingSettings(_prev: ActionResult, fd: FormData): Promise<ActionResult> {
   const { actor } = await begin();
   const adminEmail = str(fd, "alerts.adminEmail", 254).toLowerCase();
-  if (adminEmail && !isEmail(adminEmail)) return fail("E-mail para alertas inválido. Deixe vazio para não receber alertas.");
+  if (adminEmail && !isEmail(adminEmail)) return fail("E-mail para avisos inválido. Deixe vazio para usar o e-mail de login do painel (ADMIN_EMAIL).");
+  const picked = new Set(fd.getAll("alerts.events").map(String));
+  const events = ADMIN_ALERT_EVENTS.filter((ev) => picked.has(ev));
   await apply(actor, "envios", {
     "orders.slaDays": int(fd, "orders.slaDays", 3, 1, 30),
     "alerts.adminEmail": adminEmail,
+    "alerts.events": events,
   });
   revalidatePath("/admin", "layout");
-  return ok(adminEmail ? `Envios salvo. Alertas de atraso vão para ${adminEmail}.` : "Envios salvo. Sem e-mail para alertas: o atraso aparece só no painel.");
+  const to = adminEmail || (env().ADMIN_EMAIL ?? "").trim().toLowerCase();
+  if (!events.length) return ok("Envios salvo. Todos os avisos por e-mail estão desligados.");
+  return ok(to ? `Envios salvo. ${events.length} aviso(s) vão para ${to}.` : "Envios salvo, mas não há e-mail para os avisos: preencha o campo.");
 }
 
 export async function saveTrackingSettings(_prev: ActionResult, fd: FormData): Promise<ActionResult> {
