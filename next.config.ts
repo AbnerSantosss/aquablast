@@ -63,6 +63,9 @@ const nextConfig: NextConfig = {
         ],
       },
       { source: "/admin-app/manifest.webmanifest", headers: [{ key: "Content-Type", value: "application/manifest+json" }, { key: "Cache-Control", value: "no-cache" }] },
+      // App Android (TWA do PWABuilder): o Android confere este arquivo para abrir o painel em tela cheia, sem barra de endereço.
+      // O SHA-256 é o da chave `signing.keystore` guardada fora do repo; trocar a chave = trocar este arquivo.
+      { source: "/.well-known/assetlinks.json", headers: [{ key: "Content-Type", value: "application/json" }, { key: "Cache-Control", value: "no-cache" }] },
       // `:path*` também casa com "/checkout" sem nada depois.
       { source: "/checkout/:path*", headers: [...checkoutHeaders, { key: "Content-Security-Policy", value: checkoutCsp }] },
       { source: "/api/checkout/:path*", headers: checkoutHeaders },

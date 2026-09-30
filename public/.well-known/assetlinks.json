@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "br.com.aquablastbrasil.twa",
+      "sha256_cert_fingerprints": ["65:3C:90:9B:04:B2:53:02:16:1E:CD:5A:A2:05:91:FD:CC:51:35:20:59:B1:C6:60:F1:52:16:52:CB:0A:48:E2"]
+    }
+  }
+]
