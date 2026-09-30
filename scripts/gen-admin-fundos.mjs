@@ -1,5 +1,5 @@
 // TEMPORARIO / SOMENTE DESENVOLVIMENTO.
-// Gera as imagens de fundo do painel admin via OpenRouter e grava em public/admin-bg/.
+// Gera as imagens de fundo do painel admin (muapi ou OpenRouter) e grava em public/admin-bg/.
 // Nao e rota HTTP, fica fora de src/, nao entra no build nem em producao.
 //
 // Uso (na raiz de aquablast-next):
@@ -15,7 +15,13 @@
 // alfa. Jobs com "transparent": true pedem isso e o sharp NAO achata em branco; "model" no job troca o modelo so dele.
 // "mask": "circle" ainda recorta em circulo (dest-in) para garantir borda limpa.
 //
-// Chave: OPENROUTER_API_KEY no ambiente ou em .env.local (ignorado pelo git).
+// Dois provedores (2026-09-29): --provedor muapi (padrao, mais barato) ou --provedor openrouter.
+// Na muapi o --model e o id do endpoint (nano-banana-pro, nano-banana-2) e "muapiModel" no job troca so o dele.
+// Fundo transparente so existe na OpenRouter: job com "transparent": true exige --provedor openrouter.
+//   node scripts/gen-admin-fundos.mjs --provedor openrouter --prompts checkout-selos-prompts.json
+//   node scripts/gen-admin-fundos.mjs --model nano-banana-2 --resolucao 2k
+//
+// Chave: MUAPI_API_KEY ou OPENROUTER_API_KEY no ambiente ou em .env.local (ignorado pelo git).
 // O script NUNCA imprime a chave e nao contem segredo nenhum.
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
@@ -24,30 +30,37 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
-const DEFAULT_MODEL = "google/gemini-3-pro-image";
+const PROVIDERS = {
+  muapi: { envVar: "MUAPI_API_KEY", defaultModel: "nano-banana-pro" },
+  openrouter: { envVar: "OPENROUTER_API_KEY", defaultModel: "google/gemini-3-pro-image" },
+};
+const MUAPI = "https://api.muapi.ai/api/v1";
 
 if (process.env.NODE_ENV === "production") {
   throw new Error("gen-admin-fundos e so de desenvolvimento; nao rode em producao.");
 }
 
-function loadKey() {
-  if (process.env.OPENROUTER_API_KEY) return process.env.OPENROUTER_API_KEY.trim();
+function loadKey(envVar) {
+  if (process.env[envVar]) return process.env[envVar].trim();
   const envPath = resolve(root, ".env.local");
   if (existsSync(envPath)) {
-    const m = readFileSync(envPath, "utf8").match(/^OPENROUTER_API_KEY=(.+)$/m);
+    const m = readFileSync(envPath, "utf8").match(new RegExp(`^${envVar}=(.+)$`, "m"));
     if (m) return m[1].trim().replace(/^["']|["']$/g, "");
   }
-  throw new Error("OPENROUTER_API_KEY nao encontrada (ambiente ou .env.local)");
+  throw new Error(`${envVar} nao encontrada (ambiente ou .env.local)`);
 }
 
 const args = process.argv.slice(2);
 const argValue = (name) => (args.includes(name) ? args[args.indexOf(name) + 1] : null);
-const model = argValue("--model") ?? DEFAULT_MODEL;
+const provider = argValue("--provedor") ?? "muapi";
+if (!PROVIDERS[provider]) throw new Error(`--provedor invalido: ${provider} (use muapi ou openrouter)`);
+const model = argValue("--model") ?? PROVIDERS[provider].defaultModel;
+const resolution = argValue("--resolucao") ?? "1k";
 const only = argValue("--only")?.split(",") ?? null;
 const promptsFile = resolve(here, argValue("--prompts") ?? "admin-fundos-prompts.json");
 
 const onlyCrop = args.includes("--so-recortar");
-const key = onlyCrop ? null : loadKey();
+const key = onlyCrop ? null : loadKey(PROVIDERS[provider].envVar);
 // Garante que nenhuma mensagem de erro carregue a chave.
 const redact = (text) => (key ? String(text).split(key).join("[chave]") : String(text)).slice(0, 400);
 
@@ -61,7 +74,45 @@ async function loadSharp() {
   }
 }
 
+const jobModel = (job) => (provider === "muapi" ? job.muapiModel ?? model : job.model ?? model);
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// muapi: envia o job, consulta o resultado a cada 3 s (ate 5 min) e baixa a primeira imagem.
+async function requestImageMuapi(job) {
+  if (job.transparent) {
+    throw new Error("fundo transparente so na OpenRouter: rode este job com --provedor openrouter");
+  }
+  const headers = { "x-api-key": key, "Content-Type": "application/json" };
+  const body = { prompt: job.prompt, resolution: job.resolution ?? resolution };
+  if (job.aspectRatio) body.aspect_ratio = job.aspectRatio;
+  const submit = await fetch(`${MUAPI}/${jobModel(job)}`, { method: "POST", headers, body: JSON.stringify(body) });
+  if (!submit.ok) throw new Error(`HTTP ${submit.status} ${redact(await submit.text())}`);
+  const { request_id: requestId } = await submit.json();
+  if (!requestId) throw new Error("muapi nao devolveu request_id");
+
+  for (let tries = 0; tries < 100; tries += 1) {
+    await sleep(3000);
+    const res = await fetch(`${MUAPI}/predictions/${requestId}/result`, { headers: { "x-api-key": key } });
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${redact(await res.text())}`);
+    const json = await res.json();
+    if (json.status === "failed" || json.status === "cancelled") throw new Error(`muapi ${json.status}: ${redact(json.error ?? "")}`);
+    if (json.status !== "completed") continue;
+    const url = json.outputs?.[0];
+    if (!url) throw new Error("muapi concluiu sem imagem");
+    const img = await fetch(url);
+    if (!img.ok) throw new Error(`download da imagem: HTTP ${img.status}`);
+    // S3 as vezes responde octet-stream: nesse caso o tipo sai da extensao do link.
+    const type = img.headers.get("content-type") ?? "";
+    const ext = new URL(url).pathname.split(".").pop().toLowerCase();
+    const mime = type.startsWith("image/") ? type : ext === "jpg" || ext === "jpeg" ? "image/jpeg" : `image/${ext || "png"}`;
+    return { mime, buffer: Buffer.from(await img.arrayBuffer()) };
+  }
+  throw new Error("muapi nao terminou em 5 min");
+}
+
 async function requestImage(job) {
+  if (provider === "muapi") return requestImageMuapi(job);
   const body = {
     model: job.model ?? model,
     modalities: ["image", "text"],
@@ -145,10 +196,11 @@ sharp?.cache(false);
 const selected = only ? jobs.filter((j) => only.includes(j.id)) : jobs;
 if (!selected.length) throw new Error("nenhum job selecionado");
 
-process.stdout.write(`modelo padrao: ${model} (job com "model" usa o dele)\n`);
+const jobField = provider === "muapi" ? "muapiModel" : "model";
+process.stdout.write(`provedor: ${provider} | modelo padrao: ${model} (job com "${jobField}" usa o dele)\n`);
 let failed = 0;
 for (const job of selected) {
-  process.stdout.write(`[${job.id}] ${onlyCrop ? "recortando" : `gerando com ${job.model ?? model}`}... `);
+  process.stdout.write(`[${job.id}] ${onlyCrop ? "recortando" : `gerando com ${jobModel(job)}`}... `);
   try {
     const image = onlyCrop ? { mime: "image/webp", buffer: readFileSync(resolve(root, job.out)) } : await requestImage(job);
     const saved = await save(job, image, sharp);
