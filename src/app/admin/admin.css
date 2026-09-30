@@ -1880,9 +1880,232 @@ ul.check li + li {
 .content > .dash-operation + .dash-grid {
   flex: 1 0 auto;
 }
-.admin .dash-operation .cols-track {
-  height: 7rem;
+/* Cabeçalho do funil: ícone, título com o selo de conversão e a dica à direita (imagem do dono, 30/09). */
+.op-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.9rem;
+  margin-bottom: 1.15rem;
 }
+.op-head-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  background: var(--pale);
+  color: var(--blue);
+}
+.op-head-text {
+  min-width: 0;
+}
+.op-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.7rem;
+}
+.admin .dash-operation .op-title-row h2 {
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--navy);
+}
+.op-badge {
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: #dcf5e6;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--green-ink);
+}
+.admin .dash-operation .op-head .dash-sub {
+  margin-top: 0.15rem;
+}
+.op-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 24rem;
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.op-hint svg {
+  flex: none;
+}
+
+/* Etapas: um card por etapa, a pílula no vão entre eles (metade do gap para a esquerda). */
+.op-steps {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.op-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.op-step-card {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 0.65rem;
+  min-height: 6.2rem;
+  padding: 0.85rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 0.875rem;
+  background: linear-gradient(180deg, #ffffff, #f4f9fd);
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+}
+.op-step-card:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+}
+.op-step-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: var(--pale);
+  color: var(--blue);
+}
+.op-step.is-first .op-step-icon {
+  background: var(--blue);
+  color: #ffffff;
+}
+.op-step.is-last .op-step-card {
+  border-color: #9fd8b5;
+  background: linear-gradient(180deg, #f1fbf5, #e3f6ea);
+}
+.op-step.is-last .op-step-icon {
+  background: #c9efd8;
+  color: var(--green-ink);
+}
+.op-step-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.op-step-label {
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--text);
+}
+.op-step-value {
+  margin-top: 0.2rem;
+  font-size: 1.6rem;
+  font-weight: 900;
+  line-height: 1.1;
+  color: var(--navy);
+}
+.op-step-sub {
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+.op-step.is-last .op-step-sub {
+  color: var(--green-ink);
+}
+.op-step-desc {
+  margin: 0.5rem 0.2rem 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.op-rate {
+  position: absolute;
+  z-index: 1;
+  top: 3.1rem;
+  left: -0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem 0.45rem;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: #dcecf9;
+  box-shadow: 0 1px 3px #03264426;
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: nowrap;
+  color: var(--link);
+  transform: translate(-50%, -50%);
+}
+.op-rate.is-drop {
+  background: #fde4e1;
+  color: var(--danger);
+}
+.op-rate.is-empty {
+  background: var(--sunken);
+  color: var(--muted);
+}
+
+/* Desenho do funil (nivo): mesma largura das etapas, uma faixa embaixo de cada card. */
+.op-funnel-chart {
+  height: 7.5rem;
+  margin-top: 1.1rem;
+}
+.op-funnel-tip {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.6rem;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+/* Sem espaço para 6 lado a lado: as etapas quebram em linhas e a pílula sobe para cima do card. */
+@media (max-width: 1300px) {
+  .op-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  .op-rate {
+    position: static;
+    align-self: flex-start;
+    margin-bottom: 0.35rem;
+    transform: none;
+  }
+  .op-step.is-first {
+    padding-top: 1.75rem;
+  }
+  .op-hint {
+    max-width: none;
+    margin-left: 0;
+  }
+}
+@media (max-width: 700px) {
+  .op-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .op-funnel-chart {
+    height: 5.5rem;
+  }
+}
+@media (max-width: 420px) {
+  .op-steps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .op-step.is-first {
+    padding-top: 0;
+  }
+}
+
 .admin .dash-note {
   margin-top: 0.9rem;
   font-size: 0.8rem;

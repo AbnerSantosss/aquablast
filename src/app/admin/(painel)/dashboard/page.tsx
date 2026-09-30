@@ -1,6 +1,8 @@
 import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowRight, CreditCard, Eye, FileText, Funnel, Info, ShoppingBag, ShoppingCart, Users, type LucideIcon } from "lucide-react";
+import { OperationFunnelChart } from "@/components/admin/dashboard/OperationFunnelChart";
 import { requireAdmin } from "@/lib/auth/session";
 import { firstParam, formatBRL, formatDateTime, qs } from "@/lib/admin/format";
 import { dashboardRange, getDashboardData, type DashboardData } from "@/lib/admin/queries-checkout";
@@ -141,9 +143,66 @@ function pct(a: number, b: number): string {
   return `${Math.round((a / b) * 100)}%`;
 }
 
-/** Cada etapa com o % que passou da etapa anterior (a primeira não tem). */
-function withStepPct(rows: Row[]): Row[] {
-  return rows.map((r, i) => (i === 0 ? r : { ...r, sub: `${pct(r.value, rows[i - 1].value)} da anterior` }));
+interface OpStage {
+  id: string;
+  label: string;
+  value: number;
+  /** Complemento do "% …" do card: "dos visitantes", "dos que viram"… */
+  of: string;
+  desc: string;
+  Icon: LucideIcon;
+}
+
+/**
+ * Funil da operação no layout pedido pelo dono (imagem de 2026-09-30): um card por etapa, a pílula
+ * entre eles com quanto passou da anterior, e embaixo o desenho do funil (nivo) alinhado às etapas.
+ * A pílula da maior queda fica vermelha; sem ninguém na etapa anterior, "–".
+ */
+function OperationFunnel({ stages }: { stages: OpStage[] }) {
+  const rates = stages.map((s, i) => (i === 0 || stages[i - 1].value <= 0 ? null : s.value / stages[i - 1].value));
+  const drops = rates.filter((r): r is number => r !== null && r < 1);
+  const worst = drops.length ? Math.min(...drops) : null;
+  const hasData = stages.some((s) => s.value > 0);
+  return (
+    <>
+      <ol className="op-steps">
+        {stages.map((s, i) => {
+          const r = rates[i];
+          const tone = i === 0 ? "" : r === null ? "is-empty" : r === worst ? "is-drop" : "";
+          const first = i === 0;
+          const last = i === stages.length - 1;
+          return (
+            <li key={s.id} className={`op-step${first ? " is-first" : ""}${last ? " is-last" : ""}`}>
+              {first ? null : (
+                <span className={`op-rate ${tone}`} title={`${s.label}: quanto passou da etapa anterior`}>
+                  {r === null ? "–" : pct(s.value, stages[i - 1].value)}
+                  <ArrowRight size={12} strokeWidth={2.6} aria-hidden="true" />
+                </span>
+              )}
+              <div className="op-step-card">
+                <span className="op-step-icon" aria-hidden="true">
+                  <s.Icon size={20} strokeWidth={2.2} />
+                </span>
+                <div className="op-step-body">
+                  <span className="op-step-label">{s.label}</span>
+                  <span className="op-step-value">{s.value}</span>
+                  <span className="op-step-sub">
+                    {first ? (s.value > 0 ? `100% ${s.of}` : "—") : `${pct(s.value, stages[i - 1].value)} ${s.of}`}
+                  </span>
+                </div>
+              </div>
+              <p className="op-step-desc">{s.desc}</p>
+            </li>
+          );
+        })}
+      </ol>
+      {hasData ? (
+        <OperationFunnelChart stages={stages.map(({ id, label, value }) => ({ id, label, value }))} />
+      ) : (
+        <p className="dash-empty">Sem visitas no período selecionado.</p>
+      )}
+    </>
+  );
 }
 
 const METHOD_LABEL: Record<string, string> = { pix: "Pix", card: "Cartão" };
@@ -201,20 +260,32 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       ) : null}
 
       <section className="dash-card dash-operation">
-        <h2>Funil da operação</h2>
-        <p className="dash-value">{pct(data.funnel.pagaram, data.traffic.visitantes)}</p>
-        <p className="dash-sub">
-          dos visitantes compraram · {data.traffic.paginas} página(s) vista(s) no site
-        </p>
-        <Columns
-          rows={withStepPct([
-            { label: "Visitantes", value: data.traffic.visitantes },
-            { label: "Viram o produto", value: data.traffic.viramProduto },
-            { label: "Abriram o checkout", value: data.traffic.abriramCheckout },
-            { label: "Preencheram os dados", value: data.funnel.criados },
-            { label: "Chegaram no pagamento", value: data.funnel.chegaramPagamento },
-            { label: "Compraram", value: data.funnel.pagaram },
-          ])}
+        <div className="op-head">
+          <span className="op-head-icon" aria-hidden="true">
+            <Funnel size={20} strokeWidth={2.4} />
+          </span>
+          <div className="op-head-text">
+            <div className="op-title-row">
+              <h2>Funil da operação</h2>
+              <span className="op-badge">{pct(data.funnel.pagaram, data.traffic.visitantes)} de conversão</span>
+            </div>
+            <p className="dash-sub">
+              Dos visitantes, {pct(data.funnel.pagaram, data.traffic.visitantes)} compraram · {data.traffic.paginas} página(s) vista(s) no site
+            </p>
+          </div>
+          <p className="op-hint">
+            <Info size={15} aria-hidden="true" /> Veja em cada etapa quantas pessoas avançam e onde estão as maiores quedas.
+          </p>
+        </div>
+        <OperationFunnel
+          stages={[
+            { id: "visitantes", label: "Visitantes", value: data.traffic.visitantes, of: "do tráfego", desc: "Pessoas diferentes que acessaram o site.", Icon: Users },
+            { id: "produto", label: "Viram o produto", value: data.traffic.viramProduto, of: "dos visitantes", desc: "Abriram a página do produto.", Icon: Eye },
+            { id: "checkout", label: "Abriram o checkout", value: data.traffic.abriramCheckout, of: "dos que viram", desc: "Entraram na página do checkout.", Icon: ShoppingCart },
+            { id: "dados", label: "Preencheram os dados", value: data.funnel.criados, of: "dos que abriram", desc: "Informaram os dados no checkout.", Icon: FileText },
+            { id: "pagamento", label: "Chegaram no pagamento", value: data.funnel.chegaramPagamento, of: "dos que preencheram", desc: "Avançaram para a etapa de pagamento.", Icon: CreditCard },
+            { id: "compraram", label: "Compraram", value: data.funnel.pagaram, of: "dos que chegaram", desc: "Pagamento aprovado.", Icon: ShoppingBag },
+          ]}
         />
         <p className="dash-note">
           Visitantes são pessoas diferentes (um navegador conta uma vez no período); robôs não entram.
