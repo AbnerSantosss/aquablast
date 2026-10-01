@@ -254,8 +254,13 @@ export function AppAvisos({ initialSales }: { initialSales: RecentSale[] }) {
           <span>Tocar a caixa registradora quando entrar venda com o painel aberto (só neste aparelho)</span>
         </label>
         <p className="muted small pwa-note">
-          <strong>Com o app fechado</strong> quem toca é o celular, não o site: nenhum site ou app instalado pelo navegador consegue
-          escolher o som da notificação. No Android dá para trocar pelo som da caixa registradora:
+          <strong>App Android AquaBlast 1.1 ou mais novo:</strong> já vem pronto. A notificação de venda toca a caixa registradora
+          sozinha, mesmo com o app fechado (categoria &quot;Vendas (caixa registradora)&quot; nas notificações do app). Os outros
+          avisos seguem com o som normal do celular.
+        </p>
+        <p className="muted small pwa-note">
+          <strong>Pelo Chrome ou app antigo, com o app fechado,</strong> quem toca é o celular, não o site: nenhum site ou app
+          instalado pelo navegador consegue escolher o som da notificação. No Android dá para trocar pelo som da caixa registradora:
         </p>
         <ol className="pwa-steps small">
           <li>

@@ -1,5 +1,9 @@
 // Gera o som de aviso de venda do app "AquaBlast Vendas" (caixa registradora, "ka-ching").
 //
+// ATENÇÃO (2026-10-01): o som em uso deixou de ser este. public/admin-app/venda.mp3 e venda.wav são um
+// recorte do arquivo escolhido pelo dono. Rodar este script SOBRESCREVE os dois e volta para o sintetizado;
+// se for de propósito, mude também o `?v=` de SALE_SOUND_URL (src/components/admin/pwa/pwa-client.ts).
+//
 // Por que síntese e não arquivo baixado: sons de plataformas (Yampi, Shopify...) têm dono; aqui o som é
 // 100% gerado por código, sem biblioteca nova e sem custo. Roda fora de src/ e não entra no build.
 //

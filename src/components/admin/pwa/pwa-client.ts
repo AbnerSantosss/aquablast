@@ -8,8 +8,12 @@ import type { RecentSale } from "@/lib/push/sales";
  * Ver wiki/operacao/aquablast-app-vendas-pwa.md.
  */
 
-/** Som de caixa registradora (Agente B, scripts/gen-som-venda.mjs). Só toca em venda, com o painel aberto. */
-export const SALE_SOUND_URL = "/admin-app/venda.mp3";
+/**
+ * Som de caixa registradora escolhido pelo dono (2026-10-01: um "ka-ching" de 1,1 s recortado do arquivo dele;
+ * antes era o sintetizado de scripts/gen-som-venda.mjs). Só toca em venda, com o painel aberto.
+ * Trocou o arquivo? Mude o `?v=`: o .mp3 passa pela Cloudflare e o navegador pode guardar o antigo.
+ */
+export const SALE_SOUND_URL = "/admin-app/venda.mp3?v=2";
 export const SW_URL = "/admin-sw.js";
 /** Escopo do SW = escopo do manifest. "/admin" (sem barra) para incluir a própria /admin, que é o start_url. */
 export const SW_SCOPE = "/admin";
