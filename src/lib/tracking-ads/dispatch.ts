@@ -1,6 +1,6 @@
-import { and, eq, lt, or } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNotNull, lt, or, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { conversionEvents, type CheckoutCart, type Order } from "@/db/schema";
+import { conversionEvents, orders, type CheckoutCart, type Order } from "@/db/schema";
 import { selectionFromCart, skuOf, titleOf, variantOf, type Selection } from "@/lib/checkout/own/catalog";
 import { getCartById } from "@/lib/checkout/own/cart";
 import { errorMessage, log } from "@/lib/log";
@@ -334,4 +334,66 @@ export async function trackServerEvent(args: TrackServerEventArgs): Promise<void
   } catch {
     // trackServerEventDetailed já não lança; guarda extra por contrato.
   }
+}
+
+/* ------------------------------------------------------------------ reenvio automático */
+
+/** Detalhes de falha passageira (rede, timeout, 5xx, presa em "sending"): vale reenviar. 4xx (token, pixel) não. */
+const TRANSIENT_DETAIL = "falha de rede|sem resposta em|HTTP 5[0-9][0-9]|reenviando|ECONN|ETIMEDOUT|fetch failed";
+/** A Meta recusa event_time com mais de 7 dias; 6 dias e 20 h deixa folga para a fila. */
+const PURCHASE_MAX_AGE_MS = (7 * 24 - 4) * 3_600_000;
+/** InitiateCheckout/AddPaymentInfo usam a hora do envio; depois de 2 dias o sinal já não ajuda o leilão. */
+const CART_EVENT_MAX_AGE_MS = 2 * 24 * 3_600_000;
+
+/**
+ * Reenvia eventos que ficaram em "error" por falha passageira (cron tracking-sync, a cada 15 min).
+ * Criado em 2026-09-30: o Purchase do AQB-260930-D6I parou num ETIMEDOUT e nada tentou de novo.
+ * Usa o mesmo event_id e o caminho normal (trackServerEventDetailed): a reserva em conversion_events reaproveita a
+ * linha "error" de forma atômica, então duas réplicas ou um clique no painel ao mesmo tempo não mandam em dobro.
+ * Purchase leva event_time = paidAt, por isso só até ~7 dias depois do pagamento. Eventos de abertura sem carrinho
+ * (ic-<visit>, cart_id nulo) não são reconstruídos.
+ */
+export async function retryFailedConversions(limit = 20): Promise<{ retried: number; sent: number; failed: number }> {
+  const out = { retried: 0, sent: 0, failed: 0 };
+  const since = new Date(Date.now() - 8 * 24 * 3_600_000);
+  const rows = await db
+    .select({ eventName: conversionEvents.eventName, eventId: conversionEvents.eventId, orderId: conversionEvents.orderId, cartId: conversionEvents.cartId })
+    .from(conversionEvents)
+    .where(
+      and(
+        eq(conversionEvents.status, "error"),
+        gt(conversionEvents.sentAt, since),
+        inArray(conversionEvents.eventName, ["Purchase", "InitiateCheckout", "AddPaymentInfo"]),
+        or(isNotNull(conversionEvents.orderId), isNotNull(conversionEvents.cartId)),
+        // Filtro no SQL (não depois do limit): erros permanentes antigos não podem esconder os passageiros.
+        sql`${conversionEvents.detail} ~* ${TRANSIENT_DETAIL}`,
+      ),
+    )
+    .orderBy(desc(conversionEvents.sentAt)) // mais recentes primeiro: as que já saíram da janela não tomam a vez
+    .limit(limit * 3);
+
+  const seen = new Set<string>();
+  for (const row of rows) {
+    if (out.retried >= limit) break;
+    const name = row.eventName;
+    if (name !== "Purchase" && name !== "InitiateCheckout" && name !== "AddPaymentInfo") continue;
+    const key = `${name}:${row.eventId}`;
+    if (seen.has(key)) continue; // meta e ga4 do mesmo evento: uma chamada cobre os dois
+    seen.add(key);
+
+    const order = row.orderId ? ((await db.query.orders.findFirst({ where: eq(orders.id, row.orderId) })) ?? null) : null;
+    const cart = row.cartId ? await getCartById(row.cartId) : order?.cartId ? await getCartById(order.cartId) : null;
+    if (name === "Purchase") {
+      if (!order?.paidAt || order.paymentStatus !== "paid" || Date.now() - order.paidAt.getTime() > PURCHASE_MAX_AGE_MS) continue;
+    } else if (!cart || Date.now() - cart.createdAt.getTime() > CART_EVENT_MAX_AGE_MS) {
+      continue;
+    }
+
+    out.retried++;
+    const results = await trackServerEventDetailed({ name, eventId: row.eventId, order: order ?? undefined, cart: cart ?? undefined });
+    if (results.some((r) => r.status === "sent")) out.sent++;
+    else out.failed++;
+  }
+  if (out.retried) log.info("tracking-ads: reenvio de eventos com erro", out);
+  return out;
 }

@@ -9,13 +9,13 @@ import type { FieldKey, FormData } from "./types";
 /**
  * Etapa 1 — Seus dados (origem app/checkout.tsx, `body(1)`), mesmos campos, textos e ordem. A validação que
  * bloqueia fica no Checkout (`next`, mesma ordem de mensagens da origem) e a que decide é a do servidor
- * (POST /api/checkout/cart). `onEmailBlur` dispara o salvamento parcial (plano 8.7).
+ * (POST /api/checkout/cart). `onContactBlur` (sair do e-mail ou do celular) dispara o salvamento parcial (plano 8.7).
  * Carrinho retomado (plano 8.8): o CPF gravado aparece só mascarado no placeholder; vazio = manter o gravado.
  */
 export function StepDados({
   data,
   onChange,
-  onEmailBlur,
+  onContactBlur,
   onSubmit,
   cpfMasked,
   busy,
@@ -24,7 +24,7 @@ export function StepDados({
 }: {
   data: FormData;
   onChange: (key: FieldKey, value: string) => void;
-  onEmailBlur: () => void;
+  onContactBlur: () => void;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   cpfMasked: string | null;
   busy: boolean;
@@ -43,7 +43,7 @@ export function StepDados({
           placeholder="voce@exemplo.com"
           value={data.email}
           onChange={onChange}
-          opts={{ type: "email", autoComplete: "email", ok: validEmail(data.email), onBlur: onEmailBlur }}
+          opts={{ type: "email", autoComplete: "email", ok: validEmail(data.email), onBlur: onContactBlur }}
         />
         <div className="field-row id-row">
           <Field
@@ -52,7 +52,7 @@ export function StepDados({
             placeholder="(00) 00000-0000"
             value={data.phone}
             onChange={onChange}
-            opts={{ type: "tel", autoComplete: "tel", inputMode: "tel", maxLength: 15, ok: validMobile(data.phone) }}
+            opts={{ type: "tel", autoComplete: "tel", inputMode: "tel", maxLength: 15, ok: validMobile(data.phone), onBlur: onContactBlur }}
           />
           <Field
             name="cpf"

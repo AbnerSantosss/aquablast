@@ -22,7 +22,7 @@ const META_EVENT_HELP: Record<MetaServerEvent, string> = {
   PageView: "visitou qualquer página do site",
   ViewContent: "abriu a página do produto",
   InitiateCheckout: "começou o checkout",
-  AddPaymentInfo: "chegou ao pagamento",
+  AddPaymentInfo: "deixou e-mail ou celular",
   Purchase: "pagamento aprovado",
 };
 

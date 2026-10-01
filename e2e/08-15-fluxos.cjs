@@ -123,7 +123,9 @@ async function c11() {
     const cart = await one("select id, status, order_id from checkout_carts where token = $1", [token]);
     assert.equal(cart.status, "converted");
     assert.equal(cart.order_id, o.id);
-    const ids = [`ic-${token}`, `api-${token}`, `pur-${o.order_number}`];
+    // InitiateCheckout usa o id da visita desde 490feab (2026-09-30): ic-<visit>, nao ic-<token>.
+    const visit = await page.evaluate(() => sessionStorage.getItem("aqb-ck-visit"));
+    const ids = [`ic-${visit}`, `api-${token}`, `pur-${o.order_number}`];
     const evs = await waitDb(async () => {
       const rows = await all("select event_name, event_id, status, detail from conversion_events where event_id = any($1) and destination = 'meta'", [ids]);
       return rows.length === 3 ? rows : null;
@@ -213,7 +215,9 @@ async function c14() {
     const o = await one("select order_number, tracking_consent, fbp, fbc, ga_client_id from orders where public_token = $1", [pub]);
     assert.equal(o.tracking_consent, false);
     assert.deepEqual([o.fbp, o.fbc, o.ga_client_id], [null, null, null]);
-    const ids = [`ic-${token}`, `api-${token}`, `pur-${o.order_number}`];
+    // InitiateCheckout usa o id da visita desde 490feab (2026-09-30): ic-<visit>, nao ic-<token>.
+    const visit = await page.evaluate(() => sessionStorage.getItem("aqb-ck-visit"));
+    const ids = [`ic-${visit}`, `api-${token}`, `pur-${o.order_number}`];
     const evs = await waitDb(async () => {
       const rows = await all("select event_name, status, detail from conversion_events where event_id = any($1)", [ids]);
       return rows.length === 3 ? rows : null;

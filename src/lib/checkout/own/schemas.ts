@@ -39,6 +39,19 @@ export const customerSchema = z.object({
   cpf: z.string().min(11).max(14).optional(),
 });
 
+/**
+ * Salvamento parcial da etapa "Seus dados" (blur do e-mail/celular, 2026-09-30): só os campos já válidos vão.
+ * Basta e-mail OU celular para o carrinho guardar o contato e a rota disparar AddPaymentInfo, mesmo se a pessoa
+ * abandonar antes de enviar o formulário. `customer` (completo) continua sendo o que libera as próximas etapas.
+ */
+export const leadSchema = z
+  .strictObject({
+    name: z.string().trim().min(3).max(120).optional(),
+    email: z.email().max(160).optional(),
+    phone: z.string().min(10).max(20).optional(),
+  })
+  .refine((l) => l.email !== undefined || l.phone !== undefined, { message: "Informe e-mail ou celular." });
+
 export const addressSchema = z.object({
   cep: z.string().min(8).max(9),
   street: z.string().trim().min(2).max(160),
@@ -58,6 +71,7 @@ export const cartSchema = z.strictObject({
   /** Cor da 2ª unidade do bump (só com pack "unit"). Vai para colors[1] do carrinho; pode faltar enquanto o cliente escolhe. */
   bumpColor: colorSchema.optional(),
   customer: customerSchema.optional(),
+  lead: leadSchema.optional(),
   address: addressSchema.optional(),
   tracking: trackingSchema.optional(),
   /** Cupom de teste (`?cupom=` da URL). O servidor decide se vale; o navegador nunca manda valor. */

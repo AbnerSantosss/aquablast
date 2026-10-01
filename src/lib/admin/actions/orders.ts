@@ -2,6 +2,7 @@
 
 import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { orders, webhookDeliveries, type OrderItem, type OrderStatus, type PaymentStatus } from "@/db/schema";
@@ -14,6 +15,9 @@ import { actorOf, audit } from "@/lib/admin/audit";
 import { bool, isEmail, num, optStr, str, uuid } from "@/lib/admin/form";
 import { isOrderStatus, isPaymentStatus } from "@/lib/admin/queries";
 import { fail, ok, type ActionResult } from "@/lib/admin/types";
+import { getCartById } from "@/lib/checkout/own/cart";
+import { errorMessage, log } from "@/lib/log";
+import { trackServerEvent, trackServerEventDetailed } from "@/lib/tracking-ads/dispatch";
 
 async function loadOrder(formData: FormData) {
   const session = await requireAdmin();
@@ -141,8 +145,43 @@ export async function updatePayment(_prev: ActionResult, formData: FormData): Pr
   if (ps === "paid" && canTransition(order.status, "approved")) {
     await transitionOrder({ orderId: order.id, to: "approved", source: "admin", actor });
   }
+  // Virou pago à mão: Purchase com o mesmo id do fluxo automático (pur-<orderNumber>). Se o gateway já tinha mandado,
+  // a reserva em conversion_events barra o 2º envio. Depois da resposta, para o painel não esperar a Meta.
+  if (ps === "paid" && order.paymentStatus !== "paid") {
+    const orderId = order.id;
+    after(async () => {
+      try {
+        const paid = await getOrderById(orderId);
+        if (!paid) return;
+        const cart = paid.cartId ? await getCartById(paid.cartId) : null;
+        await trackServerEvent({ name: "Purchase", eventId: `pur-${paid.orderNumber}`, order: paid, cart: cart ?? undefined });
+      } catch (err) {
+        log.error("admin: falha ao disparar Purchase do pago manual", { orderId, error: errorMessage(err) });
+      }
+    });
+  }
   refresh(order.id);
   return ok("Pagamento atualizado.");
+}
+
+const TRACK_STATUS_LABEL: Record<string, string> = { sent: "enviado", skipped: "não enviado", error: "erro" };
+
+/**
+ * Botão "Reenviar compra para a Meta" (2026-09-30). Mesmo event_id `pur-<orderNumber>` e mesmo caminho do automático:
+ * linha "error" é reaproveitada; "sent" volta como duplicado e NÃO reenvia; "skipped" mostra o motivo.
+ * event_time = paidAt, então a Meta só aceita até 7 dias depois do pagamento.
+ */
+export async function resendPurchase(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  const { order, actor } = await loadOrder(formData);
+  if (!order) return fail("Pedido não encontrado.");
+  if (order.paymentStatus !== "paid" || !order.paidAt) return fail("Só pedido pago gera compra (Purchase).");
+  const cart = order.cartId ? await getCartById(order.cartId) : null;
+  const results = await trackServerEventDetailed({ name: "Purchase", eventId: `pur-${order.orderNumber}`, order, cart: cart ?? undefined });
+  await audit(actor, "order.purchase.resend", { type: "order", id: order.id }, { results: results.map((r) => `${r.destination}:${r.status}`) });
+  refresh(order.id);
+  if (!results.length) return fail("Nenhum destino ligado em Pixels (Meta/GA4 desligados).");
+  const text = results.map((r) => `${r.destination === "meta" ? "Meta" : "GA4"}: ${TRACK_STATUS_LABEL[r.status] ?? r.status}${r.detail ? ` (${r.detail})` : ""}`).join(" · ");
+  return results.some((r) => r.status === "error") ? fail(text) : ok(text);
 }
 
 // ---------- Criação manual ----------

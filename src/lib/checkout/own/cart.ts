@@ -106,6 +106,12 @@ export async function upsertCart(input: CartInput, headers: Headers): Promise<{ 
     ...trackingPatch(input.tracking, existing, consent),
   };
 
+  if (input.lead) {
+    // Parcial: só sobrescreve o que veio (o resto do contato já gravado fica).
+    if (input.lead.name) patch.customerName = input.lead.name;
+    if (input.lead.email) patch.customerEmail = input.lead.email.trim().toLowerCase();
+    if (input.lead.phone) patch.customerPhone = onlyDigits(input.lead.phone);
+  }
   if (input.customer) {
     patch.customerName = input.customer.name;
     patch.customerEmail = input.customer.email.trim().toLowerCase();

@@ -17,7 +17,8 @@ import { fail, json, originAllowed, readJson, tooMany } from "../_lib/http";
  * Rastreamento 100% no servidor: InitiateCheckout quando o carrinho nasce (`ic-<visit>`, o mesmo id que
  * /api/checkout/opened já mandou ao abrir a página, então a reserva em conversion_events não envia de novo; sem
  * `visit`, `ic-<token>`) e
- * AddPaymentInfo (`api-<token>`) quando chega na etapa de pagamento, ambos depois da resposta (`after`).
+ * AddPaymentInfo (`api-<token>`, 1 por carrinho) assim que o carrinho tem e-mail ou celular — o salvamento parcial
+ * (`lead`, blur dos campos) já basta, mesmo que a pessoa abandone; ambos depois da resposta (`after`).
  * Aviso por e-mail à equipe (checkout-alerts): "chegou no pagamento", uma vez por carrinho. O "checkout aberto"
  * saiu daqui em 2026-09-30 e foi para POST /api/checkout/opened (dispara ao abrir a página, antes do e-mail).
  * O upsertCart grava IP e user-agent da requisição e só guarda ids de anúncio com consentimento.
@@ -47,6 +48,7 @@ export async function POST(request: Request): Promise<Response> {
     if (input.customer.cpf !== undefined && !validCPF(input.customer.cpf)) return fail(400, "CPF inválido.", { field: "customer.cpf" });
     if (!validMobile(input.customer.phone)) return fail(400, "Celular inválido. Use DDD + número com 9 dígitos.", { field: "customer.phone" });
   }
+  if (input.lead?.phone !== undefined && !validMobile(input.lead.phone)) return fail(400, "Celular inválido. Use DDD + número com 9 dígitos.", { field: "lead.phone" });
 
   const s = await getSettings(["checkout.bumpEnabled", "checkout.maxInstallments"] as const);
   if (!s["checkout.bumpEnabled"]) input.bump = false;
@@ -56,11 +58,13 @@ export async function POST(request: Request): Promise<Response> {
     const quote = await quoteBoth(input.selection.pack, input.bump, Math.max(1, s["checkout.maxInstallments"]), input.coupon);
 
     const reachedPayment = input.step === "pagamento";
-    if (created || reachedPayment) {
+    // AddPaymentInfo = "deixou contato": basta e-mail ou celular gravado (pedido do dono 2026-09-30), mesmo que abandone.
+    const leftContact = reachedPayment || (!!(input.customer || input.lead) && !!(cart.customerEmail || cart.customerPhone));
+    if (created || leftContact) {
       after(async () => {
         try {
           if (created) await trackServerEvent({ name: "InitiateCheckout", eventId: `ic-${input.visit ?? cart.token}`, cart });
-          if (reachedPayment) await trackServerEvent({ name: "AddPaymentInfo", eventId: `api-${cart.token}`, cart });
+          if (leftContact) await trackServerEvent({ name: "AddPaymentInfo", eventId: `api-${cart.token}`, cart });
         } catch (err) {
           log.error("checkout cart: falha no rastreamento", { cartId: cart.id, error: errorMessage(err) });
         }

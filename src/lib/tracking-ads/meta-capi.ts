@@ -17,13 +17,18 @@ import type { AdEventName, AdTestSample } from "./types";
  *   (ads.meta.testMode) ligado E o código preenchido (meta-body.ts). O código pode ficar salvo em produção.
  *   "Testar envio" (sendMetaTestEvents) sempre usa o código.
  * - O access token nunca aparece em log, detalhe ou exceção (scrubSecret).
- * - Timeout de 10 s. Quem chama (dispatch.ts) trata falha como "error" e nunca derruba a compra.
+ * - Timeout de 10 s por tentativa; falha de REDE (timeout, ETIMEDOUT, ECONNRESET) ou HTTP 5xx tenta de novo até
+ *   3 vezes (1 s e 3 s de pausa). O mesmo event_id em todas: se a Meta recebeu e só a resposta se perdeu, ela
+ *   deduplica. Erro 4xx (token, pixel, payload) não repete. Quem chama (dispatch.ts) trata falha como "error",
+ *   o cron reenvia depois (retryFailedConversions) e nada disso derruba a compra. Motivo: o Purchase do
+ *   AQB-260930-D6I morreu num ETIMEDOUT único em 2026-09-30 e ficou sem reenvio.
  */
 
 /** Versão da Graph API. Trocar aqui quando a Meta descontinuar esta. */
 export const META_GRAPH_VERSION = "v25.0";
 
 const TIMEOUT_MS = 10_000;
+const RETRY_PAUSES_MS = [1_000, 3_000];
 
 export interface MetaHashedUserData {
   email?: string;
@@ -237,6 +242,17 @@ async function postEvents(cfg: MetaConfig, events: Record<string, unknown>[], te
   url.searchParams.set("access_token", cfg.accessToken);
   const body = metaRequestBody(events, testEventCode);
 
+  let result = await postOnce(cfg, url, body, testEventCode);
+  for (const pause of RETRY_PAUSES_MS) {
+    if (!result.transient) break;
+    await new Promise((r) => setTimeout(r, pause));
+    result = await postOnce(cfg, url, body, testEventCode);
+  }
+  return result.out;
+}
+
+/** Uma tentativa. `transient` = vale tentar de novo (rede, timeout ou 5xx). */
+async function postOnce(cfg: MetaConfig, url: URL, body: Record<string, unknown>, testEventCode: string): Promise<{ out: MetaSendResult; transient: boolean }> {
   try {
     const res = await fetch(url, {
       method: "POST",
@@ -256,14 +272,14 @@ async function postEvents(cfg: MetaConfig, events: Record<string, unknown>[], te
     if (!res.ok || json.error) {
       const e = json.error;
       const msg = e ? `${e.message ?? "erro"}${e.code ? ` [code ${e.code}${e.error_subcode ? `/${e.error_subcode}` : ""}]` : ""}${e.fbtrace_id ? ` fbtrace ${e.fbtrace_id}` : ""}` : text.slice(0, 200);
-      return { ok: false, detail: scrubSecret(`Meta HTTP ${res.status}: ${msg}${test}`, cfg.accessToken), payload: body };
+      return { out: { ok: false, detail: scrubSecret(`Meta HTTP ${res.status}: ${msg}${test}`, cfg.accessToken), payload: body }, transient: res.status >= 500 };
     }
     const received = typeof json.events_received === "number" ? json.events_received : 0;
     const detail = `Meta HTTP ${res.status}: events_received=${received}${json.fbtrace_id ? ` fbtrace ${json.fbtrace_id}` : ""}${test}`;
-    return { ok: received > 0, detail: scrubSecret(detail, cfg.accessToken), received, payload: body };
+    return { out: { ok: received > 0, detail: scrubSecret(detail, cfg.accessToken), received, payload: body }, transient: false };
   } catch (err) {
     const timeout = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
-    return { ok: false, detail: scrubSecret(timeout ? `Meta: sem resposta em ${TIMEOUT_MS / 1000} s` : `Meta: falha de rede (${errorMessage(err)})`, cfg.accessToken), payload: body };
+    return { out: { ok: false, detail: scrubSecret(timeout ? `Meta: sem resposta em ${TIMEOUT_MS / 1000} s` : `Meta: falha de rede (${errorMessage(err)})`, cfg.accessToken), payload: body }, transient: true };
   }
 }
 

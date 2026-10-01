@@ -16,7 +16,7 @@ import { PAYMENT_LABEL, STATUS_LABEL, STATUS_ORDER, canTransition } from "@/lib/
 import { getSettings } from "@/lib/settings";
 import { GATEWAY_LABELS, isGatewayName } from "@/lib/gateways";
 import { CARRIERS } from "@/lib/tracking/provider";
-import { addManualEvent, changeStatus, resendAccessCode, resendPix, saveNotes, sendConfirmation, sendShippedEmail, updatePayment } from "@/lib/admin/actions/orders";
+import { addManualEvent, changeStatus, resendAccessCode, resendPix, resendPurchase, saveNotes, sendConfirmation, sendShippedEmail, updatePayment } from "@/lib/admin/actions/orders";
 import { refundOrderPayment } from "@/lib/admin/actions/gateways";
 import { clearTracking, saveTracking, syncTrackingNow } from "@/lib/admin/actions/tracking";
 import { firstParam, formatBRL, formatCep, formatDateTime, formatPhone, telLink, timeAgo, whatsappLink } from "@/lib/admin/format";
@@ -341,6 +341,14 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                     </table>
                   </div>
                 )}
+                {order.paymentStatus === "paid" && order.paidAt ? (
+                  <ActionForm action={resendPurchase} inline>
+                    <input type="hidden" name="orderId" value={order.id} />
+                    <button type="submit" className="btn btn-ghost btn-sm" title="Mesmo event_id pur-<pedido>: se a Meta já recebeu, não envia de novo">
+                      Reenviar compra para a Meta
+                    </button>
+                  </ActionForm>
+                ) : null}
               </>
             ) : null}
 

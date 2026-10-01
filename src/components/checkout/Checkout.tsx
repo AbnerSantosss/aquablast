@@ -12,7 +12,7 @@ import { readAdIds } from "@/lib/tracking-ads/capture";
 import { isApiFail, postCart, postOpened, type CartPayload, type CartStep, type CartTrackingInput } from "./api";
 import { Campaign } from "./Campaign";
 import { ConsentBanner, readStored } from "./ConsentBanner";
-import { ErrorBox, fullName, UFS } from "./Field";
+import { ErrorBox, fullName, UFS, validEmail } from "./Field";
 import { Footer } from "./Footer";
 import { colorName, OrderSummary, type PayView } from "./OrderSummary";
 import { PixLogo } from "./PixLogo";
@@ -124,6 +124,10 @@ export function Checkout({
   const [coupon, setCoupon] = useState(initialCoupon);
   const [couponBusy, setCouponBusy] = useState(false);
   const quoteVersion = useRef(0);
+  // Gravações do carrinho em fila: o blur do celular (salvamento parcial) e o clique em CONTINUAR saem quase juntos;
+  // sem fila os dois iriam sem token e nasceriam 2 carrinhos. `tokenRef` leva o token da 1ª para a 2ª.
+  const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
+  const tokenRef = useRef<string | undefined>(initial?.cartToken);
   const [consent, setConsent] = useState<boolean | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -205,10 +209,16 @@ export function Checkout({
     }
   }, [consent]);
 
-  async function saveCart(targetStep: CartStep, bumpValue: boolean, opts: { customer?: boolean; address?: boolean } = {}, bumpColorValue: Color | null = bumpColor) {
+  function saveCart(...args: Parameters<typeof saveCartNow>): ReturnType<typeof saveCartNow> {
+    const run = saveQueue.current.then(() => saveCartNow(...args));
+    saveQueue.current = run.catch(() => undefined);
+    return run;
+  }
+
+  async function saveCartNow(targetStep: CartStep, bumpValue: boolean, opts: { customer?: boolean; address?: boolean; lead?: CartPayload["lead"] } = {}, bumpColorValue: Color | null = bumpColor) {
     const version = ++quoteVersion.current;
     const payload: CartPayload = {
-      token: cartToken ?? readTokenFromStorage(),
+      token: tokenRef.current ?? cartToken ?? readTokenFromStorage(),
       selection: { pack: selection.pack, colors: selection.colors },
       step: targetStep,
       bump: bumpValue,
@@ -217,6 +227,7 @@ export function Checkout({
       ...(coupon ? { coupon } : {}),
       ...(visitId.current ? { visit: visitId.current } : {}),
     };
+    if (opts.lead) payload.lead = opts.lead;
     if (opts.customer && (data.name || data.email || data.phone || data.cpf)) {
       // Carrinho retomado com CPF vazio: não reenvia o campo — o servidor mantém o CPF cifrado gravado.
       const base = { name: data.name.trim(), email: data.email.trim(), phone: data.phone };
@@ -236,6 +247,7 @@ export function Checkout({
     }
     const result = await postCart(payload);
     if (isApiFail(result)) return result;
+    tokenRef.current = result.token;
     setCartToken(result.token);
     writeTokenToStorage(result.token);
     if (version === quoteVersion.current) setQuotes(result.quotes);
@@ -370,9 +382,15 @@ export function Checkout({
     }
   }
 
-  function handleEmailBlur() {
+  // Salvamento parcial ao sair do e-mail ou do celular: só os campos já válidos. Com e-mail OU celular o servidor grava
+  // o contato e manda AddPaymentInfo, mesmo que a pessoa abandone aqui. Inválido/vazio = não salva.
+  function handleContactBlur() {
     if (consent === null || couponBusy) return; // salvamento parcial só depois de responder ao consentimento.
-    void saveCart("dados", bump, { customer: true });
+    const email = validEmail(data.email) ? data.email.trim() : undefined;
+    const phone = validMobile(data.phone) ? data.phone : undefined;
+    if (!email && !phone) return;
+    const name = fullName(data.name) && data.name.trim().length >= 3 ? data.name.trim() : undefined;
+    void saveCart("dados", bump, { lead: { ...(name ? { name } : {}), ...(email ? { email } : {}), ...(phone ? { phone } : {}) } });
   }
 
   function handleBumpChange(value: boolean) {
@@ -470,7 +488,7 @@ export function Checkout({
 
   const body = (n: number) =>
     n === 1 ? (
-      <StepDados data={data} onChange={change} onEmailBlur={handleEmailBlur} onSubmit={onSubmit} cpfMasked={cpfMasked} busy={busy} buttonLabel={theme.buttonLabel} error={errorBox} />
+      <StepDados data={data} onChange={change} onContactBlur={handleContactBlur} onSubmit={onSubmit} cpfMasked={cpfMasked} busy={busy} buttonLabel={theme.buttonLabel} error={errorBox} />
     ) : n === 2 ? (
       <StepEntrega data={data} onChange={change} onSubmit={onSubmit} cepState={cepState} addrOk={addrOk} busy={busy} buttonLabel={theme.buttonLabel} error={errorBox} />
     ) : cartToken ? (

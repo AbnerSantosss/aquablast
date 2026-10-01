@@ -35,7 +35,7 @@ export const AD_EVENT_LABELS: Record<AdEventName, string> = {
   PageView: "PageView: visita a qualquer página",
   ViewContent: "ViewContent: viu o produto (home)",
   InitiateCheckout: "InitiateCheckout: abriu o checkout",
-  AddPaymentInfo: "AddPaymentInfo: chegou no pagamento",
+  AddPaymentInfo: "AddPaymentInfo: deixou e-mail ou celular",
   Purchase: "Purchase: pagamento confirmado",
 };
 
