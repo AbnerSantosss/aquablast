@@ -4,6 +4,7 @@
 import { useRef, type ReactNode } from "react";
 import { COLOR_LABELS } from "@/lib/site/constants";
 import { KitSwatches } from "./ColorSwatches";
+import { scrollBehavior } from "./media-query";
 import { kitFocusTarget, revealFocus, useSelection } from "./SelectionProvider";
 
 type StepsContext = "desktop" | "offer";
@@ -15,6 +16,8 @@ const TITLE = ["Primeiro brinquedo", "Segundo brinquedo"] as const;
 const SHORT = ["Primeiro", "Segundo"] as const;
 /** Chamada que pulsa no passo atual (pedido do dono, 26/09): guia 1a -> 2a opcao antes de liberar o kit. */
 const CUE = ["Escolha a primeira opção", "Escolha a segunda opção"] as const;
+/** Card de oferta (dono, 01/10): depois de tocar no kit, o guia desce para as 3 fotos do passo atual. */
+const SWATCH_CUE = ["Escolha uma dessas opções", "Escolha a segunda opção"] as const;
 const SWATCH_LABEL: Record<StepsContext, readonly [string, string]> = {
   desktop: ["Cor do 1º AquaBlast no desktop", "Cor do 2º AquaBlast no desktop"],
   offer: ["Cor do 1º AquaBlast do kit na oferta", "Cor do 2º AquaBlast do kit na oferta"],
@@ -34,9 +37,15 @@ export function KitColorSteps({ context }: { context: StepsContext }) {
   const focusAfterPick = () => {
     const root = rootRef.current;
     if (!root) return;
-    const target =
-      kitFocusTarget(root) ??
-      root.closest(".price-card, .desktop-product-panel")?.querySelector<HTMLElement>('[data-purchase="kit"]');
+    const next = kitFocusTarget(root);
+    const buy = root.closest(".price-card, .desktop-product-panel")?.querySelector<HTMLElement>('[data-purchase="kit"]');
+    // Card de oferta (dono, 01/10; celular e computador): com as 2 cores, a tela rola ate o "Comprar kit com 2".
+    if (!next && buy && context === "offer") {
+      buy.focus({ preventScroll: true });
+      buy.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
+      return;
+    }
+    const target = next ?? buy;
     if (target) revealFocus(target);
   };
 
@@ -79,7 +88,12 @@ export function KitColorSteps({ context }: { context: StepsContext }) {
               <small>Escolha a cor</small>
             </span>
           </span>
-          <KitSwatches index={index} label={SWATCH_LABEL[context][index]} onPick={focusAfterPick} />
+          <KitSwatches
+            index={index}
+            label={SWATCH_LABEL[context][index]}
+            onPick={focusAfterPick}
+            cue={context === "offer" ? SWATCH_CUE[index] : undefined}
+          />
         </div>
       );
     } else if (state === "done") {

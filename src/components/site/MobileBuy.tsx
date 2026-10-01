@@ -8,6 +8,8 @@ import { useSelection } from "./SelectionProvider";
 export function MobileBuy() {
   const { pack, color } = useSelection();
   const [offersVisible, setOffersVisible] = useState(false);
+  // Comeca escondida: so aparece quando o "Selecione seu kit" do topo sai da tela (auditoria UX, 01/10).
+  const [heroCtaVisible, setHeroCtaVisible] = useState(true);
 
   useEffect(() => {
     const target = document.querySelector("#ofertas");
@@ -20,10 +22,31 @@ export function MobileBuy() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const heroCta = document.querySelector("#catalog-choice-title");
+    if (!heroCta) {
+      // Sem o botao do topo (layout mudou), a barra volta a aparecer sempre.
+      const frame = requestAnimationFrame(() => setHeroCtaVisible(false));
+      return () => cancelAnimationFrame(frame);
+    }
+    const observer = new IntersectionObserver((entries) => setHeroCtaVisible(entries[0].isIntersecting), {
+      threshold: 0,
+    });
+    observer.observe(heroCta);
+    return () => observer.disconnect();
+  }, []);
+
   const label = pack === "kit" ? "Kit com 2 AquaBlast" : `1 AquaBlast ${COLOR_LABELS[color].toLowerCase()}`;
 
   return (
-    <aside className={offersVisible ? "mobile-buy offers-visible" : "mobile-buy"} aria-label="Presente selecionado">
+    <aside
+      className={["mobile-buy", offersVisible && "offers-visible", heroCtaVisible && "hero-cta-visible"]
+        .filter(Boolean)
+        .join(" ")}
+      aria-label="Presente selecionado"
+      aria-hidden={heroCtaVisible || undefined}
+      inert={heroCtaVisible || undefined}
+    >
       <div>
         <small className="mobile-label">{label}</small>
         {/* Preco (pedido do dono, 27/09): parcela em destaque, Pix a vista ao lado. */}

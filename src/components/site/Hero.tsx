@@ -82,7 +82,18 @@ function CatalogGallery({ children }: { children: ReactNode }) {
           Aqua<b>Blast</b>
           <small>DIVERSÃO QUE APROXIMA</small>
         </span>
-        <img id="hero-product-photo" src={item.src} alt={alt} width={1254} height={1254} hidden={pair} />
+        {/* Peso no celular (2026-10-01): a arte de abertura tem 353 KB em 1254px e no celular fica escondida
+            atras do video; o srcSet faz o celular baixar a de 760px (o desktop continua com a grande). */}
+        <img
+          id="hero-product-photo"
+          src={item.src}
+          srcSet={item.src === CAMPAIGN_PHOTO.src ? "/thumbs/campanha-abertura-760.webp 760w, /campanha-abertura.webp 1254w" : undefined}
+          sizes={item.src === CAMPAIGN_PHOTO.src ? "(max-width: 56.25rem) 260px, 40rem" : undefined}
+          alt={alt}
+          width={1254}
+          height={1254}
+          hidden={pair}
+        />
         <span className="catalog-kit-preview" hidden={!pair}>
           <img
             data-kit-image="0"
@@ -142,7 +153,7 @@ function CatalogGallery({ children }: { children: ReactNode }) {
               decoding="async"
             />
           ) : (
-            <img src={CAMPAIGN_PHOTO.src} alt="" width={1254} height={1254} />
+            <img src="/thumbs/campanha-abertura-270.webp" alt="" width={1254} height={1254} />
           )}
           <span>1 unidade</span>
         </button>
@@ -325,7 +336,7 @@ function DesktopProductPanel() {
             <span className="desktop-choice-indicator" aria-hidden="true">
               <img src="/icons/check.svg" alt="" loading="lazy" decoding="async" />
             </span>
-            <span className="kit-best-tag">Mais vantajoso</span>
+            <span className="kit-best-tag">Mais vendido</span>
             <span className="desktop-package-art is-pair">
               <img src="/thumbs/produto-azul-110.webp" alt="" loading="lazy" decoding="async" />
               <img src="/thumbs/produto-preto-110.webp" alt="" loading="lazy" decoding="async" />

@@ -49,20 +49,30 @@ export function KitSwatches({
   index,
   label,
   onPick,
+  cue,
 }: {
   index: 0 | 1;
   label: string;
   onPick?: (color: Color) => void;
+  /** Balao do guia sobre as 3 fotos do card de oferta (ver mobile-ordem-venda.css). */
+  cue?: string;
 }) {
   const { kitColors, kitConfirmed, selectKitColor } = useSelection();
   return (
     <div className="swatches" role="group" aria-label={label}>
+      {cue ? (
+        <span className="kit-swatch-cue" aria-hidden="true">
+          {cue}
+        </span>
+      ) : null}
       {COLOR_KEYS.map((key: Color) => (
         <button
           key={key}
           className="color-product-choice"
           data-kit-index={index}
           data-kit-color={key}
+          // 2o passo: marca a cor do 1o para o guia sugerir outra (continua clicavel).
+          data-taken={index === 1 && kitConfirmed[0] && kitColors[0] === key ? "" : undefined}
           aria-label={COLOR_LABELS[key]}
           aria-pressed={kitConfirmed[index] && kitColors[index] === key}
           onClick={() => {

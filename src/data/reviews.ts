@@ -33,7 +33,7 @@ export const reviews: Review[] = [
           "href": "/reviews/carlos-1.webp",
           "ariaLabel": "Ampliar foto 1 de carlos.dutra",
           "image": {
-            "src": "/reviews/carlos-1.webp",
+            "src": "/reviews/thumbs/carlos-1-200.webp",
             "alt": "Caixa do AquaBlast preto recebido por Carlos",
             "width": 810,
             "height": 1080
@@ -44,7 +44,7 @@ export const reviews: Review[] = [
           "href": "/reviews/carlos-2.webp",
           "ariaLabel": "Ampliar foto 2 de carlos.dutra",
           "image": {
-            "src": "/reviews/carlos-2.webp",
+            "src": "/reviews/thumbs/carlos-2-200.webp",
             "alt": "Carlos segurando o AquaBlast preto, visto de lado",
             "width": 810,
             "height": 1080
@@ -55,7 +55,7 @@ export const reviews: Review[] = [
           "href": "/reviews/carlos-3.webp",
           "ariaLabel": "Ampliar foto 3 de carlos.dutra",
           "image": {
-            "src": "/reviews/carlos-3.webp",
+            "src": "/reviews/thumbs/carlos-3-200.webp",
             "alt": "Detalhe superior do AquaBlast preto recebido por Carlos",
             "width": 810,
             "height": 1080
@@ -66,7 +66,7 @@ export const reviews: Review[] = [
           "href": "/reviews/carlos-4.webp",
           "ariaLabel": "Ampliar foto 4 de carlos.dutra",
           "image": {
-            "src": "/reviews/carlos-4.webp",
+            "src": "/reviews/thumbs/carlos-4-200.webp",
             "alt": "Vista frontal do AquaBlast preto com reservatório em tambor",
             "width": 810,
             "height": 1080
@@ -109,7 +109,7 @@ export const reviews: Review[] = [
           "href": "/reviews/elcio-1.webp",
           "ariaLabel": "Ampliar foto 1 de elciobach722",
           "image": {
-            "src": "/reviews/elcio-1.webp",
+            "src": "/reviews/thumbs/elcio-1-200.webp",
             "alt": "Brinquedos de água azul e vermelho recebidos por elciobach722",
             "width": 608,
             "height": 1080
@@ -120,7 +120,7 @@ export const reviews: Review[] = [
           "href": "/reviews/elcio-2.webp",
           "ariaLabel": "Ampliar foto 2 de elciobach722",
           "image": {
-            "src": "/reviews/elcio-2.webp",
+            "src": "/reviews/thumbs/elcio-2-200.webp",
             "alt": "Detalhes dos brinquedos de água azul e vermelho, segurados juntos",
             "width": 608,
             "height": 1080
@@ -273,7 +273,7 @@ export const reviews: Review[] = [
           "href": "/reviews/mariana-foto.webp",
           "ariaLabel": "Ampliar foto de mariamartin856",
           "image": {
-            "src": "/reviews/mariana-foto.webp",
+            "src": "/reviews/thumbs/mariana-foto-200.webp",
             "alt": "AquaBlast preto recebido por Mariana, segurado em uma área externa",
             "width": 608,
             "height": 1080

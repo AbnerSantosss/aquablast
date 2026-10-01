@@ -12,10 +12,16 @@ export function Gifting() {
             <br />
             <em>A lembrança fica.</em>
           </h2>
+          {/* Celular (dono, 01/10): o Clarity mostrou ~2 s de atencao no texto longo, entao no celular
+              fica so a frase curta; o texto longo continua no desktop. Classes em mobile-ordem-venda.css. */}
           <p>
-            <strong>O AquaBlast é um brinquedo lançador de água</strong>, feito para brincar ao ar livre com a
-            família: um presente de Dia das Crianças para filho, neto ou sobrinho. Primeiro vem o sorriso ao abrir o presente. Depois, os jatos de água, as
-            corridas pelo quintal e aquele pedido de “só mais uma vez!”.
+            <strong>O AquaBlast é um brinquedo lançador de água</strong>
+            <span className="gifting-short"> para brincar ao ar livre com a família.</span>
+            <span className="gifting-long">
+              , feito para brincar ao ar livre com a família: um presente de Dia das Crianças para filho, neto ou
+              sobrinho. Primeiro vem o sorriso ao abrir o presente. Depois, os jatos de água, as corridas pelo
+              quintal e aquele pedido de “só mais uma vez!”.
+            </span>
           </p>
         </div>
         <img

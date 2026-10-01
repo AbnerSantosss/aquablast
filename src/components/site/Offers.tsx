@@ -54,19 +54,21 @@ function OfferFooter({ pack, buy }: { pack: Pack; buy: string }) {
         <img src="/thumbs/envio-375.webp" alt="Dia das Crianças: envio rápido e postagem ágil" width={1672} height={941} loading="lazy" decoding="async" />
         <span>Consulte o prazo para seu CEP</span>
       </div>
-      {/* Preco (pedido do dono, 27/09): parcela do cartao em destaque, Pix a vista com desconto embaixo. */}
+      {/* Preco (pedido do dono, 01/10): valor a vista no Pix em destaque, cartao parcelado como o "ou" embaixo. */}
       <div className="offer-price-line">
         <div className="price installment-row">
-          <span className="installment-count">12x de</span>
-          <strong className="installment-amount">{price.installment}</strong>
+          <strong className="installment-amount">{price.pix}</strong>
         </div>
         <div className="pix-price-row">
           <span className="pix-label">
             <img className="pix-icon" src="/icons/pix.svg" alt="" loading="lazy" decoding="async" />
-            ou <strong className="pix-amount">{price.pix}</strong> à vista no Pix
+            à vista no Pix
           </span>
           <span className="pix-discount">{price.pixDiscount} de desconto</span>
         </div>
+        <p className="card-installments">
+          ou 12x de <strong>{price.installment}</strong> no cartão
+        </p>
       </div>
       <div className="offer-reassurance">
         <span>
@@ -144,6 +146,8 @@ export function Offers() {
             </div>
           </PriceCard>
           <PriceCard pack="kit" className="price-card kit-card">
+            {/* Celular (dono, 01/10): selo no topo do card, pulsando. CSS em mobile-ordem-venda.css. */}
+            <span className="kit-top-tag" aria-hidden="true">Mais vendido</span>
             <div className="price-header">
               <h3>Kit com 2 AquaBlast</h3>
               <span className="offer-card-tag kit-emotion-tag">
@@ -152,7 +156,7 @@ export function Offers() {
               </span>
             </div>
             <div className="packshot pair kit-matching kit-artwork kit-family-art">
-              <span className="kit-best-tag">Mais vantajoso</span>
+              <span className="kit-best-tag">Mais vendido</span>
               <img
                 className="kit-family-photo"
                 src="/thumbs/kit-familia-v45-1020.webp"

@@ -18,6 +18,8 @@ import "@/styles/site/selection-gifting.css";
 import "@/styles/site/offer-restyle.css";
 // Por ultimo: so ajustes de tamanho/encaixe por largura de tela (pedido 2026-09-29).
 import "@/styles/site/responsivo.css";
+// Ordem visual da home no celular (pedido 2026-10-01, Clarity). So celular.
+import "@/styles/site/mobile-ordem-venda.css";
 
 export const metadata: Metadata = {
   title: "AquaBlast — O presente que vira uma boa lembrança",

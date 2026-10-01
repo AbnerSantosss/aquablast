@@ -569,8 +569,9 @@
    #ee4d2d/#c9e2f1/#9cc1d7/#0877b2/#f4d2a7/#efad54/#004e9d33 ja existiam.
    ========================================================================================== */
 
-/* Tag "Mais vantajoso" no kit: canto da foto no card de oferta e canto do botao "Kit com 2" do painel.
-   "Mais comprado" nao foi usado porque nao ha dado de vendas confirmado (honestidade-e-confirmar). */
+/* Tag do kit ("Mais vendido" desde 2026-10-01, por decisao do dono; antes "Mais vantajoso"): canto da foto
+   no card de oferta e canto do botao "Kit com 2" do painel. A IA avisou que ha poucos dados de venda
+   (honestidade-e-confirmar); o dono manteve o texto. */
 .kit-best-tag{
   position:absolute;
   z-index:2;

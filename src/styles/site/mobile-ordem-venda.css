@@ -1,0 +1,293 @@
+/* Ordem de venda no celular (pedido do dono 2026-10-01, a partir do Clarity de 01/10).
+   Medido no celular: so ~65% chegavam nas ofertas, o texto do #familia tinha ~2 s de atencao e o
+   fim do card do kit (maior ticket, a venda de 01/10) era visto por ~35%.
+   So celular (ate 56.25rem, o mesmo MOBILE_QUERY do site): o desktop fica exatamente como estava.
+   A ordem do HTML nao muda (leitores de tela e desktop seguem a original); so a ordem visual:
+   topo -> ofertas (kit primeiro) -> videos -> avaliacoes -> componentes -> presente -> duvidas. */
+@media (max-width: 56.25rem) {
+  .aquablast-home #conteudo {
+    display: flex;
+    flex-direction: column;
+  }
+  .aquablast-home #conteudo > * {
+    min-width: 0;
+  }
+  .aquablast-home #conteudo > .catalog-hero { order: 0; }
+  .aquablast-home #conteudo > #ofertas { order: 1; }
+  .aquablast-home #conteudo > #diversao { order: 2; }
+  .aquablast-home #conteudo > #avaliacoes { order: 3; }
+  .aquablast-home #conteudo > .accessories-section { order: 4; }
+  .aquablast-home #conteudo > #familia { order: 5; }
+  .aquablast-home #conteudo > #duvidas { order: 6; }
+
+  /* Kit com 2 antes da unidade (coluna unica no celular). */
+  #ofertas .price-grid > [data-price-card="kit"] {
+    order: -1;
+  }
+
+  /* #familia: so a frase curta (ver Gifting.tsx). */
+  #familia .gifting-long {
+    display: none;
+  }
+}
+
+@media (min-width: 56.3125rem) {
+  #familia .gifting-short {
+    display: none;
+  }
+}
+
+/* Peso no celular (pedido do dono 2026-10-01): fundos em 720px no lugar dos de 1254-1500px.
+   Ficam atras de gradientes escuros (80-93% de opacidade), entao a diferenca nao aparece.
+   Mesmas camadas de gradiente do original; so a url muda. */
+@media (max-width: 56.25rem) {
+  .aquablast-home .offers:before {
+    background-image: linear-gradient(120deg, #032644e8, #005d81c9 50%, #032644ed), url("/thumbs/familia-brasileira-720.webp");
+  }
+  .aquablast-home #avaliacoes {
+    background-image: linear-gradient(130deg, #043958b3, #04699270), url("/thumbs/offer-water-stage-720.webp");
+  }
+
+  /* Barra verde do topo (dono, 01/10: "muito grande no celular"): de ~50px para ~32px. */
+  .aquablast-home .delivery-ticker {
+    min-height: 2rem;
+  }
+  .aquablast-home .ticker-group {
+    gap: 1rem;
+    padding: 0.1875rem 0.625rem;
+  }
+  .aquablast-home .ticker-message {
+    gap: 0.375rem;
+    font-size: 0.75rem;
+  }
+  .aquablast-home .ticker-icon {
+    width: 1.375rem;
+    height: 1.375rem;
+    border-radius: 0.375rem;
+  }
+  .aquablast-home .ticker-icon img {
+    width: 0.9375rem;
+    height: 0.9375rem;
+  }
+  .aquablast-home .ticker-full {
+    padding: 0.0625rem 0.375rem;
+  }
+}
+
+/* Selo "Mais vendido" do kit no topo do card, a esquerda, pulsando (dono, 01/10; texto escolhido pelo dono). So celular; no desktop fica o selo na foto. */
+.kit-top-tag {
+  display: none;
+}
+@media (max-width: 56.25rem) {
+  #ofertas .price-card.kit-card {
+    position: relative;
+    overflow: visible;
+    margin-top: 0.875rem;
+  }
+  #ofertas .price-card.kit-card > .price-header {
+    border-radius: 1rem 1rem 0 0;
+    padding-top: 1.375rem;
+  }
+  #ofertas .packshot.kit-family-art > .kit-best-tag {
+    display: none;
+  }
+  #ofertas .kit-card > .kit-top-tag {
+    display: block;
+    position: absolute;
+    z-index: 3;
+    top: 0;
+    left: 1rem;
+    padding: 0.3125rem 0.875rem;
+    border: 0.125rem solid #fff;
+    border-radius: 62.5rem;
+    background: #ee4d2d;
+    color: #fff;
+    /* 19px em 900: conta como "texto grande" na WCAG, e o branco sobre #ee4d2d (3,66:1) passa no
+       minimo de 3:1 sem trocar a cor da paleta (auditoria UX, 01/10). */
+    font-size: 1.1875rem;
+    font-weight: 900;
+    line-height: 1.15;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    box-shadow: 0 0.25rem 0.75rem #0003;
+    pointer-events: none;
+    transform: translate(0, -55%);
+    transform-origin: left center;
+    animation: kit-top-tag-pulse 1.6s ease-in-out infinite;
+  }
+}
+@keyframes kit-top-tag-pulse {
+  0%, 100% { transform: translate(0, -55%) scale(1); box-shadow: 0 0.25rem 0.75rem #0003, 0 0 0 0 #ee4d2d99; }
+  50% { transform: translate(0, -55%) scale(1.08); box-shadow: 0 0.25rem 0.75rem #0003, 0 0 0 0.5rem #ee4d2d00; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #ofertas .kit-card > .kit-top-tag { animation: none; }
+}
+
+/* Kit guiado como tutorial no card de oferta (dono, 01/10; celular E computador).
+   Fase 1 (kit ainda nao escolhido): degrade animado no PASSO ATUAL + balao "Escolha a primeira opcao".
+   Fase 2 (tocou no kit ou ja escolheu a 1a cor; .kit-steps[data-active]): o degrade desce para as 3 fotos
+   do passo atual, com o balao "Escolha uma dessas opcoes" (1o) ou "Escolha a segunda opcao" (2o) e as
+   fotos pulsando. No 2o passo a cor do 1o fica marcada "1o escolhido" e apagada (continua clicavel),
+   para sugerir outra cor. Com as 2 cores, KitColorSteps rola a tela ate "Comprar kit com 2".
+   O bloco inteiro do kit fica neutro: o destaque e so o passo. */
+.kit-swatch-cue {
+  display: none;
+}
+@media all {
+  #ofertas .price-card.kit-card .offer-card-body > .kit-color-selectors::before {
+    display: none;
+  }
+  #ofertas .price-card.kit-card .offer-card-body > .kit-color-selectors::after {
+    border: 0.0625rem solid #9cc1d7;
+    background: #edf8ff;
+    animation: none;
+  }
+  #ofertas .kit-card .kit-step[data-step-state="current"] {
+    padding-top: 1.625rem;
+  }
+
+  /* Fase 1 */
+  #ofertas .kit-card .kit-steps:not([data-active]) .kit-step[data-step-state="current"] .kit-step-body {
+    position: relative;
+    border: 0.1875rem solid transparent;
+    background:
+      linear-gradient(#fff, #fff) padding-box,
+      linear-gradient(100deg, #ee4d2d, #ffb52e, #ffe063, #63e1ff, #0081ff, #006bca, #ee4d2d) 0 0 / 300% 100% border-box;
+    box-shadow: 0 0 0.875rem #ffb52e8c;
+    animation: choice-border-flow 5s linear infinite;
+  }
+  #ofertas .kit-card .kit-steps:not([data-active]) .kit-step-cue {
+    display: block;
+    animation: kit-cue-pop 1.4s ease-in-out infinite;
+  }
+
+  /* Fase 2 */
+  #ofertas .kit-card .kit-steps[data-active] .kit-step[data-step-state="current"] .kit-step-body {
+    animation: none;
+    box-shadow: none;
+  }
+  #ofertas .kit-card .kit-steps[data-active] .kit-step-cue {
+    display: none;
+  }
+  #ofertas .kit-card .kit-steps[data-active] .kit-step[data-step-state="current"] .swatches {
+    position: relative;
+    padding: 0.875rem 0.3125rem 0.3125rem;
+    border: 0.1875rem solid transparent;
+    border-radius: 0.875rem;
+    background:
+      linear-gradient(#fff, #fff) padding-box,
+      linear-gradient(100deg, #ee4d2d, #ffb52e, #ffe063, #63e1ff, #0081ff, #006bca, #ee4d2d) 0 0 / 300% 100% border-box;
+    box-shadow: 0 0 0.875rem #ffb52e8c;
+    animation: choice-border-flow 5s linear infinite;
+  }
+  #ofertas .kit-card .kit-steps[data-active] .kit-step[data-step-state="current"] .kit-swatch-cue {
+    display: block;
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    left: 50%;
+    padding: 0.125rem 0.75rem;
+    border-radius: 62.5rem;
+    background: #ffb52e;
+    color: var(--navy);
+    font-size: 0.8125rem;
+    font-weight: 900;
+    line-height: 1.35;
+    white-space: nowrap;
+    box-shadow: 0 0.125rem 0.375rem #004e9d33;
+    pointer-events: none;
+    transform: translate(-50%, -60%);
+    animation: kit-swatch-cue-pop 1.4s ease-in-out infinite;
+  }
+  #ofertas .kit-card .kit-steps[data-active] .kit-step[data-step-state="current"] .color-product-choice {
+    animation: kit-swatch-bob 1.8s ease-in-out infinite;
+  }
+  #ofertas .kit-card .kit-steps[data-active] .kit-step[data-step-state="current"] .color-product-choice:nth-of-type(2) {
+    animation-delay: 0.2s;
+  }
+  #ofertas .kit-card .kit-steps[data-active] .kit-step[data-step-state="current"] .color-product-choice:nth-of-type(3) {
+    animation-delay: 0.4s;
+  }
+  #ofertas .kit-card .kit-step[data-step-state="current"] .color-product-choice[data-taken] {
+    position: relative;
+    opacity: 0.55;
+    animation: none;
+  }
+  #ofertas .kit-card .kit-step[data-step-state="current"] .color-product-choice[data-taken]::after {
+    content: "1º escolhido";
+    position: absolute;
+    top: 0.125rem;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0 0.3125rem;
+    border-radius: 62.5rem;
+    background: #0877b2;
+    color: #fff;
+    font-size: 0.5625rem;
+    font-weight: 900;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+}
+@keyframes kit-swatch-cue-pop {
+  0%, 100% { transform: translate(-50%, -60%) scale(1); }
+  50% { transform: translate(-50%, -60%) scale(1.06); }
+}
+@keyframes kit-swatch-bob {
+  0%, 100% { transform: translateY(0); box-shadow: 0 0 0 0 #ffb52e00; }
+  50% { transform: translateY(-0.1875rem); box-shadow: 0 0.375rem 0.75rem #ffb52e66; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #ofertas .kit-card .kit-step .kit-step-body,
+  #ofertas .kit-card .kit-steps .kit-step-cue,
+  #ofertas .kit-card .kit-step .swatches,
+  #ofertas .kit-card .kit-step .kit-swatch-cue,
+  #ofertas .kit-card .kit-step .color-product-choice {
+    animation: none;
+  }
+}
+
+/* Hover e clique nas fotos de cor dos dois cards (dono, 01/10). Hover so com mouse (computador). */
+#ofertas .color-product-choice {
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, border-color 0.15s ease-out;
+}
+@media (hover: hover) {
+  #ofertas .color-product-choice:hover {
+    transform: translateY(-0.25rem) scale(1.04);
+    border-color: #0081ff;
+    box-shadow: 0 0.5rem 1rem #0081ff40;
+    animation: none;
+  }
+  #ofertas .price-card .kit-step-change:hover {
+    transform: scale(1.05);
+  }
+}
+#ofertas .color-product-choice:active {
+  transform: scale(0.95);
+}
+/* Escolheu: pequeno "pulo" na cor marcada (unidade) e no resumo do passo feito (kit). */
+#ofertas .color-choice .color-product-choice[aria-pressed="true"] {
+  animation: swatch-picked 0.35s ease-out;
+}
+#ofertas .kit-card .kit-step[data-step-state="done"] .kit-step-thumb {
+  animation: swatch-picked 0.35s ease-out;
+}
+@keyframes swatch-picked {
+  0% { transform: scale(0.9); }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #ofertas .color-product-choice,
+  #ofertas .color-product-choice:hover,
+  #ofertas .color-product-choice:active {
+    transform: none;
+    transition: none;
+  }
+  #ofertas .color-choice .color-product-choice[aria-pressed="true"],
+  #ofertas .kit-card .kit-step[data-step-state="done"] .kit-step-thumb {
+    animation: none;
+  }
+}
