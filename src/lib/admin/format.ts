@@ -111,3 +111,9 @@ export function firstParam(v: string | string[] | undefined): string {
   if (Array.isArray(v)) return v[0] ?? "";
   return v ?? "";
 }
+
+/**
+ * Marca que o "Copiar tudo" da página do pedido troca pelo CPF completo, buscado no clique (a página só tem o CPF
+ * mascarado). Fica aqui e não no componente client: constante de arquivo "use client" vira referência no servidor.
+ */
+export const CPF_TOKEN = "{{cpf}}";

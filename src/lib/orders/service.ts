@@ -232,6 +232,17 @@ export function maskedDocument(enc: string | null | undefined): string | null {
   }
 }
 
+/** CPF completo, formatado (000.000.000-00). Só para a copia no /admin (dropshipping: compra no fornecedor). */
+export function fullDocument(enc: string | null | undefined): string | null {
+  if (!enc) return null;
+  try {
+    const d = decryptText(enc);
+    return d.length === 11 ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}` : d;
+  } catch {
+    return null;
+  }
+}
+
 /** Gera número de pedido legível quando o checkout não mandar um: AQB-AAMMDD-XXXX */
 export function generateOrderNumber(): string {
   const d = new Date();

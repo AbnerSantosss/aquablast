@@ -1,6 +1,9 @@
+import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
+import { ExternalLink } from "lucide-react";
 import { desc, eq } from "drizzle-orm";
 import "@/app/admin/checkout-admin.css";
 import { db } from "@/db";
@@ -8,6 +11,7 @@ import { conversionEvents, paymentAttempts, type OrderStatus } from "@/db/schema
 import { ActionForm } from "@/components/admin/ActionForm";
 import { EmailStatusBadge, PaymentBadge, SourceBadge, StatusBadge, Tone, WebhookBadge } from "@/components/admin/Badge";
 import { CopyButton } from "@/components/admin/CopyButton";
+import { CopyAllButton, CopyField } from "@/components/admin/CustomerCopy";
 import { Flash } from "@/components/admin/Flash";
 import { JsonBlock } from "@/components/admin/JsonBlock";
 import { requireAdmin } from "@/lib/auth/session";
@@ -19,8 +23,10 @@ import { CARRIERS } from "@/lib/tracking/provider";
 import { addManualEvent, changeStatus, resendAccessCode, resendPix, resendPurchase, saveNotes, sendConfirmation, sendShippedEmail, updatePayment } from "@/lib/admin/actions/orders";
 import { refundOrderPayment } from "@/lib/admin/actions/gateways";
 import { clearTracking, saveTracking, syncTrackingNow } from "@/lib/admin/actions/tracking";
-import { firstParam, formatBRL, formatCep, formatDateTime, formatPhone, telLink, timeAgo, whatsappLink } from "@/lib/admin/format";
+import { CPF_TOKEN, firstParam, formatBRL, formatCep, formatDateTime, formatPhone, telLink, timeAgo, whatsappLink } from "@/lib/admin/format";
 import { listOrderEmails, listOrderWebhooks } from "@/lib/admin/queries";
+import { SUPPLIER_LINKS } from "@/lib/admin/suppliers";
+import { photosOfSku } from "@/lib/checkout/own/catalog";
 
 type ToneName = "gray" | "blue" | "cyan" | "orange" | "green" | "red";
 const ATTEMPT_STATUS_TONE: Record<string, ToneName> = { paid: "green", pending: "orange", refused: "red", canceled: "gray", refunded: "blue", error: "red" };
@@ -65,14 +71,63 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const doc = maskedDocument(order.customerDocumentEnc);
   const allowed = ALL_STATUSES.filter((s) => canTransition(order.status, s));
   const defaultCarrier = order.carrierCode ? Number(order.carrierCode) : settings["tracking.17track.defaultCarrier"];
-  const address = [
-    order.addressLine1,
-    order.addressLine2,
-    order.addressNeighborhood,
-    [order.addressCity, order.addressState].filter(Boolean).join(" / "),
-    formatCep(order.addressPostalCode),
-    order.addressCountry,
-  ].filter(Boolean);
+  const cep = formatCep(order.addressPostalCode);
+  const phoneLocal = (order.customerPhone ?? "").replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
+  const cityUf = [order.addressCity, order.addressState].filter(Boolean).join(" / ");
+  // Campos do card na ordem em que o fornecedor pede. `copy` é o que vai para a área de transferência.
+  const addressRows: { label: string; copy: string }[] = [
+    { label: "CEP", copy: cep },
+    { label: "Endereço", copy: order.addressLine1 ?? "" },
+    { label: "Complemento", copy: order.addressLine2 ?? "" },
+    { label: "Bairro", copy: order.addressNeighborhood ?? "" },
+    { label: "Cidade", copy: order.addressCity ?? "" },
+    { label: "Estado", copy: order.addressState ?? "" },
+  ].filter((r) => r.copy);
+  const customerRows: { label: string; node: ReactNode; copy?: string; cpf?: boolean }[] = [
+    { label: "Nome", node: order.customerName ?? "—", copy: order.customerName ?? "" },
+    {
+      label: "E-mail",
+      node: order.customerEmail ? <a href={`mailto:${order.customerEmail}`}>{order.customerEmail}</a> : "—",
+      copy: order.customerEmail ?? "",
+    },
+    {
+      label: "Telefone",
+      node: order.customerPhone ? (
+        <>
+          {tel ? <a href={tel}>{formatPhone(order.customerPhone)}</a> : formatPhone(order.customerPhone)}
+          {wa ? (
+            <>
+              {" · "}
+              <a href={wa} target="_blank" rel="noopener noreferrer">
+                abrir WhatsApp
+              </a>
+            </>
+          ) : null}
+        </>
+      ) : (
+        "—"
+      ),
+      copy: phoneLocal,
+    },
+    { label: "CPF", node: doc ?? "—", cpf: !!doc },
+    ...(addressRows.length ? addressRows.map((r) => ({ label: r.label, node: r.copy, copy: r.copy })) : [{ label: "Endereço", node: "—" }]),
+  ];
+  const itemsText = order.items.map((it) => `${it.quantity}x ${it.name}${it.variant ? ` - ${it.variant}` : ""}${it.sku ? ` (${it.sku})` : ""}`);
+  const copyAll = [
+    order.customerName ? `Nome: ${order.customerName}` : "",
+    doc ? `CPF: ${CPF_TOKEN}` : "",
+    phoneLocal ? `Telefone: ${phoneLocal}` : "",
+    order.customerEmail ? `E-mail: ${order.customerEmail}` : "",
+    cep ? `CEP: ${cep}` : "",
+    order.addressLine1 ? `Endereço: ${order.addressLine1}` : "",
+    order.addressLine2 ? `Complemento: ${order.addressLine2}` : "",
+    order.addressNeighborhood ? `Bairro: ${order.addressNeighborhood}` : "",
+    cityUf ? `Cidade/UF: ${cityUf}` : "",
+    itemsText.length ? `Produto: ${itemsText.join("; ")}` : "",
+    `Pedido: ${order.orderNumber}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
   const timestamps: [string, Date | null][] = [
     ["Criado", order.createdAt],
     ["Pago", order.paidAt],
@@ -122,34 +177,17 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
           <section className="card">
             <div className="card-head">
               <h2>Cliente e entrega</h2>
+              <CopyAllButton text={copyAll} orderId={order.id} />
+              <p className="muted small">Para comprar no fornecedor: o ícone no fim de cada linha copia o campo; &quot;Copiar tudo&quot; copia o bloco inteiro (com o CPF completo).</p>
             </div>
-            <dl className="dl">
-              <dt>Nome</dt>
-              <dd>{order.customerName ?? "—"}</dd>
-              <dt>E-mail</dt>
-              <dd>{order.customerEmail ? <a href={`mailto:${order.customerEmail}`}>{order.customerEmail}</a> : "—"}</dd>
-              <dt>Telefone</dt>
-              <dd>
-                {order.customerPhone ? (
-                  <>
-                    {tel ? <a href={tel}>{formatPhone(order.customerPhone)}</a> : formatPhone(order.customerPhone)}
-                    {wa ? (
-                      <>
-                        {" · "}
-                        <a href={wa} target="_blank" rel="noopener noreferrer">
-                          abrir WhatsApp
-                        </a>
-                      </>
-                    ) : null}
-                  </>
-                ) : (
-                  "—"
-                )}
-              </dd>
-              <dt>CPF</dt>
-              <dd>{doc ?? "—"}</dd>
-              <dt>Endereço</dt>
-              <dd>{address.length ? address.join(", ") : "—"}</dd>
+            <dl className="dl dl-copy">
+              {customerRows.map((r) => (
+                <div key={r.label} className="dl-row">
+                  <dt>{r.label}</dt>
+                  <dd>{r.node}</dd>
+                  <div className="dl-act">{r.cpf ? <CopyField label="CPF" cpfOf={order.id} /> : r.copy ? <CopyField label={r.label} value={r.copy} /> : null}</div>
+                </div>
+              ))}
             </dl>
 
             <h3 className="section-title">Itens</h3>
@@ -173,9 +211,20 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                     order.items.map((it, i) => (
                       <tr key={i}>
                         <td>
-                          {it.name}
-                          {it.variant ? <span className="cell-sub">{it.variant}</span> : null}
-                          {it.sku ? <span className="cell-sub mono">{it.sku}</span> : null}
+                          <div className="item-cell">
+                            {photosOfSku(it.sku).length ? (
+                              <span className="item-photos">
+                                {photosOfSku(it.sku).map((ph, j) => (
+                                  <Image key={j} src={ph.src} alt={ph.alt} width={64} height={64} className="item-photo" />
+                                ))}
+                              </span>
+                            ) : null}
+                            <span>
+                              {it.name}
+                              {it.variant ? <span className="cell-sub">{it.variant}</span> : null}
+                              {it.sku ? <span className="cell-sub mono">{it.sku}</span> : null}
+                            </span>
+                          </div>
                         </td>
                         <td className="num">{it.quantity}</td>
                         <td className="num">{formatBRL(it.unitPrice)}</td>
@@ -195,6 +244,20 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                 </tfoot>
               </table>
             </div>
+
+            <h3 className="section-title">Comprar no fornecedor</h3>
+            <p className="muted small">Buscas na Shopee, mais vendidos primeiro. Antes de comprar, confira nas fotos o tambor transparente e a nota da loja.</p>
+            <ul className="supplier-links">
+              {SUPPLIER_LINKS.map((l) => (
+                <li key={l.href}>
+                  <a href={l.href} target="_blank" rel="noopener noreferrer">
+                    {l.label}
+                    <ExternalLink aria-hidden size={14} />
+                  </a>
+                  <span className="cell-sub">{l.note}</span>
+                </li>
+              ))}
+            </ul>
 
             <h3 className="section-title">Pagamento</h3>
             <dl className="dl">

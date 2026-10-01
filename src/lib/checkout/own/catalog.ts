@@ -51,3 +51,14 @@ export function variantOf(s: Selection): string {
 export function orderItemOf(s: Selection, amountCents: number): { name: string; sku: string; variant: string; quantity: number; unitPrice: number } {
   return { name: titleOf(s), sku: skuOf(s), variant: variantOf(s), quantity: 1, unitPrice: amountCents / 100 };
 }
+
+/** Fotos do produto de um SKU do catálogo (1 por cor; o kit tem 2). SKU desconhecido (pedido manual) → nenhuma. */
+export function photosOfSku(sku: string | null | undefined): { src: string; alt: string }[] {
+  const m = /^AQB-(?:1UN-([A-Z]+)|KIT-([A-Z]+)-([A-Z]+))$/.exec(sku ?? "");
+  if (!m) return [];
+  return [m[1], m[2], m[3]]
+    .filter((c): c is string => !!c)
+    .map((c) => c.toLowerCase())
+    .filter(isColor)
+    .map((c) => ({ src: `/produto-${c}.webp`, alt: `AquaBlast ${COLOR_LABELS[c].toLowerCase()}` }));
+}

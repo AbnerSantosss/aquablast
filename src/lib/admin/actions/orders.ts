@@ -9,7 +9,7 @@ import { orders, webhookDeliveries, type OrderItem, type OrderStatus, type Payme
 import { requireAdmin } from "@/lib/auth/session";
 import { ensureBootstrap } from "@/lib/bootstrap";
 import { sendOrderEmail } from "@/lib/email/send";
-import { addOrderEvent, encryptDocument, generateOrderNumber, getOrderById, issueAccessCode, transitionOrder, updateOrderFields } from "@/lib/orders/service";
+import { addOrderEvent, encryptDocument, fullDocument, generateOrderNumber, getOrderById, issueAccessCode, transitionOrder, updateOrderFields } from "@/lib/orders/service";
 import { STATUS_LABEL, canTransition } from "@/lib/orders/status";
 import { actorOf, audit } from "@/lib/admin/audit";
 import { bool, isEmail, num, optStr, str, uuid } from "@/lib/admin/form";
@@ -182,6 +182,19 @@ export async function resendPurchase(_prev: ActionResult, formData: FormData): P
   if (!results.length) return fail("Nenhum destino ligado em Pixels (Meta/GA4 desligados).");
   const text = results.map((r) => `${r.destination === "meta" ? "Meta" : "GA4"}: ${TRACK_STATUS_LABEL[r.status] ?? r.status}${r.detail ? ` (${r.detail})` : ""}`).join(" · ");
   return results.some((r) => r.status === "error") ? fail(text) : ok(text);
+}
+
+/**
+ * CPF completo para o botão de copiar da página do pedido (a tela segue mascarada). Lido só no clique e registrado
+ * em auditoria, para o documento não ir no HTML da página.
+ */
+export async function revealOrderDocument(orderId: string): Promise<string | null> {
+  const session = await requireAdmin();
+  if (!/^[0-9a-f-]{36}$/i.test(orderId)) return null;
+  const order = await getOrderById(orderId);
+  const doc = fullDocument(order?.customerDocumentEnc);
+  if (order && doc) await audit(actorOf(session), "order.document.copy", { type: "order", id: order.id }, {});
+  return doc;
 }
 
 // ---------- Criação manual ----------

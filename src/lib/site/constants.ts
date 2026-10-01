@@ -51,6 +51,13 @@ export function zedyUrlFromSelection(sel: { pack: Pack; colors: readonly Color[]
  */
 export const GTM_ID = "GTM-594998R9";
 
+/**
+ * Projeto do Microsoft Clarity (mapas de calor e gravacoes). No site publico ele entra pelo GTM (tag 34); no
+ * /checkout, que nao carrega GTM, entra direto pelo `loadClarity` (components/checkout/clarity.ts), depois do
+ * consentimento. Pedido do dono 2026-09-30.
+ */
+export const CLARITY_ID = "yqjdjw8upg";
+
 export const BRAND_NAME = "AquaBlast";
 
 // E-mail publico de contato da loja, confirmado pelo dono em 2026-09-26

@@ -12,6 +12,7 @@ import { readAdIds } from "@/lib/tracking-ads/capture";
 import { isApiFail, postCart, postOpened, type CartPayload, type CartStep, type CartTrackingInput } from "./api";
 import { Campaign } from "./Campaign";
 import { ConsentBanner, readStored } from "./ConsentBanner";
+import { loadClarity } from "./clarity";
 import { ErrorBox, fullName, UFS, validEmail } from "./Field";
 import { Footer } from "./Footer";
 import { colorName, OrderSummary, type PayView } from "./OrderSummary";
@@ -198,6 +199,11 @@ export function Checkout({
       ...(stored ? { consent: stored === "accepted" } : {}),
     });
   }, [paid, selection.pack, selection.colors, initialCoupon]);
+
+  // Clarity (mapas de calor) só com consentimento; com `ads.consentRequired` desligado o banner já decide "sim".
+  useEffect(() => {
+    if (consent) loadClarity();
+  }, [consent]);
 
   const buildTracking = useCallback((): CartTrackingInput | undefined => {
     if (consent === null) return undefined;

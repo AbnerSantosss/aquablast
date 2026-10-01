@@ -257,3 +257,110 @@
   padding: 0.6rem 0.75rem;
   word-break: break-all;
 }
+
+/* ---------- Pedido: card do cliente com copiar por campo (dropshipping) ---------- */
+.dl-copy {
+  grid-template-columns: max-content minmax(0, 1fr) auto;
+  align-items: center;
+  row-gap: 0.15rem;
+}
+.dl-copy .dl-row {
+  display: contents;
+}
+.dl-copy dt,
+.dl-copy dd {
+  padding: 0.3rem 0;
+}
+.dl-act {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 2.25rem;
+}
+.copy-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--link);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.copy-icon:hover {
+  background: var(--pale);
+  border-color: var(--line-strong);
+}
+.copy-icon:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.copy-icon.is-ok {
+  color: var(--green-ink);
+}
+.copy-icon.is-err {
+  color: var(--danger);
+}
+@media (max-width: 480px) {
+  .dl-copy {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .dl-copy dt {
+    grid-column: 1 / -1;
+    padding-bottom: 0;
+  }
+  .dl-copy dd {
+    margin-bottom: 0;
+  }
+}
+
+/* Foto do produto na tabela de itens */
+.item-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.item-photos {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+.item-photo {
+  width: 4rem;
+  height: 4rem;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  background: var(--pale);
+  border: 1px solid var(--line);
+}
+
+/* Atalhos de fornecedor */
+.supplier-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.supplier-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+}
+.supplier-links .cell-sub {
+  display: inline;
+  margin-left: 0.5rem;
+}
+@media (max-width: 480px) {
+  .item-cell {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
+  .item-photo {
+    width: 3rem;
+    height: 3rem;
+  }
+}

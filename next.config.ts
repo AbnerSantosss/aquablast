@@ -17,16 +17,18 @@ const securityHeaders = [
  * 'unsafe-eval' e ws: só em desenvolvimento (HMR).
  */
 const isDev = process.env.NODE_ENV !== "production";
+// Microsoft Clarity no checkout (pedido do dono 2026-09-30): script em www/scripts.clarity.ms, coleta em *.clarity.ms e c.bing.com.
+const CLARITY_HOSTS = "https://*.clarity.ms https://c.bing.com";
 const MP_HOSTS = "https://*.mercadopago.com https://*.mercadopago.com.br https://*.mercadolibre.com https://*.mlstatic.com";
 const checkoutCsp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://sdk.mercadopago.com ${MP_HOSTS}`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://sdk.mercadopago.com ${MP_HOSTS} ${CLARITY_HOSTS}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
   // ViaCEP: busca do endereço pelo CEP no navegador (StepEntrega.tsx). Sem ele a CSP bloqueava a busca e
   // todo CEP caía em "não encontrado" (achado na fase 14, 2026-09-27).
-  `connect-src 'self' https://viacep.com.br ${MP_HOSTS}${isDev ? " ws: wss:" : ""}`,
+  `connect-src 'self' https://viacep.com.br ${MP_HOSTS} ${CLARITY_HOSTS}${isDev ? " ws: wss:" : ""}`,
   `frame-src 'self' ${MP_HOSTS}`,
   "form-action 'self'",
   "base-uri 'self'",
