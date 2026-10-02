@@ -95,6 +95,7 @@ export async function changeStatus(_prev: ActionResult, formData: FormData): Pro
   if (!canTransition(order.status, to as OrderStatus, { force })) {
     return fail(`Transição ${STATUS_LABEL[order.status]} → ${STATUS_LABEL[to as OrderStatus]} não permitida. Marque "Forçar" para sobrescrever.`);
   }
+  const description = optStr(formData, "description", 2000) ?? undefined;
   const r = await transitionOrder({
     orderId: order.id,
     to: to as OrderStatus,
@@ -102,17 +103,37 @@ export async function changeStatus(_prev: ActionResult, formData: FormData): Pro
     actor,
     force,
     title: optStr(formData, "title", 200) ?? undefined,
-    description: optStr(formData, "description", 2000) ?? undefined,
+    description,
   });
   if (!r.ok) return fail(r.reason);
   if (force) await audit(actor, "order.status.force", { type: "order", id: order.id }, { from: order.status, to });
-  // E-mails automáticos ligados ao status (respeitam o toggle do template).
-  if (to === "out_for_delivery" || to === "delivered") {
-    await sendOrderEmail(r.order, to, { automatic: true, triggeredBy: actor });
-  }
+  const head = `Status alterado para "${STATUS_LABEL[to as OrderStatus]}"`;
+  const template = STATUS_EMAIL[to as OrderStatus];
+  // Botões rápidos sempre avisam; o formulário "Alterar com detalhes" tem a caixa "Avisar o cliente por e-mail".
+  const notify = formData.has("notifyChoice") ? bool(formData, "notify") : true;
   refresh(order.id);
-  return ok(`Status alterado para "${STATUS_LABEL[to as OrderStatus]}".`);
+  if (!template) return ok(`${head}. Este status não tem e-mail para o cliente.`);
+  if (!notify) return ok(`${head}. Cliente não avisado (caixa de e-mail desmarcada).`);
+  if (!r.order.customerEmail) return fail(`${head}, mas o e-mail NÃO foi enviado: pedido sem e-mail do cliente.`);
+
+  // Avisos com botão de rastreio levam um código de acesso novo (o código em claro não fica guardado).
+  const accessCode = template === "delivered" ? undefined : (await issueAccessCode(order.id, actor)).code;
+  const mail = await sendOrderEmail(r.order, template, { automatic: true, accessCode, message: description, triggeredBy: actor });
+  if (!mail.ok) {
+    const why = mail.skipped === "Envio automático desligado para este template" ? `o modelo "${template}" está desligado em E-mails → Templates` : (mail.error ?? mail.skipped ?? "motivo desconhecido");
+    return fail(`${head}, mas o e-mail NÃO foi enviado: ${why}.`, accessCode ? { code: accessCode } : {});
+  }
+  return ok(`${head} · e-mail enviado para ${r.order.customerEmail}.`);
 }
+
+/** E-mail ao cliente quando o status muda no painel (pedido do dono, 2026-10-02). */
+const STATUS_EMAIL: Partial<Record<OrderStatus, "shipped" | "in_transit" | "out_for_delivery" | "delivered" | "exception">> = {
+  shipped: "shipped",
+  in_transit: "in_transit",
+  out_for_delivery: "out_for_delivery",
+  delivered: "delivered",
+  exception: "exception",
+};
 
 export async function addManualEvent(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const { order, actor } = await loadOrder(formData);

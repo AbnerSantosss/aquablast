@@ -6,6 +6,7 @@ import {
   Home,
   LayoutDashboard,
   Mail,
+  MousePointerClick,
   Package,
   Palette,
   Receipt,
@@ -38,6 +39,7 @@ const NAV: NavEntry[] = [
     items: [
       { href: "/admin/pedidos", label: "Vendas", icon: Receipt, match: (p) => p.startsWith("/admin/pedidos") },
       { href: "/admin/envios", label: "Envios", icon: Truck, match: (p) => p.startsWith("/admin/envios"), badge: "slaLate" },
+      { href: "/admin/cliques", label: "Cliques no Comprar", icon: MousePointerClick, match: (p) => p.startsWith("/admin/cliques") },
       { href: "/admin/carrinhos", label: "Carrinhos abandonados", icon: ShoppingCart, match: (p) => p.startsWith("/admin/carrinhos") },
       { href: "/admin/clientes", label: "Clientes", icon: Users, match: (p) => p.startsWith("/admin/clientes") },
     ],

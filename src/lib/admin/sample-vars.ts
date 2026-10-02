@@ -1,4 +1,5 @@
 import { env } from "@/lib/env";
+import { accessBlockHtml, messageBlockHtml, progressHtml, trackingBlockHtml } from "@/lib/email/status-blocks";
 import { getSettings } from "@/lib/settings";
 
 /** Variáveis de exemplo para pré-visualizar e testar templates de e-mail. */
@@ -27,5 +28,18 @@ export async function sampleVars(): Promise<Record<string, string>> {
     loja: s["store.name"],
     whatsapp: s["store.supportWhatsapp"],
     email_suporte: s["store.supportEmail"],
+    status: "Em trânsito",
+    progresso: progressHtml({
+      status: "in_transit",
+      paidAt: new Date("2026-09-27T14:30:00-03:00"),
+      approvedAt: null,
+      shippedAt: new Date("2026-09-28T10:00:00-03:00"),
+      inTransitAt: new Date("2026-09-29T08:00:00-03:00"),
+      outForDeliveryAt: null,
+      deliveredAt: null,
+    }),
+    bloco_rastreio: trackingBlockHtml({ trackingCode: "BR123456789SP", carrierName: "Shopee Express (SPX)", trackingUrl: "https://spx.com.br/track?BR123456789SP" }),
+    bloco_acesso: accessBlockHtml("AQB-EXEMPLO-1234"),
+    mensagem: messageBlockHtml("Exemplo de recado: o texto que você escrever em Descrição ao mudar o status aparece aqui."),
   };
 }

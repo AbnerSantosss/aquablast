@@ -10,7 +10,7 @@ import { createAdminSession, requireAdmin } from "@/lib/auth/session";
 import { ensureBootstrap } from "@/lib/bootstrap";
 import { sendTestEmail } from "@/lib/email/send";
 import { env } from "@/lib/env";
-import { ADMIN_ALERT_EVENTS, getSettings, isSecretKey, setSetting, type SettingKey, type SettingsMap } from "@/lib/settings";
+import { ADMIN_ALERT_EVENTS, getSettings, PUSH_ALERT_EVENTS, isSecretKey, setSetting, type SettingKey, type SettingsMap } from "@/lib/settings";
 import { refreshIntegration } from "@/lib/admin/integrations/verify";
 import { getStoredSupportWhatsapp } from "@/lib/site/support-contact";
 import { CARRIERS } from "@/lib/tracking/provider";
@@ -116,9 +116,9 @@ export async function saveShippingSettings(_prev: ActionResult, fd: FormData): P
   if (adminEmail && !isEmail(adminEmail)) return fail("E-mail para avisos inválido. Deixe vazio para usar o e-mail de login do painel (ADMIN_EMAIL).");
   const picked = new Set(fd.getAll("alerts.events").map(String));
   const events = ADMIN_ALERT_EVENTS.filter((ev) => picked.has(ev));
-  // Push do app do painel (2026-09-30): quais eventos também vão para o celular. "atraso" não tem push.
+  // Push do app do painel (2026-09-30): desde 2026-10-02 só a venda paga pode ir para o celular.
   const pickedPush = new Set(fd.getAll("alerts.pushEvents").map(String));
-  const pushEvents = ADMIN_ALERT_EVENTS.filter((ev) => ev !== "atraso" && pickedPush.has(ev));
+  const pushEvents = PUSH_ALERT_EVENTS.filter((ev) => pickedPush.has(ev));
   await apply(actor, "envios", {
     "orders.slaDays": int(fd, "orders.slaDays", 3, 1, 30),
     "alerts.adminEmail": adminEmail,

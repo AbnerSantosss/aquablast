@@ -3,7 +3,7 @@ import Link from "next/link";
 import { AppAvisos } from "@/components/admin/pwa/AppAvisos";
 import { requireAdmin } from "@/lib/auth/session";
 import { recentSales } from "@/lib/push/sales";
-import { getSettings, type AdminAlertEvent } from "@/lib/settings";
+import { getSettings, PUSH_ALERT_EVENTS, type AdminAlertEvent } from "@/lib/settings";
 
 export const metadata: Metadata = { title: "App e avisos" };
 
@@ -25,14 +25,14 @@ export default async function AppPage() {
   await requireAdmin();
   const [sales, s] = await Promise.all([recentSales(), getSettings(["alerts.events", "alerts.pushEvents"] as const)]);
   const general: readonly string[] = s["alerts.events"];
-  const active = s["alerts.pushEvents"].filter((ev) => general.includes(ev));
+  const active = s["alerts.pushEvents"].filter((ev) => general.includes(ev) && PUSH_ALERT_EVENTS.includes(ev));
 
   return (
     <>
       <div className="page-head">
         <div>
           <h1>App e avisos</h1>
-          <p className="sub">O painel como app no celular, com aviso de venda e dos eventos do checkout.</p>
+          <p className="sub">O painel como app no celular, com aviso de venda paga.</p>
         </div>
       </div>
 
@@ -75,7 +75,7 @@ export default async function AppPage() {
               <p className="muted">Nenhum evento está ligado para o celular.</p>
             )}
             <p className="muted small">
-              Os mesmos avisos do e-mail, sem repetir: início e pagamento uma vez por carrinho, venda uma vez por pedido. Troque em{" "}
+              Só a venda paga avisa no celular, uma vez por pedido (checkout aberto, Pix gerado e cartão ficam só no e-mail). Troque em{" "}
               <Link href="/admin/configuracoes">Configurações &gt; Envios</Link>.
             </p>
           </section>

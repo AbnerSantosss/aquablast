@@ -432,9 +432,37 @@ export const siteVisits = pgTable(
   (t) => [uniqueIndex("site_visits_event_idx").on(t.eventId), index("site_visits_created_idx").on(t.createdAt)],
 );
 
+/**
+ * Cliques no botão Comprar da LP (pedido do dono, 2026-10-02), gravados por POST /api/track/click. Mostra no
+ * painel (/admin/cliques) quem clicou, em qual kit e cores, e se depois chegou ao checkout. Sem dado pessoal.
+ */
+export const buyClicks = pgTable(
+  "buy_clicks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Id do clique gerado no navegador: o mesmo clique repetido (rede instável) não conta duas vezes. */
+    eventId: text("event_id").notNull(),
+    visitorId: text("visitor_id").notNull(),
+    pack: text("pack").$type<"unit" | "kit">().notNull(),
+    /** Cores na tela no momento do clique, separadas por "+" (kit: "azul+preto"). */
+    colors: text("colors").notNull(),
+    /** Escolha completa (cor da unidade ou as duas do kit tocadas pelo cliente). */
+    complete: boolean("complete").notNull(),
+    /** Escolha incompleta: o clique só avisou e levou à cor que falta, não foi para o checkout. */
+    warnedOnly: boolean("warned_only").default(false).notNull(),
+    /** Onde estava o botão: "topo" (painel do produto no desktop) ou "ofertas" (cards de preço). */
+    place: text("place").notNull(),
+    device: text("device").$type<"mobile" | "desktop">().notNull(),
+    utmSource: text("utm_source"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("buy_clicks_event_idx").on(t.eventId), index("buy_clicks_created_idx").on(t.createdAt)],
+);
+
 export type CheckoutCart = typeof checkoutCarts.$inferSelect;
 export type PaymentAttempt = typeof paymentAttempts.$inferSelect;
 export type ConversionEvent = typeof conversionEvents.$inferSelect;
+export type BuyClick = typeof buyClicks.$inferSelect;
 
 /**
  * Aparelhos inscritos no Web Push do app do painel (PWA /admin). Uma linha por navegador/aparelho.

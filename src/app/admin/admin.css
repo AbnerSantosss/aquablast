@@ -2837,3 +2837,20 @@ ul.check li + li {
     animation: none;
   }
 }
+
+/* Cliques no Comprar (/admin/cliques, 2026-10-02): lista "rótulo ... número" dos cards de divisão. */
+.click-split {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.click-split li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.click-split li:last-child {
+  border-bottom: 0;
+}

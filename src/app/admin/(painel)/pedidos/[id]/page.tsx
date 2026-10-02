@@ -15,7 +15,7 @@ import { CopyAllButton, CopyField } from "@/components/admin/CustomerCopy";
 import { Flash } from "@/components/admin/Flash";
 import { JsonBlock } from "@/components/admin/JsonBlock";
 import { requireAdmin } from "@/lib/auth/session";
-import { activeAccessCodePrefix, getOrderById, getOrderEvents, maskedDocument } from "@/lib/orders/service";
+import { activeAccessCodePrefix, fullDocument, getOrderById, getOrderEvents } from "@/lib/orders/service";
 import { PAYMENT_LABEL, STATUS_LABEL, STATUS_ORDER, canTransition } from "@/lib/orders/status";
 import { getSettings } from "@/lib/settings";
 import { GATEWAY_LABELS, isGatewayName } from "@/lib/gateways";
@@ -68,7 +68,8 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
     .join(" ");
   const wa = whatsappLink(order.customerPhone, waText);
   const tel = telLink(order.customerPhone);
-  const doc = maskedDocument(order.customerDocumentEnc);
+  // CPF completo na tela: o dono precisa dele para o pedido no fornecedor (dropshipping, pedido de 2026-10-02).
+  const doc = fullDocument(order.customerDocumentEnc);
   const allowed = ALL_STATUSES.filter((s) => canTransition(order.status, s));
   const defaultCarrier = order.carrierCode ? Number(order.carrierCode) : settings["tracking.17track.defaultCarrier"];
   const cep = formatCep(order.addressPostalCode);
@@ -511,28 +512,29 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
               <h2>Status</h2>
               <StatusBadge status={order.status} />
             </div>
-            {allowed.length ? (
-              <>
-                <p className="muted small" style={{ marginBottom: "0.5rem" }}>
-                  Próximos passos permitidos:
-                </p>
-                <div className="status-grid">
-                  {allowed
-                    .filter((s) => s !== "cancelled")
-                    .map((s) => (
-                      <ActionForm key={s} action={changeStatus} inline>
-                        <input type="hidden" name="orderId" value={order.id} />
-                        <input type="hidden" name="to" value={s} />
-                        <button type="submit" className={`btn btn-sm ${s === "exception" ? "btn-ghost danger" : "btn-ghost"}`}>
+            {/* Um formulário só (o botão clicado manda o "to") e sempre montado: assim a mensagem "e-mail enviado"
+                fica na tela mesmo depois que o botão do status aplicado some (ou a lista acaba, como em Entregue). */}
+            <ActionForm action={changeStatus}>
+              <input type="hidden" name="orderId" value={order.id} />
+              {allowed.length ? (
+                <>
+                  <p className="muted small" style={{ marginBottom: "0.5rem" }}>
+                    Próximos passos permitidos (Enviado, Em trânsito, Saiu para entrega, Entregue e Ocorrência avisam o cliente por e-mail):
+                  </p>
+                  <div className="status-grid">
+                    {allowed
+                      .filter((s) => s !== "cancelled")
+                      .map((s) => (
+                        <button key={s} type="submit" name="to" value={s} className={`btn btn-sm ${s === "exception" ? "btn-ghost danger" : "btn-ghost"}`}>
                           {STATUS_LABEL[s]}
                         </button>
-                      </ActionForm>
-                    ))}
-                </div>
-              </>
-            ) : (
-              <p className="muted small">Nenhuma transição automática disponível a partir de “{STATUS_LABEL[order.status]}”. Use “Forçar” abaixo se precisar.</p>
-            )}
+                      ))}
+                  </div>
+                </>
+              ) : (
+                <p className="muted small">Nenhuma transição automática disponível a partir de “{STATUS_LABEL[order.status]}”. Use “Forçar” abaixo se precisar.</p>
+              )}
+            </ActionForm>
 
             <h3 className="section-title">Alterar com detalhes</h3>
             <ActionForm action={changeStatus}>
@@ -557,10 +559,15 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                   <input name="title" maxLength={200} placeholder="Padrão do status" />
                 </label>
                 <label className="field span-2">
-                  <span>Descrição (opcional)</span>
+                  <span>Descrição (opcional; vai como recado no e-mail ao cliente)</span>
                   <textarea name="description" rows={2} maxLength={2000} />
                 </label>
               </div>
+              <input type="hidden" name="notifyChoice" value="1" />
+              <label className="check">
+                <input type="checkbox" name="notify" defaultChecked />
+                <span>Avisar o cliente por e-mail (Enviado, Em trânsito, Saiu para entrega, Entregue e Ocorrência)</span>
+              </label>
               <label className="check">
                 <input type="checkbox" name="force" />
                 <span>Forçar (ignora a ordem normal das etapas; fica registrado na auditoria)</span>

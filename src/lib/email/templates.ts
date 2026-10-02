@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { emailTemplates, type EmailTemplate } from "@/db/schema";
 
@@ -7,8 +7,10 @@ export type TemplateKey =
   | "pix_pending"
   | "pix_reminder"
   | "shipped"
+  | "in_transit"
   | "out_for_delivery"
   | "delivered"
+  | "exception"
   | "access_code"
   | "cart_abandoned_1"
   | "cart_abandoned_2"
@@ -42,6 +44,11 @@ export const PLACEHOLDERS = [
   "{{dias_atraso}}",
   "{{prazo_dias}}",
   "{{link_admin}}",
+  "{{status}}",
+  "{{progresso}}",
+  "{{bloco_rastreio}}",
+  "{{bloco_acesso}}",
+  "{{mensagem}}",
 ] as const;
 
 /**
@@ -84,6 +91,19 @@ const carrierLink = (href: string) =>
 
 const code = (v: string) =>
   `<p style="margin:14px 0;padding:14px 16px;background:#f1f5f9;border:1px dashed #94a3b8;border-radius:12px;font-family:Consolas,monospace;font-size:15px;word-break:break-all;">${v}</p>`;
+
+/** Linha pequena acima do título dos e-mails de status: "Pedido AQB-... · Em trânsito". */
+const kicker = (status: string) =>
+  `<p style="margin:0 0 6px;font-size:12px;font-weight:800;color:#0284c7;text-transform:uppercase;letter-spacing:.5px;">Pedido {{pedido}} · ${status}</p>`;
+
+/** Blocos dos e-mails de status (lib/email/status-blocks.ts). Cada um some quando não se aplica ao pedido. */
+const STATUS_BLOCKS = `
+      {{progresso}}
+      {{mensagem}}
+      {{bloco_rastreio}}
+      {{bloco_acesso}}`;
+
+const itemsLine = `<p style="margin:18px 0 0;padding-top:14px;border-top:1px solid #e2e8f0;font-size:14px;color:#4b6675;"><strong>Itens do pedido:</strong><br>{{itens}}</p>`;
 
 export const DEFAULT_TEMPLATES: Record<TemplateKey, { name: string; description: string; subject: string; bodyHtml: string; enabled: boolean }> = {
   order_confirmed: {
@@ -131,39 +151,73 @@ export const DEFAULT_TEMPLATES: Record<TemplateKey, { name: string; description:
   },
   shipped: {
     name: "Pedido enviado",
-    description: "Enviado quando o pedido é postado (código de rastreio cadastrado).",
+    description: "Enviado quando o rastreio é cadastrado ou quando o status muda para Enviado no painel. Leva a linha do tempo, o rastreio e um código de acesso novo.",
     subject: "Seu pedido {{pedido}} foi enviado 🚚",
     enabled: true,
     bodyHtml: wrap(`
+      ${kicker("Enviado")}
       <h1 style="font-size:24px;margin:0 0 12px;">Seu AquaBlast está a caminho, {{primeiro_nome}}!</h1>
-      <p>O pedido <strong>{{pedido}}</strong> foi entregue à transportadora <strong>{{transportadora}}</strong>.</p>
-      <p><strong>Código de rastreio:</strong> {{codigo_transportadora}}</p>
-      <p>Acompanhe a entrega em tempo real com o seu código de acesso:</p>
-      ${code("{{codigo_acesso}}")}
-      ${btn("{{link_rastreio}}", "Acompanhar entrega")}
-      ${carrierLink("{{link_transportadora}}")}
+      <p style="margin:0;">Seu pedido foi postado e já está com a transportadora. Veja em que etapa ele está:</p>
+      ${STATUS_BLOCKS}
+      ${btn("{{link_rastreio}}", "Acompanhar meu pedido")}
+      ${itemsLine}
+    `),
+  },
+  in_transit: {
+    name: "Em trânsito",
+    description: "Enviado quando o status muda para Em trânsito no painel. Leva a linha do tempo, o rastreio e um código de acesso novo.",
+    subject: "Seu pedido {{pedido}} está em trânsito 🚚",
+    enabled: true,
+    bodyHtml: wrap(`
+      ${kicker("Em trânsito")}
+      <h1 style="font-size:24px;margin:0 0 12px;">Seu pedido está em trânsito, {{primeiro_nome}}!</h1>
+      <p style="margin:0;">O pedido está com a transportadora, seguindo para o seu endereço. Veja em que etapa ele está:</p>
+      ${STATUS_BLOCKS}
+      ${btn("{{link_rastreio}}", "Acompanhar meu pedido")}
+      ${itemsLine}
     `),
   },
   out_for_delivery: {
     name: "Saiu para entrega",
-    description: "Enviado quando a transportadora informa que o pedido saiu para entrega.",
+    description: "Enviado quando o pedido sai para entrega (aviso da transportadora ou mudança de status no painel).",
     subject: "Chega hoje! Pedido {{pedido}} saiu para entrega 🎁",
     enabled: true,
     bodyHtml: wrap(`
+      ${kicker("Saiu para entrega")}
       <h1 style="font-size:24px;margin:0 0 12px;">Prepare a criançada, {{primeiro_nome}}!</h1>
-      <p>O entregador já está com o pedido <strong>{{pedido}}</strong>. Fique de olho na campainha.</p>
+      <p style="margin:0;">O pedido saiu para entrega e já está com o entregador. Fique de olho na campainha.</p>
+      ${STATUS_BLOCKS}
       ${btn("{{link_rastreio}}", "Ver status da entrega")}
+      ${itemsLine}
     `),
   },
   delivered: {
     name: "Pedido entregue",
-    description: "Enviado quando a entrega é confirmada.",
+    description: "Enviado quando a entrega é confirmada (aviso da transportadora ou mudança de status no painel).",
     subject: "Entregue! Boa diversão com o AquaBlast 💦",
     enabled: true,
     bodyHtml: wrap(`
+      ${kicker("Entregue")}
       <h1 style="font-size:24px;margin:0 0 12px;">Entregue, {{primeiro_nome}}! 🎉</h1>
-      <p>O pedido <strong>{{pedido}}</strong> foi entregue. Esperamos que a brincadeira seja inesquecível.</p>
-      <p>Qualquer dúvida sobre o produto, fale com a gente pelo WhatsApp. Estamos por aqui!</p>
+      <p style="margin:0;">O pedido <strong>{{pedido}}</strong> foi entregue. Esperamos que a brincadeira seja inesquecível.</p>
+      {{progresso}}
+      {{mensagem}}
+      ${itemsLine}
+      <p style="font-size:14px;color:#4b6675;">Se algo não estiver certo com o produto ou com a entrega, responda este e-mail ou chame a gente no WhatsApp.</p>
+    `),
+  },
+  exception: {
+    name: "Ocorrência na entrega",
+    description: "Enviado quando o status muda para Ocorrência no painel. Escreva o que aconteceu no campo Descrição: ele vai como recado no e-mail.",
+    subject: "Atualização sobre a entrega do pedido {{pedido}}",
+    enabled: true,
+    bodyHtml: wrap(`
+      ${kicker("Ocorrência na entrega")}
+      <h1 style="font-size:24px;margin:0 0 12px;">{{primeiro_nome}}, temos uma atualização sobre a sua entrega</h1>
+      <p style="margin:0;">Houve uma ocorrência com a entrega do pedido <strong>{{pedido}}</strong> e nossa equipe já está cuidando disso.</p>
+      ${STATUS_BLOCKS}
+      <p style="font-size:14px;color:#4b6675;">Se precisarmos de alguma informação sua, como um complemento de endereço, entraremos em contato. Se preferir, fale com a gente pelo WhatsApp {{whatsapp}}.</p>
+      ${btn("{{link_rastreio}}", "Acompanhar meu pedido")}
     `),
   },
   access_code: {
@@ -272,6 +326,39 @@ const SHIPPED_BODY_V1 = wrap(`
       ${btn("{{link_rastreio}}", "Acompanhar entrega")}
     `);
 
+/** Corpo padrão do "Pedido enviado" de 2026-09-30 a 2026-10-02 (antes da linha do tempo). */
+const SHIPPED_BODY_V2 = wrap(`
+      <h1 style="font-size:24px;margin:0 0 12px;">Seu AquaBlast está a caminho, {{primeiro_nome}}!</h1>
+      <p>O pedido <strong>{{pedido}}</strong> foi entregue à transportadora <strong>{{transportadora}}</strong>.</p>
+      <p><strong>Código de rastreio:</strong> {{codigo_transportadora}}</p>
+      <p>Acompanhe a entrega em tempo real com o seu código de acesso:</p>
+      ${code("{{codigo_acesso}}")}
+      ${btn("{{link_rastreio}}", "Acompanhar entrega")}
+      ${carrierLink("{{link_transportadora}}")}
+    `);
+
+/** Corpos padrão de "Saiu para entrega" e "Pedido entregue" até 2026-10-02. */
+const OUT_FOR_DELIVERY_BODY_V1 = wrap(`
+      <h1 style="font-size:24px;margin:0 0 12px;">Prepare a criançada, {{primeiro_nome}}!</h1>
+      <p>O entregador já está com o pedido <strong>{{pedido}}</strong>. Fique de olho na campainha.</p>
+      ${btn("{{link_rastreio}}", "Ver status da entrega")}
+    `);
+const DELIVERED_BODY_V1 = wrap(`
+      <h1 style="font-size:24px;margin:0 0 12px;">Entregue, {{primeiro_nome}}! 🎉</h1>
+      <p>O pedido <strong>{{pedido}}</strong> foi entregue. Esperamos que a brincadeira seja inesquecível.</p>
+      <p>Qualquer dúvida sobre o produto, fale com a gente pelo WhatsApp. Estamos por aqui!</p>
+    `);
+
+/**
+ * Corpos padrão antigos por template. Quando o padrão muda, a linha do banco que ainda está com um corpo antigo
+ * (ninguém editou) recebe o novo; se o dono editou o template, a versão dele fica intacta.
+ */
+const LEGACY_BODIES: Partial<Record<TemplateKey, string[]>> = {
+  shipped: [SHIPPED_BODY_V1, SHIPPED_BODY_V2],
+  out_for_delivery: [OUT_FOR_DELIVERY_BODY_V1],
+  delivered: [DELIVERED_BODY_V1],
+};
+
 export async function ensureDefaultTemplates(): Promise<void> {
   for (const [key, t] of Object.entries(DEFAULT_TEMPLATES)) {
     await db
@@ -279,12 +366,13 @@ export async function ensureDefaultTemplates(): Promise<void> {
       .values({ key, name: t.name, description: t.description, subject: t.subject, bodyHtml: t.bodyHtml, enabled: t.enabled })
       .onConflictDoNothing();
   }
-  // "Pedido enviado" ganhou o link da transportadora: atualiza só a linha que ainda está com o corpo
-  // padrão antigo (se o dono editou o template, a versão dele fica intacta).
-  await db
-    .update(emailTemplates)
-    .set({ bodyHtml: DEFAULT_TEMPLATES.shipped.bodyHtml, updatedAt: new Date() })
-    .where(and(eq(emailTemplates.key, "shipped"), eq(emailTemplates.bodyHtml, SHIPPED_BODY_V1)));
+  for (const [key, olds] of Object.entries(LEGACY_BODIES)) {
+    const t = DEFAULT_TEMPLATES[key as TemplateKey];
+    await db
+      .update(emailTemplates)
+      .set({ bodyHtml: t.bodyHtml, description: t.description, updatedAt: new Date() })
+      .where(and(eq(emailTemplates.key, key), inArray(emailTemplates.bodyHtml, olds)));
+  }
 }
 
 export async function getTemplate(key: TemplateKey): Promise<EmailTemplate> {
@@ -309,9 +397,17 @@ export function htmlToText(html: string): string {
   return html
     .replace(/<style[\s\S]*?<\/style>/gi, "")
     .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/(p|div|h1|h2|h3|li)>/gi, "\n")
+    .replace(/<\/(p|div|h1|h2|h3|li|tr)>/gi, "\n")
+    .replace(/<\/td>/gi, "  ")
+    .replace(/&#10003;/g, "✓")
     .replace(/<[^>]+>/g, "")
     .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/^[ \t]+/gm, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }

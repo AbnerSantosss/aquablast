@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { pushAlerts } from "@/db/schema";
 import type { CheckoutAlert } from "@/lib/email/checkout-alerts";
 import { errorMessage, log } from "@/lib/log";
-import { getSettings } from "@/lib/settings";
+import { getSettings, PUSH_ALERT_EVENTS } from "@/lib/settings";
 import { countSubscriptions, sendPush, type PushMessage } from "./send";
 
 /**
@@ -75,6 +75,8 @@ function dedupeKeyOf(a: CheckoutAlert): string | null {
 
 /** O push deste evento está ligado em `alerts.pushEvents`? (o `alerts.events` é conferido por quem chama) */
 export async function pushAlertEnabled(event: CheckoutAlert["event"]): Promise<boolean> {
+  // Só venda paga vira push (2026-10-02), mesmo que a lista salva antes ainda tenha outros eventos.
+  if (!PUSH_ALERT_EVENTS.includes(event)) return false;
   const s = await getSettings(["alerts.pushEvents"] as const);
   const list: readonly string[] = Array.isArray(s["alerts.pushEvents"]) ? s["alerts.pushEvents"] : [];
   return list.includes(event);

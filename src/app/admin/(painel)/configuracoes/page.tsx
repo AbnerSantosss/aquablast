@@ -9,7 +9,7 @@ import { SecretField, secretBadge } from "@/components/admin/SecretField";
 import { SectionTabs } from "@/components/admin/SectionTabs";
 import { requireAdmin } from "@/lib/auth/session";
 import { env } from "@/lib/env";
-import { ADMIN_ALERT_EVENTS, describeSecret, getSettings, type AdminAlertEvent } from "@/lib/settings";
+import { ADMIN_ALERT_EVENTS, describeSecret, getSettings, PUSH_ALERT_EVENTS, type AdminAlertEvent } from "@/lib/settings";
 import { verifyIntegrationAction } from "@/lib/admin/actions/integrations";
 import { getIntegrationStatus } from "@/lib/admin/integrations/status";
 import { getStoredSupportWhatsapp } from "@/lib/site/support-contact";
@@ -322,10 +322,10 @@ export default async function SettingsPage() {
         </fieldset>
         <fieldset className="field" style={{ border: 0, padding: 0, margin: "0.4rem 0 0" }}>
           <span>
-            Também no celular (push do <Link href="/admin/app">app do painel</Link>): só vale para o que estiver marcado acima
+            Também no celular (push do <Link href="/admin/app">app do painel</Link>): só a venda paga, e só se estiver marcada acima
           </span>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem 1.2rem" }}>
-            {ADMIN_ALERT_EVENTS.filter((ev) => ev !== "atraso").map((ev) => (
+            {PUSH_ALERT_EVENTS.map((ev) => (
               <label key={ev} className="check">
                 <input type="checkbox" name="alerts.pushEvents" value={ev} defaultChecked={pushEvents.includes(ev)} />
                 <span>{ALERT_EVENT_LABELS[ev]}</span>

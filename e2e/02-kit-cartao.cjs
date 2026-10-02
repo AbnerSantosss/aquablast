@@ -17,25 +17,23 @@ async function run(variant) {
   try {
     await L.goCheckout(page, "pack=kit&cor1=azul&cor2=preto");
     await L.waitText(page.locator(".selected-product"), "Kit com 2 AquaBlast");
-    await L.waitText(page.locator(".selected-product .offer s"), /^De R\$ [\d.,]+$/);
-    await L.waitText(page.locator(".save-tag"), /^ECONOMIZE R\$ [\d.,]+$/);
+    await L.waitText(page.locator(".selected-product p"), /^1 \S+ \+ 1 \S+$/);
     // Antes de escolher a forma (2026-09-29): Pix do kit em destaque, parcela do cartao abaixo.
-    await L.waitText(page.locator(".order-summary .total"), /À vista no Pix\s*Economize R\$ 10,00\s*R\$ 249,90/);
-    await L.waitText(page.locator(".order-summary .total-alt"), /ou 12x de R\$ 21,66 sem juros no cartão\s*Total no cartão: R\$ 259,90/);
+    await L.waitText(page.locator(".order-summary .total"), /^(?=[\s\S]*À vista\s*no Pix)(?=[\s\S]*Economize R\$ 10,00)(?=[\s\S]*R\$ 249,90)/);
+    await L.waitText(page.locator(".order-summary .total-alt"), /ou 12x de R\$ 21,66 sem juros no cartão/);
     await L.fillDados(page);
     await L.submitDados(page);
     await L.fillEntrega(page);
     await L.submitEntrega(page);
     assert.equal(await page.locator(".order-bump").count(), 0, "kit nao tem oferta da 2a unidade");
 
-    // Cartao ja abre selecionado (2026-09-28); o clique continua para cobrir o caso de o padrao mudar.
-    assert.ok(await page.locator('input[name="pay-method"][value="card"]').isChecked(), "cartao deveria abrir selecionado");
+    // Desde o 7d1aafa o Pix abre selecionado: o cliente escolhe o cartao.
     await L.payHead(page, "card").click();
     await L.waitText(page.locator(".ck-card-warn"), "Não use um cartão real.");
     assert.equal(await L.field(page, "cc-number").getAttribute("autocomplete"), "cc-number");
     assert.equal(await L.field(page, "cc-number").getAttribute("inputmode"), "numeric");
     assert.equal(await L.field(page, "cc-cpf").inputValue(), "");
-    await L.waitText(page.locator(".order-summary .total"), /12x de R\$ 21,66 ?sem juros no cartão · total R\$ 259,90/);
+    await L.waitText(page.locator(".order-summary .total"), /Total no cartão\s*12x de R\$ 21,66\s*sem juros no cartão/);
 
     // Luhn invalido: mascara, bandeira e foco no numero.
     await cartao(page, L.CARD_BAD_LUHN);

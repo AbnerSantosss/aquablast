@@ -13,8 +13,8 @@ async function run(variant = { width: 1440, height: 900, tag: "desktop" }) {
     assert.equal(await page.locator(".ck-steps > li").count(), 3);
     await L.waitText(page.locator(".selected-product"), "Cor azul");
     // Antes de escolher a forma (2026-09-29): Pix em destaque com a economia e a parcela do cartao logo abaixo.
-    await L.waitText(page.locator(".order-summary .total"), /À vista no Pix\s*Economize R\$ 10,00\s*R\$ 159,90/);
-    await L.waitText(page.locator(".order-summary .total-alt"), /ou 12x de R\$ 14,16 sem juros no cartão\s*Total no cartão: R\$ 169,90/);
+    await L.waitText(page.locator(".order-summary .total"), /^(?=[\s\S]*À vista\s*no Pix)(?=[\s\S]*Economize R\$ 10,00)(?=[\s\S]*R\$ 159,90)/);
+    await L.waitText(page.locator(".order-summary .total-alt"), /ou 12x de R\$ 14,16 sem juros no cartão/);
     assert.ok(await L.field(page, "name").isVisible());
     await L.shot(page, `c1-${variant.tag}-0-primeira-dobra`, false);
 
@@ -22,7 +22,12 @@ async function run(variant = { width: 1440, height: 900, tag: "desktop" }) {
     await L.fillDados(page);
     await L.field(page, "phone").fill("119876");
     await L.btn(page, "CONTINUAR").click();
-    await L.waitText(page.locator("p.error"), "Informe um celular válido com DDD: (00) 00000-0000.");
+    // Popup explicito (2026-10-02): diz quantos digitos faltam; fechar leva o foco ao campo. A mesma frase fica na caixa da etapa.
+    await L.waitText(page.locator(".ck-alert"), /O celular está incompleto: você digitou 6 número\(s\), são 11/);
+    await L.btn(page, "CORRIGIR AGORA").click();
+    assert.equal(await page.locator(".ck-alert").count(), 0, "popup deveria fechar");
+    assert.ok(await L.field(page, "phone").evaluate((e) => e === document.activeElement), "foco deveria ir ao celular");
+    await L.waitText(page.locator("p.error"), "O celular está incompleto");
     await L.field(page, "phone").fill(L.cliente.phone);
     await L.shot(page, `c1-${variant.tag}-1-dados`);
     await L.submitDados(page);
@@ -41,38 +46,39 @@ async function run(variant = { width: 1440, height: 900, tag: "desktop" }) {
     await L.waitText(page.locator(".ck-done").nth(1), `${L.endereco.street}, ${L.endereco.number}`);
     await L.waitText(page.locator(".ck-testmode").first(), "Modo de teste");
     assert.equal(await page.getByText(/boleto/i).count(), 0, "boleto nao deveria aparecer");
-    // Cartao abre selecionado quando esta ligado (2026-09-28): parcela em destaque (unidade no cartao 169,90).
-    assert.ok(await page.locator('input[name="pay-method"][value="card"]').isChecked(), "cartao deveria abrir selecionado");
+    // Desde o 7d1aafa o Pix abre selecionado; escolhendo o cartao, a parcela vira o destaque (unidade no cartao 169,90).
+    await L.payHead(page, "card").click();
     await L.field(page, "cc-number").waitFor({ timeout: 10000 });
-    await L.waitText(page.locator(".order-summary .total"), /12x de R\$ 14,16 ?sem juros no cartão · total R\$ 169,90/);
+    await L.waitText(page.locator(".order-summary .total"), /Total no cartão\s*12x de R\$ 14,16\s*sem juros no cartão/);
     await L.waitText(page.locator(".order-summary .total-alt.is-pix"), /ou R\$ 159,90 à vista no Pix/);
     await L.shot(page, `c1-${variant.tag}-3-pagamento-cartao`);
     // Pix: o total do Pix vira o destaque e o cartao passa para a linha de baixo.
     await L.choosePix(page);
-    await L.waitText(page.locator(".order-summary .total"), /À vista no Pix[\s\S]*R\$ 159,90/);
+    await L.waitText(page.locator(".order-summary .total"), /^(?=[\s\S]*À vista\s*no Pix)(?=[\s\S]*R\$ 159,90)/);
     await L.waitText(page.locator(".order-summary .total-alt"), /ou 12x de R\$ 14,16 sem juros no cartão/);
     await L.shot(page, `c1-${variant.tag}-3-pagamento`);
 
     // Order bump: 2a unidade pela diferenca ate o kit (valor vem do servidor).
-    await L.waitText(page.locator(".bump-choice"), "SIM, QUERO ADICIONAR A SEGUNDA UNIDADE");
+    // Desde o a446b8c: abrir a oferta, escolher a cor (sem cor pre-escolhida; aqui preto, diferente da 1a) e confirmar.
+    await L.waitText(page.locator(".bump-choice"), "QUERO APROVEITAR O DESCONTO");
     await L.waitText(page.locator(".order-bump .bump-price"), "+ R$ 90,00");
-    await page.locator(".bump-choice").click();
-    await L.waitText(page.locator(".bump-choice"), "ADICIONADO AO PEDIDO");
-    // Desde 2026-09-30 a 2a unidade pede a cor (sem cor pre-escolhida); aqui preto, diferente da 1a (azul).
-    await L.waitText(page.locator(".bump-color-alert"), "Escolha a cor para continuar");
+    await page.locator(".bump-open-trigger").click();
+    await L.waitText(page.locator(".bump-choice"), "ESCOLHA SUA SEGUNDA UNIDADE");
     await page.locator('input[name="bump-color"][value="preto"]').check();
+    await L.btn(page, "Selecionar segunda unidade com desconto").click();
+    await L.waitText(page.locator(".bump-choice"), "SEGUNDA UNIDADE SELECIONADA");
     await L.waitText(page.locator(".order-summary .total b"), "R$ 249,90");
     await L.waitText(page.locator(".bump-summary"), /\+ 1 AquaBlast preto.*R\$ 90,00/);
     await L.noHorizontalScroll(page);
 
-    await L.btn(page, "FINALIZAR COMPRA").click();
+    // Tela do Pix redesenhada no a446b8c: "Gerar código Pix", validade em mm:ss e "Copiar código Pix".
+    await page.locator(".pix-payment-start .pix-primary").click();
     const code = L.field(page, "pix-code");
     await code.waitFor({ timeout: 15000 });
     assert.match(await code.inputValue(), /^SIMULADO-NAO-PAGUE-sim_/);
-    await L.waitText(page.locator(".ck-pix-timer"), /Expira em (10:00|09:[45]\d)/);
-    assert.equal(await page.locator(".ck-pix-steps li").count(), 3);
-    await L.btn(page, "Copiar código").click();
-    await L.waitText(page.locator(".ck-copied"), "Código copiado");
+    await L.waitText(page.locator(".pix-validity"), /Código válido por (10:00|09:[45]\d)/);
+    await page.locator(".pix-code-area .pix-primary").click();
+    await L.waitText(page.locator(".pix-code-area .pix-primary"), "Código copiado");
     await L.shot(page, `c1-${variant.tag}-4-pix-gerado`);
 
     await L.btn(page, "Simular pagamento aprovado").click();

@@ -321,3 +321,65 @@
 .ck .pix-payment-expired > small { display: block; font-size: 12px; line-height: 1.5; color: #687b87; margin-top: 14px; }
 @media (max-width: 380px) { .ck .pay-item-pix .pay-body { padding: 16px 12px; } .ck .pix-code-area { padding: 12px; } }
 @media (prefers-reduced-motion: reduce) { .ck .order-bump:not(.added) { animation: none; } }
+
+/* Erro que trava o cliente (pedido do dono, 2026-10-02): campo em vermelho + popup com o problema exato. */
+.ck .field.is-bad,
+.ck .field.is-bad:focus-within {
+  border-color: var(--c-timer);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-timer) 18%, transparent);
+}
+.ck .field.is-bad > span { color: var(--c-timer); }
+.ck .ck-alert-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgb(10 25 40 / 0.55);
+  animation: ck-alert-fade 0.15s ease-out;
+}
+.ck .ck-alert {
+  width: 100%;
+  max-width: 400px;
+  padding: 26px 22px 20px;
+  border-radius: 16px;
+  background: #fff;
+  color: var(--c-text);
+  text-align: center;
+  box-shadow: 0 18px 48px rgb(10 25 40 / 0.3);
+  animation: ck-alert-pop 0.18s ease-out;
+}
+.ck .ck-alert-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  margin-bottom: 10px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--c-timer) 12%, #fff);
+  color: var(--c-timer);
+}
+.ck .ck-alert h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-display), var(--font-text), sans-serif;
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--c-primary);
+}
+.ck .ck-alert p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.ck .ck-alert .primary-button { margin-top: 20px; }
+@keyframes ck-alert-fade { from { opacity: 0; } }
+@keyframes ck-alert-pop { from { opacity: 0; transform: translateY(8px) scale(0.97); } }
+@media (prefers-reduced-motion: reduce) {
+  .ck .ck-alert-backdrop,
+  .ck .ck-alert { animation: none; }
+}

@@ -1,5 +1,5 @@
 import { Check, CircleAlert } from "lucide-react";
-import type { ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import type { FieldKey } from "./types";
 
 /**
@@ -7,6 +7,9 @@ import type { FieldKey } from "./types";
  * (fase 14.3, comparação visual): `label.field` (+ `is-disabled`/`is-ok`), rótulo com "(opcional)", input com
  * `name` igual à chave (os testes e o foco usam `input[name=...]`) e o check verde `.field-ok` quando válido.
  */
+/** Campo apontado pelo último erro (popup): fica em vermelho com `aria-invalid` até o cliente mexer nele. */
+export const BadFieldContext = createContext<FieldKey | null>(null);
+
 export interface FieldOpts {
   type?: string;
   autoComplete?: string;
@@ -33,8 +36,9 @@ export function Field({
   onChange: (key: FieldKey, value: string) => void;
   opts?: FieldOpts;
 }) {
+  const bad = useContext(BadFieldContext) === name;
   return (
-    <label className={`field${opts.disabled ? " is-disabled" : ""}${opts.ok ? " is-ok" : ""}`}>
+    <label className={`field${opts.disabled ? " is-disabled" : ""}${opts.ok ? " is-ok" : ""}${bad ? " is-bad" : ""}`}>
       <span>
         {label}
         {opts.optional ? <small> (opcional)</small> : null}
@@ -46,6 +50,7 @@ export function Field({
         inputMode={opts.inputMode}
         maxLength={opts.maxLength}
         required={!opts.optional}
+        aria-invalid={bad || undefined}
         disabled={opts.disabled}
         value={value}
         onChange={(e) => onChange(name, e.target.value)}
@@ -74,4 +79,3 @@ export function ErrorBox({ children }: { children: ReactNode }) {
 
 export const UFS = "AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO".split(" ");
 export const fullName = (v: string) => v.trim().split(/\s+/).length >= 2;
-export const validEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());

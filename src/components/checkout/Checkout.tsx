@@ -4,7 +4,7 @@ import { Check, CreditCard, Mail, MapPin, Phone } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Selection } from "@/lib/checkout/own/catalog";
-import { maskCEP, maskCPF, maskPhone, money, validCPF, validMobile } from "@/lib/checkout/own/masks";
+import { maskCEP, maskCPF, maskPhone, money, validMobile } from "@/lib/checkout/own/masks";
 import type { Quote } from "@/lib/checkout/own/pricing";
 import type { Theme } from "@/lib/checkout/own/theme";
 import { themeVars } from "@/lib/checkout/own/theme";
@@ -13,7 +13,9 @@ import { isApiFail, postCart, postOpened, type CartPayload, type CartStep, type 
 import { Campaign } from "./Campaign";
 import { ConsentBanner, readStored } from "./ConsentBanner";
 import { loadClarity } from "./clarity";
-import { ErrorBox, fullName, UFS, validEmail } from "./Field";
+import { BadFieldContext, ErrorBox, fullName, UFS } from "./Field";
+import { ErrorDialog } from "./ErrorDialog";
+import { dadosProblem, emailOk, serverProblem } from "./explain";
 import { Footer } from "./Footer";
 import { colorName, OrderSummary, type PayView } from "./OrderSummary";
 import { PixLogo } from "./PixLogo";
@@ -130,6 +132,9 @@ export function Checkout({
   const tokenRef = useRef<string | undefined>(initial?.cartToken);
   const [consent, setConsent] = useState<boolean | null>(null);
   const [error, setError] = useState("");
+  // Popup do erro (pedido do dono 2026-10-02) e o campo marcado em vermelho; o foco vai ao campo quando o popup fecha.
+  const [popup, setPopup] = useState<{ title: string; message: string; sel?: string } | null>(null);
+  const [badField, setBadField] = useState<FieldKey | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [cepState, setCepState] = useState<CepState>(initial?.address.street && initial.address.city ? "found" : "idle");
@@ -318,6 +323,7 @@ export function Checkout({
     const masked = key === "phone" ? maskPhone(value) : key === "cpf" ? maskCPF(value) : key === "cep" ? maskCEP(value) : value;
     setData((p) => ({ ...p, [key]: masked }));
     setError("");
+    if (key === badField) setBadField(null);
     if (ADDRESS_KEYS.includes(key)) setAddrOk(false);
     if (key === "cep") {
       const d = masked.replace(/\D/g, "");
@@ -337,18 +343,31 @@ export function Checkout({
     setError("");
   }
 
-  function fail(msg: string, sel?: string) {
+  function fail(msg: string, sel?: string, title = "Confira os dados") {
     setError(msg);
+    const m = sel ? /^\[name=([a-z]+)\]$/.exec(sel) : null;
+    setBadField(m ? (m[1] as FieldKey) : null);
+    setPopup({ title, message: msg, sel });
+  }
+
+  function closePopup() {
+    const sel = popup?.sel;
+    setPopup(null);
     if (sel) panel.current?.querySelector<HTMLElement>(sel)?.focus();
+  }
+
+  /** Recusa do servidor: o campo vem como caminho (`customer.phone`), que não é seletor; vira `[name=phone]` e texto claro. */
+  function failServer(result: { error: string; field?: string }) {
+    const p = serverProblem(result.error, result.field);
+    fail(p.message, p.field ? `[name=${p.field}]` : undefined, p.title);
   }
 
   async function next(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (busy || couponBusy) return;
     if (step === 1) {
-      if (!fullName(data.name)) return fail("Informe seu nome completo.", "[name=name]");
-      if (!validCPF(data.cpf) && !(cpfMasked && data.cpf === "")) return fail("Confira o CPF informado.", "[name=cpf]");
-      if (!validMobile(data.phone)) return fail("Informe um celular válido com DDD: (00) 00000-0000.", "[name=phone]");
+      const problem = dadosProblem(data, !!cpfMasked);
+      if (problem) return fail(problem.message, `[name=${problem.field}]`, problem.title);
       // Destinatário começa com o nome da etapa 1 (e acompanha o nome enquanto o cliente não o trocar).
       const name = data.name.trim().replace(/\s+/g, " ");
       if (!data.recipient || data.recipient === autoRecipient.current) {
@@ -359,20 +378,20 @@ export function Checkout({
       setBusy(true);
       const result = await saveCart("entrega", bump, { customer: true });
       setBusy(false);
-      if (isApiFail(result)) return fail(result.error, result.field ? `[name=${result.field}]` : undefined);
+      if (isApiFail(result)) return failServer(result);
       setStep(2);
       return;
     }
     if (step === 2) {
-      if (!/^\d{8}$/.test(data.cep.replace(/\D/g, ""))) return fail("Informe um CEP com 8 dígitos.", "[name=cep]");
-      if (cepState === "loading") return fail("Aguarde um instante: estamos buscando o seu CEP.");
+      if (!/^\d{8}$/.test(data.cep.replace(/\D/g, ""))) return fail("Informe um CEP com 8 dígitos.", "[name=cep]", "Confira o endereço");
+      if (cepState === "loading") return fail("Aguarde um instante: estamos buscando o seu CEP.", undefined, "Só um instante");
       if (!addrOk) {
-        if (!data.street.trim()) return fail("Informe o endereço (rua ou avenida).", "[name=street]");
-        if (!data.number.trim()) return fail("Informe o número. Se não houver, escreva S/N.", "[name=number]");
-        if (!data.district.trim()) return fail("Informe o bairro.", "[name=district]");
-        if (!data.city.trim()) return fail("Informe a cidade.", "[name=city]");
-        if (!UFS.includes(data.state)) return fail("Selecione o estado.", ".state-select");
-        if (!fullName(data.recipient)) return fail("Informe o nome de quem vai receber (nome e sobrenome).", "[name=recipient]");
+        if (!data.street.trim()) return fail("Informe o endereço (rua ou avenida).", "[name=street]", "Confira o endereço");
+        if (!data.number.trim()) return fail("Informe o número. Se não houver, escreva S/N.", "[name=number]", "Confira o endereço");
+        if (!data.district.trim()) return fail("Informe o bairro.", "[name=district]", "Confira o endereço");
+        if (!data.city.trim()) return fail("Informe a cidade.", "[name=city]", "Confira o endereço");
+        if (!UFS.includes(data.state)) return fail("Selecione o estado.", ".state-select", "Confira o endereço");
+        if (!fullName(data.recipient)) return fail("Informe o nome de quem vai receber (nome e sobrenome).", "[name=recipient]", "Confira o endereço");
         setError("");
         focusNext.current = ".ship-options input[type=radio]";
         setAddrOk(true);
@@ -382,7 +401,7 @@ export function Checkout({
       setBusy(true);
       const result = await saveCart("pagamento", bump, { customer: true, address: true });
       setBusy(false);
-      if (isApiFail(result)) return fail(result.error, result.field ? `[name=${result.field}]` : undefined);
+      if (isApiFail(result)) return failServer(result);
       setStep(3);
     }
   }
@@ -391,7 +410,7 @@ export function Checkout({
   // o contato e manda AddPaymentInfo, mesmo que a pessoa abandone aqui. Inválido/vazio = não salva.
   function handleContactBlur() {
     if (consent === null || couponBusy) return; // salvamento parcial só depois de responder ao consentimento.
-    const email = validEmail(data.email) ? data.email.trim() : undefined;
+    const email = emailOk(data.email) ? data.email.trim() : undefined;
     const phone = validMobile(data.phone) ? data.phone : undefined;
     if (!email && !phone) return;
     const name = fullName(data.name) && data.name.trim().length >= 3 ? data.name.trim() : undefined;
@@ -579,7 +598,9 @@ export function Checkout({
                     ) : null}
                     {state === "current" ? (
                       <div className="ck-step-body" ref={panel}>
-                        <fieldset className="ck-step-fields" disabled={couponBusy}>{body(n)}</fieldset>
+                        <fieldset className="ck-step-fields" disabled={couponBusy}>
+                          <BadFieldContext.Provider value={badField}>{body(n)}</BadFieldContext.Provider>
+                        </fieldset>
                       </div>
                     ) : null}
                   </li>
@@ -604,6 +625,7 @@ export function Checkout({
         </div>
       </main>
       <Footer theme={theme} year={year} methods={methods} maxInstallments={maxInstallments} support={support} />
+      {popup ? <ErrorDialog title={popup.title} message={popup.message} onClose={closePopup} /> : null}
       {paid ? null : <ConsentBanner requireConsent={consentRequired} onDecide={setConsent} />}
     </div>
   );

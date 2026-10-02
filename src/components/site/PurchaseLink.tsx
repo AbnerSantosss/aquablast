@@ -48,6 +48,31 @@ function adParamsFromLocation(): string {
 }
 
 /**
+ * Registra o clique no Comprar (POST /api/track/click → painel /admin/cliques, pedido do dono em 2026-10-02).
+ * `keepalive`: o pedido sobrevive à troca de página para o checkout. Nunca bloqueia nem atrasa o link.
+ */
+function trackBuyClick(link: HTMLAnchorElement, click: { pack: Pack; colors: string[]; complete: boolean; warned: boolean }) {
+  try {
+    let utm: string | undefined;
+    try {
+      utm = new URLSearchParams(window.location.search).get("utm_source")?.slice(0, 80) || undefined;
+    } catch {
+      utm = undefined;
+    }
+    const body = JSON.stringify({
+      ...click,
+      id: `bc-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`,
+      place: link.closest(".desktop-product-panel") ? "topo" : "ofertas",
+      device: window.matchMedia("(max-width: 900px)").matches ? "mobile" : "desktop",
+      utm,
+    });
+    fetch("/api/track/click", { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true, credentials: "same-origin" }).catch(() => undefined);
+  } catch {
+    // rastreio nunca atrapalha a compra
+  }
+}
+
+/**
  * Comprar nunca trava (pedido do dono, 26/09): sempre tem link para o checkout. Com a escolha incompleta
  * (cor da unidade ou as duas cores do kit) o botao fica verde sem pulsar e o PRIMEIRO clique so avisa e
  * leva a cor que falta; o segundo segue com as cores que estao na tela. Escolha completa: pulsa e vira "Quero...".
@@ -99,7 +124,9 @@ export function PurchaseLink({ pack, className, children }: { pack: Pack; classN
         }
         aria-describedby={hintId}
         onClick={(event) => {
-          if (!incomplete || warned) return;
+          const onlyWarn = incomplete && !warned;
+          trackBuyClick(event.currentTarget, { pack, colors: pack === "kit" ? [...kitColors] : [color], complete: !incomplete, warned: onlyWarn });
+          if (!onlyWarn) return;
           event.preventDefault();
           setWarned(true);
           focusMissingChoice(event.currentTarget);

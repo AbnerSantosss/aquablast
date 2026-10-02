@@ -25,6 +25,11 @@ export const META_SERVER_EVENTS: readonly MetaServerEvent[] = ["PageView", "View
  */
 export type AdminAlertEvent = "inicio" | "pagamento" | "pix" | "cartao" | "falha" | "pago" | "atraso";
 export const ADMIN_ALERT_EVENTS: readonly AdminAlertEvent[] = ["inicio", "pagamento", "pix", "cartao", "falha", "pago", "atraso"];
+/**
+ * Eventos que podem virar push no app do painel. Só a venda paga (pedido do dono, 2026-10-02: "a notificação da
+ * compra só deve acontecer em uma compra paga"); checkout aberto, Pix gerado, cartão e falha ficam só no e-mail.
+ */
+export const PUSH_ALERT_EVENTS: readonly AdminAlertEvent[] = ["pago"];
 
 /**
  * Resultado da última verificação real de uma integração (painel > selo do SecretField).
@@ -73,7 +78,7 @@ export interface SettingsMap {
   "alerts.events": AdminAlertEvent[];
   /**
    * Quais avisos também saem por push no app do painel (PWA /admin). Só vale o que TAMBÉM está em
-   * `alerts.events` (o toggle geral). "atraso" não tem push. Lista vazia = nenhum push.
+   * `alerts.events` (o toggle geral) e em PUSH_ALERT_EVENTS (só "pago"). Lista vazia = nenhum push.
    */
   "alerts.pushEvents": AdminAlertEvent[];
   /** Chave VAPID pública (P-256, ponto não comprimido em base64url). Gerada no bootstrap (lib/push/vapid.ts). */
@@ -192,7 +197,7 @@ export const DEFAULTS: SettingsMap = {
   "orders.slaDays": 3,
   "alerts.adminEmail": "",
   "alerts.events": [...ADMIN_ALERT_EVENTS],
-  "alerts.pushEvents": ADMIN_ALERT_EVENTS.filter((e) => e !== "atraso"),
+  "alerts.pushEvents": [...PUSH_ALERT_EVENTS],
   "push.vapid.publicKey": "",
   "push.vapid.privateKey": "",
 

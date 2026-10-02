@@ -4,6 +4,8 @@ import { PASSWORD_RESET_TTL_MINUTES } from "@/lib/admin/schemas/auth";
 import { env } from "@/lib/env";
 import { getSettings } from "@/lib/settings";
 import { getEmailProvider } from "./provider";
+import { STATUS_LABEL } from "@/lib/orders/status";
+import { accessBlockHtml, messageBlockHtml, progressHtml, trackingBlockHtml } from "./status-blocks";
 import { escapeHtml, getTemplate, htmlToText, renderTemplate, type TemplateKey } from "./templates";
 
 function formatBRL(v: string | number | null | undefined): string {
@@ -22,7 +24,8 @@ export function absoluteUrl(pathOrUrl: string): string {
   return `${base}/${pathOrUrl.replace(/^\/+/, "")}`;
 }
 
-export async function buildVars(order: Order, extra: { accessCode?: string } = {}): Promise<Record<string, string>> {
+/** `message`: recado digitado no painel ao mudar o status (vira {{mensagem}}). */
+export async function buildVars(order: Order, extra: { accessCode?: string; message?: string } = {}): Promise<Record<string, string>> {
   const s = await getSettings(["store.name", "store.supportWhatsapp", "store.supportEmail", "store.trackingPageUrl"] as const);
   const trackingPath = absoluteUrl(s["store.trackingPageUrl"] || "/rastrear");
   const link = extra.accessCode ? `${trackingPath}?codigo=${encodeURIComponent(extra.accessCode)}` : trackingPath;
@@ -44,6 +47,11 @@ export async function buildVars(order: Order, extra: { accessCode?: string } = {
     loja: escapeHtml(s["store.name"]),
     whatsapp: escapeHtml(s["store.supportWhatsapp"]),
     email_suporte: escapeHtml(s["store.supportEmail"]),
+    status: escapeHtml(STATUS_LABEL[order.status]),
+    progresso: progressHtml(order),
+    bloco_rastreio: trackingBlockHtml(order),
+    bloco_acesso: accessBlockHtml(extra.accessCode),
+    mensagem: messageBlockHtml(extra.message),
   };
 }
 
@@ -60,13 +68,13 @@ export interface SendResult {
 export async function sendOrderEmail(
   order: Order,
   templateKey: TemplateKey,
-  opts: { accessCode?: string; automatic?: boolean; triggeredBy?: string } = {},
+  opts: { accessCode?: string; message?: string; automatic?: boolean; triggeredBy?: string } = {},
 ): Promise<SendResult> {
   if (!order.customerEmail) return { ok: false, skipped: "Pedido sem e-mail do cliente" };
   const tpl = await getTemplate(templateKey);
   if (opts.automatic && !tpl.enabled) return { ok: false, skipped: "Envio automático desligado para este template" };
 
-  const vars = await buildVars(order, { accessCode: opts.accessCode });
+  const vars = await buildVars(order, { accessCode: opts.accessCode, message: opts.message });
   const subject = renderTemplate(tpl.subject, vars);
   const html = renderTemplate(tpl.bodyHtml, vars);
   const s = await getSettings(["email.provider", "email.replyTo"] as const);
