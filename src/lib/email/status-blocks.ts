@@ -82,7 +82,7 @@ export function accessBlockHtml(accessCode: string | undefined): string {
 export function messageBlockHtml(message: string | undefined): string {
   const text = message?.trim();
   if (!text) return "";
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 18px;border-collapse:separate;"><tr><td style="padding:14px 16px;background:#fff7ed;border-left:4px solid ${ORANGE};border-radius:8px;">
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 18px;border-collapse:separate;"><tr><td style="padding:14px 16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;">
       <div style="font-size:12px;font-weight:700;color:#9a3412;text-transform:uppercase;letter-spacing:.4px;">Recado da nossa equipe</div>
       <div style="font-size:15px;color:#0f2c3a;margin-top:4px;">${escapeHtml(text).replace(/\r?\n/g, "<br>")}</div>
     </td></tr></table>`;
