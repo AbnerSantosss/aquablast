@@ -2,6 +2,7 @@
 
 import { CircleAlert, CreditCard, LoaderCircle, LockKeyhole } from "lucide-react";
 import { useRef, useState } from "react";
+import Image from "next/image";
 import { gatewayTokenizes, tokenizeCard } from "@/lib/gateways/browser";
 import type { GatewayName } from "@/lib/gateways/types";
 import { cardBrandOf, cardLast4, maskCPF, money, onlyDigits, validCardExpiry, validCPF, validLuhn } from "@/lib/checkout/own/masks";
@@ -153,6 +154,10 @@ export function CardPay({
 
   return (
     <form className="ck-cardform" onSubmit={(e) => void pay(e)} noValidate ref={form}>
+      <div className="ck-card-intro">
+        <Image src="/checkout/payment-card.svg" width={360} height={216} alt="Ilustração de um cartão de crédito" className="ck-card-illustration" />
+        <div><span>SEU PAGAMENTO</span><h4>Praticidade em cada parcela</h4><p>Preencha os dados do cartão e escolha como prefere parcelar.</p></div>
+      </div>
       <p className="ck-card-warn">
         {testMode ? (
           <>

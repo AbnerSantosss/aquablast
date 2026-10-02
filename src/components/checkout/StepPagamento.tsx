@@ -79,6 +79,10 @@ export function StepPagamento({
   const hasBump = canBump && bump;
   const missingColor = hasBump && !bumpColor;
   const colorsRef = useRef<HTMLDivElement>(null);
+  const paymentRef = useRef<HTMLDivElement>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  const [confirmedColor, setConfirmedColor] = useState<Color | null>(bumpColor);
+  const selectionPending = hasBump && (!bumpColor || confirmedColor !== bumpColor);
   const [nudged, setNudged] = useState(false);
 
   // Pix/cartão clicados sem a cor da 2ª unidade: leva o cliente até a escolha, sem cobrar nada.
@@ -88,19 +92,28 @@ export function StepPagamento({
     if (!box) return;
     const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     box.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "center" });
-    box.querySelector<HTMLInputElement>("input[type=radio]")?.focus({ preventScroll: true });
+    if (missingColor) box.querySelector<HTMLInputElement>("input[type=radio]")?.focus({ preventScroll: true });
+    else confirmRef.current?.focus({ preventScroll: true });
+  }
+  function confirmSecondUnit() {
+    if (!bumpColor) return;
+    setConfirmedColor(bumpColor);
+    setNudged(false);
+    const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    paymentRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
+    paymentRef.current?.querySelector<HTMLInputElement>('input[name="pay-method"]:checked')?.focus({ preventScroll: true });
   }
   const shown = hasBump && bumpColor ? bumpColor : color;
 
   const options = (
     [
+      ["pix", PixLogo, quotes.card.amountCents > quotes.pix.amountCents ? "Pix com desconto" : "Pix", `${money(quotes.pix.amountCents)} à vista · aprovação na hora`],
       [
         "card",
         CreditCard,
         "Cartão de crédito",
         quotes.card.installments > 1 ? `${quotes.card.installments}x de ${money(quotes.card.installmentCents)} sem juros` : `${money(quotes.card.amountCents)} à vista no cartão`,
       ],
-      ["pix", PixLogo, "Pix", `${money(quotes.pix.amountCents)} à vista · aprovação na hora`],
     ] as const
   ).filter(([id]) => methods.includes(id));
 
@@ -118,25 +131,27 @@ export function StepPagamento({
       {testMode ? <TestModeNote /> : null}
       {canBump ? (
         <section className={`order-bump${hasBump ? " added" : ""}${missingColor ? " needs-color" : ""}${missingColor && nudged ? " is-nudged" : ""}`} aria-label="Oferta opcional: segunda unidade">
+          {!hasBump ? <button type="button" className="bump-open-trigger" aria-label="Quero aproveitar o desconto na segunda unidade" aria-expanded={false} onClick={() => { setNudged(false); setConfirmedColor(null); onBumpChange(true); }} /> : null}
           <label className="bump-choice">
             <span className={`ck-checkbox${hasBump ? " is-checked" : ""}`}>
-              <input
+              {hasBump ? <input
                 type="checkbox"
                 checked={hasBump}
                 onChange={(e) => {
                   setNudged(false);
+                  setConfirmedColor(null);
                   onBumpChange(e.target.checked);
                 }}
-              />
+              /> : null}
               {hasBump ? <Check aria-hidden="true" size={15} /> : null}
             </span>
-            <span>{hasBump ? "ADICIONADO AO PEDIDO" : "SIM, QUERO ADICIONAR A SEGUNDA UNIDADE"}</span>
+            <span>{hasBump ? selectionPending ? "ESCOLHA SUA SEGUNDA UNIDADE" : "SEGUNDA UNIDADE SELECIONADA" : "QUERO APROVEITAR O DESCONTO"}</span>
           </label>
           <div className="bump-product">
             <Image src={thumbOf(shown, 610)} width={92} height={92} alt={hasBump && bumpColor ? `2ª AquaBlast ${colorName(bumpColor)}` : "AquaBlast"} />
             <div>
-              <em className="bump-tag">OFERTA DO KIT</em>
-              <h4>Leve também a 2ª AquaBlast</h4>
+              <em className="bump-tag">Uma oferta especial para seu pedido</em>
+              <h4>Leve a segunda unidade com desconto</h4>
               <strong className="bump-price">+ {money(q.bumpDeltaCents)}</strong>
               {q.bumpSavingCents > 0 ? <small>Economize {money(q.bumpSavingCents)} em relação à unidade avulsa</small> : null}
             </div>
@@ -144,12 +159,13 @@ export function StepPagamento({
           {hasBump ? (
             <div className="bump-colors" ref={colorsRef}>
               <p className="bump-colors-title" id="bump-color-title">
-                Escolha a cor da 2ª unidade:
+                Escolha a cor da sua segunda AquaBlast
               </p>
+              <p className="bump-colors-help">Toque em uma cor e confirme sua escolha abaixo.</p>
               <div className="bump-color-options" role="radiogroup" aria-labelledby="bump-color-title" aria-required="true" aria-invalid={missingColor || undefined} aria-describedby="bump-color-alert">
                 {COLOR_KEYS.map((c) => (
                   <label key={c} className={`bump-color${bumpColor === c ? " is-selected" : ""}`}>
-                    <input type="radio" name="bump-color" value={c} checked={bumpColor === c} onChange={() => onBumpColorChange(c)} />
+                    <input type="radio" name="bump-color" value={c} checked={bumpColor === c} onChange={() => { setConfirmedColor(null); setNudged(false); onBumpColorChange(c); }} />
                     <Image src={thumbOf(c)} width={36} height={36} alt="" />
                     <span>{COLOR_LABELS[c]}</span>
                   </label>
@@ -158,12 +174,19 @@ export function StepPagamento({
             </div>
           ) : null}
           <p className="bump-color-alert" id="bump-color-alert" aria-live="polite">
-            {missingColor ? "Escolha a cor para continuar" : ""}
+            {missingColor && nudged ? "Escolha uma cor para continuar." : selectionPending && nudged ? "Confirme a segunda unidade para continuar." : ""}
           </p>
+          {hasBump ? <div className="bump-confirm">
+            <button ref={confirmRef} type="button" className={`primary-button${bumpColor && selectionPending ? " is-ready" : ""}`} disabled={!bumpColor} onClick={confirmSecondUnit}>
+              {selectionPending ? "Selecionar segunda unidade com desconto" : "Continuar para o pagamento"}
+            </button>
+            {!selectionPending ? <p role="status"><Check size={15} aria-hidden="true" />Segunda unidade {colorName(bumpColor!)} selecionada</p> : null}
+          </div> : null}
         </section>
       ) : null}
       <div
         className="pay-acc"
+        ref={paymentRef}
         role="radiogroup"
         aria-label="Forma de pagamento"
         onKeyDown={() => {
@@ -171,7 +194,7 @@ export function StepPagamento({
         }}
       >
         {options.map(([id, Icon, label, hint]) => (
-          <div key={id} className={`pay-item${method === id ? " is-open" : ""}`}>
+          <div key={id} className={`pay-item pay-item-${id}${method === id ? " is-open" : ""}`}>
             <label
               className="pay-head"
               onPointerDown={() => {
@@ -192,7 +215,8 @@ export function StepPagamento({
               <Icon size={21} aria-hidden="true" />
               <span className="pay-label">
                 <strong>{label}</strong>
-                <small>{hint}</small>
+                <small>{id === "pix" && method === "pix" ? "Pagamento pelo app do seu banco" : hint}</small>
+                {id === "pix" && quotes.card.amountCents > quotes.pix.amountCents ? <em className="ck-pix-saving">Economize {money(quotes.card.amountCents - quotes.pix.amountCents)}</em> : null}
               </span>
             </label>
             {method === id ? (
@@ -204,7 +228,7 @@ export function StepPagamento({
                     cartToken={cartToken}
                     bump={hasBump}
                     bumpColor={bumpColor}
-                    blocked={missingColor}
+                    blocked={selectionPending}
                     onBlocked={requireColor}
                     amountCents={quotes.card.amountCents}
                     maxInstallments={maxInstallments}
@@ -221,7 +245,7 @@ export function StepPagamento({
                     cartToken={cartToken}
                     bump={hasBump}
                     bumpColor={bumpColor}
-                    blocked={missingColor}
+                    blocked={selectionPending}
                     onBlocked={requireColor}
                     coupon={coupon}
                     amountCents={quotes.pix.amountCents}

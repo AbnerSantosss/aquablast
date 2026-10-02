@@ -32,8 +32,11 @@ export function Campaign({ theme, selection, bump = false, bumpColor = null }: {
   if (!theme.bannerEnabled) return null;
   const selected = effectiveSelectionClient(selection, bump, bumpColor);
   const isKit = selected.pack === "kit";
-  const lifestyle = theme.bannerImage === "/checkout/banner-immersive.webp";
-  const background = lifestyle ? `/checkout/campaign-child-${selected.colors[0]}-v2.webp` : theme.bannerImage;
+  const defaultBanner = theme.bannerImage === "/checkout/banner-immersive.webp";
+  const lifestyle = defaultBanner && !isKit;
+  const background = defaultBanner
+    ? isKit ? "/kit-background-v40.webp" : `/checkout/campaign-child-${selected.colors[0]}-v2.webp`
+    : theme.bannerImage;
   const [head, tail] = splitTitle(theme.bannerTitle);
   return (
     <section className={`campaign campaign-selected ${isKit ? "campaign-kit" : "campaign-unit"}${lifestyle ? " campaign-lifestyle" : ""}`} aria-label={theme.bannerEyebrow ? `Campanha ${titleCase(theme.bannerEyebrow)}` : "Campanha"}>

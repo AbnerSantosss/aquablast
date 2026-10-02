@@ -1,4 +1,4 @@
-import { Check, CreditCard, Truck } from "lucide-react";
+import { Check, CreditCard } from "lucide-react";
 import Image from "next/image";
 import type { Quote } from "@/lib/checkout/own/pricing";
 import { money } from "@/lib/checkout/own/masks";
@@ -69,23 +69,17 @@ export function OrderSummary({
   const isKit = selection.pack === "kit";
   const hasBump = !isKit && bump;
   const total = paid ? paid.amountCents : q.amountCents;
-  // Cupom de teste: o total já vem com desconto do servidor; o produto mostra o preço de tabela e o desconto vira linha própria.
   const couponOff = paid ? 0 : q.couponDiscountCents;
-  const listTotal = q.amountCents + couponOff;
-  // Preço da seleção original (sem o bump): kit − delta = unidade.
-  const basePrice = hasBump ? listTotal - q.bumpDeltaCents : listTotal;
   const pixSaving = card.amountCents - pix.amountCents;
   const [c1, c2] = selection.colors;
 
   const installments = paid ? paid.installments : card.installments;
   const per = paid ? Math.round(paid.amountCents / Math.max(1, paid.installments)) : card.installmentCents;
-  const productPrice =
-    view === "card" && !hasBump && card.installments > 1 ? `${card.installments}x de ${money(card.installmentCents)}` : money(basePrice);
 
   return (
     <aside className="ck-card order-summary" aria-label="Resumo do pedido">
       <h2 className="ck-sum-title">Resumo do pedido</h2>
-      <div className="selected-product">
+      <div className="selected-product ck-summary-product">
         {isKit ? (
           <span className="ck-kit-thumbs">
             <Image src={thumbOf(c1)} width={40} height={80} alt={`AquaBlast ${colorName(c1)}`} />
@@ -94,19 +88,47 @@ export function OrderSummary({
         ) : (
           <Image src={thumbOf(c1)} width={80} height={80} alt={`AquaBlast ${colorName(c1)}`} />
         )}
-        <div>
+        <div className="ck-product-pricing">
           <h4>{isKit ? "Kit com 2 AquaBlast" : "1 unidade AquaBlast"}</h4>
           <p>{isKit ? `1 ${colorName(c1)} + 1 ${colorName(c2 ?? c1)}` : `Cor ${colorName(c1)}`}</p>
-          <div className="offer">
-            {isKit && q.bumpSavingCents > 0 ? (
-              <s>
-                <span className="ck-u-sr-only">De </span>
-                {money(listTotal + q.bumpSavingCents)}
-              </s>
-            ) : null}
-            <b>{productPrice}</b>
+          <div className={`total is-${view}`} aria-live="polite">
+            <div className="ck-total-heading">
+              {view === "card" ? <span><CreditCard size={20} aria-hidden="true" />Total no cartão</span> : null}
+              {!paid && view === "pix" && showCard && pixSaving > 0 ? <em>Economize {money(pixSaving)}</em> : null}
+            </div>
+            {view === "card" ? (
+              <strong>
+                <b>
+                  {installments}x de {money(per)}
+                </b>
+                <small>
+                  sem juros no cartão
+                </small>
+              </strong>
+            ) : (
+              <strong>
+                <span className="ck-pix-price"><b>{money(total)}</b><span className="ck-pix-label"><PixLogo size={25} /><span>À vista<br />no Pix</span></span></span>
+                {paid ? <small>Valor pago</small> : null}
+              </strong>
+            )}
           </div>
-          {isKit && q.bumpSavingCents > 0 ? <em className="save-tag">ECONOMIZE {money(q.bumpSavingCents)}</em> : null}
+          {!paid && view === "card" && showPix ? (
+            <p className="total-alt is-pix">
+              <PixLogo size={17} />
+              <span>
+                ou <b>{money(pix.amountCents)}</b> à vista no Pix
+              </span>
+              {pixSaving > 0 ? <em>{money(pixSaving)} de desconto</em> : null}
+            </p>
+          ) : null}
+          {!paid && view === "pix" && showCard ? (
+            <p className="total-alt">
+              <CreditCard size={17} aria-hidden="true" />
+              <span>
+                {card.installments > 1 ? <>ou <b>{card.installments}x de {money(card.installmentCents)}</b> sem juros no cartão</> : <>ou <b>{money(card.amountCents)}</b> à vista no cartão</>}
+              </span>
+            </p>
+          ) : null}
         </div>
       </div>
       {!paid && showPix && onCouponApply ? (
@@ -121,12 +143,6 @@ export function OrderSummary({
         </div>
       ) : null}
       <dl className="price-details">
-        {hasBump ? (
-          <div>
-            <dt>Subtotal</dt>
-            <dd>{money(couponOff > 0 ? listTotal : total)}</dd>
-          </div>
-        ) : null}
         {couponOff > 0 ? (
           <div>
             <dt>Desconto do cupom no Pix</dt>
@@ -138,49 +154,6 @@ export function OrderSummary({
           <dd className="green">Grátis</dd>
         </div>
       </dl>
-      <div className={`total is-${view}`} aria-live="polite">
-        <div className="ck-total-heading">
-          <span>{view === "pix" ? <PixLogo size={20} /> : <CreditCard size={20} aria-hidden="true" />}{view === "pix" ? "À vista no Pix" : "Total no cartão"}</span>
-          {!paid && view === "pix" && showCard && pixSaving > 0 ? <em>Economize {money(pixSaving)}</em> : null}
-        </div>
-        {view === "card" ? (
-          <strong>
-            <b>
-              {installments}x de {money(per)}
-            </b>
-            <small>
-              sem juros no cartão · total {money(total)}
-            </small>
-          </strong>
-        ) : (
-          <strong>
-            <b>{money(total)}</b>
-            <small>{paid ? "Valor pago" : "Valor total · frete grátis"}</small>
-          </strong>
-        )}
-      </div>
-      {!paid && view === "card" && showPix ? (
-        <p className="total-alt is-pix">
-          <PixLogo size={17} />
-          <span>
-            ou <b>{money(pix.amountCents)}</b> à vista no Pix
-          </span>
-          {pixSaving > 0 ? <em>{money(pixSaving)} de desconto</em> : null}
-        </p>
-      ) : null}
-      {!paid && view === "pix" && showCard ? (
-        <p className="total-alt">
-          <CreditCard size={17} aria-hidden="true" />
-          <span>
-            {card.installments > 1 ? <>ou <b>{card.installments}x de {money(card.installmentCents)}</b> sem juros no cartão</> : <>ou <b>{money(card.amountCents)}</b> à vista no cartão</>}
-            <small>Total no cartão: {money(card.amountCents)}</small>
-          </span>
-        </p>
-      ) : null}
-      <p className="ck-sum-note">
-        <Truck size={15} aria-hidden="true" />
-        Dia das Crianças: envio rápido, com código de rastreamento
-      </p>
     </aside>
   );
 }

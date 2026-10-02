@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="216" viewBox="0 0 360 216">
+  <defs>
+    <linearGradient id="card" x2="1" y2="1"><stop stop-color="#063b63"/><stop offset=".55" stop-color="#087caa"/><stop offset="1" stop-color="#053657"/></linearGradient>
+    <linearGradient id="chip" x2="1" y2="1"><stop stop-color="#fff0b6"/><stop offset="1" stop-color="#c4a764"/></linearGradient>
+    <clipPath id="edge"><rect x="1" y="1" width="358" height="214" rx="22"/></clipPath>
+  </defs>
+  <g clip-path="url(#edge)">
+    <rect width="360" height="216" fill="url(#card)"/>
+    <circle cx="337" cy="13" r="140" fill="#4adeff" opacity=".12"/>
+    <circle cx="353" cy="-5" r="103" fill="none" stroke="#8ceaff" stroke-width="1" opacity=".35"/>
+    <path d="M170 216Q190 98 360 90M198 216Q221 128 360 117" fill="none" stroke="#72e0f4" opacity=".22"/>
+    <text x="27" y="39" font-family="Arial,sans-serif" font-size="13" font-weight="700" fill="#e0f9ff" letter-spacing="2">CARTÃO DE CRÉDITO</text>
+    <rect x="28" y="66" width="42" height="32" rx="7" fill="url(#chip)"/>
+    <path d="M41 66v32M57 66v32M28 82h42M41 74h16M41 90h16" stroke="#977e44" fill="none" opacity=".6"/>
+    <g fill="none" stroke="#c4eff8" stroke-width="2.5" stroke-linecap="round"><path d="M87 72q8 10 0 20M94 67q12 15 0 30M101 63q16 19 0 38"/></g>
+    <text x="27" y="146" font-family="Arial,sans-serif" font-size="25" fill="#fff" letter-spacing="3">•••• •••• •••• ••••</text>
+    <text x="28" y="180" font-family="Arial,sans-serif" font-size="9" letter-spacing="1.5" fill="#ace2ef">NOME NO CARTÃO</text>
+    <text x="28" y="198" font-family="Arial,sans-serif" font-size="12" fill="#fff">SEU NOME</text>
+    <text x="274" y="180" font-family="Arial,sans-serif" font-size="9" letter-spacing="1" fill="#ace2ef">VALIDADE</text>
+    <text x="274" y="198" font-family="Arial,sans-serif" font-size="12" fill="#fff">MM/AA</text>
+  </g>
+  <rect x="1" y="1" width="358" height="214" rx="22" fill="none" stroke="#a7e8fa" stroke-opacity=".4"/>
+</svg>

@@ -36,7 +36,7 @@ export function StepDados({
   return (
     <form onSubmit={onSubmit}>
       <div className="form-fields">
-        <Field name="name" label="Nome completo" placeholder="Como está no seu documento" value={data.name} onChange={onChange} opts={{ autoComplete: "name", ok: fullName(data.name) }} />
+        <Field name="name" label="Nome completo" placeholder="Digite seu nome completo" value={data.name} onChange={onChange} opts={{ autoComplete: "name", ok: fullName(data.name) }} />
         <Field
           name="email"
           label="E-mail"

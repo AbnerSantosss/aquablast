@@ -1,25 +1,18 @@
 "use client";
 
-import { Check, CircleAlert, Copy, LoaderCircle, RefreshCw, Timer } from "lucide-react";
+import Image from "next/image";
+import { Check, CircleAlert, Copy, LoaderCircle, RefreshCw, Timer, Smartphone, ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { money } from "@/lib/checkout/own/masks";
 import { getStatus, isApiFail, postPay, postSimulatePaid } from "./api";
-import { DemoQr, PaySeals } from "./PaySeals";
-import { PixQr } from "./PixQr";
+import { DemoQr } from "./PaySeals";
 import type { PixResult } from "./types";
 import { pad2, ttlLabel, useClock } from "./useClock";
 
 /**
- * Pix (origem app/simulated-payment.tsx, `PixPay`), mesmas classes e textos, agora com o servidor de verdade:
- * FINALIZAR COMPRA faz o POST /api/checkout/pay (`method:"pix"`), o código vem do gateway e o status é
- * consultado a cada 5 s em GET /api/checkout/status (pausado com a aba oculta) até expirar.
- *
- * QR (plano 8.6): gateway `simulado` → o QR de demonstração da origem (o código "SIMULADO-NAO-PAGUE-..." também
- * não é pagável); gateway real → `<PixQr>` com a imagem que o servidor mandou: a do gateway (data:image) ou, desde
- * 2026-09-30, o SVG gerado do próprio copia-e-cola (src/lib/pix/qr.ts). Sem `qrUrl` → só o copia e cola
- * (`.ck-pix.no-qr`), nunca um QR falso.
- * Bump sem cor da 2ª unidade: FINALIZAR COMPRA não cobra; chama `onBlocked` (a etapa rola e foca a escolha da cor). "Simular pagamento aprovado" só
- * existe com o `simulado`. A validade ("vale por 10 minutos") sai de `checkout.pixTtlSeconds`.
+ * Gera o Pix no servidor e consulta a confirmação a cada 5 s enquanto válido.
+ * QR Code visível por padrão, acompanhado do código copia e cola.
+ * No gateway simulado, código e imagem são apenas demonstrações não pagáveis.
  */
 export function PixPay({
   cartToken,
@@ -115,7 +108,7 @@ export function PixPay({
 
   async function copy() {
     try {
-      if (!navigator.clipboard || !pix) throw new Error("sem clipboard");
+      if (expired || !navigator.clipboard || !pix) throw new Error("sem clipboard");
       await navigator.clipboard.writeText(pix.code);
       setCopyMsg({ ok: true, text: "Código copiado" });
     } catch {
@@ -144,97 +137,73 @@ export function PixPay({
     </p>
   ) : null;
 
+  const amount = (
+    <div className="pix-payment-total">
+      <span>Total a pagar no Pix</span>
+      <strong>{money(amountCents)}</strong>
+      <small>Compra em {storeName} · pagamento à vista</small>
+    </div>
+  );
+  const instructions = (
+    <ol className="pix-instructions">
+      <li><span>1</span><p>Copie o código Pix abaixo.</p></li>
+      <li><span>2</span><p>No app do banco, escolha <b>Pix Copia e Cola</b>.</p></li>
+      <li><span>3</span><p>Confira os dados e confirme o pagamento.</p></li>
+    </ol>
+  );
+
   if (phase !== "ready" || !pix) {
     return (
-      <div className="ck-pix-start">
-        <p>A forma mais rápida e segura de finalizar sua compra e garantir seu pedido.</p>
-        <p className="ck-pix-value">
-          Valor no Pix: <b>{money(amountCents)}</b>
-        </p>
-        <p className="ck-pix-note">
-          <Timer size={15} aria-hidden="true" />O código Pix é gerado na hora e vale por {ttl}.
-        </p>
+      <div className="pix-payment pix-payment-start" aria-busy={phase === "loading"}>
+        {amount}
+        <div className="pix-bank-guide">
+          <Smartphone size={23} aria-hidden="true" />
+          <div><strong>Pague pelo aplicativo do seu banco</strong><p>Gere o código, copie e cole no app. A confirmação aparece aqui após o pagamento.</p></div>
+        </div>
         {errorBox}
-        <button type="button" className="primary-button ck-pay-btn" onClick={() => void generate()} disabled={phase === "loading"} aria-disabled={blocked || undefined}>
-          {phase === "loading" ? (
-            <>
-              <LoaderCircle className="spin" size={19} aria-hidden="true" />
-              Gerando Pix…
-            </>
-          ) : (
-            "FINALIZAR COMPRA"
-          )}
+        <button type="button" className="pix-primary" onClick={() => void generate()} disabled={phase === "loading"} aria-disabled={blocked || undefined}>
+          {phase === "loading" ? <><LoaderCircle className="spin" size={18} aria-hidden="true" />Gerando código…</> : <>Gerar código Pix<ArrowRight size={18} aria-hidden="true" /></>}
         </button>
-        <PaySeals storeName={storeName} />
+        <p className="pix-footnote"><Timer size={15} aria-hidden="true" />Válido por {ttl} após a geração.</p>
       </div>
     );
   }
 
-  const qr = testMode ? (
-    <DemoQr seed={pix.code} dim={expired} />
-  ) : pix.qrUrl ? (
-    <PixQr src={pix.qrUrl} dim={expired} />
-  ) : null;
+  if (expired) {
+    return (
+      <div className="pix-payment pix-payment-expired">
+        <span className="pix-expired-icon"><Timer size={26} aria-hidden="true" /></span>
+        <h4>Vamos gerar um novo código?</h4>
+        <p>O código anterior expirou. Gere outro para continuar o pagamento de <b>{money(amountCents)}</b>.</p>
+        {errorBox}
+        <button type="button" className="pix-primary" onClick={() => void generate()}><RefreshCw size={18} aria-hidden="true" />Gerar novo código Pix</button>
+        <small>Se você já pagou, confira a confirmação no aplicativo do banco antes de tentar novamente.</small>
+      </div>
+    );
+  }
 
   return (
-    <div className={`ck-pix${qr ? "" : " no-qr"}${qr && !testMode ? " has-real-qr" : ""}`}>
-      {qr}
-      <div className="ck-pix-info">
-        {expired ? (
-          <div className="ck-pix-expired">
-            <strong>Código expirado</strong>
-            <p>O prazo de {ttl} acabou. Gere um novo código para continuar.</p>
-            {errorBox}
-            <button type="button" className="primary-button ck-pay-btn" onClick={() => void generate()}>
-              <RefreshCw size={18} aria-hidden="true" />
-              Gerar novo Pix
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="ck-pix-head">
-              <p>
-                Valor: <strong>{money(amountCents)}</strong>
-              </p>
-              <p className="ck-pix-timer" aria-live="off">
-                <Timer size={16} aria-hidden="true" />
-                Expira em{" "}
-                <b>
-                  {pad2(Math.floor(left / 60))}:{pad2(left % 60)}
-                </b>
-              </p>
-            </div>
-            <div className="ck-copy-row">
-              <label className="field">
-                <span>Pix copia e cola</span>
-                <input name="pix-code" readOnly value={pix.code} onFocus={(e) => e.currentTarget.select()} />
-              </label>
-              <button type="button" className="ck-copy" onClick={() => void copy()}>
-                <Copy size={17} aria-hidden="true" />
-                Copiar código
-              </button>
-            </div>
-            {copyMsg ? (
-              <p role="status" className={copyMsg.ok ? "ck-copied" : "error"}>
-                {copyMsg.ok ? <Check size={16} aria-hidden="true" /> : <CircleAlert size={16} aria-hidden="true" />}
-                {copyMsg.text}
-              </p>
-            ) : null}
-            <ol className="ck-pix-steps">
-              <li>Abra o app do banco</li>
-              <li>Escolha Pix</li>
-              <li>{qr ? "Escaneie ou cole o código" : "Cole o código"}</li>
-            </ol>
-            {errorBox}
-            {testMode ? (
-              <button type="button" className="primary-button ck-pay-btn" onClick={() => void simulatePaid()} disabled={simulating}>
-                <Check size={19} aria-hidden="true" />
-                Simular pagamento aprovado
-              </button>
-            ) : null}
-          </>
-        )}
+    <div className="pix-payment pix-payment-ready">
+      <div className="pix-payment-status" role="status"><span />Aguardando pagamento{testMode ? " · demonstração" : ""}</div>
+      {amount}
+      {testMode || pix.qrUrl ? <div className="pix-qr-content">
+        {testMode ? <DemoQr seed={pix.code} /> : <Image src={pix.qrUrl!} width={224} height={224} unoptimized alt="QR Code para pagar com Pix" />}
+        <p>{testMode ? "Imagem de demonstração. Não efetue pagamento." : "Escaneie o QR Code com o app do seu banco ou use o código abaixo."}</p>
+      </div> : null}
+      {instructions}
+      <div className="pix-code-area">
+        <label htmlFor="checkout-pix-code">Pix Copia e Cola</label>
+        <input id="checkout-pix-code" name="pix-code" readOnly value={pix.code} onFocus={(e) => e.currentTarget.select()} />
+        <button type="button" className="pix-primary" onClick={() => void copy()}>
+          {copyMsg?.ok ? <Check size={19} aria-hidden="true" /> : <Copy size={19} aria-hidden="true" />}
+          {copyMsg?.ok ? "Código copiado" : "Copiar código Pix"}
+        </button>
+        {copyMsg ? <p role="status" className={copyMsg.ok ? "pix-copy-feedback" : "error"}>{copyMsg.ok ? "Agora abra o app do banco e cole o código." : copyMsg.text}</p> : null}
+        <p className="pix-validity" aria-live="off"><Timer size={15} aria-hidden="true" />Código válido por <b>{pad2(Math.floor(left / 60))}:{pad2(left % 60)}</b></p>
       </div>
+      <p className="pix-footnote">Após pagar, volte a esta página para acompanhar a confirmação.</p>
+      {errorBox}
+      {testMode ? <button type="button" className="pix-test-action" onClick={() => void simulatePaid()} disabled={simulating}>{simulating ? "Simulando…" : "Simular pagamento aprovado"}</button> : null}
     </div>
   );
 }

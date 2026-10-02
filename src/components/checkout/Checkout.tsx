@@ -118,9 +118,8 @@ export function Checkout({
   const [bump, setBump] = useState(initial?.bump ?? false);
   // Cor da 2ª unidade do bump: nunca pré-escolhida; desmarcar o bump limpa. Sem ela o pagamento fica bloqueado.
   const [bumpColor, setBumpColor] = useState<Color | null>(initial?.bump ? (initial.bumpColor ?? null) : null);
-  // Mantém a seleção inicial da etapa de pagamento; nas etapas anteriores, o resumo destaca o Pix.
-  // Cartão aguardando gateway: a etapa 3 abre no Pix (única forma que cobra).
-  const [method, setMethod] = useState<PayMethodUi>(methods.includes("card") && !cardPending ? "card" : methods.includes("pix") ? "pix" : (methods[0] ?? "pix"));
+  // Prioriza o Pix disponível; a alternativa do cartão continua acessível no acordeão.
+  const [method, setMethod] = useState<PayMethodUi>(methods.includes("pix") ? "pix" : (methods[0] ?? "card"));
   const [quotes, setQuotes] = useState(quotesInitial);
   const [coupon, setCoupon] = useState(initialCoupon);
   const [couponBusy, setCouponBusy] = useState(false);

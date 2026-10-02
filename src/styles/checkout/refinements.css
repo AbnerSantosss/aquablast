@@ -89,8 +89,6 @@
 .ck .total-alt:not(.is-pix) svg { margin-top: 3px; color: #687b8a; }
 .ck .total-alt small { display: block; font-size: 12px; color: #667986; }
 .ck .trust-seals { padding: 20px 22px; background: #f9fbfc; border-color: #dce6eb; box-shadow: none; }
-.ck-trust-heading { display: flex; align-items: center; gap: 8px; color: #365b70; margin-bottom: 18px; }
-.ck-trust-heading h2 { font-size: 14px; font-weight: 650; }
 .ck .trust-seals ul { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .ck .trust-seals li { flex-direction: column; align-items: flex-start; gap: 9px; text-align: left; }
 .ck .trust-seals li > svg { width: 23px; height: 23px; color: #40758a; stroke-width: 1.5; flex-shrink: 0; }
@@ -156,7 +154,7 @@
   .ck .total > strong b { font-size: 34px; }
 }
 
-/* Foto de uso real: a criança fica visível por inteiro no recorte do banner mobile. */
+/* Foto de uso real por cor; o kit exibe as duas unidades selecionadas. */
 .ck .campaign-lifestyle { min-height: 310px; }
 .ck .campaign-lifestyle .campaign-photo { left: 35%; width: 65%; }
 .ck .campaign-lifestyle .campaign-photo img { object-position: center 40%; }
@@ -166,21 +164,100 @@
 .ck .campaign-lifestyle .campaign-products img { display: none; }
 .ck .campaign-lifestyle .campaign-selection { position: static; font-size: 12px; background: #052b46db; border-color: #ffffff50; padding: 6px 12px; }
 @media (max-width: 760px) {
-  .ck .campaign-lifestyle { display: flex; flex-direction: column; min-height: 0; align-items: stretch; }
-  .ck .campaign-lifestyle .campaign-photo { position: relative; inset: auto; width: 100%; height: auto; aspect-ratio: 1.9; z-index: 0; }
-  .ck .campaign-lifestyle .campaign-photo img { object-position: center 38%; }
-  .ck .campaign-lifestyle .campaign-photo::after { background: linear-gradient(0deg, #052b46 0%, #052b4600 30%); }
-  .ck .campaign-lifestyle .campaign-copy { max-width: none; align-self: stretch; padding: 8px 20px 48px; }
-  .ck .campaign-lifestyle h1 { max-width: 24ch; font-size: 26px; margin-top: 6px; }
-  .ck .campaign-lifestyle p { max-width: none; font-size: 13px; margin-top: 9px; }
-  .ck .campaign-lifestyle .campaign-copy > span { font-size: 10px; }
-  .ck .campaign-lifestyle .campaign-gift { display: none; }
-  .ck .campaign-lifestyle .campaign-products { bottom: 13px; left: 20px; right: auto; max-width: calc(100% - 40px); }
-  .ck .campaign-lifestyle .campaign-selection { padding: 4px 10px; font-size: 11px; }
+  .ck .campaign-selected { display: flex; flex-direction: row; width: 100%; height: auto; min-height: 0; aspect-ratio: 16 / 6; container-type: inline-size; }
+  .ck .campaign-selected .campaign-photo { position: absolute; inset: 0; width: 100%; height: 100%; aspect-ratio: auto; z-index: -1; }
+  .ck .campaign-lifestyle .campaign-photo { left: 32%; width: 68%; }
+  .ck .campaign-lifestyle .campaign-photo img { object-position: 72% 38%; }
+  .ck .campaign-lifestyle .campaign-photo::after { background: linear-gradient(90deg, #052b46 0%, #052b4680 15%, transparent 38%); }
+  .ck .campaign-selected .campaign-copy { width: 47%; max-width: 47%; align-self: center; padding: 10px 0 28px 14px; }
+  .ck .campaign-selected h1 { max-width: 15ch; font-size: clamp(16px, 4.8cqw, 29px); line-height: 1.12; letter-spacing: -.5px; margin-top: 5px; }
+  .ck .campaign-selected .campaign-copy > span { display: block; font-size: clamp(8px, 1.9cqw, 11px); letter-spacing: .9px; }
+  .ck .campaign-selected p, .ck .campaign-selected .campaign-gift { display: none; }
+  .ck .campaign-selected .campaign-products { inset: 6px 8px 8px 46%; width: auto; height: auto; max-width: none; padding: 0 0 16px; }
+  .ck .campaign-selected .campaign-products img { width: 50%; height: 100%; max-height: 100%; }
+  .ck .campaign-kit .campaign-products img + img { margin-left: -4px; transform: translateY(3px); }
+  .ck .campaign-selected .campaign-selection { position: absolute; bottom: 0; right: 0; padding: 3px 7px; font-size: clamp(9px, 2.3cqw, 12px); line-height: 1.2; background: #052b46e6; }
 }
-@media (max-width: 440px) {
-  .ck .campaign-lifestyle .campaign-photo { aspect-ratio: 1.55; }
-  .ck .campaign-lifestyle h1 { font-size: 25px; }
+
+/* O selo fica ao lado do valor, com a economia na linha superior. */
+.ck-total-heading:empty { display: none; }
+.ck-pix-price { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; width: 100%; }
+.ck-pix-price > b { white-space: nowrap; }
+.ck-pix-label { display: inline-flex; align-items: center; gap: 6px; color: #235642; font-size: 12px; font-weight: 650; line-height: 1.2; letter-spacing: 0; }
+.ck-pix-label svg { flex-shrink: 0; }
+.ck .trust-seals ul { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.ck .trust-seals li { flex-direction: column; align-items: center; text-align: center; gap: 9px; }
+.ck .trust-seals li img { width: 48px; height: 48px; object-fit: contain; box-shadow: none; }
+.ck .trust-seals strong { font-size: 13px; line-height: 1.35; text-wrap: balance; }
+.ck .trust-seals small { font-size: 12px; line-height: 1.4; margin-top: 4px; text-wrap: balance; }
+.ck-trust-payments { justify-content: center; }
+/* Oferta complementar: escolha guiada e confirmação antes de seguir ao pagamento. */
+.ck .order-bump, .ck .order-bump.added, .ck .order-bump.needs-color { border: 1px solid #c7e0eb; border-radius: 16px; background: #fff; overflow: hidden; }
+.ck .order-bump .bump-choice { background: #edf7fb; color: #164663; padding: 14px 16px; font-size: 12px; }
+.ck .order-bump.added .bump-choice { background: #e9f7ef; color: #176348; }
+.ck .bump-product { padding: 18px 16px; align-items: center; }
+.ck .bump-tag { background: transparent; padding: 0; color: #28758a; font-size: 11px; text-transform: none; font-weight: 650; }
+.ck .bump-product h4 { font-size: 17px; line-height: 1.25; margin-top: 5px; }
+.ck .bump-product small { font-size: 12px; line-height: 1.4; }
+.ck .bump-colors { margin: 0 14px 14px; padding: 14px 10px 10px; border: 3px solid transparent; border-radius: 14px; background: linear-gradient(#fff, #fff) padding-box, linear-gradient(100deg, #ee4d2d, #ffb52e, #ffe063, #63e1ff, #0081ff, #006bca, #ee4d2d) border-box; }
+.ck .bump-colors-title { font-size: 14px; line-height: 1.35; margin-bottom: 4px; }
+.ck .bump-colors-help { font-size: 12px; color: #526c80; line-height: 1.4; margin: 0 0 12px; }
+.ck .bump-color { flex-direction: column; gap: 4px; padding: 8px 3px; font-size: 12px; min-height: 76px; }
+.ck .bump-color img { width: 44px; height: 44px; }
+.ck .bump-color.is-selected { border-color: #0788bc; background: #eaf8ff; box-shadow: inset 0 0 0 1px #0788bc; }
+.ck .bump-confirm { padding: 0 14px 16px; }
+.ck .bump-confirm .primary-button { width: 100%; min-height: 50px; padding: 12px; font-size: 14px; line-height: 1.35; text-transform: none; }
+.ck .bump-confirm .primary-button:disabled { background: #e4edf1; color: #536b79; box-shadow: none; opacity: 1; cursor: not-allowed; }
+.ck .bump-confirm p { display: flex; justify-content: center; align-items: center; gap: 6px; color: #176348; font-size: 12px; margin: 10px 0 0; }
+.ck .pay-acc { scroll-margin-top: 18px; }
+.ck .pay-item { border-radius: 16px; border-color: #d4e3eb; overflow: hidden; box-shadow: 0 4px 16px #06376008; }
+.ck .pay-item.is-open { border-color: #83bdd1; }
+.ck .pay-item-pix.is-open { border-color: #72c2a2; }
+.ck .pay-item-pix .pay-head { background: #f0faf5; }
+.ck .ck-pix-saving { display: inline-block; margin-top: 6px; padding: 3px 8px; border-radius: 6px; color: #126342; background: #d8f0e2; font-size: 11px; font-style: normal; font-weight: 700; }
+.ck .ck-card-intro { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 20px; align-items: center; padding: 0 0 20px; }
+.ck .ck-card-illustration { display: block; width: 100%; max-width: 280px; height: auto; border-radius: 17px; box-shadow: 0 10px 24px #06376024; }
+.ck .ck-card-intro span { color: #398299; font-size: 10px; letter-spacing: 1.4px; font-weight: 700; }
+.ck .ck-card-intro h4 { color: #123f5c; font-size: 18px; line-height: 1.25; margin-top: 6px; }
+.ck .ck-card-intro p { color: #617889; font-size: 13px; line-height: 1.5; margin-top: 8px; }
+.ck .ck-cardform .field { background: #fbfdff; border-color: #cfdee7; border-radius: 11px; }
+@media (max-width: 600px) {
+  .ck .ck-card-intro { grid-template-columns: 1fr; justify-items: center; gap: 14px; text-align: center; }
+  .ck .ck-card-illustration { max-width: 250px; }
+  .ck .ck-card-intro h4 { font-size: 16px; }
+  .ck .bump-product img { width: 64px; height: 74px; }
+  .ck .bump-product h4 { font-size: 16px; }
+}
+/* Produto, total e parcelamento reunidos em um resumo compacto. */
+.ck .ck-summary-product { align-items: center; gap: 12px; padding: 18px 0; }
+.ck .ck-summary-product > img,
+.ck .ck-summary-product > .ck-kit-thumbs { width: 64px; height: 96px; flex-shrink: 0; }
+.ck .ck-summary-product .ck-product-pricing { flex: 1; }
+.ck .ck-summary-product .total { margin-top: 8px; padding: 0; border: 0; background: transparent; gap: 6px; }
+.ck .ck-summary-product .total > strong b { font-size: 30px; }
+.ck .ck-summary-product .ck-pix-price { gap: 8px; }
+.ck .ck-summary-product .ck-pix-label { font-size: 11px; gap: 5px; }
+.ck .ck-summary-product .ck-pix-label svg { width: 22px; height: 22px; }
+.ck .ck-summary-product .total-alt { margin: 6px 0 0; font-size: 12px; line-height: 1.45; }
+.ck .ck-summary-product .total-alt > svg { width: 15px; height: 15px; flex-shrink: 0; }
+.ck .order-summary .ck-coupon { padding: 8px 0; }
+.ck .order-summary .price-details { border-bottom: 0; padding: 12px 0 0; }
+@media (max-width: 380px) {
+  .ck .ck-summary-product { gap: 8px; }
+  .ck .ck-summary-product > img,
+  .ck .ck-summary-product > .ck-kit-thumbs { width: 44px; height: 76px; }
+  .ck .ck-summary-product h4 { font-size: 14px; }
+  .ck .ck-summary-product .total > strong b,
+  .ck .ck-summary-product .total > strong .ck-pix-price > b { font-size: 26px; }
+  .ck .ck-summary-product .ck-pix-label { font-size: 10px; gap: 4px; }
+  .ck .ck-summary-product .ck-pix-label svg { width: 18px; height: 18px; }
+  .ck .trust-seals { padding: 16px 10px; }
+  .ck .trust-seals ul { gap: 8px; }
+  .ck .total { padding: 14px; }
+  .ck .total > strong .ck-pix-price > b { font-size: 30px; }
+  .ck-pix-price { gap: 8px; }
+  .ck-pix-label { font-size: 11px; gap: 4px; }
+  .ck-pix-label svg { width: 21px; height: 21px; }
 }
 
 /* Linha da empresa (razão social · CNPJ · endereço) embaixo do "© ano loja" - Decreto 7.962/2013 (2026-09-30). */
@@ -193,3 +270,54 @@
   opacity: 0.85;
   overflow-wrap: anywhere;
 }
+
+/* Oferta inteira acionável; o movimento termina ao abrir a seleção. */
+.ck .order-bump { position: relative; }
+.ck .order-bump:not(.added) { border: 2px solid transparent; background: linear-gradient(#fff, #fff) padding-box, linear-gradient(115deg, #20b7cd, #2872d8, #a67be7) border-box; animation: bump-invite 3s ease-in-out infinite; }
+.ck .bump-open-trigger { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; border: 0; border-radius: 14px; background: transparent; cursor: pointer; }
+.ck .bump-open-trigger:focus-visible { outline: 3px solid #126bd3; outline-offset: -5px; }
+@keyframes bump-invite { 0%,100% { box-shadow: 0 0 0 0 #248ccc00; } 50% { box-shadow: 0 0 0 5px #248ccc15, 0 5px 18px #248ccc12; } }
+/* Pix: hierarquia de pagamento, sem selos decorativos ou QR expirado. */
+.ck .pay-item-pix.is-open { border-color: #a7cfc9; box-shadow: 0 4px 20px #143f4506; }
+.ck .pay-item-pix .pay-head { background: #f5faf9; }
+.ck .pay-item-pix .pay-body { padding: 20px; background: #fff; }
+.ck .pix-payment { color: #193d50; min-width: 0; }
+.ck .pix-payment-total { display: flex; flex-direction: column; gap: 5px; padding-bottom: 20px; }
+.ck .pix-payment-total > span { color: #526779; font-size: 13px; }
+.ck .pix-payment-total > strong { font-size: clamp(28px, 6vw, 36px); line-height: 1.15; letter-spacing: -1px; color: #123f4a; }
+.ck .pix-payment-total > small { color: #677c89; font-size: 12px; line-height: 1.5; }
+.ck .pix-bank-guide { display: flex; align-items: flex-start; gap: 12px; padding: 18px 0; border-top: 1px solid #e6edef; }
+.ck .pix-bank-guide > svg { color: #287c80; flex-shrink: 0; margin-top: 2px; }
+.ck .pix-bank-guide strong { font-size: 14px; line-height: 1.45; }
+.ck .pix-bank-guide p { margin: 6px 0 0; color: #637985; font-size: 13px; line-height: 1.6; }
+.ck .pix-primary { display: flex; justify-content: center; align-items: center; gap: 9px; width: 100%; min-height: 50px; padding: 13px 16px; border: 1px solid var(--c-button); border-radius: 10px; background: var(--c-button); color: var(--c-on-button); font: inherit; font-size: 15px; font-weight: 700; line-height: 1.4; cursor: pointer; transition: background .2s; }
+.ck .pix-primary:hover:not(:disabled) { background: var(--c-button-hover); border-color: var(--c-button-hover); }
+.ck .pix-primary:focus-visible, .ck .pix-test-action:focus-visible { outline: 3px solid #58aec9; outline-offset: 3px; }
+.ck .pix-primary:disabled { opacity: .65; cursor: wait; }
+.ck .pix-footnote { display: flex; align-items: flex-start; justify-content: center; gap: 6px; margin: 12px 0 0; color: #687b87; font-size: 12px; line-height: 1.5; text-align: center; }
+.ck .pix-footnote svg { flex-shrink: 0; margin-top: 1px; }
+.ck .pix-payment-status { display: flex; align-items: center; gap: 7px; margin: 0 0 18px; color: #536c79; font-size: 12px; line-height: 1.4; }
+.ck .pix-payment-status > span { width: 7px; height: 7px; border-radius: 50%; background: #b5872b; flex-shrink: 0; }
+.ck .pix-instructions { list-style: none; display: grid; gap: 12px; margin: 0 0 20px; padding: 18px 0 0; border-top: 1px solid #e6edef; }
+.ck .pix-instructions li { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: #506877; line-height: 1.5; }
+.ck .pix-instructions li > span { display: grid; place-items: center; width: 23px; height: 23px; border-radius: 50%; background: #edf5f4; color: #26746c; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.ck .pix-instructions p { margin: 1px 0 0; }
+.ck .pix-code-area { padding: 16px; border: 1px solid #e0e9eb; border-radius: 12px; background: #f8fbfb; min-width: 0; }
+.ck .pix-code-area > label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 650; }
+.ck .pix-code-area input { display: block; box-sizing: border-box; width: 100%; min-width: 0; height: 42px; padding: 9px 10px; border: 1px solid #d8e3e7; border-radius: 7px; background: #fff; color: #5f7380; font-size: 16px; text-overflow: ellipsis; }
+.ck .pix-code-area .pix-primary { margin-top: 10px; }
+.ck .pix-validity { display: flex; justify-content: center; align-items: center; gap: 5px; margin: 11px 0 0; color: #607681; font-size: 11px; line-height: 1.5; }
+.ck .pix-validity b { font-variant-numeric: tabular-nums; }
+.ck .pix-copy-feedback { color: #176a52; font-size: 12px; line-height: 1.5; margin: 10px 0 0; }
+.ck .pix-qr-content { padding: 4px 0 18px; text-align: center; }
+.ck .pix-qr-content .ck-qr { margin: 0; }
+.ck .pix-qr-content img, .ck .pix-qr-content svg { display: block; width: 100%; height: auto; max-width: 224px; margin: 0 auto; border: 10px solid #fff; }
+.ck .pix-qr-content p, .ck .pix-qr-content figcaption { font-size: 12px; line-height: 1.5; color: #687b87; margin: 8px 0 0; }
+.ck .pix-test-action { display: block; width: 100%; background: #fff; border: 1px dashed #ccd9de; border-radius: 8px; color: #617580; min-height: 44px; padding: 10px; margin-top: 18px; font-size: 12px; cursor: pointer; }
+.ck .pix-payment-expired { text-align: center; padding: 8px 0; }
+.ck .pix-expired-icon { display: grid; place-items: center; background: #f1f5f6; color: #607986; width: 54px; height: 54px; border-radius: 50%; margin: 0 auto 16px; }
+.ck .pix-payment-expired h4 { font-size: 19px; line-height: 1.3; margin: 0; }
+.ck .pix-payment-expired > p { font-size: 14px; line-height: 1.6; color: #627785; margin: 12px 0 20px; }
+.ck .pix-payment-expired > small { display: block; font-size: 12px; line-height: 1.5; color: #687b87; margin-top: 14px; }
+@media (max-width: 380px) { .ck .pay-item-pix .pay-body { padding: 16px 12px; } .ck .pix-code-area { padding: 12px; } }
+@media (prefers-reduced-motion: reduce) { .ck .order-bump:not(.added) { animation: none; } }
