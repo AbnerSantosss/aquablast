@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "@/styles/site/style.css";
 import "@/styles/tracking/tracking-v47.css";
 import TrackingPage from "@/components/tracking/TrackingPage";
+import { getSupportWhatsapp } from "@/lib/site/support-contact";
 
 export const metadata: Metadata = {
   title: "Acompanhar meu pedido | AquaBlast",
@@ -21,5 +22,6 @@ export default async function RastrearPage({ searchParams }: { searchParams: Sea
   const params = await searchParams;
   const raw = params.codigo;
   const initialCode = (Array.isArray(raw) ? raw[0] : raw)?.trim().slice(0, 200) ?? "";
-  return <TrackingPage initialCode={initialCode} />;
+  const whatsapp = await getSupportWhatsapp();
+  return <TrackingPage initialCode={initialCode} supportWhatsappHref={whatsapp?.href ?? null} />;
 }

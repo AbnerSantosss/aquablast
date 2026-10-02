@@ -5,7 +5,9 @@ import { env } from "@/lib/env";
 import { getSettings } from "@/lib/settings";
 import { getEmailProvider } from "./provider";
 import { STATUS_LABEL } from "@/lib/orders/status";
-import { accessBlockHtml, messageBlockHtml, progressHtml, trackingBlockHtml } from "./status-blocks";
+import { PUBLIC_CARRIER_LABEL } from "@/lib/tracking/public";
+import { brandVars } from "./brand-vars";
+import { accessBlockHtml, messageBlockHtml, progressHtml } from "./status-blocks";
 import { escapeHtml, getTemplate, htmlToText, renderTemplate, type TemplateKey } from "./templates";
 
 function formatBRL(v: string | number | null | undefined): string {
@@ -37,19 +39,19 @@ export async function buildVars(order: Order, extra: { accessCode?: string; mess
     pedido: escapeHtml(order.orderNumber),
     codigo_acesso: escapeHtml(extra.accessCode ?? ""),
     link_rastreio: link,
-    codigo_transportadora: escapeHtml(order.trackingCode ?? ""),
-    transportadora: escapeHtml(order.carrierName ?? ""),
-    link_transportadora: escapeHtml(order.trackingUrl ?? ""),
+    // O cliente não vê a transportadora real, o código dela nem o link externo (lib/tracking/public.ts). As chaves
+    // continuam existindo para um modelo editado no painel que ainda as use não vazar nada: saem neutras.
+    codigo_transportadora: "",
+    transportadora: order.trackingCode ? PUBLIC_CARRIER_LABEL : "",
+    link_transportadora: link,
     pix_copia_cola: escapeHtml(order.pixCode ?? ""),
     link_pagamento: order.paymentUrl ?? "",
     valor: formatBRL(order.amountTotal),
     itens: items,
-    loja: escapeHtml(s["store.name"]),
-    whatsapp: escapeHtml(s["store.supportWhatsapp"]),
-    email_suporte: escapeHtml(s["store.supportEmail"]),
+    ...brandVars({ name: s["store.name"], whatsapp: String(s["store.supportWhatsapp"] ?? ""), email: s["store.supportEmail"] }),
     status: escapeHtml(STATUS_LABEL[order.status]),
     progresso: progressHtml(order),
-    bloco_rastreio: trackingBlockHtml(order),
+    bloco_rastreio: "",
     bloco_acesso: accessBlockHtml(extra.accessCode),
     mensagem: messageBlockHtml(extra.message),
   };

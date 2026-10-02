@@ -88,9 +88,11 @@ function remainingSteps(order: TrackingOrder | null, idx: number, alert: boolean
 interface TrackingPageProps {
   /** Valor de `?codigo=` na URL: preenche o campo e dispara a consulta ao montar. */
   initialCode?: string;
+  /** Link do WhatsApp cadastrado no painel (Configurações → Loja). Sem número válido, o link não aparece. */
+  supportWhatsappHref?: string | null;
 }
 
-export default function TrackingPage({ initialCode = "" }: TrackingPageProps) {
+export default function TrackingPage({ initialCode = "", supportWhatsappHref = null }: TrackingPageProps) {
   const [code, setCode] = useState(initialCode);
   const [order, setOrder] = useState<TrackingOrder | null>(null);
   const [busy, setBusy] = useState(false);
@@ -317,7 +319,7 @@ export default function TrackingPage({ initialCode = "" }: TrackingPageProps) {
                   <span>{busy ? "Consultando…" : "Consultar pedido"}</span>
                 </button>
               </div>
-              <p id="tracking-help">Não informe CPF, cartão ou senha. O código da transportadora pode ser consultado na opção abaixo.</p>
+              <p id="tracking-help">Não informe CPF, cartão ou senha.</p>
               <p id="tracking-error" className="form-error" role="alert" hidden={!formError}>
                 {formError ?? ""}
               </p>
@@ -434,10 +436,6 @@ export default function TrackingPage({ initialCode = "" }: TrackingPageProps) {
                     <dt>Transportadora</dt>
                     <dd id="carrier">{order?.tracking.carrier || "—"}</dd>
                   </div>
-                  <div>
-                    <dt>Código de rastreamento</dt>
-                    <dd id="shipment-code">{order ? order.tracking.code || "Ainda não disponível" : "Ainda não consultado"}</dd>
-                  </div>
                 </dl>
                 <ol id="order-events" className="order-events">
                   {shownEvents.map((event, index) => (
@@ -473,43 +471,23 @@ export default function TrackingPage({ initialCode = "" }: TrackingPageProps) {
             </div>
           </section>
           <section className="tracking-help" aria-label="Ajuda com o rastreamento">
-            <details>
-              <summary>Já tenho um código da transportadora</summary>
-              <p>Você também pode consultar o código de rastreamento no 17TRACK.</p>
-              <form action="https://t.17track.net/" method="get" target="_blank" rel="noopener noreferrer" id="carrier-form">
-                <label htmlFor="carrier-code">Código de rastreamento da transportadora</label>
-                <div className="lookup-fields">
-                  <input
-                    id="carrier-code"
-                    name="nums"
-                    pattern="[A-Za-z0-9-]{5,50}"
-                    minLength={5}
-                    maxLength={50}
-                    required
-                    autoComplete="off"
-                    placeholder="Código recebido após o envio"
-                  />
-                  <button className="button button-outline" type="submit">
-                    Consultar no 17TRACK ↗
-                  </button>
-                </div>
-                <p className="external-notice">Ao continuar, somente o código informado será enviado ao 17TRACK, que abrirá em outra aba.</p>
-              </form>
-            </details>
+            {/* A consulta externa por código da transportadora saiu em 2026-10-02: revelava a origem do envio. */}
             <details>
               <summary>Não recebi o código ou preciso corrigir meu endereço</summary>
               <p>
                 Confira as mensagens de confirmação da compra. Para localizar seu pedido ou solicitar uma correção, fale com a nossa atendente. Não publique seu código de acesso
                 nem seu endereço em comentários.
               </p>
-              <a className="whatsapp-support" href="https://wa.me/5581996584578" target="_blank" rel="noopener noreferrer">
-                <img src="/icons/whatsapp.svg" alt="" />
-                Falar com a atendente no WhatsApp <span aria-hidden="true">↗</span>
-              </a>
+              {supportWhatsappHref ? (
+                <a className="whatsapp-support" href={supportWhatsappHref} target="_blank" rel="noopener noreferrer">
+                  <img src="/icons/whatsapp.svg" alt="" />
+                  Falar com a atendente no WhatsApp <span aria-hidden="true">↗</span>
+                </a>
+              ) : null}
             </details>
           </section>
           <noscript>
-            <p className="form-error">Ative o JavaScript para consultar seu pedido ou use a consulta externa da transportadora.</p>
+            <p className="form-error">Ative o JavaScript para consultar seu pedido.</p>
           </noscript>
         </div>
       </main>

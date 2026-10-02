@@ -18,6 +18,12 @@ export const SUPPORT_WHATSAPP_KEY = "store.supportWhatsapp";
 /** DDI + DDD + número: 10 a 15 dígitos (E.164 tem no máximo 15). */
 const VALID_DIGITS = /^\d{10,15}$/;
 
+/**
+ * Número do Brasil: 55 + DDD (2) + 8 ou 9 dígitos = 12 ou 13. Em 02/10/2026 havia um número de 11 dígitos
+ * gravado no painel (faltavam dois) e ele saía no rodapé dos e-mails e do site com um link que não abre conversa.
+ */
+export const VALID_BR = /^55\d{10,11}$/;
+
 /** Sem resposta do banco nesse tempo, a página sai sem WhatsApp (não trava o render). */
 const DB_TIMEOUT_MS = 3000;
 
@@ -71,6 +77,7 @@ function formatLabel(digits: string): string {
 export function toSupportWhatsapp(raw: string): SupportWhatsapp | null {
   const digits = raw.trim();
   if (!VALID_DIGITS.test(digits)) return null;
+  if (digits.startsWith("55") && !VALID_BR.test(digits)) return null;
   return {
     digits,
     href: `https://wa.me/${digits}`,

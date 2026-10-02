@@ -8,6 +8,7 @@ import { OWN_PROVIDER } from "@/lib/checkout/own/order";
 import { env } from "@/lib/env";
 import { errorMessage, log } from "@/lib/log";
 import { getSettings } from "@/lib/settings";
+import { brandVars } from "./brand-vars";
 import { getEmailProvider } from "./provider";
 import { sendOrderEmail, type SendResult } from "./send";
 import { escapeHtml, getTemplate, htmlToText, renderTemplate } from "./templates";
@@ -53,9 +54,7 @@ async function buildCartVars(cart: CheckoutCart, templateKey: CartTemplateKey): 
     link_pagamento: "",
     valor: money(cart.amountCents),
     itens: `${escapeHtml(titleOf(sel))} (${escapeHtml(variantOf(sel))})`,
-    loja: escapeHtml(s["store.name"]),
-    whatsapp: escapeHtml(s["store.supportWhatsapp"]),
-    email_suporte: escapeHtml(s["store.supportEmail"]),
+    ...brandVars({ name: s["store.name"], whatsapp: String(s["store.supportWhatsapp"] ?? ""), email: s["store.supportEmail"] }),
     link_carrinho: linkCarrinho,
     etapa: escapeHtml(etapaLabel(cart.step)),
     link_descadastro: linkDescadastro,

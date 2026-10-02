@@ -12,7 +12,7 @@ import { sendTestEmail } from "@/lib/email/send";
 import { env } from "@/lib/env";
 import { ADMIN_ALERT_EVENTS, getSettings, PUSH_ALERT_EVENTS, isSecretKey, setSetting, type SettingKey, type SettingsMap } from "@/lib/settings";
 import { refreshIntegration } from "@/lib/admin/integrations/verify";
-import { getStoredSupportWhatsapp } from "@/lib/site/support-contact";
+import { VALID_BR, getStoredSupportWhatsapp } from "@/lib/site/support-contact";
 import { CARRIERS } from "@/lib/tracking/provider";
 import { actorOf, audit } from "@/lib/admin/audit";
 import { bool, int, isEmail, parseFieldMap, str } from "@/lib/admin/form";
@@ -50,6 +50,9 @@ export async function saveStoreSettings(_prev: ActionResult, fd: FormData): Prom
   if (!tracking.startsWith("/") && !/^https?:\/\//i.test(tracking)) return fail("A página de rastreio deve começar com / ou http(s)://");
   const whatsapp = str(fd, "store.supportWhatsapp", 30).replace(/\D/g, "");
   if (whatsapp && !/^\d{10,15}$/.test(whatsapp)) return fail("WhatsApp de suporte: use só números, com DDI e DDD (ex.: 5581999999999).");
+  if (whatsapp.startsWith("55") && !VALID_BR.test(whatsapp)) {
+    return fail(`WhatsApp de suporte: número do Brasil tem 12 ou 13 dígitos (55 + DDD + número) e este tem ${whatsapp.length}. Confira se não faltou algum dígito.`);
+  }
   const patch: Patch = {
     "store.name": name,
     "store.supportEmail": supportEmail,

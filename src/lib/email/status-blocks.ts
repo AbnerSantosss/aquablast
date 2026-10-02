@@ -1,12 +1,12 @@
 // Blocos HTML dos e-mails de status do pedido (pedido do dono, 2026-10-02). Viram os placeholders
-// {{progresso}}, {{bloco_rastreio}}, {{bloco_acesso}} e {{mensagem}}: cada um some (string vazia) quando não se aplica,
-// então o mesmo modelo serve para pedido com e sem rastreio, com e sem código de acesso.
+// {{progresso}}, {{bloco_acesso}} e {{mensagem}}: cada um some (string vazia) quando não se aplica, então o mesmo modelo
+// serve para pedido com e sem código de acesso. Não existe mais bloco da transportadora: o cliente não vê o nome dela,
+// o código nem o link externo, e acompanha tudo pelo nosso /rastrear ({{bloco_rastreio}} sai sempre vazio).
 import type { Order, OrderStatus } from "@/db/schema";
 import { escapeHtml } from "./templates";
 
 /** Só os campos que a linha do tempo usa (a pré-visualização do painel monta um pedido de exemplo com eles). */
 export type ProgressOrder = Pick<Order, "status" | "paidAt" | "approvedAt" | "shippedAt" | "inTransitAt" | "outForDeliveryAt" | "deliveredAt">;
-export type TrackingOrder = Pick<Order, "trackingCode" | "carrierName" | "trackingUrl">;
 
 type Step = { status: OrderStatus; label: string; at: (o: ProgressOrder) => Date | null };
 
@@ -56,26 +56,14 @@ export function progressHtml(order: ProgressOrder): string {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 22px;border-collapse:collapse;"><tr>${bars}</tr><tr>${dots}</tr><tr>${labels}</tr></table>`;
 }
 
-/** Caixa com transportadora, código de rastreio e link do site da transportadora. Vazia sem código de rastreio. */
-export function trackingBlockHtml(order: TrackingOrder): string {
-  if (!order.trackingCode) return "";
-  const carrier = order.carrierName ? escapeHtml(order.carrierName) : "Transportadora";
-  const link = order.trackingUrl
-    ? `<div style="margin-top:8px;font-size:14px;"><a href="${escapeHtml(order.trackingUrl)}" style="color:#0284c7;font-weight:700;">Abrir rastreio no site da transportadora</a></div>`
-    : "";
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 18px;border-collapse:separate;"><tr><td style="padding:14px 16px;background:#f4fbfe;border:1px solid #cdeaf6;border-radius:12px;">
-      <div style="font-size:12px;font-weight:700;color:#4b6675;text-transform:uppercase;letter-spacing:.4px;">${carrier} · código de rastreio</div>
-      <div style="font-family:Consolas,monospace;font-size:17px;font-weight:700;color:#0f2c3a;margin-top:4px;word-break:break-all;">${escapeHtml(order.trackingCode)}</div>
-      ${link}
-    </td></tr></table>`;
-}
-
 /** Código de acesso ao rastreio do site. Vazio quando o e-mail não leva código (ex.: aviso automático da transportadora). */
 export function accessBlockHtml(accessCode: string | undefined): string {
   if (!accessCode) return "";
-  return `<p style="margin:0 0 6px;font-size:14px;color:#4b6675;">Seu código de acesso para acompanhar o pedido no nosso site:</p>
-      <p style="margin:0 0 6px;padding:12px 16px;background:#f1f5f9;border:1px dashed #94a3b8;border-radius:12px;font-family:Consolas,monospace;font-size:15px;word-break:break-all;">${escapeHtml(accessCode)}</p>
-      <p style="margin:0;font-size:12px;color:#64748b;">Este código substitui os enviados antes.</p>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 6px;border-collapse:separate;"><tr><td style="padding:14px 16px;background:#f3f8fb;border:1px solid #dbe7ee;border-radius:10px;">
+      <div style="font-size:12px;font-weight:700;color:#55707e;text-transform:uppercase;letter-spacing:.5px;">Seu código de acesso</div>
+      <div style="margin-top:6px;font-family:Consolas,'Courier New',monospace;font-size:15px;line-height:1.45;font-weight:700;color:#12303f;word-break:break-all;">${escapeHtml(accessCode)}</div>
+      <div style="margin-top:8px;font-size:13px;line-height:1.5;color:#55707e;">Use este código para acompanhar o pedido no nosso site. Ele substitui os enviados antes.</div>
+    </td></tr></table>`;
 }
 
 /** Recado escrito pela equipe no painel (campo Descrição ao mudar o status). Escapado; quebras de linha viram <br>. */

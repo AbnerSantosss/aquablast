@@ -1,5 +1,7 @@
 import { env } from "@/lib/env";
-import { accessBlockHtml, messageBlockHtml, progressHtml, trackingBlockHtml } from "@/lib/email/status-blocks";
+import { brandVars } from "@/lib/email/brand-vars";
+import { accessBlockHtml, messageBlockHtml, progressHtml } from "@/lib/email/status-blocks";
+import { PUBLIC_CARRIER_LABEL } from "@/lib/tracking/public";
 import { getSettings } from "@/lib/settings";
 
 /** Variáveis de exemplo para pré-visualizar e testar templates de e-mail. */
@@ -13,9 +15,10 @@ export async function sampleVars(): Promise<Record<string, string>> {
     pedido: "AQB-260922-X1Z",
     codigo_acesso: "AQB-EXEMPLO-1234",
     link_rastreio: `${trackingPath}?codigo=AQB-EXEMPLO-1234`,
-    codigo_transportadora: "BR123456789SP",
-    transportadora: "Shopee Express (SPX)",
-    link_transportadora: "https://spx.com.br/track?BR123456789SP",
+    // Igual ao envio real (lib/email/send.ts): o cliente não vê a transportadora, o código dela nem link externo.
+    codigo_transportadora: "",
+    transportadora: PUBLIC_CARRIER_LABEL,
+    link_transportadora: `${trackingPath}?codigo=AQB-EXEMPLO-1234`,
     cliente: "Maria da Silva · maria@exemplo.com",
     pago_em: "27/09/2026 14:30",
     dias_atraso: "1",
@@ -25,9 +28,7 @@ export async function sampleVars(): Promise<Record<string, string>> {
     link_pagamento: `${base}/pagamento/exemplo`,
     valor: "R$ 129,90",
     itens: "1× AquaBlast (Azul)",
-    loja: s["store.name"],
-    whatsapp: s["store.supportWhatsapp"],
-    email_suporte: s["store.supportEmail"],
+    ...brandVars({ name: s["store.name"], whatsapp: String(s["store.supportWhatsapp"] ?? ""), email: s["store.supportEmail"] }),
     status: "Em trânsito",
     progresso: progressHtml({
       status: "in_transit",
@@ -38,7 +39,7 @@ export async function sampleVars(): Promise<Record<string, string>> {
       outForDeliveryAt: null,
       deliveredAt: null,
     }),
-    bloco_rastreio: trackingBlockHtml({ trackingCode: "BR123456789SP", carrierName: "Shopee Express (SPX)", trackingUrl: "https://spx.com.br/track?BR123456789SP" }),
+    bloco_rastreio: "",
     bloco_acesso: accessBlockHtml("AQB-EXEMPLO-1234"),
     mensagem: messageBlockHtml("Exemplo de recado: o texto que você escrever em Descrição ao mudar o status aparece aqui."),
   };

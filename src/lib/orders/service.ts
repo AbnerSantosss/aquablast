@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { auditLog, orderAccessCodes, orderEvents, orders, type Order, type OrderEvent, type OrderStatus } from "@/db/schema";
 import { decryptText, encryptText, generateAccessCode, hashAccessCode } from "@/lib/crypto";
 import { getSetting } from "@/lib/settings";
+import { PUBLIC_CARRIER_LABEL, toPublicEvents } from "@/lib/tracking/public";
 import { STATUS_EVENT_TEXT, STATUS_TIMESTAMP_FIELD, canTransition } from "./status";
 
 /** Snapshot público, exatamente no formato que a página /rastrear (tracking-api) espera. */
@@ -53,11 +54,9 @@ export function toPublicOrder(order: Order, events: OrderEvent[]): PublicOrder {
       postalCode: order.addressPostalCode ?? "",
       country: order.addressCountry ?? "Brasil",
     },
-    tracking: { code: order.trackingCode ?? "", carrier: order.carrierName ?? "", url: order.trackingUrl },
-    events: events
-      .slice()
-      .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime())
-      .map((e) => ({ id: e.id, occurredAt: e.occurredAt.toISOString(), title: e.title, description: e.description })),
+    // O cliente não vê a transportadora real, o código dela nem o link externo (lib/tracking/public.ts).
+    tracking: { code: "", carrier: order.trackingCode ? PUBLIC_CARRIER_LABEL : "", url: null },
+    events: toPublicEvents(events),
   };
 }
 
