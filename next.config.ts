@@ -52,6 +52,10 @@ const nextConfig: NextConfig = {
     return [
       { source: "/(.*)", headers: securityHeaders },
       { source: "/api/(.*)", headers: [{ key: "Cache-Control", value: "private, no-store" }] },
+      // Mídia da LP (PageSpeed 2026-10-02: TTL de 4 h pedia ~20 MB de re-download). 7 dias, sem `immutable`: os nomes não têm hash
+      // e o dono vai regravar vídeos, então um prazo longo demais prenderia a versão velha no navegador.
+      { source: "/videos/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }] },
+      { source: "/thumbs/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }] },
       { source: "/admin/(.*)", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }, { key: "Cache-Control", value: "private, no-store" }] },
       { source: "/rastrear", headers: [{ key: "X-Robots-Tag", value: "noindex" }] },
       // App do painel (PWA): o SW precisa ser buscado sempre fresco (senão uma versão velha fica presa até 24 h);

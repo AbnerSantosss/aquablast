@@ -124,7 +124,7 @@ export function Offers() {
             </div>
             <div className="packshot single unit-campaign-art">
               <div className="unit-art-scene">
-                <img className="unit-product" src={`/thumbs/produto-${color}-610.webp`} alt={`AquaBlast ${colorLabel.toLowerCase()}`} loading="lazy" decoding="async" />
+                <img className="unit-product" src={`/thumbs/produto-${color}-610.webp`} srcSet={`/thumbs/produto-${color}-390.webp 390w, /thumbs/produto-${color}-610.webp 610w`} sizes="(max-width: 768px) 200px, 420px" alt={`AquaBlast ${colorLabel.toLowerCase()}`} loading="lazy" decoding="async" />
               </div>
               <span className="packshot-caption">Uma surpresa. Muitos sorrisos.</span>
             </div>

@@ -32,7 +32,7 @@ export function Moments() {
             return (
               <article className="video-card" data-video-slot={index} key={video.id}>
                 <div className="video-frame">
-                  <video controls playsInline preload="metadata" src={video.src} poster={video.poster} aria-label={slot.label} />
+                  <video controls playsInline preload="none" src={video.src} poster={video.poster} aria-label={slot.label} />
                 </div>
                 <h3>{slot.title}</h3>
               </article>
