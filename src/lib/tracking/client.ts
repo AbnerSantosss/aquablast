@@ -199,7 +199,7 @@ export function createTrackingClient(config: Readonly<TrackingConfig>, origin: s
         signal: controller.signal,
       });
       if (response.status === 401 || response.status === 403) {
-        throw new TrackingError("auth", "Acesso não autorizado ou expirado. Confira seu código de acesso ou fale com o atendimento.");
+        throw new TrackingError("auth", "Acesso não autorizado ou expirado. Confira seu código de rastreio ou fale com o atendimento.");
       }
       if (response.status === 404) {
         throw new TrackingError("not_found", "Não foi possível localizar o pedido com esse código. Confira a confirmação da compra.");

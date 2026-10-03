@@ -167,7 +167,7 @@ export async function saveCheckoutSettings(_prev: ActionResult, fd: FormData): P
 export async function saveAccessCodeSettings(_prev: ActionResult, fd: FormData): Promise<ActionResult> {
   const { actor } = await begin();
   await apply(actor, "accessCode", { "accessCode.validityDays": int(fd, "accessCode.validityDays", 180, 1, 3650) });
-  return ok("Validade do código de acesso salva.");
+  return ok("Validade do código de rastreio salva.");
 }
 
 export async function testEmailDelivery(_prev: ActionResult, fd: FormData): Promise<ActionResult> {

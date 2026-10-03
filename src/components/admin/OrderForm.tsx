@@ -154,7 +154,7 @@ export function OrderForm({ initial, deliveryId }: { initial: OrderFormValues; d
         <div className="form-foot">
           <label className="check">
             <input type="checkbox" name="sendConfirmation" defaultChecked />
-            <span>Se estiver pago e tiver e-mail, enviar a confirmação com código de acesso</span>
+            <span>Se estiver pago e tiver e-mail, enviar a confirmação com o código de rastreio</span>
           </label>
           <div className="actions">
             <button type="submit" className="btn btn-primary" disabled={pending}>

@@ -4,6 +4,9 @@ import { accessBlockHtml, messageBlockHtml, progressHtml } from "@/lib/email/sta
 import { PUBLIC_CARRIER_LABEL } from "@/lib/tracking/public";
 import { getSettings } from "@/lib/settings";
 
+/** Mesmo formato do código real (lib/crypto generateAccessCode): BR + 13 dígitos. Não corresponde a pedido nenhum. */
+const SAMPLE_CODE = "BR0000000000000";
+
 /** Variáveis de exemplo para pré-visualizar e testar templates de e-mail. */
 export async function sampleVars(): Promise<Record<string, string>> {
   const s = await getSettings(["store.name", "store.supportWhatsapp", "store.supportEmail", "store.trackingPageUrl"] as const);
@@ -13,12 +16,12 @@ export async function sampleVars(): Promise<Record<string, string>> {
     nome: "Maria da Silva",
     primeiro_nome: "Maria",
     pedido: "AQB-260922-X1Z",
-    codigo_acesso: "AQB-EXEMPLO-1234",
-    link_rastreio: `${trackingPath}?codigo=AQB-EXEMPLO-1234`,
+    codigo_acesso: SAMPLE_CODE,
+    link_rastreio: `${trackingPath}?codigo=${SAMPLE_CODE}`,
     // Igual ao envio real (lib/email/send.ts): o cliente não vê a transportadora, o código dela nem link externo.
     codigo_transportadora: "",
     transportadora: PUBLIC_CARRIER_LABEL,
-    link_transportadora: `${trackingPath}?codigo=AQB-EXEMPLO-1234`,
+    link_transportadora: `${trackingPath}?codigo=${SAMPLE_CODE}`,
     cliente: "Maria da Silva · maria@exemplo.com",
     pago_em: "27/09/2026 14:30",
     dias_atraso: "1",
@@ -40,7 +43,7 @@ export async function sampleVars(): Promise<Record<string, string>> {
       deliveredAt: null,
     }),
     bloco_rastreio: "",
-    bloco_acesso: accessBlockHtml("AQB-EXEMPLO-1234"),
+    bloco_acesso: accessBlockHtml(SAMPLE_CODE),
     mensagem: messageBlockHtml("Exemplo de recado: o texto que você escrever em Descrição ao mudar o status aparece aqui."),
   };
 }

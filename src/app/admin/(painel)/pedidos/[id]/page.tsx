@@ -659,7 +659,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
               </div>
               <p className="callout" style={{ marginTop: "0.75rem" }}>
                 Ao salvar um código novo: o pedido passa para <strong>Enviado</strong> (se ainda não estiver), o código é registrado no provedor ({settings["tracking.provider"]}) e o e-mail
-                de envio é disparado. Como o código de acesso em claro não fica guardado, <strong>um novo código de acesso é enviado</strong> ao cliente nesse e-mail.
+                de envio é disparado, com o <strong>mesmo código de rastreio</strong> que o cliente já recebeu na confirmação.
               </p>
               <div className="actions tight">
                 <button type="submit" className="btn btn-primary">
@@ -689,7 +689,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
           <section className="card">
             <div className="card-head">
               <h2>Comunicação</h2>
-              <span className="muted small">{codePrefix ? `Código de acesso ativo: ${codePrefix}…` : "Sem código de acesso ativo"}</span>
+              <span className="muted small">{codePrefix ? `Código de rastreio ativo: ${codePrefix}…` : "Sem código de rastreio ativo"}</span>
             </div>
             {!order.customerEmail ? <p className="callout warn">Este pedido não tem e-mail. Os envios abaixo vão falhar; use o WhatsApp.</p> : null}
             <div className="stack" style={{ gap: "0.75rem" }}>
@@ -703,23 +703,23 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
               <ActionForm action={resendAccessCode} inline>
                 <input type="hidden" name="orderId" value={order.id} />
                 <button type="submit" className="btn btn-ghost btn-sm">
-                  Reenviar código de acesso
+                  Reenviar código de rastreio
                 </button>
-                <span className="muted small">gera um código novo, revoga os antigos e mostra aqui uma vez</span>
+                <span className="muted small">gera um código novo (o antigo deixa de valer) e mostra aqui uma vez</span>
               </ActionForm>
               <ActionForm action={sendConfirmation} inline>
                 <input type="hidden" name="orderId" value={order.id} />
                 <button type="submit" className="btn btn-ghost btn-sm">
                   Enviar confirmação
                 </button>
-                <span className="muted small">e-mail “pagamento confirmado” com novo código</span>
+                <span className="muted small">e-mail “pagamento confirmado” com o código de rastreio do pedido</span>
               </ActionForm>
               <ActionForm action={sendShippedEmail} inline>
                 <input type="hidden" name="orderId" value={order.id} />
                 <button type="submit" className="btn btn-ghost btn-sm" disabled={!order.trackingCode}>
                   Enviar aviso de envio
                 </button>
-                <span className="muted small">requer código de rastreio · envia um novo código de acesso</span>
+                <span className="muted small">requer rastreio da transportadora cadastrado · repete o código de rastreio do pedido</span>
               </ActionForm>
             </div>
             {wa ? (

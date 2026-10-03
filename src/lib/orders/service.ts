@@ -172,20 +172,33 @@ export async function updateOrderFields(orderId: string, patch: Partial<typeof o
   }
 }
 
-// ---------- Código de acesso do comprador ----------
+// ---------- Código de rastreio do comprador ----------
 
 /**
- * Gera um novo código de acesso, revoga os anteriores e devolve o código em claro
- * (só existe neste retorno e no e-mail que for enviado).
+ * Gera um código novo, revoga os anteriores e devolve o código em claro. Use só quando o código precisa trocar
+ * ("Reenviar código" no painel). Para os e-mails do fluxo normal, use ensureAccessCode: o cliente recebe sempre o mesmo.
  */
 export async function issueAccessCode(orderId: string, actor = "system"): Promise<{ code: string; expiresAt: Date }> {
   const days = await getSetting("accessCode.validityDays");
   const code = generateAccessCode();
   const expiresAt = new Date(Date.now() + days * 86_400_000);
   await db.update(orderAccessCodes).set({ revokedAt: new Date() }).where(and(eq(orderAccessCodes.orderId, orderId), isNull(orderAccessCodes.revokedAt)));
-  await db.insert(orderAccessCodes).values({ orderId, codeHash: hashAccessCode(code), prefix: code.slice(0, 9), expiresAt });
+  await db.insert(orderAccessCodes).values({ orderId, codeHash: hashAccessCode(code), codeEnc: encryptText(code), prefix: code.slice(0, 6), expiresAt });
   await db.insert(auditLog).values({ actor, action: "order.access_code.issue", targetType: "order", targetId: orderId });
   return { code, expiresAt };
+}
+
+/**
+ * Código do pedido para ir num e-mail: devolve o ativo (um por pedido, pedido do dono de 2026-10-02) ou gera o
+ * primeiro. Códigos de antes da migration 0009 não têm o texto guardado (só o hash): aí gera um novo, uma vez.
+ */
+export async function ensureAccessCode(orderId: string, actor = "system"): Promise<{ code: string; expiresAt: Date }> {
+  const row = await db.query.orderAccessCodes.findFirst({
+    where: and(eq(orderAccessCodes.orderId, orderId), isNull(orderAccessCodes.revokedAt), gt(orderAccessCodes.expiresAt, new Date(Date.now() + 86_400_000))),
+    orderBy: [desc(orderAccessCodes.createdAt)],
+  });
+  if (row?.codeEnc) return { code: decryptText(row.codeEnc), expiresAt: row.expiresAt };
+  return issueAccessCode(orderId, actor);
 }
 
 /** Localiza o pedido pelo código digitado. Retorna null para código inválido, expirado ou revogado. */

@@ -1,6 +1,6 @@
 // Blocos HTML dos e-mails de status do pedido (pedido do dono, 2026-10-02). Viram os placeholders
 // {{progresso}}, {{bloco_acesso}} e {{mensagem}}: cada um some (string vazia) quando não se aplica, então o mesmo modelo
-// serve para pedido com e sem código de acesso. Não existe mais bloco da transportadora: o cliente não vê o nome dela,
+// serve para pedido com e sem código de rastreio. Não existe mais bloco da transportadora: o cliente não vê o nome dela,
 // o código nem o link externo, e acompanha tudo pelo nosso /rastrear ({{bloco_rastreio}} sai sempre vazio).
 import type { Order, OrderStatus } from "@/db/schema";
 import { escapeHtml } from "./templates";
@@ -56,13 +56,13 @@ export function progressHtml(order: ProgressOrder): string {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 22px;border-collapse:collapse;"><tr>${bars}</tr><tr>${dots}</tr><tr>${labels}</tr></table>`;
 }
 
-/** Código de acesso ao rastreio do site. Vazio quando o e-mail não leva código (ex.: aviso automático da transportadora). */
+/** Código de rastreio do pedido (o mesmo em todos os e-mails). Vazio quando o e-mail não leva código. */
 export function accessBlockHtml(accessCode: string | undefined): string {
   if (!accessCode) return "";
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 6px;border-collapse:separate;"><tr><td style="padding:14px 16px;background:#f3f8fb;border:1px solid #dbe7ee;border-radius:10px;">
-      <div style="font-size:12px;font-weight:700;color:#55707e;text-transform:uppercase;letter-spacing:.5px;">Seu código de acesso</div>
-      <div style="margin-top:6px;font-family:Consolas,'Courier New',monospace;font-size:15px;line-height:1.45;font-weight:700;color:#12303f;word-break:break-all;">${escapeHtml(accessCode)}</div>
-      <div style="margin-top:8px;font-size:13px;line-height:1.5;color:#55707e;">Use este código para acompanhar o pedido no nosso site. Ele substitui os enviados antes.</div>
+      <div style="font-size:12px;font-weight:700;color:#55707e;text-transform:uppercase;letter-spacing:.5px;">Seu código de rastreio</div>
+      <div style="margin-top:6px;font-family:Consolas,'Courier New',monospace;font-size:18px;line-height:1.45;font-weight:700;color:#12303f;letter-spacing:1px;">${escapeHtml(accessCode)}</div>
+      <div style="margin-top:8px;font-size:13px;line-height:1.5;color:#55707e;">Use este código para acompanhar o pedido no nosso site.</div>
     </td></tr></table>`;
 }
 

@@ -465,8 +465,8 @@ export default async function SettingsPage() {
   const acesso = (
     <section className="card">
       <div className="card-head">
-        <h2>Código de acesso</h2>
-        <p className="muted small">Código que o cliente usa na página de rastreio. Emitir um novo revoga os anteriores.</p>
+        <h2>Código de rastreio do cliente</h2>
+        <p className="muted small">Código (BR + 13 dígitos) que o cliente usa na página de rastreio. Um por pedido; “Reenviar código” gera outro e o anterior deixa de valer.</p>
       </div>
       <ActionForm action={saveAccessCodeSettings}>
         <label className="field" style={{ maxWidth: "16rem" }}>
@@ -578,7 +578,7 @@ export default async function SettingsPage() {
           { id: "rastreio", label: "Rastreio", content: rastreio },
           { id: "envios", label: "Envios", content: envios },
           { id: "checkout", label: "Checkout", content: checkout },
-          { id: "acesso", label: "Código de acesso", content: acesso },
+          { id: "acesso", label: "Código de rastreio", content: acesso },
           { id: "admin", label: "Administradores", content: admin },
         ]}
       />

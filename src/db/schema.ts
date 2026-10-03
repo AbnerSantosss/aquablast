@@ -178,9 +178,14 @@ export const orderAccessCodes = pgTable(
     orderId: uuid("order_id")
       .references(() => orders.id, { onDelete: "cascade" })
       .notNull(),
-    /** SHA-256 do código. O código em claro só existe no e-mail enviado ao comprador. */
+    /** SHA-256 do código: é o que a consulta pública compara. */
     codeHash: text("code_hash").notNull(),
-    /** Primeiros 4 caracteres, só para o admin reconhecer qual código está ativo. */
+    /**
+     * Código em claro, cifrado em repouso (lib/crypto encryptText). Existe para repetir o mesmo código em todos os
+     * e-mails do pedido (pedido do dono, 2026-10-02). NULL nas linhas de antes da migration 0009.
+     */
+    codeEnc: text("code_enc"),
+    /** Começo do código, só para o admin reconhecer qual código está ativo. */
     prefix: text("prefix").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),

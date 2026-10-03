@@ -112,7 +112,7 @@ const wrapInternal = (inner: string) => `
 const btnInternal = (href: string, label: string) =>
   `<p style="margin:22px 0;"><a href="${href}" style="display:inline-block;background:#f97316;color:#fff;text-decoration:none;font-weight:900;padding:14px 26px;border-radius:999px;font-size:16px;">${label}</a></p>`;
 
-/** Caixa com um código para copiar (código de acesso, Pix copia e cola). */
+/** Caixa com um código para copiar (código de rastreio, Pix copia e cola). */
 const code = (label: string, v: string) =>
   `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;border-collapse:separate;"><tr><td style="padding:14px 16px;background:#f3f8fb;border:1px solid ${LINE};border-radius:10px;">
         <div style="font-size:12px;font-weight:700;color:${MUTED};text-transform:uppercase;letter-spacing:.5px;">${label}</div>
@@ -125,7 +125,7 @@ const kicker = (status: string) =>
 
 /**
  * Blocos dos e-mails de status (lib/email/status-blocks.ts). Cada um some quando não se aplica ao pedido.
- * Sem bloco da transportadora: o cliente acompanha pelo nosso site, com o código de acesso.
+ * Sem bloco da transportadora: o cliente acompanha pelo nosso site, com o código de rastreio.
  */
 const STATUS_BLOCKS = `
       {{progresso}}
@@ -150,17 +150,17 @@ const unsubscribe = `<p style="margin:16px 0 0;font-size:12px;line-height:1.5;co
 export const DEFAULT_TEMPLATES: Record<TemplateKey, { name: string; description: string; subject: string; bodyHtml: string; enabled: boolean }> = {
   order_confirmed: {
     name: "Pagamento confirmado",
-    description: "Enviado automaticamente quando o checkout confirma o pagamento. Leva o código de acesso ao rastreio.",
+    description: "Enviado automaticamente quando o checkout confirma o pagamento. Leva o código de rastreio do pedido.",
     subject: "Pedido {{pedido}} confirmado! Seu AquaBlast já está a caminho 💦",
     enabled: true,
     bodyHtml: wrap(
-      "Pagamento confirmado. Guarde seu código de acesso para acompanhar a entrega.",
+      "Pagamento confirmado. Guarde seu código de rastreio para acompanhar a entrega.",
       `
       ${kicker("Pagamento confirmado")}
       ${h1("Oba, {{primeiro_nome}}! Pagamento confirmado 🎉")}
       ${p("Recebemos o pagamento do pedido <strong>{{pedido}}</strong>. Agora é com a gente: vamos separar e embalar seu AquaBlast com todo cuidado.")}
-      ${p("Para acompanhar cada etapa da entrega, use o seu código de acesso:")}
-      ${code("Seu código de acesso", "{{codigo_acesso}}")}
+      ${p("Para acompanhar cada etapa da entrega, use o seu código de rastreio:")}
+      ${code("Seu código de rastreio", "{{codigo_acesso}}")}
       ${btn("{{link_rastreio}}", "Acompanhar meu pedido")}
       ${small("Guarde este e-mail: o código é pessoal e serve para acompanhar o pedido até a entrega.")}
       ${summary(true)}
@@ -202,7 +202,7 @@ export const DEFAULT_TEMPLATES: Record<TemplateKey, { name: string; description:
   },
   shipped: {
     name: "Pedido enviado",
-    description: "Enviado quando o rastreio é cadastrado ou quando o status muda para Enviado no painel. Leva a linha do tempo e um código de acesso novo.",
+    description: "Enviado quando o rastreio é cadastrado ou quando o status muda para Enviado no painel. Leva a linha do tempo e o código de rastreio do pedido.",
     subject: "Seu pedido {{pedido}} foi enviado 🚚",
     enabled: true,
     bodyHtml: wrap(
@@ -219,7 +219,7 @@ export const DEFAULT_TEMPLATES: Record<TemplateKey, { name: string; description:
   },
   in_transit: {
     name: "Em trânsito",
-    description: "Enviado quando o status muda para Em trânsito no painel. Leva a linha do tempo e um código de acesso novo.",
+    description: "Enviado quando o status muda para Em trânsito no painel. Leva a linha do tempo e o código de rastreio do pedido.",
     subject: "Seu pedido {{pedido}} está em trânsito 🚚",
     enabled: true,
     bodyHtml: wrap(
@@ -287,18 +287,18 @@ export const DEFAULT_TEMPLATES: Record<TemplateKey, { name: string; description:
     ),
   },
   access_code: {
-    name: "Reenvio do código de acesso",
-    description: "Disparado manualmente no painel quando o cliente perdeu o código de acompanhamento.",
-    subject: "Seu código de acesso ao pedido {{pedido}}",
+    name: "Reenvio do código de rastreio",
+    description: "Disparado manualmente no painel quando o cliente perdeu o código. Gera um código novo; o anterior deixa de valer.",
+    subject: "Seu código de rastreio do pedido {{pedido}}",
     enabled: true,
     bodyHtml: wrap(
       "Seu novo código para acompanhar o pedido.",
       `
       ${h1("Aqui está seu código, {{primeiro_nome}}")}
       ${p("Use o código abaixo para acompanhar o pedido <strong>{{pedido}}</strong>:")}
-      ${code("Seu código de acesso", "{{codigo_acesso}}")}
+      ${code("Seu código de rastreio", "{{codigo_acesso}}")}
       ${btn("{{link_rastreio}}", "Acompanhar meu pedido")}
-      ${small("Os códigos anteriores deixaram de valer.")}
+      ${small("O código anterior deixou de valer.")}
     `,
     ),
   },
@@ -405,7 +405,7 @@ export const DEFAULT_TEMPLATES: Record<TemplateKey, { name: string; description:
  * Ao mudar um corpo padrão de novo: acrescente aqui o md5 do corpo que está saindo.
  */
 const LEGACY_BODY_MD5: Partial<Record<TemplateKey, string[]>> = {
-  order_confirmed: ["0bdd6d29c6eab3b05ec55eb753a2d985"],
+  order_confirmed: ["0bdd6d29c6eab3b05ec55eb753a2d985", "1848547bb8a53fd86698c8df88fb8d77"],
   pix_pending: ["4b3038f1e1b0c77854b8e45ec84d4f1f"],
   pix_reminder: ["bb9b27e596d69e4e63e46b58da07031f"],
   shipped: ["538372bfd8e203132534593482b76098", "5ce9ae83020a8d7875e01e171e5da126", "214bda98475a0979119fc6f1fcc3de1d"],
@@ -413,7 +413,7 @@ const LEGACY_BODY_MD5: Partial<Record<TemplateKey, string[]>> = {
   out_for_delivery: ["3a31e54f307806e221b1f3459be072c0", "acad352622514414448ce0ea2969b39f"],
   delivered: ["8b24ebe04a08c4fb7cb1538a10caa2d5", "7144e3bc62e08e61bf4a137ee74199b7"],
   exception: ["5ef65eef2c5042e3e0571bd916de9a80"],
-  access_code: ["0d21364bdd8a1f1964b162b36e67db86"],
+  access_code: ["0d21364bdd8a1f1964b162b36e67db86", "1127c08521c1c6666fe8ffa32086aedd"],
   cart_abandoned_1: ["470c33cec62a7012b9a9a164736a0c93"],
   cart_abandoned_2: ["b2b3f78c8e5ab5a90a626341bed39b93"],
   cart_abandoned_3: ["273e61e090d52f17d60e3d1f7957fcd3"],
@@ -432,7 +432,8 @@ export async function ensureDefaultTemplates(): Promise<void> {
     const t = DEFAULT_TEMPLATES[key as TemplateKey];
     await db
       .update(emailTemplates)
-      .set({ bodyHtml: t.bodyHtml, description: t.description, updatedAt: new Date() })
+      // Corpo intocado = ninguém personalizou o modelo; nome e assunto padrão acompanham (o de access_code mudou em 2026-10-02).
+      .set({ bodyHtml: t.bodyHtml, name: t.name, subject: t.subject, description: t.description, updatedAt: new Date() })
       .where(and(eq(emailTemplates.key, key), inArray(sql<string>`md5(${emailTemplates.bodyHtml})`, hashes)));
   }
 }

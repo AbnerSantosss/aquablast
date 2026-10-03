@@ -291,10 +291,10 @@ export default function TrackingPage({ initialCode = "", supportWhatsappHref = n
           <section className="lookup-card" aria-labelledby="lookup-title">
             <div>
               <h2 id="lookup-title">Consultar meu pedido</h2>
-              <p>Use o código de acesso enviado na confirmação da compra.</p>
+              <p>Use o código de rastreio enviado na confirmação da compra.</p>
             </div>
             <form id="tracking-form" noValidate ref={formRef} onSubmit={handleSubmit}>
-              <label htmlFor="tracking-code">Código de acesso do pedido</label>
+              <label htmlFor="tracking-code">Código de rastreio do pedido</label>
               <div className="lookup-fields">
                 <input
                   id="tracking-code"
@@ -305,7 +305,7 @@ export default function TrackingPage({ initialCode = "", supportWhatsappHref = n
                   autoComplete="off"
                   spellCheck={false}
                   autoCapitalize="off"
-                  placeholder="Digite ou cole seu código"
+                  placeholder="Ex.: BR0000000000000"
                   aria-describedby="tracking-help tracking-error"
                   aria-invalid={formError ? "true" : undefined}
                   value={code}
@@ -325,7 +325,7 @@ export default function TrackingPage({ initialCode = "", supportWhatsappHref = n
               </p>
             </form>
             <div className="lookup-footer">
-              <span id="integration-notice">Consulte seu pedido com o código de acesso recebido na confirmação da compra.</span>
+              <span id="integration-notice">Consulte seu pedido com o código de rastreio recebido na confirmação da compra.</span>
             </div>
           </section>
           <p id="tracking-feedback" className="tracking-feedback" role="status" aria-live="polite" aria-atomic="true">
@@ -414,7 +414,7 @@ export default function TrackingPage({ initialCode = "", supportWhatsappHref = n
                 <address id="delivery-address">{formatAddress(order)}</address>
                 <p className="privacy-note">
                   <img src="/icons/shield-check.svg" alt="" />
-                  Não compartilhe seu código de acesso.
+                  Não compartilhe seu código de rastreio.
                 </p>
               </section>
               <section className="delivery-history" aria-labelledby="history-title">
@@ -475,7 +475,7 @@ export default function TrackingPage({ initialCode = "", supportWhatsappHref = n
             <details>
               <summary>Não recebi o código ou preciso corrigir meu endereço</summary>
               <p>
-                Confira as mensagens de confirmação da compra. Para localizar seu pedido ou solicitar uma correção, fale com a nossa atendente. Não publique seu código de acesso
+                Confira as mensagens de confirmação da compra. Para localizar seu pedido ou solicitar uma correção, fale com a nossa atendente. Não publique seu código de rastreio
                 nem seu endereço em comentários.
               </p>
               {supportWhatsappHref ? (

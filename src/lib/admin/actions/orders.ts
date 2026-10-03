@@ -9,7 +9,7 @@ import { orders, webhookDeliveries, type OrderItem, type OrderStatus, type Payme
 import { requireAdmin } from "@/lib/auth/session";
 import { ensureBootstrap } from "@/lib/bootstrap";
 import { sendOrderEmail } from "@/lib/email/send";
-import { addOrderEvent, encryptDocument, fullDocument, generateOrderNumber, getOrderById, issueAccessCode, transitionOrder, updateOrderFields } from "@/lib/orders/service";
+import { addOrderEvent, encryptDocument, ensureAccessCode, fullDocument, generateOrderNumber, getOrderById, issueAccessCode, transitionOrder, updateOrderFields } from "@/lib/orders/service";
 import { STATUS_LABEL, canTransition } from "@/lib/orders/status";
 import { actorOf, audit } from "@/lib/admin/audit";
 import { bool, isEmail, num, optStr, str, uuid } from "@/lib/admin/form";
@@ -55,7 +55,7 @@ export async function resendAccessCode(_prev: ActionResult, formData: FormData):
   if (!order) return fail("Pedido não encontrado.");
   const { code } = await issueAccessCode(order.id, actor);
   const r = await sendOrderEmail(order, "access_code", { accessCode: code, triggeredBy: actor });
-  await addOrderEvent({ orderId: order.id, title: "Novo código de acesso gerado", description: `Gerado por ${actor}. Códigos anteriores foram revogados.`, source: "admin" });
+  await addOrderEvent({ orderId: order.id, title: "Novo código de rastreio gerado", description: `Gerado por ${actor}. O código anterior deixou de valer.`, source: "admin" });
   refresh(order.id);
   if (!r.ok) return fail(`Código gerado, mas o e-mail falhou: ${r.error ?? r.skipped}. Envie manualmente ao cliente.`, { code });
   return ok(`Novo código gerado e enviado para ${order.customerEmail}. Anote se precisar passar por WhatsApp:`, { code });
@@ -64,11 +64,11 @@ export async function resendAccessCode(_prev: ActionResult, formData: FormData):
 export async function sendConfirmation(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const { order, actor } = await loadOrder(formData);
   if (!order) return fail("Pedido não encontrado.");
-  const { code } = await issueAccessCode(order.id, actor);
+  const { code } = await ensureAccessCode(order.id, actor);
   const r = await sendOrderEmail(order, "order_confirmed", { accessCode: code, triggeredBy: actor });
-  await addOrderEvent({ orderId: order.id, title: "E-mail de confirmação enviado", description: `Enviado manualmente por ${actor} com novo código de acesso.`, source: "admin" });
+  await addOrderEvent({ orderId: order.id, title: "E-mail de confirmação enviado", description: `Enviado manualmente por ${actor} com o código de rastreio do pedido.`, source: "admin" });
   refresh(order.id);
-  if (!r.ok) return fail(`Código gerado, mas o e-mail falhou: ${r.error ?? r.skipped}.`, { code });
+  if (!r.ok) return fail(`O e-mail falhou: ${r.error ?? r.skipped}. Código do pedido:`, { code });
   return ok(`Confirmação enviada para ${order.customerEmail} com o código:`, { code });
 }
 
@@ -76,11 +76,11 @@ export async function sendShippedEmail(_prev: ActionResult, formData: FormData):
   const { order, actor } = await loadOrder(formData);
   if (!order) return fail("Pedido não encontrado.");
   if (!order.trackingCode) return fail("Cadastre o código de rastreio antes de enviar o aviso de envio.");
-  const { code } = await issueAccessCode(order.id, actor);
+  const { code } = await ensureAccessCode(order.id, actor);
   const r = await sendOrderEmail(order, "shipped", { accessCode: code, triggeredBy: actor });
-  await addOrderEvent({ orderId: order.id, title: "Aviso de envio reenviado", description: `Enviado manualmente por ${actor} com novo código de acesso.`, source: "admin" });
+  await addOrderEvent({ orderId: order.id, title: "Aviso de envio reenviado", description: `Enviado manualmente por ${actor} com o código de rastreio do pedido.`, source: "admin" });
   refresh(order.id);
-  if (!r.ok) return fail(`Código gerado, mas o e-mail falhou: ${r.error ?? r.skipped}.`, { code });
+  if (!r.ok) return fail(`O e-mail falhou: ${r.error ?? r.skipped}. Código do pedido:`, { code });
   return ok(`Aviso de envio enviado para ${order.customerEmail} com o código:`, { code });
 }
 
@@ -116,12 +116,12 @@ export async function changeStatus(_prev: ActionResult, formData: FormData): Pro
   if (!notify) return ok(`${head}. Cliente não avisado (caixa de e-mail desmarcada).`);
   if (!r.order.customerEmail) return fail(`${head}, mas o e-mail NÃO foi enviado: pedido sem e-mail do cliente.`);
 
-  // Avisos com botão de rastreio levam um código de acesso novo (o código em claro não fica guardado).
-  const accessCode = template === "delivered" ? undefined : (await issueAccessCode(order.id, actor)).code;
+  // Todos os avisos levam o código de rastreio do pedido (sempre o mesmo), para o botão de acompanhar funcionar.
+  const accessCode = (await ensureAccessCode(order.id, actor)).code;
   const mail = await sendOrderEmail(r.order, template, { automatic: true, accessCode, message: description, triggeredBy: actor });
   if (!mail.ok) {
     const why = mail.skipped === "Envio automático desligado para este template" ? `o modelo "${template}" está desligado em E-mails → Templates` : (mail.error ?? mail.skipped ?? "motivo desconhecido");
-    return fail(`${head}, mas o e-mail NÃO foi enviado: ${why}.`, accessCode ? { code: accessCode } : {});
+    return fail(`${head}, mas o e-mail NÃO foi enviado: ${why}.`, { code: accessCode });
   }
   return ok(`${head} · e-mail enviado para ${r.order.customerEmail}.`);
 }
@@ -306,7 +306,7 @@ export async function createManualOrder(_prev: ActionResult, formData: FormData)
   }
 
   if (paid && customerEmail && bool(formData, "sendConfirmation")) {
-    const { code } = await issueAccessCode(created.id, actor);
+    const { code } = await ensureAccessCode(created.id, actor);
     await sendOrderEmail(created, "order_confirmed", { accessCode: code, triggeredBy: actor });
   }
 

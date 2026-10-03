@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 import { env } from "./env";
 
 const ALG = "aes-256-gcm";
@@ -39,21 +39,19 @@ export function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(ab, bb);
 }
 
-/** Alfabeto sem caracteres ambíguos (0/O, 1/I/L). */
-const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-
 /**
- * Código de acesso do comprador: 25 caracteres do alfabeto de 31 símbolos ≈ 123 bits,
- * agrupado como AQB-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX para leitura. Só o hash vai ao banco.
+ * Código de rastreio do comprador: "BR" + 13 dígitos (ex.: BR2640788160074), no padrão que o cliente já conhece
+ * das transportadoras (pedido do dono, 2026-10-02; antes era AQB-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX, que parecia senha).
+ * 10^13 combinações: basta porque /api/orders/lookup limita as tentativas por IP e por código e o código expira.
+ * Um código por pedido; só "Reenviar código" no painel gera outro.
  */
 export function generateAccessCode(): string {
-  const bytes = randomBytes(25);
-  let out = "";
-  for (let i = 0; i < 25; i++) out += ALPHABET[bytes[i] % ALPHABET.length];
-  return "AQB-" + out.match(/.{1,5}/g)!.join("-");
+  let digits = "";
+  for (let i = 0; i < 13; i++) digits += String(randomInt(10));
+  return "BR" + digits;
 }
 
-/** Normaliza o que o comprador digitou: maiúsculas, sem espaços; hífens são ignorados no hash. */
+/** Normaliza o que o comprador digitou: maiúsculas, sem espaços; hífens são ignorados no hash (códigos AQB- antigos). */
 export function normalizeAccessCode(input: string): string {
   return input.trim().toUpperCase().replace(/[\s]/g, "");
 }

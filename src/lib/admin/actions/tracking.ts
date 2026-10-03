@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/session";
 import { ensureBootstrap } from "@/lib/bootstrap";
 import { sendOrderEmail } from "@/lib/email/send";
-import { addOrderEvent, getOrderById, issueAccessCode, transitionOrder, updateOrderFields } from "@/lib/orders/service";
+import { addOrderEvent, ensureAccessCode, getOrderById, transitionOrder, updateOrderFields } from "@/lib/orders/service";
 import { canTransition, rank } from "@/lib/orders/status";
 import { getSetting } from "@/lib/settings";
 import { CARRIERS, carrierName, carrierUrl, getTrackingProvider } from "@/lib/tracking/provider";
@@ -88,8 +88,8 @@ export async function saveTracking(_prev: ActionResult, formData: FormData): Pro
   } else if (!current.customerEmail) {
     head = "Rastreio salvo, e-mail NÃO enviado: pedido sem e-mail do cliente";
   } else {
-    // O e-mail de envio leva o código de acesso; como o código em claro não é armazenado, um novo é emitido.
-    const { code } = await issueAccessCode(current.id, actor);
+    // O e-mail de envio repete o código de rastreio do pedido (o mesmo da confirmação).
+    const { code } = await ensureAccessCode(current.id, actor);
     const r = await sendOrderEmail(current, "shipped", { automatic: true, accessCode: code, triggeredBy: actor });
     mailSent = r.ok;
     head = r.ok ? `Rastreio salvo · e-mail enviado para ${current.customerEmail}` : `Rastreio salvo, e-mail NÃO enviado: ${r.error ?? r.skipped ?? "motivo desconhecido"}`;

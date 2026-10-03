@@ -32,9 +32,9 @@ export async function POST(request: NextRequest): Promise<Response> {
   try {
     const body: unknown = await request.json();
     const raw = typeof body === "object" && body !== null ? (body as Record<string, unknown>).code : undefined;
-    if (typeof raw !== "string") return jsonError(400, "bad_request", "Informe o código de acesso.");
+    if (typeof raw !== "string") return jsonError(400, "bad_request", "Informe o código de rastreio.");
     code = normalizeAccessCode(raw);
-    if (!code || code.length > MAX_CODE_LENGTH) return jsonError(400, "bad_request", "Informe o código de acesso.");
+    if (!code || code.length > MAX_CODE_LENGTH) return jsonError(400, "bad_request", "Informe o código de rastreio.");
   } catch {
     return jsonError(400, "bad_request", "Corpo da requisição inválido.");
   }

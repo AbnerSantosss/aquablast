@@ -2,7 +2,7 @@ import { and, eq, isNotNull, notInArray } from "drizzle-orm";
 import { db } from "@/db";
 import { orders, type Order } from "@/db/schema";
 import { sendOrderEmail } from "@/lib/email/send";
-import { addOrderEvent, transitionOrder, updateOrderFields } from "@/lib/orders/service";
+import { addOrderEvent, ensureAccessCode, transitionOrder, updateOrderFields } from "@/lib/orders/service";
 import { rank } from "@/lib/orders/status";
 import { getTrackingProvider, type TrackingSnapshot } from "./provider";
 
@@ -45,8 +45,11 @@ export async function applySnapshot(order: Order, snap: TrackingSnapshot): Promi
     if (res.ok && res.changed) {
       statusChanged = true;
       current = res.order;
-      if (target === "out_for_delivery") await sendOrderEmail(current, "out_for_delivery", { automatic: true });
-      if (target === "delivered") await sendOrderEmail(current, "delivered", { automatic: true });
+      // Os avisos levam o código de rastreio do pedido (o mesmo de sempre), para o botão de acompanhar funcionar.
+      if (target === "out_for_delivery" || target === "delivered") {
+        const accessCode = current.customerEmail ? (await ensureAccessCode(current.id, "tracking")).code : undefined;
+        await sendOrderEmail(current, target, { automatic: true, accessCode });
+      }
     }
   }
 
