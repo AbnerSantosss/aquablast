@@ -73,7 +73,7 @@ async function c09() {
     const total = page.locator(".order-summary .total");
     const alt = page.locator(".order-summary .total-alt");
     await L.waitText(total, /12x de R\$ 14,99 ?sem juros no cartão · total R\$ 179,90/);
-    await L.waitText(alt, /ou R\$ 159,90 à vista no Pix ?R\$ 10,00 de desconto/);
+    await L.waitText(alt, /ou R$ 159,90 à vista no Pix ?R$ 20,00 de desconto/);
     await L.choosePix(page);
     await L.waitText(total, /À vista no Pix[\s\S]*R\$ 159,90/);
     await L.waitText(alt, /ou 12x de R\$ 14,99 sem juros no cartão/);

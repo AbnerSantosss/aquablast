@@ -28,7 +28,7 @@ export const faq: FaqItem[] = [
   },
   {
     question: "Quais são as formas de pagamento?",
-    answer: `Pix ou cartão de crédito em até 12x sem juros. No cartão, a unidade sai por 12x de ${PRICES.unit.installment} (total ${PRICES.unit.card}) e o kit com 2 por 12x de ${PRICES.kit.installment} (total ${PRICES.kit.card}). No Pix à vista você paga ${PRICES.unit.pix} a unidade e ${PRICES.kit.pix} o kit, com ${PRICES.unit.pixDiscount} de desconto.`,
+    answer: `Pix ou cartão de crédito em até 12x sem juros. No cartão, a unidade sai por 12x de ${PRICES.unit.installment} (total ${PRICES.unit.card}) e o kit com 2 por 12x de ${PRICES.kit.installment} (total ${PRICES.kit.card}). No Pix à vista você paga ${PRICES.unit.pix} a unidade e ${PRICES.kit.pix} o kit, com ${PRICES.unit.pixDiscount} de desconto na unidade e ${PRICES.kit.pixDiscount} no kit.`,
   },
   {
     question: "Para qual idade o brinquedo é indicado?",

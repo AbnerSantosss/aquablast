@@ -13,7 +13,7 @@ export default async function ProdutosPage() {
   await requireAdmin();
   const s = await getSettings(["checkout.prices", "checkout.maxInstallments", "checkout.bumpEnabled"] as const);
   const prices = s["checkout.prices"];
-  const parcela = (totalCents: number, n: number) => cents(Math.ceil(totalCents / n));
+  const parcela = (totalCents: number, n: number) => cents(Math.round(totalCents / n)); // mesmo arredondamento do checkout (pricing.ts)
 
   return (
     <div className="stack">

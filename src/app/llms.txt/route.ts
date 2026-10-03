@@ -23,7 +23,7 @@ function buildLlmsTxt(): string {
     "- Reservatório em tambor.",
     "- Cores: azul, vermelho e preto.",
     `- Opções: 1 unidade por ${PRICES.unit.pix} ou kit com 2 por ${PRICES.kit.pix} no Pix à vista.`,
-    `- Pagamento: cartão de crédito em até 12x sem juros (unidade 12x de ${PRICES.unit.installment}, total ${PRICES.unit.card}; kit 12x de ${PRICES.kit.installment}, total ${PRICES.kit.card}) ou Pix à vista com ${PRICES.unit.pixDiscount} de desconto.`,
+    `- Pagamento: cartão de crédito em até 12x sem juros (unidade 12x de ${PRICES.unit.installment}, total ${PRICES.unit.card}; kit 12x de ${PRICES.kit.installment}, total ${PRICES.kit.card}) ou Pix à vista com ${PRICES.unit.pixDiscount} de desconto na unidade e ${PRICES.kit.pixDiscount} no kit.`,
     "",
     "## Loja",
     "",
