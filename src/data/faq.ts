@@ -48,6 +48,6 @@ export const faq: FaqItem[] = [
   {
     question: "Como acompanhar meu pedido ou falar com o suporte?",
     answer:
-      "Para acompanhar a entrega, use Rastrear pedido, no rodapé do site, com o código de acesso enviado na confirmação da compra. Para outras dúvidas, use o contato no rodapé e informe a opção escolhida e, se já comprou, os dados do pedido.",
+      "Para acompanhar a entrega, use Rastrear pedido, no rodapé do site, com o código de rastreio enviado na confirmação da compra. Para outras dúvidas, use o contato no rodapé e informe a opção escolhida e, se já comprou, os dados do pedido.",
   },
 ];

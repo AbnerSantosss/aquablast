@@ -308,7 +308,7 @@ export default async function TrocasEDevolucoesPage() {
                 </Link>
               </div>
               <p className="tr-contact-note">
-                Para acompanhar a entrega de uma compra, use a página Rastrear pedido, com o código de acesso enviado na
+                Para acompanhar a entrega de uma compra, use a página Rastrear pedido, com o código de rastreio enviado na
                 confirmação da compra.
               </p>
             </div>
