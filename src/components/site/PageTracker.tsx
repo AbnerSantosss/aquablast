@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { internoAtivo } from "@/lib/site/interno";
 
 declare global {
   interface Window {
@@ -18,6 +19,8 @@ export function PageTracker() {
   useEffect(() => {
     const ids = window.aqbEvt;
     if (!ids) return;
+    // Modo interno (`?interno=1`): a visita do dono nao vai para a Meta (CAPI) nem para o funil do painel.
+    if (internoAtivo()) return;
     let sent = false;
     let tries = 0;
     let timer: number | undefined;

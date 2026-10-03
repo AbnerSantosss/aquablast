@@ -8,7 +8,7 @@ import { useSelection } from "./SelectionProvider";
 export function MobileBuy() {
   const { pack, color } = useSelection();
   const [offersVisible, setOffersVisible] = useState(false);
-  // Comeca escondida: so aparece quando o "Selecione seu kit" do topo sai da tela (auditoria UX, 01/10).
+  // Comeca escondida: so aparece quando o "Comprar agora" do topo sai da tela (auditoria UX, 01/10).
   const [heroCtaVisible, setHeroCtaVisible] = useState(true);
 
   useEffect(() => {

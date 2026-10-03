@@ -20,7 +20,7 @@ async function run(variant) {
     await L.waitText(page.locator(".selected-product p"), /^1 \S+ \+ 1 \S+$/);
     // Antes de escolher a forma (2026-09-29): Pix do kit em destaque, parcela do cartao abaixo.
     await L.waitText(page.locator(".order-summary .total"), /^(?=[\s\S]*À vista\s*no Pix)(?=[\s\S]*Economize R\$ 10,00)(?=[\s\S]*R\$ 249,90)/);
-    await L.waitText(page.locator(".order-summary .total-alt"), /ou 12x de R\$ 21,66 sem juros no cartão/);
+    await L.waitText(page.locator(".order-summary .total-alt"), /ou 12x de R\$ 23,33 sem juros no cartão/);
     await L.fillDados(page);
     await L.submitDados(page);
     await L.fillEntrega(page);
@@ -33,7 +33,7 @@ async function run(variant) {
     assert.equal(await L.field(page, "cc-number").getAttribute("autocomplete"), "cc-number");
     assert.equal(await L.field(page, "cc-number").getAttribute("inputmode"), "numeric");
     assert.equal(await L.field(page, "cc-cpf").inputValue(), "");
-    await L.waitText(page.locator(".order-summary .total"), /Total no cartão\s*12x de R\$ 21,66\s*sem juros no cartão/);
+    await L.waitText(page.locator(".order-summary .total"), /Total no cartão\s*12x de R\$ 23,33\s*sem juros no cartão/);
 
     // Luhn invalido: mascara, bandeira e foco no numero.
     await cartao(page, L.CARD_BAD_LUHN);
@@ -62,7 +62,7 @@ async function run(variant) {
     // Parcelas: 12x por padrao; da para trocar.
     const inst = L.field(page, "cc-installments");
     const selText = () => inst.evaluate((s) => s.options[s.selectedIndex].text.replace(/\s+/g, " ").trim());
-    assert.match(await selText(), /^12x de R\$\s21,66 sem juros$/);
+    assert.match(await selText(), /^12x de R\$\s23,33 sem juros$/);
     await inst.selectOption("3");
     assert.match(await selText(), /^3x de R\$\s86,63 sem juros$/);
     await inst.selectOption("12");

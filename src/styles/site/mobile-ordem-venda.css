@@ -3,7 +3,8 @@
    fim do card do kit (maior ticket, a venda de 01/10) era visto por ~35%.
    So celular (ate 56.25rem, o mesmo MOBILE_QUERY do site): o desktop fica exatamente como estava.
    A ordem do HTML nao muda (leitores de tela e desktop seguem a original); so a ordem visual:
-   topo -> ofertas (kit primeiro) -> videos -> avaliacoes -> componentes -> presente -> duvidas. */
+   topo -> avaliacoes -> ofertas (kit primeiro) -> videos -> componentes -> presente -> duvidas.
+   03/10 (dono): avaliacoes sobem para a segunda dobra, antes das ofertas, para testar a conversao. */
 @media (max-width: 56.25rem) {
   .aquablast-home #conteudo {
     display: flex;
@@ -13,9 +14,9 @@
     min-width: 0;
   }
   .aquablast-home #conteudo > .catalog-hero { order: 0; }
-  .aquablast-home #conteudo > #ofertas { order: 1; }
-  .aquablast-home #conteudo > #diversao { order: 2; }
-  .aquablast-home #conteudo > #avaliacoes { order: 3; }
+  .aquablast-home #conteudo > #avaliacoes { order: 1; }
+  .aquablast-home #conteudo > #ofertas { order: 2; }
+  .aquablast-home #conteudo > #diversao { order: 3; }
   .aquablast-home #conteudo > .accessories-section { order: 4; }
   .aquablast-home #conteudo > #familia { order: 5; }
   .aquablast-home #conteudo > #duvidas { order: 6; }

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 // Cenarios 8 a 15 da fase 14.4 (checkout proprio + banco de desenvolvimento local):
 //  8  kit com 2 cores diferentes -> resumo e SKU AQB-KIT-VERMELHO-PRETO no pedido;
-//  9  preco muda entre Pix (159,90) e cartao (169,90) e volta;
+//  9  preco muda entre Pix (159,90) e cartao (179,90) e volta;
 //  10 POST /api/checkout/pay com campo extra ("amount") -> 400 (paySchema estrito; valor so do servidor);
 //  11 pedido pago via Pix simulado -> payment_status paid, checkout_provider proprio, carrinho convertido,
 //     e InitiateCheckout/AddPaymentInfo/Purchase em conversion_events sem nenhuma chamada a Meta;
@@ -72,13 +72,13 @@ async function c09() {
     // Desde 2026-09-28 o cartao abre selecionado e a parcela fica em destaque; no Pix o destaque vira o total a vista.
     const total = page.locator(".order-summary .total");
     const alt = page.locator(".order-summary .total-alt");
-    await L.waitText(total, /12x de R\$ 14,16 ?sem juros no cartão · total R\$ 169,90/);
+    await L.waitText(total, /12x de R\$ 14,99 ?sem juros no cartão · total R\$ 179,90/);
     await L.waitText(alt, /ou R\$ 159,90 à vista no Pix ?R\$ 10,00 de desconto/);
     await L.choosePix(page);
     await L.waitText(total, /À vista no Pix[\s\S]*R\$ 159,90/);
-    await L.waitText(alt, /ou 12x de R\$ 14,16 sem juros no cartão/);
+    await L.waitText(alt, /ou 12x de R\$ 14,99 sem juros no cartão/);
     await L.payHead(page, "card").click();
-    await L.waitText(total, /12x de R\$ 14,16 ?sem juros no cartão · total R\$ 169,90/);
+    await L.waitText(total, /12x de R\$ 14,99 ?sem juros no cartão · total R\$ 179,90/);
     await L.choosePix(page);
     await L.waitText(total.locator("b"), "R$ 159,90");
     assert.deepEqual(pageErrors, []);
@@ -264,7 +264,7 @@ if (require.main === module) {
   (async () => {
     const list = [
       ["08", "Kit 2 cores (vermelho+preto) -> SKU no pedido", c08],
-      ["09", "Preco Pix 159,90 <-> cartao 169,90", c09],
+      ["09", "Preco Pix 159,90 <-> cartao 179,90", c09],
       ["10", "POST /pay com campo extra amount -> 400", c10],
       ["11", "Pedido pago via Pix simulado + eventos de conversao", c11],
       ["12", "Carrinho abandonado na entrega (banco)", c12],

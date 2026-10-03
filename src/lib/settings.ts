@@ -202,7 +202,7 @@ export const DEFAULTS: SettingsMap = {
   "push.vapid.privateKey": "",
 
   "checkout.mode": "zedy",
-  "checkout.prices": { unit: { pix: 15990, card: 16990 }, kit: { pix: 24990, card: 25990 } },
+  "checkout.prices": { unit: { pix: 15990, card: 17990 }, kit: { pix: 24990, card: 27990 } },
   "checkout.maxInstallments": 12,
   "checkout.bumpEnabled": true,
   "checkout.pixTtlSeconds": 600,

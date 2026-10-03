@@ -212,6 +212,10 @@ export function Reviews() {
         <p className="reviews-page-summary" data-reviews-page-summary="">
           {pageSummary}
         </p>
+        {/* Dono, 03/10: avaliacoes na segunda dobra, com chamada para as ofertas logo abaixo. */}
+        <div className="section-purchase-cta">
+          <a className="button button-green" href="#ofertas">Quero meu AquaBlast</a>
+        </div>
       </div>
     </section>
   );

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { preload } from "react-dom";
 import { GoogleTagManager, GoogleTagManagerNoScript } from "@/components/site/GoogleTagManager";
+import { InternoBadge } from "@/components/site/InternoBadge";
 import { PageTracker } from "@/components/site/PageTracker";
 import { pageEventIdsCode } from "@/components/site/page-event-ids";
 // Mesma ordem do <head> do index.html original.
@@ -56,6 +57,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       <script id="aqb-evt" dangerouslySetInnerHTML={{ __html: pageEventIdsCode }} />
       <GoogleTagManager />
       <PageTracker />
+      <InternoBadge />
       {children}
     </>
   );

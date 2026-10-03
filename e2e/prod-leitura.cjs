@@ -73,12 +73,12 @@ function assert(cond, msg) {
     return `${proprio.length} link(s) para /checkout`;
   });
 
-  await check("preco na LP (Pix 159,90 / cartao 169,90)", async () => {
+  await check("preco na LP (Pix 159,90 / cartao 179,90)", async () => {
     // O valor do cartao so fica visivel com "cartao" escolhido: confere no HTML, nao no texto visivel.
     const text = await page.evaluate(() => document.body.innerText);
     const html = await page.content();
     assert(text.includes("159,90"), "159,90 nao aparece");
-    assert(html.includes("169,90"), "169,90 nao esta no HTML");
+    assert(html.includes("179,90"), "179,90 nao esta no HTML");
   });
 
   if (MODE === "proprio") {
@@ -91,7 +91,7 @@ function assert(cond, msg) {
       const cfg = await (await ctx.request.get(`${BASE}/api/checkout/config`)).json();
       if (cfg.card && (cfg.card.available || cfg.card.comingSoon)) {
         const alt = await page.locator(".total-alt").innerText();
-        assert(/12x de R\$\s?14,16/.test(alt), `resumo sem a parcela: ${alt}`);
+        assert(/12x de R\$\s?14,99/.test(alt), `resumo sem a parcela: ${alt}`);
       }
       assert((await page.locator(".trust-seals li").count()) >= 3, "selos ausentes");
       assert((await page.locator("footer.ck-footer").count()) === 1, "rodape ausente");

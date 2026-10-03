@@ -24,7 +24,7 @@ async function withPage(fn, query = "pack=unit&cor=azul") {
       withPage(async (page, query) => {
         await L.setSetting("checkout.cardComingSoon", true);
         await L.goCheckout(page, query);
-        await L.waitText(page.locator(".order-summary .total-alt"), /12x de R\$ 14,16/);
+        await L.waitText(page.locator(".order-summary .total-alt"), /12x de R\$ 14,99/);
         assert.equal(await page.locator(".trust-seals .ck-trust-payments span", { hasText: "Cartão em até 12x" }).count(), 1, "selo do cartao");
         await L.waitText(page.locator("footer.ck-footer .pay-methods"), /Cartão em até 12x/);
         await L.fillDados(page);
@@ -33,7 +33,7 @@ async function withPage(fn, query = "pack=unit&cor=azul") {
         await L.submitEntrega(page);
         // Etapa 3 abre no Pix (unica forma que cobra); o cartao aparece com a parcela no cabecalho.
         await page.locator('.pay-item.is-open input[value="pix"]').waitFor({ timeout: 10000 });
-        await L.waitText(L.payHead(page, "card"), /12x de R\$ 14,16 sem juros/);
+        await L.waitText(L.payHead(page, "card"), /12x de R\$ 14,99 sem juros/);
         await L.payHead(page, "card").click();
         await L.waitText(page.locator(".ck-card-pending"), /em ativação/);
         assert.equal(await page.locator("input[name=cc-number]").count(), 0, "nao pode pedir numero de cartao sem gateway");

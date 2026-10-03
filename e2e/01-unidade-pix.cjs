@@ -14,7 +14,7 @@ async function run(variant = { width: 1440, height: 900, tag: "desktop" }) {
     await L.waitText(page.locator(".selected-product"), "Cor azul");
     // Antes de escolher a forma (2026-09-29): Pix em destaque com a economia e a parcela do cartao logo abaixo.
     await L.waitText(page.locator(".order-summary .total"), /^(?=[\s\S]*À vista\s*no Pix)(?=[\s\S]*Economize R\$ 10,00)(?=[\s\S]*R\$ 159,90)/);
-    await L.waitText(page.locator(".order-summary .total-alt"), /ou 12x de R\$ 14,16 sem juros no cartão/);
+    await L.waitText(page.locator(".order-summary .total-alt"), /ou 12x de R\$ 14,99 sem juros no cartão/);
     assert.ok(await L.field(page, "name").isVisible());
     await L.shot(page, `c1-${variant.tag}-0-primeira-dobra`, false);
 
@@ -46,16 +46,16 @@ async function run(variant = { width: 1440, height: 900, tag: "desktop" }) {
     await L.waitText(page.locator(".ck-done").nth(1), `${L.endereco.street}, ${L.endereco.number}`);
     await L.waitText(page.locator(".ck-testmode").first(), "Modo de teste");
     assert.equal(await page.getByText(/boleto/i).count(), 0, "boleto nao deveria aparecer");
-    // Desde o 7d1aafa o Pix abre selecionado; escolhendo o cartao, a parcela vira o destaque (unidade no cartao 169,90).
+    // Desde o 7d1aafa o Pix abre selecionado; escolhendo o cartao, a parcela vira o destaque (unidade no cartao 179,90).
     await L.payHead(page, "card").click();
     await L.field(page, "cc-number").waitFor({ timeout: 10000 });
-    await L.waitText(page.locator(".order-summary .total"), /Total no cartão\s*12x de R\$ 14,16\s*sem juros no cartão/);
+    await L.waitText(page.locator(".order-summary .total"), /Total no cartão\s*12x de R\$ 14,99\s*sem juros no cartão/);
     await L.waitText(page.locator(".order-summary .total-alt.is-pix"), /ou R\$ 159,90 à vista no Pix/);
     await L.shot(page, `c1-${variant.tag}-3-pagamento-cartao`);
     // Pix: o total do Pix vira o destaque e o cartao passa para a linha de baixo.
     await L.choosePix(page);
     await L.waitText(page.locator(".order-summary .total"), /^(?=[\s\S]*À vista\s*no Pix)(?=[\s\S]*R\$ 159,90)/);
-    await L.waitText(page.locator(".order-summary .total-alt"), /ou 12x de R\$ 14,16 sem juros no cartão/);
+    await L.waitText(page.locator(".order-summary .total-alt"), /ou 12x de R\$ 14,99 sem juros no cartão/);
     await L.shot(page, `c1-${variant.tag}-3-pagamento`);
 
     // Order bump: 2a unidade pela diferenca ate o kit (valor vem do servidor).

@@ -52,7 +52,7 @@ function OfferFooter({ pack, buy }: { pack: Pack; buy: string }) {
     <>
       <div className="offer-shipping offer-shipping-seal">
         <img src="/thumbs/envio-375.webp" alt="Dia das Crianças: envio rápido e postagem ágil" width={1672} height={941} loading="lazy" decoding="async" />
-        <span>Consulte o prazo para seu CEP</span>
+        <span><strong>Frete grátis</strong> para todo o Brasil · prazo pelo CEP</span>
       </div>
       {/* Preco (pedido do dono, 01/10): valor a vista no Pix em destaque, cartao parcelado como o "ou" embaixo. */}
       <div className="offer-price-line">

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Figtree } from "next/font/google";
 import type { ReactNode } from "react";
+import { InternoBadge } from "@/components/site/InternoBadge";
 import "@/styles/checkout/checkout.css";
 import "@/styles/checkout/refinements.css";
 
@@ -39,5 +40,10 @@ export default function CheckoutGroupLayout({ children }: { children: ReactNode 
   // /checkout, /checkout/pedido/[token] e /checkout/descadastrar/[token]). O reset e os tokens de cor
   // do ".ck-root" ficam por conta de cada página, junto com a classe ".ck" quando for o caso — ver
   // comentário no topo de checkout.css.
-  return <div className={`${display.variable} ${text.variable}`}>{children}</div>;
+  return (
+    <div className={`${display.variable} ${text.variable}`}>
+      <InternoBadge />
+      {children}
+    </div>
+  );
 }

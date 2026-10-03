@@ -1,4 +1,5 @@
 import { CLARITY_ID } from "@/lib/site/constants";
+import { internoAtivo } from "@/lib/site/interno";
 
 /**
  * Carrega o Microsoft Clarity no checkout (o site publico carrega pelo GTM, que o checkout nao tem). Mesmo snippet
@@ -7,6 +8,10 @@ import { CLARITY_ID } from "@/lib/site/constants";
  * do cartao ficam em iframe do gateway e o Clarity nao grava.
  */
 export function loadClarity(): void {
+  // So no dominio oficial: localhost/preview nao entram nas gravacoes (Clarity 02/10).
+  if (!/(^|\.)aquablastbrasil\.com\.br$/.test(location.hostname)) return;
+  // Modo interno (`?interno=1`): o navegador do dono nao entra nas gravacoes.
+  if (internoAtivo()) return;
   const w = window as Window & { clarity?: unknown };
   if (w.clarity || document.getElementById("ms-clarity")) return;
   const q: unknown[] = [];

@@ -84,6 +84,10 @@
   body .aquablast-home #ofertas.offers .offer-reassurance > span {
     font-size: 0.875rem;
   }
+  /* Selo de frete: o texto ocupa 2 linhas no celular; equilibra para nao sobrar "pelo CEP" sozinho. */
+  body .aquablast-home #ofertas.offers .offer-shipping-seal > span {
+    text-wrap: balance;
+  }
   /* Desconto do Pix e linha de preco da barra fixa: preco nunca abaixo de 12px. */
   body .aquablast-home #ofertas .offer-price-line .pix-discount {
     font-size: 0.75rem;
@@ -129,8 +133,8 @@
   }
 }
 
-/* Barra fixa de compra (auditoria UX 01/10, ok do dono): escondida enquanto o botao "Selecione seu
-   kit" do topo esta na tela, para nao haver dois botoes de compra disputando a primeira dobra.
+/* Barra fixa de compra (auditoria UX 01/10, ok do dono): escondida enquanto o botao "Comprar agora" (antes "Selecione seu
+   kit") do topo esta na tela, para nao haver dois botoes de compra disputando a primeira dobra.
    MobileBuy.tsx poe a classe .hero-cta-visible; aqui ela so desliza para baixo. */
 @media (max-width: 42.5rem) {
   body .aquablast-home .mobile-buy {
@@ -145,5 +149,55 @@
 @media (max-width: 42.5rem) and (prefers-reduced-motion: reduce) {
   body .aquablast-home .mobile-buy {
     transition: none;
+  }
+}
+
+/* Cards de oferta mais curtos no celular (pedido do dono, 03/10: "muito longos e grandes").
+   Medido em 390px: kit 876px e unidade 782px, cada card maior que uma tela. So encaixe e respiro:
+   nenhum texto, imagem ou cor muda. Texto continua >= 12px e o botao de compra nao encolhe. */
+@media (max-width: 42.5rem) {
+  /* Foto do topo um pouco mais baixa (o corte e o mesmo object-fit de antes). */
+  body .aquablast-home #ofertas.offers {
+    --offer-img-h-m: clamp(5.75rem, calc((100vw - 2.25rem) / 3.7), 7rem);
+  }
+  body .aquablast-home #ofertas.offers .offer-card-body {
+    gap: 0.375rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.625rem;
+  }
+  /* Beneficios: miniatura menor e texto colado nela. */
+  body .aquablast-home #ofertas.offers .offer-benefits li {
+    gap: 0.125rem;
+    line-height: 1.2;
+  }
+  body .aquablast-home #ofertas.offers .offer-benefit-photo {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+  /* Selo de frete: arte menor para o texto caber em 2 linhas. */
+  body .aquablast-home #ofertas.offers .offer-shipping-seal {
+    gap: 0.5rem;
+    padding: 0.125rem 0.5rem;
+  }
+  body .aquablast-home #ofertas.offers .offer-shipping-seal > img {
+    width: 4.25rem;
+  }
+  /* Dica do kit e nota do checkout: uma linha a menos de respiro entre elas. */
+  body .aquablast-home #ofertas.offers :is(.kit-selection-hint, .offer-checkout-note) {
+    line-height: 1.25;
+  }
+}
+
+/* Beneficios do card com a miniatura ao lado do texto (69px -> 29px). So de 375px para cima:
+   em 360px "Reservatorio" ao lado da miniatura passava 1px da coluna; ali fica empilhado. */
+@media (min-width: 23.4375rem) and (max-width: 42.5rem) {
+  body .aquablast-home #ofertas.offers .offer-benefits li {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0 0.125rem;
+    font-size: 0.75rem;
+    text-align: left;
   }
 }

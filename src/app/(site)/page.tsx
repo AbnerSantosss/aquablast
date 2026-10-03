@@ -69,11 +69,12 @@ export default async function HomePage() {
           <ReviewViewerProvider>
             <main id="conteudo">
               <Hero />
+              {/* Dono, 03/10: avaliacoes logo depois do topo, para testar a conversao. */}
+              <Reviews />
               <Moments />
               <Gifting />
               <Accessories />
               <Offers />
-              <Reviews />
               <Faq />
             </main>
             <Footer whatsapp={whatsapp} />

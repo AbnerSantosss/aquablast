@@ -28,7 +28,7 @@ async function withPage(fn, query) {
     await L.scenario("16a", "Cupom certo (minusculo na URL): Pix R$ 5,00, cartao sem desconto, pedido gravado com 5,00", () =>
       withPage(async (page) => {
         // Cartao ignora o cupom.
-        await L.waitText(page.locator(".order-summary .total"), /total R\$ 169,90/);
+        await L.waitText(page.locator(".order-summary .total"), /total R\$ 179,90/);
         assert.equal(await priceDetails(page).getByText("Desconto do cupom no Pix").count(), 0, "cartao nao pode mostrar cupom");
         await L.choosePix(page);
         await L.waitText(page.locator(".order-summary .total b"), "R$ 5,00");

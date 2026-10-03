@@ -118,9 +118,10 @@ function CatalogGallery({ children }: { children: ReactNode }) {
         </span>
       </button>
       <h2 className="catalog-choice-title" id="catalog-choice-title">
-        <a className="catalog-choice-link" href="#ofertas">Selecione seu kit</a>
+        {/* Celular (dono, 03/10): chamada explicita de compra; no desktop a pilula "Selecione seu kit" e outra. */}
+        <a className="catalog-choice-link" href="#ofertas">Comprar agora</a>
       </h2>
-      <div className="catalog-thumbnails" role="group" aria-labelledby="catalog-choice-title">
+      <div className="catalog-thumbnails" role="group" aria-label="Fotos e vídeo do produto">
         <button
           className="desktop-video-thumb"
           data-desktop-video=""
