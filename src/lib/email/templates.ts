@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { emailTemplates, type EmailTemplate } from "@/db/schema";
 
@@ -435,6 +435,14 @@ export async function ensureDefaultTemplates(): Promise<void> {
       // Corpo intocado = ninguém personalizou o modelo; nome e assunto padrão acompanham (o de access_code mudou em 2026-10-02).
       .set({ bodyHtml: t.bodyHtml, name: t.name, subject: t.subject, description: t.description, updatedAt: new Date() })
       .where(and(eq(emailTemplates.key, key), inArray(sql<string>`md5(${emailTemplates.bodyHtml})`, hashes)));
+  }
+  // A descrição é só texto interno do painel e não é editável lá (o salvar sempre regrava a padrão),
+  // então acompanha o código mesmo quando o corpo foi personalizado. Sem mexer em updatedAt.
+  for (const [key, t] of Object.entries(DEFAULT_TEMPLATES)) {
+    await db
+      .update(emailTemplates)
+      .set({ description: t.description })
+      .where(and(eq(emailTemplates.key, key), ne(emailTemplates.description, t.description)));
   }
 }
 
