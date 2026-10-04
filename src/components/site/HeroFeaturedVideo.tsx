@@ -22,7 +22,7 @@ const fullscreenUnsupported = () =>
  * modo vídeo e pausa quando uma foto é escolhida — como o app.js original.
  */
 export function HeroFeaturedVideo() {
-  const { pack, videoActive, videoRequest, selectHeroOption } = useSelection();
+  const { pack, videoActive, videoRequest, selectHeroOption, selectOffer } = useSelection();
   const videoRef = useRef<HTMLVideoElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const [controls, setControls] = useState<ControlsState>({ muted: true, paused: false, fullscreen: false });
@@ -92,6 +92,15 @@ export function HeroFeaturedVideo() {
     selectHeroOption(pack === "kit" ? 1 : 0);
   };
 
+  // Desktop (pedido do dono, 04/10): o Clarity mostrou muito clique no card do vídeo. Clicar em qualquer ponto dele
+  // que não seja um controle leva às ofertas. No celular fica como estava (o toque no vídeo não rola a página).
+  const onFrameClick = (event: MouseEvent<HTMLDivElement>) => {
+    if ((event.target as HTMLElement).closest("button, a")) return;
+    if (document.fullscreenElement === frameRef.current) return;
+    if (!window.matchMedia("(min-width: 56.3125rem)").matches) return;
+    selectOffer();
+  };
+
   const soundLabel = controls.muted ? "Ativar som do vídeo" : "Silenciar vídeo";
   const playLabel = controls.paused ? "Reproduzir vídeo" : "Pausar vídeo";
   const fullscreenLabel = controls.fullscreen ? "Sair da tela cheia" : "Ampliar vídeo";
@@ -100,7 +109,8 @@ export function HeroFeaturedVideo() {
     .join(" ");
 
   return (
-    <div className="hero-featured-video" ref={frameRef}>
+    // Atalho de mouse; pelo teclado o caminho é o link "Escolher meu AquaBlast" logo abaixo.
+    <div className="hero-featured-video" ref={frameRef} onClick={onFrameClick}>
       <div className="hero-video-copy">
         <span className="eyebrow">VEJA O AQUABLAST EM AÇÃO</span>
         <h2>

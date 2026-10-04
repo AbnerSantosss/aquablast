@@ -165,3 +165,7 @@ main section .section-heading .eyebrow,.benefits-copy>.eyebrow,.gifting-grid>div
 .accessories-heading h2{max-width:none;margin-inline:auto;text-align:center}
 .catalog-gift-label{justify-content:center;text-align:center}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important;animation:none!important}.ticker-track{width:auto}.ticker-track>span{white-space:normal;text-align:center;justify-content:center;padding:0.5625rem 0.875rem;flex-wrap:wrap;gap:0.1875rem 0.375rem}.ticker-track>span[aria-hidden=true],.ticker-toggle{display:none}}
+/* Faixa rolante virou link para /entrega (Announcement.tsx): sem sublinhado, com mao. */
+a.delivery-ticker{text-decoration:none;cursor:pointer}
+/* Desktop: o card do video do topo leva as ofertas ao clicar (HeroFeaturedVideo.tsx). */
+@media(min-width:56.3125rem){.hero-featured-video:not(:fullscreen){cursor:pointer}}

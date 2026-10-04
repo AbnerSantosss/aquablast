@@ -66,6 +66,8 @@ export const CONTACT_EMAIL = "contato.aquablastbr@gmail.com";
 
 // Pagina da politica de trocas e devolucoes (src/app/(site)/trocas-e-devolucoes).
 export const RETURNS_PATH = "/trocas-e-devolucoes";
+/** Página de entrega e frete: destino do clique na faixa rolante do topo. */
+export const DELIVERY_PATH = "/entrega";
 
 export const COLOR_LABELS: Record<Color, string> = {
   azul: "Azul",

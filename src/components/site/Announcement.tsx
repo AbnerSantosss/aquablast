@@ -1,4 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
+import Link from "next/link";
+import { DELIVERY_PATH } from "@/lib/site/constants";
 
 export function SkipLink() {
   return (
@@ -67,16 +69,14 @@ function TickerGroup({ hidden, promise }: { hidden?: boolean; promise: string | 
 
 export function DeliveryTicker({ promise }: { promise: string | null }) {
   return (
-    // aria-description vem do HTML original; o plugin a11y ainda não a reconhece em role=region.
-    // eslint-disable-next-line jsx-a11y/role-supports-aria-props
-    <div
+    // A faixa inteira é um link para a página de entrega (pedido do dono, 04/10: o Clarity mostrou muito clique
+    // nela e não levava a lugar nenhum). O movimento continua parando com foco ou ponteiro em cima.
+    <Link
       className="delivery-ticker"
-      role="region"
-      tabIndex={0}
-      aria-label={
+      href={DELIVERY_PATH}
+      aria-label={`${
         promise ? `${promise}; estoque abastecido` : "Entrega Full, estoque abastecido e Dia das Crianças"
-      }
-      aria-description="O movimento para enquanto esta faixa recebe foco ou o ponteiro está sobre ela."
+      }. Ver como funciona a entrega`}
     >
       <div className="ticker-window">
         <div className="ticker-track">
@@ -84,6 +84,6 @@ export function DeliveryTicker({ promise }: { promise: string | null }) {
           <TickerGroup hidden promise={promise} />
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
