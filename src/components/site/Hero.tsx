@@ -200,7 +200,7 @@ function CatalogGallery({ children }: { children: ReactNode }) {
         >
           <span className="video-thumb-preview" aria-hidden="true">
             <img className="video-thumb-frame" src="/thumbs/video-moldura-270.webp" alt="" width={1254} height={1254} />
-            <img className="video-thumb-poster" src="/thumbs/video-destaque-poster-108.webp" alt="" />
+            <img className="video-thumb-poster" src="/thumbs/video-destaque-v2-poster-108.webp" alt="" />
           </span>
           <span className="video-thumb-label">▶ Ver vídeo</span>
         </button>

@@ -56,7 +56,7 @@ export default async function HomePage() {
   // (ate 56.25rem, mesmo MOBILE_QUERY do CSS): desde 03/10 22h41 o video aparece sem moldura (mobile-dobra.css), entao
   // a imagem da dobra passa a ser o poster do video; o preload da moldura de 760px saiu para nao baixar arte que
   // nao e usada no celular.
-  preload("/videos/video-destaque-poster.jpg", { as: "image", fetchPriority: "high", media: "(max-width: 56.25rem)" });
+  preload("/videos/video-destaque-v2-poster.jpg", { as: "image", fetchPriority: "high", media: "(max-width: 56.25rem)" });
   preload("/video-moldura.webp", { as: "image", fetchPriority: "high", media: "(min-width: 56.3125rem)" });
   // Uma leitura do banco por render; null (sem cadastro ou sem banco) = nenhum WhatsApp.
   const whatsapp = await getSupportWhatsapp();

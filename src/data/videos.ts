@@ -8,6 +8,6 @@ export const videos: SiteVideo[] = [
 ];
 
 export const heroVideo = {
-  src: "/videos/video-destaque.mp4",
-  poster: "/videos/video-destaque-poster.jpg",
+  src: "/videos/video-destaque-v2.mp4",
+  poster: "/videos/video-destaque-v2-poster.jpg",
 };
