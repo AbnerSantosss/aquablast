@@ -150,7 +150,7 @@ const aggregateRating = {
 const product = {
   "@type": "Product",
   "@id": ID.product,
-  name: "AquaBlast — Brinquedo de água elétrico com efeito luminoso",
+  name: "AquaBlast — Lançador de Água Elétrico Automático USB Recarregável com LED Brinquedo Infantil para Piscina e Praia",
   category: "Brinquedos > Brinquedos de água",
   image: [
     absoluteUrl("/aquablast-hero.webp"),
