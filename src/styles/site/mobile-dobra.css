@@ -19,10 +19,10 @@
 }
 
 @media (max-width: 56.25rem) {
-  /* Altura do video: tela - (aviso 32 + cabecalho 48 + topo 18 + titulo e nota ~88 + botao 68 + barra 82 = 336px)
-     - folga. Nunca maior que a largura (quadrado) e nunca menor que 15rem. */
+  /* Altura do video: tela - (aviso 32 + cabecalho 48 + topo 18 + titulo de 3 linhas e nota ~110 + botao 68 +
+     barra 82 = 358px) - folga. Nunca menor que 18rem nem maior que 34rem; a largura sai da proporcao 9:16. */
   body .aquablast-home .catalog-gallery {
-    --dobra-video-h: clamp(15rem, calc(100svh - 22.5rem), calc(100vw - 2.25rem));
+    --dobra-video-h: clamp(18rem, calc(100svh - 24rem), 34rem);
     row-gap: 0;
   }
 
@@ -96,14 +96,18 @@
     grid-row: 2;
   }
   body .aquablast-home .catalog-gallery .hero-featured-video:not(:fullscreen) {
+    justify-self: center;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
     height: var(--dobra-video-h);
-    aspect-ratio: auto;
+    aspect-ratio: 9 / 16;
     background: #031a37;
     border-radius: 1rem;
     overflow: hidden;
   }
-  /* Enquadramento: o video e vertical (9:16) e a caixa e mais larga que alta; "cover" preenche sem distorcer
-     e o foco fica na parte de cima, onde esta o rosto da crianca. */
+  /* Enquadramento: a caixa tem a proporcao do video (9:16) e "contain" garante que nada e cortado: as legendas
+     ficam na parte de baixo do video e precisam aparecer (pedido do dono, 04/10). */
   body .aquablast-home .catalog-gallery .hero-featured-video:not(:fullscreen) video {
     inset: 0;
     left: 0;
@@ -111,8 +115,7 @@
     width: 100%;
     height: 100%;
     border-radius: 0;
-    object-fit: cover;
-    object-position: 50% 6%;
+    object-fit: contain;
   }
   /* Controles (som, play, ampliar) por cima do video inteiro, com alvo de toque de 44px. */
   body .aquablast-home .catalog-gallery .hero-video-controls:not([hidden]) {

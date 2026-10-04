@@ -19,7 +19,7 @@ const summary = reviewSummary(reviews);
 // (DesktopProductPanel) e a dobra do celular (MobileDobraHead / MobileDobraPrice, pedido do dono 03/10 22h41:
 // so textos que ja existem no site). Cada bloco fica display:none na largura que nao e a dele
 // (mobile-dobra.css), entao nunca ha dois titulos ou precos visiveis nem lidos pelo leitor de tela.
-const PRODUCT_TITLE = "Lançador de Água Elétrico Automático USB Recarregável com LED Brinquedo Infantil para Piscina e Praia";
+const PRODUCT_TITLE = "Lançador de Água Elétrico Automático USB Recarregável com LED Brinquedo Infantil";
 
 /** Nota + contagem, com link para #avaliacoes. `prefix` escolhe as classes: "desktop" ou "mobile". */
 function ReviewSummaryLink({ prefix, track = false }: { prefix: "desktop" | "mobile"; track?: boolean }) {
