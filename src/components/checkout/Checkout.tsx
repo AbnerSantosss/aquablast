@@ -11,6 +11,7 @@ import { themeVars } from "@/lib/checkout/own/theme";
 import { readAdIds } from "@/lib/tracking-ads/capture";
 import { isApiFail, postCart, postOpened, type CartPayload, type CartStep, type CartTrackingInput } from "./api";
 import { Campaign } from "./Campaign";
+import { ColorPick } from "./ColorPick";
 import { ConsentBanner, readStored } from "./ConsentBanner";
 import { loadClarity } from "./clarity";
 import { BadFieldContext, ErrorBox, fullName, UFS } from "./Field";
@@ -77,7 +78,7 @@ function writeTokenToStorage(token: string): void {
  */
 export function Checkout({
   theme,
-  selection,
+  selection: initialSelection,
   methods,
   maxInstallments,
   pixTtlSeconds,
@@ -92,6 +93,7 @@ export function Checkout({
   consentRequired = true,
   initial,
   paid,
+  deliveryPromise = null,
 }: {
   theme: Theme;
   selection: Selection;
@@ -112,8 +114,12 @@ export function Checkout({
   consentRequired?: boolean;
   initial?: CheckoutInitial;
   paid?: PaidInfo;
+  /** Aviso de entrega com data limite, decidido no servidor (lib/site/delivery-promise.ts); null depois da data. */
+  deliveryPromise?: string | null;
 }) {
   const router = useRouter();
+  // A cor pode ser trocada aqui (ColorPick); a seleção da URL/carrinho é só o ponto de partida.
+  const [selection, setSelection] = useState<Selection>(initialSelection);
   const [cartToken, setCartToken] = useState<string | undefined>(initial?.cartToken);
   const [step, setStep] = useState(initial ? STEP_OF[initial.step] : 1);
   const [data, setData] = useState<FormData>(initial ? { ...initial.customer, ...initial.address } : EMPTY);
@@ -226,11 +232,12 @@ export function Checkout({
     return run;
   }
 
-  async function saveCartNow(targetStep: CartStep, bumpValue: boolean, opts: { customer?: boolean; address?: boolean; lead?: CartPayload["lead"] } = {}, bumpColorValue: Color | null = bumpColor) {
+  async function saveCartNow(targetStep: CartStep, bumpValue: boolean, opts: { customer?: boolean; address?: boolean; lead?: CartPayload["lead"]; selection?: Selection } = {}, bumpColorValue: Color | null = bumpColor) {
+    const sel = opts.selection ?? selection;
     const version = ++quoteVersion.current;
     const payload: CartPayload = {
       token: tokenRef.current ?? cartToken ?? readTokenFromStorage(),
-      selection: { pack: selection.pack, colors: selection.colors },
+      selection: { pack: sel.pack, colors: sel.colors },
       step: targetStep,
       bump: bumpValue,
       ...(bumpValue && bumpColorValue ? { bumpColor: bumpColorValue } : {}),
@@ -427,6 +434,28 @@ export function Checkout({
     void saveCart("dados", bump, { lead: { ...(name ? { name } : {}), ...(email ? { email } : {}), ...(phone ? { phone } : {}) } });
   }
 
+  // Troca de cor (etapas 1 e 2): atualiza a tela, a URL (recarregar mantém) e, se o carrinho já existe, grava nele.
+  function handleColorChange(index: 0 | 1, color: Color) {
+    const [first, second] = selection.colors;
+    const colors: Color[] = selection.pack === "kit" ? (index === 0 ? [color, second ?? first] : [first, color]) : [color];
+    const next: Selection = { ...selection, colors };
+    setSelection(next);
+    if (window.location.pathname === "/checkout") {
+      const q = new URLSearchParams(window.location.search);
+      if (next.pack === "kit") {
+        q.set("cor1", colors[0]);
+        q.set("cor2", colors[1] ?? colors[0]);
+      } else {
+        q.set("cor", colors[0]);
+      }
+      window.history.replaceState(null, "", `?${q.toString()}`);
+    }
+    if (!tokenRef.current) return;
+    void saveCart(step === 2 ? "entrega" : "dados", bump, { selection: next, ...(step === 2 ? { customer: true } : {}) }).then((result) => {
+      if (isApiFail(result)) setNotice("Não foi possível salvar a cor agora. Ela vai junto quando você continuar.");
+    });
+  }
+
   function handleBumpChange(value: boolean) {
     setBump(value);
     const color = value ? bumpColor : null;
@@ -567,6 +596,7 @@ export function Checkout({
             </button>
           </div>
         ) : null}
+        {!paid && step < 3 ? <ColorPick selection={selection} onChange={handleColorChange} /> : null}
         <div className="ck-grid">
           <section className="ck-card ck-flow" aria-label="Finalize seu pedido">
             {paid ? (
@@ -630,6 +660,7 @@ export function Checkout({
             coupon={coupon}
             couponBusy={couponBusy || busy}
             onCouponApply={applyCoupon}
+            deliveryPromise={deliveryPromise}
           />
           <TrustSeals methods={methods} maxInstallments={maxInstallments} />
         </div>

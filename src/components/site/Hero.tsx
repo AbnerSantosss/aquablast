@@ -16,7 +16,7 @@ import { useSelection } from "./SelectionProvider";
 const summary = reviewSummary(reviews);
 
 // Titulo do produto, nota e preco aparecem em dois lugares com a MESMA fonte de texto: o painel do desktop
-// (DesktopProductPanel) e a dobra do celular (MobileDobraHead / MobileDobraPrice, pedido do dono 03/10 22h41:
+// (DesktopProductPanel) e a dobra do celular (MobileDobraHead / MobileTopBuy, pedido do dono 03/10 22h41:
 // so textos que ja existem no site). Cada bloco fica display:none na largura que nao e a dele
 // (mobile-dobra.css), entao nunca ha dois titulos ou precos visiveis nem lidos pelo leitor de tela.
 const PRODUCT_TITLE = "Lançador de Água Elétrico Automático USB Recarregável com LED Brinquedo Infantil";
@@ -69,19 +69,41 @@ function MobileDobraHead() {
   );
 }
 
-/** Celular: preco do pacote selecionado, logo abaixo do botao (some no desktop). */
-function MobileDobraPrice() {
-  const { pack } = useSelection();
+const TOP_PACKS: readonly Pack[] = ["unit", "kit"];
+
+/**
+ * Celular: compra direta no primeiro bloco (pedido do dono, 04/10; some no desktop). As duas opcoes mostram o
+ * preco e o botao leva direto ao /checkout com o pacote escolhido e as cores que estao valendo (padrao: azul;
+ * kit azul + preto). Escolher o pacote aqui usa `setPack`: nao troca o video pela foto nem rola a pagina, entao
+ * nada pula. Quem quer outra cor usa o link "Cores à sua escolha", que leva ao card do pacote em #ofertas.
+ * So textos que ja existem no site (MobileBuy, DesktopProductPanel, Offers).
+ */
+function MobileTopBuy({ deliveryPromise }: { deliveryPromise: string | null }) {
+  const { pack, setPack } = useSelection();
   return (
-    <div className="mobile-dobra-price">
-      <span className="mobile-dobra-pack">{pack === "kit" ? "Kit com 2 AquaBlast" : "1 unidade AquaBlast"}</span>
-      <PriceLines pack={pack} amountClassName="mobile-dobra-amount" />
+    <div className="mobile-top-buy" role="group" aria-label="Escolha a quantidade de AquaBlast">
+      <div className="top-buy-options">
+        {TOP_PACKS.map((option) => (
+          <button key={option} className="top-buy-option" data-top-pack={option} aria-pressed={pack === option} onClick={() => setPack(option)}>
+            {option === "kit" ? <span className="kit-best-tag top-buy-tag">Mais vendido</span> : null}
+            <strong>{option === "kit" ? "Kit com 2" : "1 unidade"}</strong>
+            <span className="top-buy-installment">
+              12x de <b>{PRICES[option].installment}</b>
+            </span>
+            <span className="top-buy-pix">ou {PRICES[option].pix} no Pix</span>
+          </button>
+        ))}
+      </div>
+      <PurchaseLink direct className="button button-green top-buy-button" pack={pack}>
+        {pack === "kit" ? "Comprar kit com 2" : "Comprar 1 unidade"}
+      </PurchaseLink>
+      {deliveryPromise ? <p className="top-buy-promise">{deliveryPromise}</p> : null}
     </div>
   );
 }
 
 // No HTML original, o painel de produto e o vídeo em destaque ficam DENTRO de .catalog-gallery.
-function CatalogGallery({ children }: { children: ReactNode }) {
+function CatalogGallery({ children, deliveryPromise }: { children: ReactNode; deliveryPromise: string | null }) {
   const {
     color,
     heroPhoto,
@@ -128,11 +150,14 @@ function CatalogGallery({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className={videoActive ? "catalog-gallery desktop-video-active" : "catalog-gallery"}>
+    <div className={["catalog-gallery", videoActive && "desktop-video-active", deliveryPromise && "has-promise"].filter(Boolean).join(" ")}>
       <h1 id="hero-title" className="visually-hidden">
         AquaBlast: brinquedo de água elétrico, presente de Dia das Crianças — escolha 1 unidade ou o kit com 2
       </h1>
       <MobileDobraHead />
+      {/* Vem antes do rotulo e da foto no HTML porque no celular fica acima deles (linha 3 da grade): o HTML chega
+          aos pedacos em rede movel e o que chega depois nao pode empurrar o que ja esta na tela (CLS, 04/10). */}
+      <MobileTopBuy deliveryPromise={deliveryPromise} />
       <div className="catalog-gift-label mobile-gallery-label">
         <img src="/thumbs/gift-60.webp" alt="" width={34} height={34} />
         <span className="hero-gift-copy">
@@ -184,12 +209,6 @@ function CatalogGallery({ children }: { children: ReactNode }) {
           {label}
         </span>
       </button>
-      <h2 className="catalog-choice-title" id="catalog-choice-title">
-        {/* Celular (dono, 03/10 22h41): o botao usa o texto que ja existe em Reviews.tsx ("Quero meu AquaBlast");
-            no desktop este h2 fica display:none (a pilula "Selecione seu kit" do painel e outra). */}
-        <a className="catalog-choice-link" href="#ofertas">Quero meu AquaBlast</a>
-      </h2>
-      <MobileDobraPrice />
       <div className="catalog-thumbnails" role="group" aria-label="Fotos e vídeo do produto">
         <button
           className="desktop-video-thumb"
@@ -419,7 +438,7 @@ function DesktopProductPanel() {
   );
 }
 
-export function Hero() {
+export function Hero({ deliveryPromise }: { deliveryPromise: string | null }) {
   const { selectHeroVideo } = useSelection();
 
   // Como no app.js: volta ao vídeo ao restaurar a página (bfcache) e ao entrar no layout mobile.
@@ -442,7 +461,7 @@ export function Hero() {
   return (
     <section className="catalog-hero" id="inicio" aria-labelledby="hero-title">
       <div className="container catalog-grid">
-        <CatalogGallery>
+        <CatalogGallery deliveryPromise={deliveryPromise}>
           <DesktopProductPanel />
           <HeroFeaturedVideo />
         </CatalogGallery>

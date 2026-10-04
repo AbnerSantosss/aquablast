@@ -7,23 +7,40 @@
    Marcacao em Hero.tsx (MobileDobraHead, botao #catalog-choice-title, MobileDobraPrice); os textos vem das mesmas
    fontes do painel do desktop (PRODUCT_TITLE, reviewSummary, PRICES).
 
-   Ordem na grade da galeria (uma coluna): 1 titulo + nota | 2 video | 3 botao | 4 preco | 5 "Lembrei de voce" |
-   6 miniaturas. O rotulo "Lembrei de voce" nao saiu do site: desceu para antes das miniaturas.
+   Ordem na grade da galeria (uma coluna): 1 titulo + nota | 2 video | 3 compra direta (opcoes com preco, botao,
+   aviso de entrega) | 5 "Lembrei de voce" | 6 miniaturas. O rotulo "Lembrei de voce" nao saiu do site: desceu para
+   antes das miniaturas.
    Area util da primeira tela = a que fica ACIMA da barra fixa (.mobile-buy, 82px colados embaixo): o video e a unica
-   peca elastica e cresce/encolhe com a altura da tela; titulo, nota e botao sempre cabem. O preco da primeira tela
-   e o da barra fixa; a linha de preco do conteudo vem logo abaixo do botao. */
+   peca elastica e cresce/encolhe com a altura da tela; titulo, nota, opcoes com preco e botao sempre cabem.
+
+   04/10 (CLS + compra no topo, pedido do dono a partir do Clarity):
+   - A LINHA DO VIDEO E RESERVADA na grade (grid-template-rows) com a mesma altura do video. Antes a linha so ganhava
+     altura quando o video entrava no HTML, e ele e o ultimo filho da galeria: em rede movel o HTML chega aos pedacos,
+     a tela ja estava pintada e o video empurrava botao, preco e miniaturas ~290px para baixo (CLS 0,27 a 0,40 medido).
+   - O botao "Quero meu AquaBlast" (que so rolava ate #ofertas) e a caixa de preco deram lugar ao bloco .mobile-top-buy:
+     1 unidade / Kit com 2 com preco e botao que vai direto ao checkout. Marcacao em Hero.tsx (MobileTopBuy). */
 
 .mobile-dobra-head,
-.mobile-dobra-price {
+.mobile-top-buy {
   display: none;
 }
 
 @media (max-width: 56.25rem) {
-  /* Altura do video: tela - (aviso 32 + cabecalho 48 + topo 18 + titulo de 3 linhas e nota ~110 + botao 68 +
-     barra 82 = 358px) - folga. Nunca menor que 18rem nem maior que 34rem; a largura sai da proporcao 9:16. */
+  /* Altura do video: tela - (aviso 32 + cabecalho 48 + topo 18 + titulo de 3 linhas e nota ~110 + bloco de compra
+     ~137 [opcoes 69 + botao 48 + folgas] + barra 82 = 428px). Com o aviso de entrega (2 linhas, ~40px) o
+     bloco fica maior, entao a galeria ganha .has-promise e o video cede esse espaco. Nunca menor que 13rem nem maior
+     que 34rem; a largura sai da proporcao 9:16. */
   body .aquablast-home .catalog-gallery {
-    --dobra-video-h: clamp(18rem, calc(100svh - 24rem), 34rem);
+    --dobra-video-h: clamp(13rem, calc(100svh - 26.75rem), 34rem);
     row-gap: 0;
+  }
+  body .aquablast-home .catalog-gallery.has-promise {
+    --dobra-video-h: clamp(13rem, calc(100svh - 29.25rem), 34rem);
+  }
+  /* Linha 2 reservada desde a primeira pintura, antes de o video chegar no HTML (ver cabecalho). So com o video
+     ativo: com uma foto escolhida a linha volta a ter a altura da foto. */
+  body .aquablast-home .catalog-gallery.desktop-video-active {
+    grid-template-rows: auto var(--dobra-video-h);
   }
 
   /* 1. Titulo + nota */
@@ -141,75 +158,89 @@
     top: 0.375rem;
   }
 
-  /* 3. Botao "Quero meu AquaBlast", na largura da coluna. */
-  body .aquablast-home .catalog-gallery #catalog-choice-title {
-    grid-row: 3;
-    justify-self: stretch;
-    width: 100%;
-    margin: 0.5rem 0 0;
-    font-size: 1.1875rem;
-    font-weight: 900;
-  }
-  body .aquablast-home .catalog-gallery #catalog-choice-title .catalog-choice-link {
-    min-height: 3.125rem;
-    width: 100%;
-    color: #fff;
-  }
-
-  /* 4. Preco (pacote selecionado), mesmos textos do painel do desktop. */
-  body .aquablast-home .catalog-gallery .mobile-dobra-price {
-    display: block;
+  /* 3. Compra direta: duas opcoes com preco, botao para o checkout, aviso de entrega e link das cores. */
+  body .aquablast-home .catalog-gallery .mobile-top-buy {
+    display: grid;
     grid-column: 1;
-    grid-row: 4;
-    margin-top: 1rem;
-    padding: 0.375rem 0.75rem;
-    border: 0.0625rem solid #c0e6f8;
-    border-radius: 0.875rem;
-    background: linear-gradient(110deg, #e0f4ff, #f2faff);
-    text-align: center;
+    grid-row: 3;
+    gap: 0.5rem;
+    margin: 0.75rem 0 0;
   }
-  body .aquablast-home .mobile-dobra-pack {
-    display: block;
-    font-size: 0.8125rem;
-    line-height: 1.25;
-    color: #3d617a;
+  body .aquablast-home .top-buy-options {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.5rem;
   }
-  body .aquablast-home .mobile-dobra-price .installment-row {
+  body .aquablast-home .top-buy-option {
+    position: relative;
     display: flex;
-    align-items: baseline;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    gap: 0.375rem;
-    color: var(--blue);
-    white-space: nowrap;
+    min-height: 3.75rem;
+    padding: 0.375rem 0.25rem 0.3125rem;
+    border: 0.125rem solid #c0e6f8;
+    border-radius: 0.875rem;
+    background: #f2faff;
+    color: var(--navy);
+    font: inherit;
+    line-height: 1.2;
+    text-align: center;
+    cursor: pointer;
   }
-  body .aquablast-home .mobile-dobra-price .installment-count {
-    font-size: 1.125rem;
-    font-weight: 800;
+  body .aquablast-home .top-buy-option[aria-pressed="true"] {
+    border-color: var(--blue);
+    background: #e0f4ff;
   }
-  body .aquablast-home .mobile-dobra-amount {
-    font-size: 1.625rem;
+  body .aquablast-home .top-buy-option:focus-visible {
+    outline: 0.1875rem solid var(--blue);
+    outline-offset: 0.125rem;
+  }
+  body .aquablast-home .top-buy-option > strong {
+    font-size: 0.9375rem;
     font-weight: 900;
-    line-height: 1.1;
-    letter-spacing: -0.04em;
-    font-variant-numeric: lining-nums;
+  }
+  body .aquablast-home .top-buy-installment {
     color: var(--blue);
-    white-space: nowrap;
-  }
-  body .aquablast-home .mobile-dobra-price .pix-price-row {
-    justify-content: center;
-    gap: 0.125rem 0.5rem;
-    margin-top: 0;
-  }
-  body .aquablast-home .mobile-dobra-price .pix-icon {
-    width: 1rem;
-    height: 1rem;
-  }
-  body .aquablast-home .mobile-dobra-price .pix-label {
     font-size: 0.875rem;
+    font-weight: 800;
+    white-space: nowrap;
   }
-  body .aquablast-home .mobile-dobra-price .pix-label strong {
-    font-size: 1rem;
+  body .aquablast-home .top-buy-installment > b {
+    font-size: 1.125rem;
     font-weight: 900;
+    letter-spacing: -0.02em;
+    font-variant-numeric: lining-nums;
+  }
+  body .aquablast-home .top-buy-pix {
+    color: #3d617a;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+  /* "Mais vendido": o mesmo selo do painel do desktop, parado, no canto do botao do kit. */
+  body .aquablast-home .top-buy-option > .top-buy-tag {
+    top: 0;
+    right: 0.5rem;
+    transform: translateY(-55%);
+    padding: 0.0625rem 0.4375rem;
+    font-size: 0.625rem;
+  }
+  body .aquablast-home .mobile-top-buy > .top-buy-button {
+    width: 100%;
+    min-height: 3rem;
+    padding-block: 0.5rem;
+    font-size: 1.0625rem;
+    font-weight: 900;
+  }
+  /* Aviso de entrega com data limite: vem no HTML do servidor (ou nao vem), nunca aparece depois. */
+  body .aquablast-home .top-buy-promise {
+    margin: 0;
+    color: var(--green);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    line-height: 1.25;
+    text-align: center;
+    text-wrap: balance;
   }
 
   /* 5. "Lembrei de voce" desce para logo antes das miniaturas. */
@@ -232,10 +263,17 @@
 /* Tablet e celular deitado (681px a 900px): a coluna chega a 640px; um video na largura toda ficaria
    muito cortado. Aqui o video mantem a proporcao 9:16 (sem cortar), centralizado. */
 @media (min-width: 42.5625rem) and (max-width: 56.25rem) {
+  /* A altura mora na variavel porque a linha da grade e reservada com ela (o titulo aqui tem menos linhas). */
+  body .aquablast-home .catalog-gallery {
+    --dobra-video-h: clamp(13rem, calc(100svh - 24.75rem), 34rem);
+  }
+  body .aquablast-home .catalog-gallery.has-promise {
+    --dobra-video-h: clamp(13rem, calc(100svh - 26.25rem), 34rem);
+  }
   body .aquablast-home .catalog-gallery .hero-featured-video:not(:fullscreen) {
     justify-self: center;
     width: auto;
-    height: clamp(15rem, calc(100svh - 22.5rem), 34rem);
+    height: var(--dobra-video-h);
     aspect-ratio: 9 / 16;
   }
 }

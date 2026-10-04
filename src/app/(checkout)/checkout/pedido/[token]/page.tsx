@@ -7,6 +7,7 @@ import { ensureBootstrap } from "@/lib/bootstrap";
 import { getCartByToken } from "@/lib/checkout/own/cart";
 import { isColor, selectionFromCart } from "@/lib/checkout/own/catalog";
 import { loadCheckoutProps } from "@/lib/checkout/own/checkout-props";
+import { deliveryPromiseText } from "@/lib/site/delivery-promise";
 import { maskCEP, maskPhone, money } from "@/lib/checkout/own/masks";
 import { getLastPaidAttempt, getOrderByPublicToken } from "@/lib/checkout/own/order";
 import { getTheme } from "@/lib/checkout/own/theme-server";
@@ -116,7 +117,14 @@ export default async function PedidoPage({ params }: { params: Promise<{ token: 
     const { mode, props } = await loadCheckoutProps(selection.pack, cart.bumpAccepted);
     if (mode === "zedy") redirect(zedyUrlFromSelection(selection));
 
-    return <Checkout {...props} selection={selection} initial={initialFromCart(cart, props.bumpEnabled)} />;
+    return (
+      <Checkout
+        {...props}
+        selection={selection}
+        initial={initialFromCart(cart, props.bumpEnabled)}
+        deliveryPromise={deliveryPromiseText()}
+      />
+    );
   }
 
   if (order.paymentStatus === "paid") {

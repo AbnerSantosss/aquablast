@@ -33,6 +33,8 @@ export interface SelectionContextValue extends SelectionState {
   kitAlt: string;
   chooseColor: (color: Color) => void;
   selectPack: (pack: Pack) => void;
+  /** So troca o pacote (compra direta do topo do celular): nao mexe na foto/video nem rola a pagina. */
+  setPack: (pack: Pack) => void;
   selectKitColor: (index: 0 | 1, color: Color) => void;
   reopenKitStep: (index: 0 | 1 | null) => void;
   selectHeroOption: (index: number) => void;
@@ -139,6 +141,14 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
     [commit],
   );
 
+  const setPack = useCallback(
+    (pack: Pack) => {
+      if (stateRef.current.pack === pack) return;
+      commit((previous) => ({ ...previous, pack }));
+    },
+    [commit],
+  );
+
   const selectKitColor = useCallback(
     (index: 0 | 1, color: Color) => {
       commit((previous) => {
@@ -211,13 +221,14 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
       kitAlt: `Kit com dois AquaBlast: ${state.kitColors.map((c) => COLOR_LABELS[c]).join(" e ")}`,
       chooseColor,
       selectPack,
+      setPack,
       selectKitColor,
       reopenKitStep,
       selectHeroOption,
       selectHeroVideo,
       selectOffer,
     };
-  }, [state, chooseColor, selectPack, selectKitColor, reopenKitStep, selectHeroOption, selectHeroVideo, selectOffer]);
+  }, [state, chooseColor, selectPack, setPack, selectKitColor, reopenKitStep, selectHeroOption, selectHeroVideo, selectOffer]);
 
   return <SelectionContext.Provider value={value}>{children}</SelectionContext.Provider>;
 }

@@ -242,6 +242,14 @@
 .ck .ck-summary-product .total-alt > svg { width: 15px; height: 15px; flex-shrink: 0; }
 .ck .order-summary .ck-coupon { padding: 8px 0; }
 .ck .order-summary .price-details { border-bottom: 0; padding: 12px 0 0; }
+/* Troca de cor no topo do checkout (ColorPick.tsx): reaproveita os botoes de cor da oferta extra, em versao compacta. */
+.ck .ck-color-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px 16px; margin: 12px 0 14px; padding: 12px 10px; }
+.ck .ck-color-title { margin: 0 0 6px; font-size: 14px; font-weight: 800; color: var(--c-text); }
+.ck .ck-color-pick .bump-color { flex-direction: row; gap: 4px; min-height: 48px; padding: 4px; font-size: 12.5px; }
+.ck .ck-color-pick .bump-color img { width: 26px; height: 26px; flex-shrink: 0; }
+@media (min-width: 480px) { .ck .ck-color-pick { padding: 12px 14px; } .ck .ck-color-pick .bump-color { gap: 6px; font-size: 14px; } .ck .ck-color-pick .bump-color img { width: 32px; height: 32px; } }
+/* Aviso de entrega com data limite (lib/site/delivery-promise.ts): vem pronto do servidor e some depois da data. */
+.ck .order-summary .ck-delivery-promise { margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: #edf8ff; color: var(--c-ok); font-size: 13px; font-weight: 700; line-height: 1.35; text-align: center; }
 @media (max-width: 380px) {
   .ck .ck-summary-product { gap: 8px; }
   .ck .ck-summary-product > img,

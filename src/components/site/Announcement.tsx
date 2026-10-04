@@ -27,22 +27,18 @@ export function Announcement() {
   );
 }
 
-// Aviso com validade (pedido do dono, 04/10): vale só nesta semana. Depois de sábado, 10/10, a faixa volta
-// sozinha ao texto anterior; a home é regerada a cada 5 min (revalidate), então a troca não pede deploy.
-const WEEK_NOTICE_ENDS_AT = Date.parse("2026-10-11T00:00:00-03:00");
-const weekNoticeActive = () => Date.now() < WEEK_NOTICE_ENDS_AT;
-
-function TickerGroup({ hidden, weekNotice }: { hidden?: boolean; weekNotice: boolean }) {
+// Aviso com validade (pedido do dono, 04/10): o texto e a data limite moram em lib/site/delivery-promise.ts (config
+// única, a mesma do topo do celular, dos cards e do checkout) e chegam por prop, já decididos no servidor. Depois da
+// data a faixa volta sozinha ao texto anterior; a home é regerada a cada 5 min (revalidate), sem deploy.
+function TickerGroup({ hidden, promise }: { hidden?: boolean; promise: string | null }) {
   return (
     <div className="ticker-group" aria-hidden={hidden ? "true" : undefined}>
       <span className="ticker-message">
         <span className="ticker-icon">
           <img src="/icons/truck.svg" alt="" />
         </span>
-        {weekNotice ? (
-          <span>
-            Só esta semana: entrega <strong className="ticker-full">FULL</strong> — chega antes do Dia das Crianças nas capitais
-          </span>
+        {promise ? (
+          <span>{promise}</span>
         ) : (
           <span>
             Entrega <strong className="ticker-full">FULL</strong>
@@ -69,8 +65,7 @@ function TickerGroup({ hidden, weekNotice }: { hidden?: boolean; weekNotice: boo
   );
 }
 
-export function DeliveryTicker() {
-  const weekNotice = weekNoticeActive();
+export function DeliveryTicker({ promise }: { promise: string | null }) {
   return (
     // aria-description vem do HTML original; o plugin a11y ainda não a reconhece em role=region.
     // eslint-disable-next-line jsx-a11y/role-supports-aria-props
@@ -79,16 +74,14 @@ export function DeliveryTicker() {
       role="region"
       tabIndex={0}
       aria-label={
-        weekNotice
-          ? "Só esta semana: entrega Full, chega antes do Dia das Crianças nas capitais; estoque abastecido"
-          : "Entrega Full, estoque abastecido e Dia das Crianças"
+        promise ? `${promise}; estoque abastecido` : "Entrega Full, estoque abastecido e Dia das Crianças"
       }
       aria-description="O movimento para enquanto esta faixa recebe foco ou o ponteiro está sobre ela."
     >
       <div className="ticker-window">
         <div className="ticker-track">
-          <TickerGroup weekNotice={weekNotice} />
-          <TickerGroup hidden weekNotice={weekNotice} />
+          <TickerGroup promise={promise} />
+          <TickerGroup hidden promise={promise} />
         </div>
       </div>
     </div>

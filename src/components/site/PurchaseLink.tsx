@@ -62,7 +62,7 @@ function trackBuyClick(link: HTMLAnchorElement, click: { pack: Pack; colors: str
     const body = JSON.stringify({
       ...click,
       id: `bc-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`,
-      place: link.closest(".desktop-product-panel") ? "topo" : "ofertas",
+      place: link.closest(".desktop-product-panel, .mobile-top-buy") ? "topo" : "ofertas",
       device: window.matchMedia("(max-width: 900px)").matches ? "mobile" : "desktop",
       utm,
     });
@@ -76,8 +76,21 @@ function trackBuyClick(link: HTMLAnchorElement, click: { pack: Pack; colors: str
  * Comprar nunca trava (pedido do dono, 26/09): sempre tem link para o checkout. Com a escolha incompleta
  * (cor da unidade ou as duas cores do kit) o botao fica verde sem pulsar e o PRIMEIRO clique so avisa e
  * leva a cor que falta; o segundo segue com as cores que estao na tela. Escolha completa: pulsa e vira "Quero...".
+ *
+ * `direct` (compra direta do primeiro bloco do celular, pedido do dono 04/10): o primeiro toque ja vai para o
+ * checkout com o pacote escolhido e as cores que estao valendo (padrao: azul / azul + preto), sem aviso nem dica.
  */
-export function PurchaseLink({ pack, className, children }: { pack: Pack; className: string; children: ReactNode }) {
+export function PurchaseLink({
+  pack,
+  className,
+  children,
+  direct = false,
+}: {
+  pack: Pack;
+  className: string;
+  children: ReactNode;
+  direct?: boolean;
+}) {
   const { color, colorTouched, kitColors, kitConfirmed, kitReady, reopenKitStep } = useSelection();
   const hintId = useId();
   const [warned, setWarned] = useState(false);
@@ -111,17 +124,33 @@ export function PurchaseLink({ pack, className, children }: { pack: Pack; classN
     if (target) revealFocus(target);
   };
 
+  const href =
+    mode === "zedy"
+      ? checkoutUrl(pack, color, kitColors)
+      : `${ownCheckoutPath(pack, color, kitColors)}${mode === "proprio" ? adParamsFromLocation() : ""}`;
+
+  if (direct) {
+    return (
+      <a
+        className={className}
+        data-purchase={pack}
+        href={href}
+        onClick={(event) => {
+          trackBuyClick(event.currentTarget, { pack, colors: pack === "kit" ? [...kitColors] : [color], complete: !incomplete, warned: false });
+        }}
+      >
+        {children}
+      </a>
+    );
+  }
+
   return (
     <>
       <a
         className={className}
         data-purchase={pack}
         data-incomplete={incomplete || undefined}
-        href={
-          mode === "zedy"
-            ? checkoutUrl(pack, color, kitColors)
-            : `${ownCheckoutPath(pack, color, kitColors)}${mode === "proprio" ? adParamsFromLocation() : ""}`
-        }
+        href={href}
         aria-describedby={hintId}
         onClick={(event) => {
           const onlyWarn = incomplete && !warned;

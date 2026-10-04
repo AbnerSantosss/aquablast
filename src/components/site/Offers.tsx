@@ -46,13 +46,17 @@ function OfferBenefits() {
   );
 }
 
-function OfferFooter({ pack, buy }: { pack: Pack; buy: string }) {
+function OfferFooter({ pack, buy, deliveryPromise }: { pack: Pack; buy: string; deliveryPromise: string | null }) {
   const price = PRICES[pack];
   return (
     <>
       <div className="offer-shipping offer-shipping-seal">
         <img src="/thumbs/envio-375.webp" alt="Dia das Crianças: envio rápido e postagem ágil" width={1672} height={941} loading="lazy" decoding="async" />
-        <span><strong>Frete grátis</strong> para todo o Brasil · prazo pelo CEP</span>
+        <span>
+          <strong>Frete grátis</strong> para todo o Brasil · prazo pelo CEP
+          {/* Aviso com data limite (lib/site/delivery-promise.ts): vem pronto do servidor; some depois da data. */}
+          {deliveryPromise ? <em className="offer-delivery-promise">{deliveryPromise}</em> : null}
+        </span>
       </div>
       {/* Preco (pedido do dono, 01/10): valor a vista no Pix em destaque, cartao parcelado como o "ou" embaixo. */}
       <div className="offer-price-line">
@@ -103,7 +107,7 @@ function PriceCard({ pack, className, children }: { pack: Pack; className: strin
   );
 }
 
-export function Offers() {
+export function Offers({ deliveryPromise }: { deliveryPromise: string | null }) {
   const { color, colorTouched, pack } = useSelection();
   const colorLabel = COLOR_LABELS[color];
 
@@ -142,7 +146,7 @@ export function Offers() {
                 </span>
                 <UnitSwatches label="Cor da unidade" />
               </div>
-              <OfferFooter pack="unit" buy="Comprar 1 unidade" />
+              <OfferFooter pack="unit" buy="Comprar 1 unidade" deliveryPromise={deliveryPromise} />
             </div>
           </PriceCard>
           <PriceCard pack="kit" className="price-card kit-card">
@@ -174,7 +178,7 @@ export function Offers() {
               <p className="offer-included">2 AquaBlast com cores à sua escolha</p>
               <OfferBenefits />
               <KitColorSteps context="offer" />
-              <OfferFooter pack="kit" buy="Comprar kit com 2" />
+              <OfferFooter pack="kit" buy="Comprar kit com 2" deliveryPromise={deliveryPromise} />
             </div>
           </PriceCard>
         </div>

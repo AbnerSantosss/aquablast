@@ -43,6 +43,7 @@ export function OrderSummary({
   coupon = "",
   couponBusy = false,
   onCouponApply,
+  deliveryPromise = null,
 }: {
   selection: Selection;
   bump: boolean;
@@ -58,6 +59,8 @@ export function OrderSummary({
   coupon?: string;
   couponBusy?: boolean;
   onCouponApply?: (code: string) => Promise<string | null>;
+  /** Aviso de entrega com data limite (lib/site/delivery-promise.ts), decidido no servidor; null depois da data. */
+  deliveryPromise?: string | null;
 }) {
   const noMethod = !cardEnabled && !pixEnabled;
   const showCard = cardEnabled || noMethod;
@@ -154,6 +157,7 @@ export function OrderSummary({
           <dd className="green">Grátis</dd>
         </div>
       </dl>
+      {!paid && deliveryPromise ? <p className="ck-delivery-promise">{deliveryPromise}</p> : null}
     </aside>
   );
 }

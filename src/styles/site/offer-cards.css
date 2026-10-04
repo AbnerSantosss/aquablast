@@ -54,8 +54,9 @@
 .offers .choice-row-label>b{width:1.625rem;height:1.625rem;font-size:0.875rem}
 .offer-shipping{display:flex;align-items:center;justify-content:center;gap:0.75rem;margin-top:1.125rem;padding:0.75rem 0.625rem;border-radius:1rem;background:#def4ff;text-align:left;color:#07559c}
 .offer-shipping-seal{flex-direction:column;gap:0.3125rem;text-align:center;background:radial-gradient(ellipse at center,#d5f3ff,#f1faff)}
-.offer-shipping-seal>img{display:block;width:10.625rem;max-width:80%;height:auto;object-fit:contain}
+.offer-shipping-seal>img{display:block;flex-shrink:0;width:10.625rem;max-width:80%;height:auto;object-fit:contain}
 .offer-shipping-seal>span{font-size:0.8125rem;line-height:1.4;color:#315d79}
+.offer-delivery-promise{display:block;margin-top:.125rem;font-style:normal;font-weight:800;color:var(--green)}
 .offers .packshot.kit-matching{background:#0877b2 url('/offer-water-stage.webp') center/cover no-repeat;gap:0}
 .offers .kit-matching>img{width:52%;max-width:52%;height:100%;object-fit:contain;margin:0;filter:drop-shadow(0 0.75rem 0.75rem #001b55a6)}
 .offers .kit-matching>img+img{margin-left:-4%}

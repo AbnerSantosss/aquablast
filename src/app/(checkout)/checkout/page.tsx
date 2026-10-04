@@ -4,6 +4,7 @@ import { selectionFromParams } from "@/lib/checkout/own/catalog";
 import { loadCheckoutProps } from "@/lib/checkout/own/checkout-props";
 import { ensureBootstrap } from "@/lib/bootstrap";
 import { zedyUrlFromSelection } from "@/lib/site/constants";
+import { deliveryPromiseText } from "@/lib/site/delivery-promise";
 
 export const dynamic = "force-dynamic";
 
@@ -25,5 +26,5 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
     redirect(zedyUrlFromSelection(selection));
   }
 
-  return <Checkout {...props} selection={selection} />;
+  return <Checkout {...props} selection={selection} deliveryPromise={deliveryPromiseText()} />;
 }

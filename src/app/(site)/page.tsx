@@ -17,6 +17,7 @@ import { ReviewViewerProvider } from "@/components/site/ReviewViewerProvider";
 import { SelectionProvider } from "@/components/site/SelectionProvider";
 import { SiteBehavior } from "@/components/site/SiteBehavior";
 import { BRAND_NAME } from "@/lib/site/constants";
+import { deliveryPromiseText } from "@/lib/site/delivery-promise";
 import { OG_IMAGE, OG_TITLE, SEO_DESCRIPTION, SEO_TITLE } from "@/lib/site/seo";
 import { getSupportWhatsapp } from "@/lib/site/support-contact";
 
@@ -60,23 +61,26 @@ export default async function HomePage() {
   preload("/video-moldura.webp", { as: "image", fetchPriority: "high", media: "(min-width: 56.3125rem)" });
   // Uma leitura do banco por render; null (sem cadastro ou sem banco) = nenhum WhatsApp.
   const whatsapp = await getSupportWhatsapp();
+  // Aviso de entrega com data limite: decidido aqui, no servidor, e repassado por prop (sem erro de hidratação e
+  // sem a página pular). Passada a data, a próxima regeração da home (revalidate) já sai sem o aviso.
+  const promise = deliveryPromiseText();
   return (
     <>
       <JsonLd whatsapp={whatsapp} />
       <div className="aquablast-home">
         <SkipLink />
-        <DeliveryTicker />
+        <DeliveryTicker promise={promise} />
         <Header />
         <SelectionProvider>
           <ReviewViewerProvider>
             <main id="conteudo">
-              <Hero />
+              <Hero deliveryPromise={promise} />
               {/* Dono, 03/10: avaliacoes logo depois do topo, para testar a conversao. */}
               <Reviews />
               <Moments />
               <Gifting />
               <Accessories />
-              <Offers />
+              <Offers deliveryPromise={promise} />
               <Faq />
             </main>
             <Footer whatsapp={whatsapp} />
