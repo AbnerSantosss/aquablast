@@ -35,7 +35,7 @@ function TickerGroup({ hidden }: { hidden?: boolean }) {
           <img src="/icons/truck.svg" alt="" />
         </span>
         <span>
-          Entrega <strong className="ticker-full">FULL</strong>
+          Só esta semana: entrega <strong className="ticker-full">FULL</strong> — chega antes do Dia das Crianças nas capitais
         </span>
       </span>
       <span className="ticker-message">
@@ -66,7 +66,7 @@ export function DeliveryTicker() {
       className="delivery-ticker"
       role="region"
       tabIndex={0}
-      aria-label="Entrega Full, estoque abastecido e Dia das Crianças"
+      aria-label="Só esta semana: entrega Full, chega antes do Dia das Crianças nas capitais; estoque abastecido"
       aria-description="O movimento para enquanto esta faixa recebe foco ou o ponteiro está sobre ela."
     >
       <div className="ticker-window">
