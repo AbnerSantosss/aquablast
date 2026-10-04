@@ -30,7 +30,7 @@ async function waitDb(fn, what, timeout = 15000) {
 
 async function payPixSimulado(page) {
   await L.choosePix(page); // cartao abre selecionado por padrao desde 2026-09-28
-  await L.btn(page, "FINALIZAR COMPRA").click();
+  await page.locator(".pix-payment-start .pix-primary").click(); // "Gerar código Pix" (tela redesenhada no a446b8c)
   await L.field(page, "pix-code").waitFor({ timeout: 15000 });
   await L.btn(page, "Simular pagamento aprovado").click();
   await page.waitForURL(/\/checkout\/pedido\//, { timeout: 15000 });
@@ -69,16 +69,14 @@ async function c09() {
   const { browser, page, pageErrors } = await L.open({ width: 412, height: 915, mobile: true });
   try {
     await L.toPayment(page);
-    // Desde 2026-09-28 o cartao abre selecionado e a parcela fica em destaque; no Pix o destaque vira o total a vista.
+    // Desde o 7d1aafa o Pix abre selecionado (destaque = total a vista); escolhendo o cartao, a parcela vira o destaque.
     const total = page.locator(".order-summary .total");
     const alt = page.locator(".order-summary .total-alt");
-    await L.waitText(total, /12x de R\$ 14,99 ?sem juros no cartão · total R\$ 179,90/);
-    await L.waitText(alt, /ou R$ 159,90 à vista no Pix ?R$ 20,00 de desconto/);
-    await L.choosePix(page);
-    await L.waitText(total, /À vista no Pix[\s\S]*R\$ 159,90/);
+    await L.waitText(total, /^(?=[\s\S]*À vista\s*no Pix)(?=[\s\S]*R\$ 159,90)/);
     await L.waitText(alt, /ou 12x de R\$ 14,99 sem juros no cartão/);
     await L.payHead(page, "card").click();
-    await L.waitText(total, /12x de R\$ 14,99 ?sem juros no cartão · total R\$ 179,90/);
+    await L.waitText(total, /Total no cartão\s*12x de R\$ 14,99\s*sem juros no cartão/);
+    await L.waitText(page.locator(".order-summary .total-alt.is-pix"), /ou R\$ 159,90 à vista no Pix/);
     await L.choosePix(page);
     await L.waitText(total.locator("b"), "R$ 159,90");
     assert.deepEqual(pageErrors, []);

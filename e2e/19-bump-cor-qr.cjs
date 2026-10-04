@@ -74,14 +74,14 @@ async function c19a() {
   try {
     await L.toPayment(page, "pack=unit&cor=azul");
     await L.choosePix(page);
-    await L.waitText(page.locator(".order-bump h4"), "Leve também a 2ª AquaBlast");
+    await L.waitText(page.locator(".order-bump h4"), "Leve a segunda unidade com desconto");
     assert.equal(await page.locator(".bump-colors").count(), 0, "cores so aparecem com o bump marcado");
-    await page.locator(".bump-choice").click();
-    await L.waitText(page.locator(".bump-choice"), "ADICIONADO AO PEDIDO");
-    await L.waitText(page.locator("#bump-color-title"), "Escolha a cor da 2ª unidade:");
+    // Bump redesenhado (a446b8c): abre pelo .bump-open-trigger; cor + botao "Selecionar segunda unidade com desconto".
+    await page.locator(".bump-open-trigger").click();
+    await L.waitText(page.locator(".bump-choice"), "ESCOLHA SUA SEGUNDA UNIDADE");
+    await L.waitText(page.locator("#bump-color-title"), "Escolha a cor da sua segunda AquaBlast");
     assert.equal(await page.locator('input[name="bump-color"]').count(), 3, "3 cores");
     assert.equal(await page.locator('input[name="bump-color"]:checked').count(), 0, "nenhuma cor pre-escolhida");
-    await L.waitText(page.locator(".bump-color-alert"), "Escolha a cor para continuar");
     assert.equal(await page.locator(".bump-color-alert").getAttribute("aria-live"), "polite");
     await L.waitText(page.locator(".bump-summary"), /cor a escolher/);
     for (const opt of await page.locator("label.bump-color").all()) {
@@ -91,13 +91,14 @@ async function c19a() {
 
     // Sem cor: FINALIZAR nao cobra, destaca o bump e leva o foco para as cores.
     const before = (await payCalls(requests)).length;
-    const fin = L.btn(page, "FINALIZAR COMPRA");
+    const fin = page.locator(".pix-payment-start .pix-primary"); // "Gerar código Pix"
     assert.equal(await fin.getAttribute("aria-disabled"), "true", "FINALIZAR deveria estar aria-disabled sem a cor");
     // aria-disabled (nao disabled): o clique continua chegando e serve para levar a pessoa ate as cores.
     // O Playwright trata aria-disabled como desabilitado, por isso o force.
     await fin.click({ force: true });
     await page.waitForFunction(() => document.activeElement?.getAttribute("name") === "bump-color", null, { timeout: 5000 });
     await page.locator(".order-bump.needs-color.is-nudged").waitFor({ timeout: 5000 });
+    await L.waitText(page.locator(".bump-color-alert"), "Escolha uma cor para continuar.");
     await page.waitForTimeout(800);
     assert.equal((await payCalls(requests)).length, before, "nao deveria chamar /api/checkout/pay sem a cor");
     assert.equal(await L.field(page, "pix-code").count(), 0, "Pix nao deveria ser gerado sem a cor");
@@ -108,11 +109,14 @@ async function c19a() {
     await L.waitText(page.locator(".bump-summary"), /\+ 1 AquaBlast vermelho.*R\$ 90,00/);
     await L.waitText(page.locator(".order-summary .total b"), "R$ 249,90");
     assert.equal(await page.locator(".bump-color-alert").textContent(), "", "aviso some com a cor escolhida");
+    // Cor escolhida mas nao confirmada: o Pix continua bloqueado ate "Selecionar segunda unidade com desconto".
+    await L.btn(page, "Selecionar segunda unidade com desconto").click();
+    await L.waitText(page.locator(".bump-choice"), "SEGUNDA UNIDADE SELECIONADA");
     assert.equal(await page.locator(".bump-product img").getAttribute("alt"), "2ª AquaBlast vermelho");
     await L.shot(page, "c19-bump-vermelho", false);
 
     const respP = page.waitForResponse((r) => r.url().startsWith(`${L.BASE}/api/checkout/pay`) && r.request().method() === "POST", { timeout: 20000 });
-    await L.btn(page, "FINALIZAR COMPRA").click();
+    await fin.click();
     const resp = await respP;
     const sent = JSON.parse(resp.request().postData() || "{}");
     assert.equal(sent.bump, true);
@@ -168,7 +172,7 @@ async function c19b(publicTokenHint) {
   try {
     await L.toPayment(page, "pack=unit&cor=preto");
     await L.choosePix(page);
-    await page.locator(".bump-choice").click();
+    await page.locator(".bump-open-trigger").click();
     await page.locator(".bump-colors").waitFor();
     await L.noHorizontalScroll(page);
     await page.locator(".order-bump").screenshot({ path: path.join(L.OUT, "c19-bump-360.png") });

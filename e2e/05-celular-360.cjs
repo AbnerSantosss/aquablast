@@ -21,12 +21,14 @@ async function run(variant) {
     await L.noHorizontalScroll(page);
     // Cartao abre selecionado por padrao (2026-09-28): escolhe o Pix para gerar o codigo.
     await L.choosePix(page);
-    await page.locator(".bump-choice").click();
+    // Desde o a446b8c o clique de abrir a oferta e o botao transparente .bump-open-trigger (cobre o .bump-choice).
+    await page.locator(".bump-open-trigger").click();
     // Cor da 2a unidade (2026-09-30): obrigatoria; os 3 cartoes de cor precisam caber em 360px com alvo >= 44px.
     await L.noHorizontalScroll(page);
     for (const opt of await page.locator("label.bump-color").all()) await alturaMin(opt, "cor da 2a unidade");
     await page.locator('input[name="bump-color"][value="vermelho"]').check();
-    await L.btn(page, "FINALIZAR COMPRA").click();
+    await L.btn(page, "Selecionar segunda unidade com desconto").click();
+    await page.locator(".pix-payment-start .pix-primary").click();
     const code = L.field(page, "pix-code");
     await code.waitFor({ timeout: 15000 });
     assert.match(await code.inputValue(), /^SIMULADO-NAO-PAGUE-sim_/);

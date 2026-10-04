@@ -8,9 +8,10 @@ import { useSelection } from "./SelectionProvider";
 export function MobileBuy() {
   const { pack, color } = useSelection();
   const [offersVisible, setOffersVisible] = useState(false);
-  // Comeca escondida: so aparece quando o "Comprar agora" do topo sai da tela (auditoria UX, 01/10).
-  const [heroCtaVisible, setHeroCtaVisible] = useState(true);
 
+  // A barra fica visivel desde o carregamento (Clarity 03/10: 67% saiam sem ver o preco). Ela so some quando a secao
+  // #ofertas esta na tela, para nao duplicar o botao de compra dos cards. Antes ela tambem ficava escondida enquanto o
+  // botao do topo (#catalog-choice-title) aparecia; esse estado e o aria-hidden/inert dele foram removidos.
   useEffect(() => {
     const target = document.querySelector("#ofertas");
     if (!target) return;
@@ -22,30 +23,12 @@ export function MobileBuy() {
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    const heroCta = document.querySelector("#catalog-choice-title");
-    if (!heroCta) {
-      // Sem o botao do topo (layout mudou), a barra volta a aparecer sempre.
-      const frame = requestAnimationFrame(() => setHeroCtaVisible(false));
-      return () => cancelAnimationFrame(frame);
-    }
-    const observer = new IntersectionObserver((entries) => setHeroCtaVisible(entries[0].isIntersecting), {
-      threshold: 0,
-    });
-    observer.observe(heroCta);
-    return () => observer.disconnect();
-  }, []);
-
   const label = pack === "kit" ? "Kit com 2 AquaBlast" : `1 AquaBlast ${COLOR_LABELS[color].toLowerCase()}`;
 
   return (
     <aside
-      className={["mobile-buy", offersVisible && "offers-visible", heroCtaVisible && "hero-cta-visible"]
-        .filter(Boolean)
-        .join(" ")}
+      className={["mobile-buy", offersVisible && "offers-visible"].filter(Boolean).join(" ")}
       aria-label="Presente selecionado"
-      aria-hidden={heroCtaVisible || undefined}
-      inert={heroCtaVisible || undefined}
     >
       <div>
         <small className="mobile-label">{label}</small>

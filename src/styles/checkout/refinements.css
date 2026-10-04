@@ -383,3 +383,23 @@
   .ck .ck-alert-backdrop,
   .ck .ck-alert { animation: none; }
 }
+
+/* CONTINUAR / CONFIRMAR ENDEREÇO ocupado (2026-10-03, etapa C1): o botão não apaga mais (parecia morto); um anel gira
+   à direita, sem mexer no rótulo. Reduced motion: o anel fica parado e o botão um pouco mais suave. */
+.ck .primary-button.is-loading { position: relative; cursor: progress; }
+.ck .primary-button.is-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  width: 20px;
+  height: 20px;
+  margin-top: -10px;
+  border: 3px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ck .primary-button.is-loading { opacity: 0.8; }
+}

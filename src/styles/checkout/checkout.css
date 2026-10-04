@@ -2118,9 +2118,22 @@
 .ck-consent-decline:hover {
   background: #eef3f8;
 }
+/* Celular estreito (2026-10-03, etapa C1): os dois botões lado a lado e o card mais baixo (era ~220px empilhado, mais
+   de um terço da tela de 640px, e cobria o CONTINUAR). Os botões seguem com 44px de altura. */
 @media (max-width: 400px) {
+  .ck-consent {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    padding: 12px 14px;
+  }
+  .ck-consent p {
+    margin-bottom: 10px;
+    font-size: 12.5px;
+    line-height: 1.4;
+  }
   .ck-consent-actions {
-    flex-direction: column;
+    flex-wrap: nowrap;
   }
 }
 

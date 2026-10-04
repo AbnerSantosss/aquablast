@@ -13,7 +13,7 @@ async function run(variant = { width: 1440, height: 900, tag: "desktop" }) {
     assert.equal(await page.locator(".ck-steps > li").count(), 3);
     await L.waitText(page.locator(".selected-product"), "Cor azul");
     // Antes de escolher a forma (2026-09-29): Pix em destaque com a economia e a parcela do cartao logo abaixo.
-    await L.waitText(page.locator(".order-summary .total"), /^(?=[\s\S]*À vista\s*no Pix)(?=[\s\S]*Economize R\$ 10,00)(?=[\s\S]*R\$ 159,90)/);
+    await L.waitText(page.locator(".order-summary .total"), /^(?=[\s\S]*À vista\s*no Pix)(?=[\s\S]*Economize R\$ 20,00)(?=[\s\S]*R\$ 159,90)/);
     await L.waitText(page.locator(".order-summary .total-alt"), /ou 12x de R\$ 14,99 sem juros no cartão/);
     assert.ok(await L.field(page, "name").isVisible());
     await L.shot(page, `c1-${variant.tag}-0-primeira-dobra`, false);

@@ -21,6 +21,8 @@ import "@/styles/site/offer-restyle.css";
 import "@/styles/site/responsivo.css";
 // Ordem visual da home no celular (pedido 2026-10-01, Clarity). So celular.
 import "@/styles/site/mobile-ordem-venda.css";
+// Primeira tela do celular: titulo, nota, video sem moldura, botao e preco (pedido 2026-10-03 22h41). So celular.
+import "@/styles/site/mobile-dobra.css";
 
 export const metadata: Metadata = {
   title: "AquaBlast — O presente que vira uma boa lembrança",

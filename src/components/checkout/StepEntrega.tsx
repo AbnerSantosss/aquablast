@@ -125,7 +125,8 @@ export function StepEntrega({
       ) : null}
       {error}
       <div className="ck-actions">
-        <button className="primary-button" type="submit" disabled={busy}>
+        {/* Mesmo tratamento do CONTINUAR da etapa 1 (ver StepDados): sem `disabled`, giro no botão, foco mantido no campo. */}
+        <button className={`primary-button${busy ? " is-loading" : ""}`} type="submit" aria-busy={busy || undefined} onMouseDown={(e) => e.preventDefault()}>
           {addrOk ? buttonLabel : "CONFIRMAR ENDEREÇO"}
         </button>
       </div>

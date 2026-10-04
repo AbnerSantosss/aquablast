@@ -72,7 +72,15 @@ export function StepDados({
       </div>
       {error}
       <div className="ck-actions">
-        <button className={`primary-button${ready ? " is-ready" : ""}`} type="submit" disabled={busy}>
+        {/* Sem `disabled` (2026-10-03): o botão apagado parecia morto e o toque nele não dava retorno. Ocupado = giro no
+            próprio botão (`is-loading`) e `aria-busy`; o envio em dobro é barrado em `next` (Checkout). O mousedown sem
+            ação padrão mantém o foco no campo: o 1º toque não fecha o teclado nem move a tela debaixo do dedo. */}
+        <button
+          className={`primary-button${ready ? " is-ready" : ""}${busy ? " is-loading" : ""}`}
+          type="submit"
+          aria-busy={busy || undefined}
+          onMouseDown={(e) => e.preventDefault()}
+        >
           {buttonLabel}
         </button>
       </div>

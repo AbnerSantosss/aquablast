@@ -27,15 +27,17 @@ async function withPage(fn, query) {
   try {
     await L.scenario("16a", "Cupom certo (minusculo na URL): Pix R$ 5,00, cartao sem desconto, pedido gravado com 5,00", () =>
       withPage(async (page) => {
-        // Cartao ignora o cupom.
-        await L.waitText(page.locator(".order-summary .total"), /total R\$ 179,90/);
+        // Cartao ignora o cupom. Desde o 7d1aafa o Pix abre selecionado: escolhe o cartao e confere a parcela cheia (179,90 em 12x de 14,99).
+        await L.payHead(page, "card").click();
+        await L.waitText(page.locator(".order-summary .total"), /Total no cartão\s*12x de R\$ 14,99\s*sem juros no cartão/);
         assert.equal(await priceDetails(page).getByText("Desconto do cupom no Pix").count(), 0, "cartao nao pode mostrar cupom");
         await L.choosePix(page);
         await L.waitText(page.locator(".order-summary .total b"), "R$ 5,00");
         await L.waitText(priceDetails(page), /Desconto do cupom no Pix\s*− R\$ 154,90/);
-        await L.waitText(page.locator(".selected-product"), /R\$ 159,90/);
+        // O resumo (a446b8c) nao mostra mais o preco cheio na linha do produto: o 159,90 vem implicito em "Economize R$ 174,90" (159,90 + 20 - 5).
+        await L.waitText(page.locator(".order-summary .total"), /Economize R\$ 174,90/);
         await L.shot(page, "c16-cupom-pix");
-        await L.btn(page, "FINALIZAR COMPRA").click();
+        await page.locator(".pix-payment-start .pix-primary").click(); // "Gerar código Pix" (a446b8c)
         await L.field(page, "pix-code").waitFor({ timeout: 15000 });
         const token = await L.cartTokenOf(page);
         const o = await one(
@@ -56,11 +58,15 @@ async function withPage(fn, query) {
     await L.scenario("16b", "Cupom + 2a unidade (bump): Pix R$ 5,00, subtotal 249,90", () =>
       withPage(async (page) => {
         await L.choosePix(page);
-        await page.locator(".bump-choice").click();
-        await L.waitText(page.locator(".bump-choice"), "ADICIONADO AO PEDIDO");
+        // Bump redesenhado (a446b8c): abrir pelo .bump-open-trigger, escolher a cor e confirmar a selecao.
+        await page.locator(".bump-open-trigger").click();
+        await L.waitText(page.locator(".bump-choice"), "ESCOLHA SUA SEGUNDA UNIDADE");
         await page.locator('input[name="bump-color"][value="azul"]').check();
+        await L.btn(page, "Selecionar segunda unidade com desconto").click();
+        await L.waitText(page.locator(".bump-choice"), "SEGUNDA UNIDADE SELECIONADA");
         await L.waitText(page.locator(".order-summary .total b"), "R$ 5,00");
-        await L.waitText(priceDetails(page), /Subtotal\s*R\$ 249,90/);
+        // O resumo (a446b8c) nao tem mais a linha "Subtotal": o 249,90 vem de 159,90 + bump 90,00 e do desconto de 244,90 (249,90 - 5,00).
+        await L.waitText(page.locator(".bump-summary"), /\+ 1 AquaBlast azul.*R\$ 90,00/);
         await L.waitText(priceDetails(page), /Desconto do cupom no Pix\s*− R\$ 244,90/);
         await L.shot(page, "c16-cupom-bump");
       }, `pack=unit&cor=azul&cupom=${CODE}`),

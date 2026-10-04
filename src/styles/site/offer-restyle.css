@@ -83,6 +83,19 @@
 .kit-step[data-step-state="pending"] .kit-step-summary{background:#f0f7fd;border-style:dashed}
 .kit-step[data-step-state="pending"] .kit-step-summary>b{background:#b8cbdf;color:var(--text)}
 .kit-step[data-step-state="pending"] .kit-step-text{font-weight:700}
+/* PENDENTE tocavel (A4): mesmo desenho parado; so vira <button> para o toque nao ser morto. */
+button.kit-step-pending{width:100%;margin:0;color:inherit}
+.offers .kit-step-pending:focus-visible{outline:.1875rem solid #034eaa;outline-offset:.125rem}
+.desktop-product-panel .kit-step-pending:focus-visible{outline:.1875rem solid #063c78;outline-offset:.125rem}
+/* Destaque do passo atual depois de tocar no pendente (KitColorSteps liga data-nudge por NUDGE_MS = 1700ms). */
+.kit-step[data-nudge]{border-radius:.875rem;animation:kit-step-nudge .85s ease-in-out 2}
+@keyframes kit-step-nudge{
+  0%,100%{box-shadow:0 0 0 .1875rem #ffb52e,0 0 .875rem .125rem #ffb52e8c}
+  50%{box-shadow:0 0 0 .3125rem #ffb52e,0 0 1.5rem .375rem #ffb52ecc}
+}
+@media(prefers-reduced-motion:reduce){
+  .kit-step[data-nudge]{animation:none;box-shadow:0 0 0 .1875rem #ffb52e,0 0 .875rem .125rem #ffb52e8c}
+}
 
 /* ATUAL, 2o passo: o acento laranja claro que o card ja usava em .kit-color-row:nth-child(2)
    (offer-cards.css). O nth-child deixou de casar porque cada passo agora tem seu proprio wrapper. */

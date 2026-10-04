@@ -136,6 +136,7 @@ export function Checkout({
   const [popup, setPopup] = useState<{ title: string; message: string; sel?: string } | null>(null);
   const [badField, setBadField] = useState<FieldKey | null>(null);
   const [busy, setBusy] = useState(false);
+  const sending = useRef(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [cepState, setCepState] = useState<CepState>(initial?.address.street && initial.address.city ? "found" : "idle");
   const [addrOk, setAddrOk] = useState(initial?.step === "pagamento");
@@ -362,9 +363,22 @@ export function Checkout({
     fail(p.message, p.field ? `[name=${p.field}]` : undefined, p.title);
   }
 
+  /** Envio do CONTINUAR: marca o botão como ocupado na hora e o libera sempre (`finally`), com sucesso, recusa ou erro. */
+  async function send<T>(run: () => Promise<T>): Promise<T> {
+    sending.current = true;
+    setBusy(true);
+    try {
+      return await run();
+    } finally {
+      sending.current = false;
+      setBusy(false);
+    }
+  }
+
   async function next(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (busy || couponBusy) return;
+    // `sending` fecha a porta na hora (um toque = um envio), sem esperar o React redesenhar com `busy`.
+    if (busy || sending.current || couponBusy) return;
     if (step === 1) {
       const problem = dadosProblem(data, !!cpfMasked);
       if (problem) return fail(problem.message, `[name=${problem.field}]`, problem.title);
@@ -375,9 +389,7 @@ export function Checkout({
         setData((p) => ({ ...p, recipient: name }));
       }
       setError("");
-      setBusy(true);
-      const result = await saveCart("entrega", bump, { customer: true });
-      setBusy(false);
+      const result = await send(() => saveCart("entrega", bump, { customer: true }));
       if (isApiFail(result)) return failServer(result);
       setStep(2);
       return;
@@ -398,9 +410,7 @@ export function Checkout({
         return;
       }
       setError("");
-      setBusy(true);
-      const result = await saveCart("pagamento", bump, { customer: true, address: true });
-      setBusy(false);
+      const result = await send(() => saveCart("pagamento", bump, { customer: true, address: true }));
       if (isApiFail(result)) return failServer(result);
       setStep(3);
     }

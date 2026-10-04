@@ -6,6 +6,7 @@ import { reviews } from "@/data/reviews";
 import { CAMPAIGN_PHOTO, COLOR_LABELS, HERO_PHOTOS, KIT_PHOTO, KIT_SAVING, MOBILE_QUERY, PRICES } from "@/lib/site/constants";
 import { PurchaseLink } from "./PurchaseLink";
 import { reviewSummary } from "@/lib/site/reviews-summary";
+import type { Pack } from "@/lib/site/types";
 import { HeroFeaturedVideo } from "./HeroFeaturedVideo";
 import { UnitColorCue, UnitSwatches } from "./ColorSwatches";
 import { KitColorSteps } from "./KitColorSteps";
@@ -13,6 +14,71 @@ import { scrollBehavior } from "./media-query";
 import { useSelection } from "./SelectionProvider";
 
 const summary = reviewSummary(reviews);
+
+// Titulo do produto, nota e preco aparecem em dois lugares com a MESMA fonte de texto: o painel do desktop
+// (DesktopProductPanel) e a dobra do celular (MobileDobraHead / MobileDobraPrice, pedido do dono 03/10 22h41:
+// so textos que ja existem no site). Cada bloco fica display:none na largura que nao e a dele
+// (mobile-dobra.css), entao nunca ha dois titulos ou precos visiveis nem lidos pelo leitor de tela.
+const PRODUCT_TITLE = "Brinquedo de água elétrico com efeito luminoso";
+
+/** Nota + contagem, com link para #avaliacoes. `prefix` escolhe as classes: "desktop" ou "mobile". */
+function ReviewSummaryLink({ prefix, track = false }: { prefix: "desktop" | "mobile"; track?: boolean }) {
+  return (
+    <a className={`${prefix}-review-summary`} href="#avaliacoes">
+      <span className="visually-hidden">Nota </span>
+      <strong data-hero-review-average={track ? "" : undefined}>{summary.averageText}</strong>
+      <span className="visually-hidden"> de 5. Leia as </span>
+      <span className={`${prefix}-review-stars`} aria-hidden="true">
+        ★★★★★
+      </span>
+      <span className={`${prefix}-review-count`} data-hero-review-count={track ? "" : undefined}>
+        {summary.countText}
+      </span>
+      <span className="visually-hidden"> do produto.</span>
+    </a>
+  );
+}
+
+/** Parcela em destaque e Pix a vista com desconto embaixo (pedido do dono, 27/09). */
+function PriceLines({ pack, amountClassName }: { pack: Pack; amountClassName: string }) {
+  const price = PRICES[pack];
+  return (
+    <>
+      <div className="installment-row" aria-live="polite">
+        <span className="installment-count">12x de</span>
+        <strong className={amountClassName}>{price.installment}</strong>
+      </div>
+      <div className="pix-price-row">
+        <img className="pix-icon" src="/icons/pix.svg" alt="" loading="lazy" decoding="async" />
+        <span className="pix-label">
+          ou <strong>{price.pix}</strong> à vista no Pix
+        </span>
+        <span className="pix-discount">{price.pixDiscount} de desconto</span>
+      </div>
+    </>
+  );
+}
+
+/** Celular: titulo + nota no topo da dobra (some no desktop, onde o painel ja os mostra). */
+function MobileDobraHead() {
+  return (
+    <div className="mobile-dobra-head">
+      <h2 className="mobile-dobra-title">{PRODUCT_TITLE}</h2>
+      <ReviewSummaryLink prefix="mobile" />
+    </div>
+  );
+}
+
+/** Celular: preco do pacote selecionado, logo abaixo do botao (some no desktop). */
+function MobileDobraPrice() {
+  const { pack } = useSelection();
+  return (
+    <div className="mobile-dobra-price">
+      <span className="mobile-dobra-pack">{pack === "kit" ? "Kit com 2 AquaBlast" : "1 unidade AquaBlast"}</span>
+      <PriceLines pack={pack} amountClassName="mobile-dobra-amount" />
+    </div>
+  );
+}
 
 // No HTML original, o painel de produto e o vídeo em destaque ficam DENTRO de .catalog-gallery.
 function CatalogGallery({ children }: { children: ReactNode }) {
@@ -66,6 +132,7 @@ function CatalogGallery({ children }: { children: ReactNode }) {
       <h1 id="hero-title" className="visually-hidden">
         AquaBlast: brinquedo de água elétrico, presente de Dia das Crianças — escolha 1 unidade ou o kit com 2
       </h1>
+      <MobileDobraHead />
       <div className="catalog-gift-label mobile-gallery-label">
         <img src="/thumbs/gift-60.webp" alt="" width={34} height={34} />
         <span className="hero-gift-copy">
@@ -118,9 +185,11 @@ function CatalogGallery({ children }: { children: ReactNode }) {
         </span>
       </button>
       <h2 className="catalog-choice-title" id="catalog-choice-title">
-        {/* Celular (dono, 03/10): chamada explicita de compra; no desktop a pilula "Selecione seu kit" e outra. */}
-        <a className="catalog-choice-link" href="#ofertas">Comprar agora</a>
+        {/* Celular (dono, 03/10 22h41): o botao usa o texto que ja existe em Reviews.tsx ("Quero meu AquaBlast");
+            no desktop este h2 fica display:none (a pilula "Selecione seu kit" do painel e outra). */}
+        <a className="catalog-choice-link" href="#ofertas">Quero meu AquaBlast</a>
       </h2>
+      <MobileDobraPrice />
       <div className="catalog-thumbnails" role="group" aria-label="Fotos e vídeo do produto">
         <button
           className="desktop-video-thumb"
@@ -183,7 +252,6 @@ function CatalogGallery({ children }: { children: ReactNode }) {
 
 function DesktopProductPanel() {
   const { pack, color, colorTouched, selectPack } = useSelection();
-  const price = PRICES[pack];
   const unitAlt = colorTouched ? `AquaBlast ${COLOR_LABELS[color].toLowerCase()}` : "";
   // Orientacao da pilula: fica visivel (e o grupo pulsa) ate a pessoa clicar em um dos pacotes.
   const [guiding, setGuiding] = useState(false);
@@ -204,37 +272,15 @@ function DesktopProductPanel() {
   return (
     <div className="desktop-product-panel" aria-labelledby="desktop-product-title">
       <div className="desktop-product-heading">
-        <h2 id="desktop-product-title">Brinquedo de água elétrico com efeito luminoso</h2>
+        <h2 id="desktop-product-title">{PRODUCT_TITLE}</h2>
       </div>
       {/* Sem aria-label: o nome vem do conteúdo (texto visível + trechos visually-hidden) e continua
           "Nota 4,9 de 5. Leia as 66 avaliações do produto.", sem o "label-content-name-mismatch". */}
-      <a className="desktop-review-summary" href="#avaliacoes">
-        <span className="visually-hidden">Nota </span>
-        <strong data-hero-review-average="">{summary.averageText}</strong>
-        <span className="visually-hidden"> de 5. Leia as </span>
-        <span className="desktop-review-stars" aria-hidden="true">
-          ★★★★★
-        </span>
-        <span className="desktop-review-count" data-hero-review-count="">
-          {summary.countText}
-        </span>
-        <span className="visually-hidden"> do produto.</span>
-      </a>
+      <ReviewSummaryLink prefix="desktop" track />
       <div className="desktop-price-band">
         <div>
           <span className="desktop-pack-label">{pack === "kit" ? "Kit com 2 AquaBlast" : "1 unidade AquaBlast"}</span>
-          {/* Preco (pedido do dono, 27/09): parcela em destaque, Pix a vista com desconto embaixo. */}
-          <div className="installment-row" aria-live="polite">
-            <span className="installment-count">12x de</span>
-            <strong className="desktop-price">{price.installment}</strong>
-          </div>
-          <div className="pix-price-row">
-            <img className="pix-icon" src="/icons/pix.svg" alt="" loading="lazy" decoding="async" />
-            <span className="pix-label">
-              ou <strong>{price.pix}</strong> à vista no Pix
-            </span>
-            <span className="pix-discount">{price.pixDiscount} de desconto</span>
-          </div>
+          <PriceLines pack={pack} amountClassName="desktop-price" />
         </div>
         <span className="desktop-kit-saving" hidden={pack !== "kit"}>
           ECONOMIZE

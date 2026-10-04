@@ -62,16 +62,33 @@ async function parseJson<T>(res: Response): Promise<T | ApiFail> {
   }
 }
 
+/**
+ * Limite da gravação do carrinho (2026-10-03, etapa C1): sem ele, uma resposta que nunca chega deixava o CONTINUAR
+ * em "carregando" para sempre (conexão ruim dentro do navegador do Instagram). Passado o limite o botão volta e o
+ * cliente vê o aviso. Só o carrinho tem limite: abortar um POST de pagamento no meio poderia gerar cobrança em dobro.
+ */
+const CART_TIMEOUT_MS = 20_000;
+
 export async function postCart(payload: CartPayload): Promise<CartResponse | ApiFail> {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), CART_TIMEOUT_MS);
   try {
     const res = await fetch("/api/checkout/cart", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(payload),
+      signal: ctl.signal,
     });
     return await parseJson<CartResponse>(res);
   } catch {
-    return { ok: false, error: "Sem conexão com o servidor. Verifique sua internet e tente de novo." };
+    return {
+      ok: false,
+      error: ctl.signal.aborted
+        ? "O servidor demorou para responder. Verifique sua internet e toque em CONTINUAR de novo."
+        : "Sem conexão com o servidor. Verifique sua internet e tente de novo.",
+    };
+  } finally {
+    clearTimeout(timer);
   }
 }
 

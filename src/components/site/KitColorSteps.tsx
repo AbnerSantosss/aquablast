@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import { useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { COLOR_LABELS } from "@/lib/site/constants";
 import { KitSwatches } from "./ColorSwatches";
 import { scrollBehavior } from "./media-query";
@@ -23,6 +23,9 @@ const SWATCH_LABEL: Record<StepsContext, readonly [string, string]> = {
   offer: ["Cor do 1º AquaBlast do kit na oferta", "Cor do 2º AquaBlast do kit na oferta"],
 };
 
+/** Tempo do destaque do passo atual (cobre a animacao kit-step-nudge de offer-restyle.css: 0.85s x 2). */
+const NUDGE_MS = 1700;
+
 /**
  * Escolha das duas cores do kit em passos: so o passo atual fica aberto (3 cores); o passo feito vira
  * um resumo com "Trocar"; o passo seguinte fica pendente ate o anterior ter cor. O estado (qual passo
@@ -32,6 +35,10 @@ const SWATCH_LABEL: Record<StepsContext, readonly [string, string]> = {
 export function KitColorSteps({ context }: { context: StepsContext }) {
   const { pack, kitColors, kitConfirmed, kitReady, kitStep, reopenKitStep } = useSelection();
   const rootRef = useRef<HTMLDivElement>(null);
+  // Destaque curto (so visual) no passo atual depois de tocar no passo pendente; o CSS cuida do desenho.
+  const [nudge, setNudge] = useState(false);
+  const nudgeTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(nudgeTimer.current), []);
 
   // O botao clicado some (o passo fecha): o foco vai ao proximo passo ou, com o kit pronto, ao Comprar.
   const focusAfterPick = () => {
@@ -54,6 +61,15 @@ export function KitColorSteps({ context }: { context: StepsContext }) {
     reopenKitStep(index);
     const target = kitFocusTarget(rootRef.current);
     if (target) revealFocus(target);
+  };
+
+  // Passo pendente tocado (antes era clique morto): o foco vai ao controle do passo atual e ele pisca.
+  const nudgeCurrent = () => {
+    const target = kitFocusTarget(rootRef.current);
+    if (target) revealFocus(target);
+    setNudge(true);
+    window.clearTimeout(nudgeTimer.current);
+    nudgeTimer.current = window.setTimeout(() => setNudge(false), NUDGE_MS);
   };
 
   const stateOf = (index: 0 | 1): StepState =>
@@ -124,18 +140,24 @@ export function KitColorSteps({ context }: { context: StepsContext }) {
       );
     } else {
       body = (
-        <div className="kit-step-summary">
+        <button type="button" className="kit-step-summary kit-step-pending" onClick={nudgeCurrent}>
           {number}
           <span className="kit-step-text">
             {TITLE[index]}
             <small>Escolha depois do primeiro</small>
           </span>
-        </div>
+        </button>
       );
     }
 
     return (
-      <div key={index} className="kit-step" data-kit-step={index} data-step-state={state}>
+      <div
+        key={index}
+        className="kit-step"
+        data-kit-step={index}
+        data-step-state={state}
+        data-nudge={(nudge && state === "current") || undefined}
+      >
         {body}
       </div>
     );

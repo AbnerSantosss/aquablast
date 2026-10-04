@@ -206,7 +206,10 @@ async function restoreSettingRow(key, row) {
       assert.equal(shipped.length, 1, `e-mails ao cliente: ${shipped.length}`);
       assert.match(shipped[0], /foi[_ ]enviado/, "e-mail ao cliente nao e o de envio");
       assert.match(shipped[0], /href="https?:\/\/[^"/]+\/rastrear\?codigo=[^"]+"/, "link de rastreio nao e absoluto");
-      assert.ok(shipped[0].includes(TRACKING), "e-mail sem o codigo de rastreio");
+      // Desde o c371643 (2026-10-02) o e-mail leva o codigo de rastreio do CLIENTE (BR + 13 digitos, {{codigo_acesso}}),
+      // o mesmo do link /rastrear?codigo=; o codigo da transportadora (TRACKING) so entra se o template usar {{codigo_transportadora}}.
+      assert.match(shipped[0], /Seu código de rastreio[\s\S]*?BR\d{13}/, "e-mail sem o codigo de rastreio do cliente (BR + 13 digitos)");
+      assert.match(shipped[0], /\/rastrear\?codigo=BR\d{13}"/, "link do e-mail sem o codigo BR + 13 digitos");
       const carrierLink = shipped[0].includes("rastreamento.correios.com.br");
       const tpl = await one("select body_html like '%link_transportadora%' as has from email_templates where key = 'shipped'");
       if (tpl && tpl.has) assert.ok(carrierLink, "template com link da transportadora, mas o e-mail saiu sem");

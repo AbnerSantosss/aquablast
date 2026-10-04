@@ -52,10 +52,12 @@ export const metadata: Metadata = {
 
 /** Landing page do AquaBlast — porta 1:1 do index.html original. */
 export default async function HomePage() {
-  // Fundo do .hero-featured-video: é o LCP (Lighthouse, 2026-09-26). No celular o CSS
-  // usa a versão de 760 px (mesmo breakpoint de 42.5rem), então há um preload por faixa.
-  preload("/thumbs/video-moldura-760.webp", { as: "image", fetchPriority: "high", media: "(max-width: 42.5rem)" });
-  preload("/video-moldura.webp", { as: "image", fetchPriority: "high", media: "(min-width: 42.5625rem)" });
+  // LCP da dobra. Desktop (>= 56.3125rem): o fundo (moldura) do .hero-featured-video, como antes. Celular e tablet
+  // (ate 56.25rem, mesmo MOBILE_QUERY do CSS): desde 03/10 22h41 o video aparece sem moldura (mobile-dobra.css), entao
+  // a imagem da dobra passa a ser o poster do video; o preload da moldura de 760px saiu para nao baixar arte que
+  // nao e usada no celular.
+  preload("/videos/video-destaque-poster.jpg", { as: "image", fetchPriority: "high", media: "(max-width: 56.25rem)" });
+  preload("/video-moldura.webp", { as: "image", fetchPriority: "high", media: "(min-width: 56.3125rem)" });
   // Uma leitura do banco por render; null (sem cadastro ou sem banco) = nenhum WhatsApp.
   const whatsapp = await getSupportWhatsapp();
   return (

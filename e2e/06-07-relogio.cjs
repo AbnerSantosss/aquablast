@@ -29,18 +29,19 @@ async function pixExpira(variant) {
     await L.toPayment(page);
     await L.waitText(page.locator(".ck-step[aria-current=step]"), "Pagamento");
     await L.choosePix(page); // cartao abre selecionado por padrao desde 2026-09-28
-    await L.btn(page, "FINALIZAR COMPRA").click();
-    const gerando = page.getByRole("button", { name: "Gerando Pix…" });
+    // Tela do Pix redesenhada (a446b8c): botao "Gerar código Pix" (.pix-payment-start) e estado "Gerando código…".
+    await page.locator(".pix-payment-start .pix-primary").click();
+    const gerando = page.getByRole("button", { name: "Gerando código…" });
     await gerando.waitFor({ timeout: 3000 });
     assert.ok(await gerando.isDisabled(), "botao deveria ficar desabilitado enquanto gera");
     const code = L.field(page, "pix-code");
     await code.waitFor({ timeout: 15000 });
     assert.match(await code.inputValue(), /^SIMULADO-NAO-PAGUE-sim_/);
     await page.clock.fastForward("10:01");
-    await L.waitText(page.locator(".ck-pix-expired"), "Código expirado");
+    await L.waitText(page.locator(".pix-payment-expired"), "Vamos gerar um novo código?");
     await L.shot(page, `c7-${variant.tag}-pix-expirado`);
-    await L.btn(page, "Gerar novo Pix").click();
-    await L.waitText(page.locator(".ck-pix-timer b"), /^(10:00|09:5\d)$/, 15000);
+    await L.btn(page, "Gerar novo código Pix").click();
+    await L.waitText(page.locator(".pix-validity b"), /^(10:00|09:5\d)$/, 15000);
     L.checkNetwork(requests);
     assert.deepEqual(pageErrors, []);
   } finally {

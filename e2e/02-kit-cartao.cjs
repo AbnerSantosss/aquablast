@@ -19,7 +19,7 @@ async function run(variant) {
     await L.waitText(page.locator(".selected-product"), "Kit com 2 AquaBlast");
     await L.waitText(page.locator(".selected-product p"), /^1 \S+ \+ 1 \S+$/);
     // Antes de escolher a forma (2026-09-29): Pix do kit em destaque, parcela do cartao abaixo.
-    await L.waitText(page.locator(".order-summary .total"), /^(?=[\s\S]*À vista\s*no Pix)(?=[\s\S]*Economize R\$ 10,00)(?=[\s\S]*R\$ 249,90)/);
+    await L.waitText(page.locator(".order-summary .total"), /^(?=[\s\S]*À vista\s*no Pix)(?=[\s\S]*Economize R\$ 30,00)(?=[\s\S]*R\$ 249,90)/);
     await L.waitText(page.locator(".order-summary .total-alt"), /ou 12x de R\$ 23,33 sem juros no cartão/);
     await L.fillDados(page);
     await L.submitDados(page);
@@ -64,7 +64,7 @@ async function run(variant) {
     const selText = () => inst.evaluate((s) => s.options[s.selectedIndex].text.replace(/\s+/g, " ").trim());
     assert.match(await selText(), /^12x de R\$\s23,33 sem juros$/);
     await inst.selectOption("3");
-    assert.match(await selText(), /^3x de R\$\s86,63 sem juros$/);
+    assert.match(await selText(), /^3x de R\$\s93,30 sem juros$/);
     await inst.selectOption("12");
 
     // Recusado pelo simulado: mensagem do gateway, numero e CVV limpos.

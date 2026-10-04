@@ -23,6 +23,8 @@ async function run(variant) {
     if (!(await rec.inputValue())) await rec.fill(L.cliente.name);
     await L.btn(page, "CONFIRMAR ENDEREÇO").click();
     await L.waitText(page.locator("p.error"), "Selecione o estado.");
+    // Popup explicito (2026-10-02): o foco fica no popup; "CORRIGIR AGORA" fecha e leva o foco ao estado.
+    await L.btn(page, "CORRIGIR AGORA").click();
     assert.ok(await page.locator(".state-select").evaluate((e) => e === document.activeElement), "foco deveria ir ao estado");
     await L.shot(page, `c4-${variant.tag}-cep-manual-erro-estado`);
     await page.locator(".state-select").selectOption("RS");

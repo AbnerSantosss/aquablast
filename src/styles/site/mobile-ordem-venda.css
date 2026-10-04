@@ -3,8 +3,11 @@
    fim do card do kit (maior ticket, a venda de 01/10) era visto por ~35%.
    So celular (ate 56.25rem, o mesmo MOBILE_QUERY do site): o desktop fica exatamente como estava.
    A ordem do HTML nao muda (leitores de tela e desktop seguem a original); so a ordem visual:
-   topo -> avaliacoes -> ofertas (kit primeiro) -> videos -> componentes -> presente -> duvidas.
-   03/10 (dono): avaliacoes sobem para a segunda dobra, antes das ofertas, para testar a conversao. */
+   topo -> ofertas (kit primeiro) -> avaliacoes -> videos -> componentes -> presente -> duvidas.
+   03/10 (dono): avaliacoes tinham subido para antes das ofertas, para testar a conversao. Resultado no
+   Clarity (3 dias ate 03/10): so 33% dos visitantes de celular chegavam nas ofertas (#ofertas foi de ~770px
+   para ~2600px do topo) e a maior queda de rolagem era no trecho das avaliacoes (79% -> 41%).
+   03/10 (a partir do Clarity): ofertas voltam para logo depois do topo e as avaliacoes vem depois delas. */
 @media (max-width: 56.25rem) {
   .aquablast-home #conteudo {
     display: flex;
@@ -14,8 +17,8 @@
     min-width: 0;
   }
   .aquablast-home #conteudo > .catalog-hero { order: 0; }
-  .aquablast-home #conteudo > #avaliacoes { order: 1; }
-  .aquablast-home #conteudo > #ofertas { order: 2; }
+  .aquablast-home #conteudo > #ofertas { order: 1; }
+  .aquablast-home #conteudo > #avaliacoes { order: 2; }
   .aquablast-home #conteudo > #diversao { order: 3; }
   .aquablast-home #conteudo > .accessories-section { order: 4; }
   .aquablast-home #conteudo > #familia { order: 5; }
