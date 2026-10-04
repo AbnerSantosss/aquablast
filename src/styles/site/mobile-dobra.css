@@ -126,10 +126,15 @@
     --hero-control-hit: 2.75rem;
     --hero-control-disc: 2rem;
   }
-  body .aquablast-home .hero-video-actions {
-    left: 0.375rem;
+  /* Som e pausa empilhados na borda direita, abaixo do ampliar: embaixo cobriam as legendas do video e no
+     alto, a esquerda, cobriam o selo "NOVIDADE" que o proprio video traz (04/10). */
+  body .aquablast-home .hero-featured-video:not(:fullscreen) .hero-video-actions {
+    left: auto;
     right: 0.375rem;
-    bottom: 0.375rem;
+    top: calc(0.375rem + var(--hero-control-hit));
+    bottom: auto;
+    flex-direction: column;
+    gap: 0;
   }
   body .aquablast-home .hero-video-controls .hero-video-expand {
     right: 0.375rem;
