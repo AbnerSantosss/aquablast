@@ -131,6 +131,8 @@ export function Checkout({
   const [quotes, setQuotes] = useState(quotesInitial);
   const [coupon, setCoupon] = useState(initialCoupon);
   const [couponBusy, setCouponBusy] = useState(false);
+  const [paymentSync, setPaymentSync] = useState<"idle" | "saving" | "error">("idle");
+  const paymentSyncVersion = useRef(0);
   const quoteVersion = useRef(0);
   // Gravações do carrinho em fila: o blur do celular (salvamento parcial) e o clique em CONTINUAR saem quase juntos;
   // sem fila os dois iriam sem token e nasceriam 2 carrinhos. `tokenRef` leva o token da 1ª para a 2ª.
@@ -456,23 +458,31 @@ export function Checkout({
     });
   }
 
+  async function syncPaymentCart(value: boolean, color: Color | null) {
+    const version = ++paymentSyncVersion.current;
+    setPaymentSync("saving");
+    try {
+      const result = await saveCart("pagamento", value, { customer: true, address: true }, color);
+      if (version !== paymentSyncVersion.current) return;
+      setPaymentSync(isApiFail(result) ? "error" : "idle");
+    } catch {
+      if (version === paymentSyncVersion.current) setPaymentSync("error");
+    }
+  }
+
   function handleBumpChange(value: boolean) {
     setBump(value);
     const color = value ? bumpColor : null;
     if (!value) setBumpColor(null);
     setError("");
     setNotice(null);
-    void saveCart("pagamento", value, { customer: true, address: true }, color).then((result) => {
-      if (isApiFail(result)) setNotice("Não foi possível atualizar o total agora. Os valores abaixo podem estar desatualizados.");
-    });
+    void syncPaymentCart(value, color);
   }
 
   function handleBumpColorChange(color: Color) {
     setBumpColor(color);
     setError("");
-    void saveCart("pagamento", true, { customer: true, address: true }, color).then((result) => {
-      if (isApiFail(result)) setNotice("Não foi possível salvar a cor agora. Ela vai junto quando você finalizar a compra.");
-    });
+    void syncPaymentCart(true, color);
   }
 
   function handleMethodChange(m: PayMethodUi, byPointer: boolean) {
@@ -556,6 +566,8 @@ export function Checkout({
       <StepEntrega data={data} onChange={change} onSubmit={onSubmit} cepState={cepState} addrOk={addrOk} busy={busy} buttonLabel={theme.buttonLabel} error={errorBox} />
     ) : cartToken ? (
       <StepPagamento
+        paymentSync={paymentSync}
+        onRetrySync={() => void syncPaymentCart(bump, bumpColor)}
         cartToken={cartToken}
         color={c1}
         canBump={canBump}

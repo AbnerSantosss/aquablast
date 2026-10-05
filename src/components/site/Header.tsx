@@ -27,7 +27,7 @@ export function Header() {
             A diversão
           </a>
           <a href="#familia" onClick={close}>
-            Por que presentear
+            Também é presente
           </a>
           <a href="#ofertas" onClick={close}>
             Escolha o seu

@@ -154,7 +154,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ token: 
   const whatsapp = await getSupportWhatsapp();
 
   const pixExpired = isPixExpired(order.pixExpiresAt);
-  const showPixWatch = order.paymentStatus === "pending" && order.paymentMethod === "pix" && order.pixCode && !pixExpired;
+  const showPixWatch = order.paymentStatus === "pending" && order.paymentMethod === "pix" && order.pixCode && order.pixExpiresAt;
 
   let title = "Pagamento em análise";
   let body = "Estamos confirmando o pagamento do seu pedido. Você recebe a confirmação por e-mail assim que aprovar.";
@@ -175,11 +175,11 @@ export default async function PedidoPage({ params }: { params: Promise<{ token: 
     body = "Este pedido está em contestação com a operadora do cartão.";
   } else if (order.paymentStatus === "pending" && order.paymentMethod === "pix" && pixExpired) {
     title = "Código Pix expirado";
-    body = "O código Pix deste pedido expirou.";
+    body = "Se você já pagou, aguarde aqui. Continuamos verificando a confirmação do pagamento.";
   }
 
   return (
-    <div className="ck-root">
+    <div className="ck ck-root">
       <main className="container ck-main">
         <div style={{ maxWidth: 560, margin: "32px auto" }} className="ck-card ck-flow">
           <h1>{title}</h1>
@@ -196,7 +196,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ token: 
                 Fale com a gente no WhatsApp: {whatsapp.label}
               </a>
             </p>
-          ) : null}
+          ) : <p><a href={`mailto:${CONTACT_EMAIL}`}>Fale com o atendimento por e-mail</a></p>}
         </div>
       </main>
     </div>

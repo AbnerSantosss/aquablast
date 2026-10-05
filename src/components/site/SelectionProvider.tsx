@@ -44,12 +44,12 @@ export interface SelectionContextValue extends SelectionState {
 
 const initialState: SelectionState = {
   color: "azul",
-  pack: "unit",
+  pack: "kit",
   kitColors: ["azul", "preto"],
   kitConfirmed: [false, false],
   kitReopened: null,
   heroPhoto: 0,
-  videoActive: true,
+  videoActive: false,
   videoRequest: 0,
   heroTouched: false,
   colorTouched: false,

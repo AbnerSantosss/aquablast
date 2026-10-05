@@ -1,0 +1,18 @@
+.ck .ck-season-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid #ccdee8;
+  border-radius: 24px;
+  background: #e5f2f7;
+  color: #174762;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ck .ck-season-badge svg { flex-shrink: 0; }
+@media (max-width: 380px) {
+  .ck .ck-season-badge { font-size: 11px; padding: 7px 9px; gap: 5px; }
+}

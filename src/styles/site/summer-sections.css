@@ -1,0 +1,102 @@
+/* Campanha de verão: componentes abaixo da galeria. Apenas tokens e cores existentes. */
+.aquablast-home #conteudo { display: block; }
+.aquablast-home #conteudo > * { order: initial; }
+#ofertas.summer-offers .price-grid > [data-price-card] { order: 0; }
+#ofertas.summer-offers .kit-top-tag { animation: none; }
+#ofertas.summer-offers .summer-offer-shipping {
+  display: flex; grid-column: 1 / -1; align-items: center; justify-content: center;
+  gap: .5rem; margin: .5rem 0; padding: .5rem; background: transparent;
+}
+#ofertas.summer-offers .summer-offer-shipping > img { width: 1.5rem; height: 1.5rem; }
+#ofertas.summer-offers .summer-offer-shipping > span { display: block; font-size: .8125rem; line-height: 1.4; }
+#ofertas.summer-offers .summer-offer-shipping strong { display: inline; font-size: inherit; }
+#ofertas.summer-offers .summer-kit-products {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  gap: .375rem; height: 14rem; aspect-ratio: auto; background: var(--pale); overflow: hidden;
+}
+#ofertas.summer-offers .summer-kit-products > img {
+  width: 45%; height: calc(100% - 2.5rem); object-fit: contain; margin: 0; filter: none;
+}
+#ofertas.summer-offers .summer-kit-products > img:nth-child(2) { transform: scaleX(-1); }
+#ofertas.summer-offers .summer-kit-products .packshot-caption {
+  position: absolute; inset: auto .5rem .5rem; padding: .375rem; color: var(--navy); background: transparent;
+}
+#ofertas.summer-offers .kit-emotion-tag { gap: .25rem; }
+#ofertas.summer-offers .kit-emotion-tag strong { font-size: .9375rem; }
+.summer-features-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.summer-features-grid article { min-width: 0; border: 1px solid var(--line); border-radius: 1rem; overflow: hidden; background: #fff; }
+.summer-feature-image { position: relative; height: 12rem; background: var(--pale); }
+.summer-feature-image img { object-fit: contain; padding: .75rem; }
+.summer-features-grid article > div:last-child { padding: 1.25rem; }
+.summer-features-grid h3, .summer-confidence-grid h3 { font-size: 1.125rem; line-height: 1.3; margin-bottom: .5rem; }
+.summer-features-grid p, .summer-confidence-grid p { color: var(--muted); font-size: .9375rem; line-height: 1.6; }
+#familia.summer-gifting { background: var(--pale); }
+.summer-gifting-grid { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 2rem; }
+.summer-gifting-grid > div { min-width: 0; }
+.summer-gifting-grid h2 { margin-bottom: 1rem; }
+.summer-gifting-grid p { line-height: 1.7; margin-bottom: 1rem; max-width: 36rem; }
+.summer-gifting-grid figure { margin: 0; min-width: 0; }
+.summer-gifting-grid figure img { display: block; width: 100%; height: 15rem; object-fit: cover; border-radius: 1rem; }
+.summer-gifting-grid figcaption { padding-top: .375rem; font-size: .75rem; color: var(--muted); text-align: right; }
+.summer-confidence-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+.summer-confidence-grid article { display: flex; flex-direction: column; padding: 1.25rem; border: 1px solid var(--line); border-radius: 1rem; min-width: 0; }
+.summer-confidence-grid article > svg { color: var(--blue); margin-bottom: 1rem; }
+.summer-confidence-grid p { margin-bottom: .75rem; }
+.summer-confidence-grid a { display: inline-flex; align-items: center; min-height: 2.75rem; margin-top: auto; color: var(--blue); font-weight: 700; font-size: .875rem; text-decoration: underline; text-underline-offset: .2rem; }
+#verao.summer-closing { background: var(--pale); text-align: center; }
+.summer-closing p { max-width: 34rem; margin: 1rem auto 1.5rem; color: var(--muted); }
+.summer-closing .button { max-width: 26rem; width: 100%; margin-inline: auto; }
+@media (max-width: 56.25rem) {
+  .summer-confidence-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .summer-features-grid { gap: .75rem; }
+  .summer-feature-image { height: 9rem; }
+  .summer-features-grid article > div:last-child { padding: 1rem; }
+}
+@media (max-width: 42.5rem) {
+  .summer-features-grid { grid-template-columns: minmax(0, 1fr); }
+  .summer-features-grid article { display: grid; grid-template-columns: 6.875rem minmax(0, 1fr); align-items: center; }
+  .summer-feature-image { height: 100%; min-height: 8rem; }
+  .summer-gifting-grid { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+  .summer-gifting-grid figure img { height: 12rem; }
+  .summer-confidence-grid { gap: .625rem; }
+  .summer-confidence-grid article { padding: 1rem .75rem; }
+  .summer-confidence-grid h3 { font-size: 1rem; }
+  .summer-confidence-grid p { font-size: .875rem; }
+  #ofertas.summer-offers .summer-kit-products { height: 11rem; }
+}
+
+#ofertas.summer-offers .summer-kit-saving { display: inline-block; margin: .25rem 0 .5rem; padding: .375rem .75rem; border-radius: .5rem; background: var(--green); color: #fff; font-size: .8125rem; font-weight: 800; }
+
+#ofertas.summer-offers .price-card > .price-header { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: .375rem; min-height: 8rem; padding: 1rem; }
+#ofertas.summer-offers .price-header h3 { white-space: normal; }
+#ofertas.summer-offers .offer-card-tag { text-align: center; }
+#ofertas.summer-offers .kit-emotion-tag { background: transparent; color: inherit; padding: 0; }
+#ofertas.summer-offers .kit-emotion-tag small { display: none; }
+
+/* A ordem do DOM também vale visualmente: o grid antigo fixava a unidade à esquerda. */
+#ofertas.summer-offers .price-grid > .price-card[data-price-card] { grid-area: auto; }
+@media (min-width: 56.3125rem) {
+  /* Preserva as dez linhas compartilhadas que alinham cores, preço e CTA. */
+  #ofertas.summer-offers .price-grid > .price-card[data-price-card="kit"] { grid-area: 1 / 1 / span 10 / 2; }
+  #ofertas.summer-offers .price-grid > .price-card[data-price-card="unit"] { grid-area: 1 / 2 / span 10 / 3; }
+}
+/* Mesma caixa para unidade e kit, sem a altura curta/inset absoluto da campanha anterior. */
+#ofertas.summer-offers .price-card > .packshot.single.unit-campaign-art {
+  position: relative; display: block; height: 14rem; min-height: 0; padding: .75rem .75rem 2rem;
+  background: var(--pale); aspect-ratio: auto;
+}
+#ofertas.summer-offers .price-card > .packshot.single.unit-campaign-art .unit-art-scene {
+  display: block; width: 100%; height: 100%; min-height: 0; aspect-ratio: auto;
+  overflow: hidden; background: transparent;
+}
+#ofertas.summer-offers .price-card > .packshot.single.unit-campaign-art .unit-product {
+  position: static; inset: auto; display: block; width: 100%; max-width: 100%; height: 100%; max-height: 100%; min-height: 0;
+  margin: 0; object-fit: contain; object-position: center; filter: none;
+}
+#ofertas.summer-offers .unit-campaign-art > .packshot-caption {
+  position: absolute; inset: auto .5rem .5rem; padding: .375rem;
+  color: var(--navy); background: transparent;
+}
+@media (max-width: 42.5rem) {
+  #ofertas.summer-offers .price-card > .packshot.single.unit-campaign-art { height: 11rem; }
+}

@@ -23,20 +23,26 @@ export function PixWatch({ code, qrUrl, expiresAt, publicToken }: { code: string
   const refreshedRef = useRef(false);
 
   useEffect(() => {
-    if (expired) return;
     let cancelled = false;
+    let checking = false;
     const poll = async () => {
-      if (document.hidden || cancelled || refreshedRef.current) return;
+      if (document.hidden || cancelled || checking || refreshedRef.current) return;
+      checking = true;
       const result = await getStatus(publicToken);
+      checking = false;
       if (!cancelled && result.ok && result.status === "paid") {
         refreshedRef.current = true;
         router.refresh();
       }
     };
-    const id = window.setInterval(poll, 5000);
+    // A confirmação pode chegar depois do vencimento ou enquanto o app do banco está aberto.
+    void poll();
+    document.addEventListener("visibilitychange", poll);
+    const id = window.setInterval(poll, expired ? 15_000 : 5000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      document.removeEventListener("visibilitychange", poll);
     };
   }, [publicToken, expired, router]);
 

@@ -1,24 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND_NAME, DELIVERY_PATH, RETURNS_PATH } from "@/lib/site/constants";
-import { deliveryPromiseText } from "@/lib/site/delivery-promise";
 import "@/styles/site/trocas.css";
 
-// Página de entrega (pedido do dono, 04/10): destino do clique na faixa rolante do topo da home, que o Clarity
-// mostrou ser muito clicada. Só repete o que já está confirmado no site: o aviso com data limite
-// (lib/site/delivery-promise.ts, informado pelo dono, vale para as capitais), frete grátis para todo o Brasil,
-// prazo pelo CEP no checkout e rastreio. Não publicar outro prazo sem confirmação do dono
-// (wiki/conteudo/honestidade-e-confirmar.md).
-//
-// Mesmo visual, cabeçalho e rodapé da página de trocas (styles/site/trocas.css).
-
-// ISR, como a home: o aviso some sozinho depois da data limite, sem deploy.
+// Informações permanentes de frete e rastreio, sem promessa de chegada em data comemorativa.
 export const revalidate = 300;
 
 const TITLE = `Entrega e frete | ${BRAND_NAME}`;
 const DESCRIPTION = "Frete grátis para todo o Brasil. Veja como funciona a entrega do AquaBlast e como acompanhar o pedido.";
 
-// noindex: o aviso tem data limite; a página existe para quem clica na faixa, não para busca.
+// Página de suporte para quem consulta as condições de entrega.
 export const metadata: Metadata = {
   title: { absolute: TITLE },
   description: DESCRIPTION,
@@ -57,8 +48,6 @@ function Brand() {
 }
 
 export default function EntregaPage() {
-  // null depois da data limite: a página fica só com o que vale o ano todo.
-  const promise = deliveryPromiseText();
   return (
     <div className="tr-page">
       <a className="skip" href="#conteudo">
@@ -90,12 +79,9 @@ export default function EntregaPage() {
                 </li>
               </ol>
             </nav>
-            <h1>{promise ? "Entrega rápida para o Dia das Crianças" : "Entrega e frete"}</h1>
+            <h1>Entrega e frete</h1>
             <p className="tr-lead">
-              {promise ? `${promise}. ` : "Frete grátis para todo o Brasil. "}
-              {promise
-                ? "Nas outras cidades, o prazo depende do CEP e aparece no checkout antes de você pagar."
-                : "O prazo depende do CEP e aparece no checkout antes de você pagar."}
+              Frete grátis para todo o Brasil. A entrega varia conforme a região. Acompanhe seu pedido pelo site.
             </p>
             <div className="tr-actions">
               <Link className="tr-btn tr-btn-green" href="/#ofertas">
@@ -109,20 +95,14 @@ export default function EntregaPage() {
           <div className="tr-summary">
             <p className="tr-summary-title">Em resumo</p>
             <ul>
-              {promise ? (
-                <li>
-                  <strong>Esta semana:</strong> {promise}.
-                </li>
-              ) : null}
               <li>
                 <strong>Frete grátis</strong> para todo o Brasil.
               </li>
               <li>
-                <strong>Prazo pelo CEP:</strong> ao informar o CEP no checkout, você vê as opções de frete antes de
-                pagar.
+                <strong>Entrega acompanhada:</strong> consulte as atualizações em Rastrear pedido.
               </li>
               <li>
-                <strong>Estoque abastecido.</strong>
+                <strong>Frete informado antes do pagamento.</strong>
               </li>
             </ul>
           </div>
@@ -130,10 +110,10 @@ export default function EntregaPage() {
           <section className="tr-section" aria-labelledby="prazo">
             <h2 id="prazo">Qual é o prazo para o meu endereço</h2>
             <p>
-              O prazo depende do CEP. Ao informar o CEP no checkout, você vê as opções de frete disponíveis antes de
-              pagar, incluindo frete grátis para todo o Brasil.
+              A entrega varia conforme o endereço. O frete é grátis para todo o Brasil e os dados de entrega ficam
+              disponíveis no seu pedido.
             </p>
-            <p>Se o presente for para uma data comemorativa, confira o prazo antes de concluir o pedido.</p>
+            <p>Se precisar receber para uma ocasião específica, fale com a loja antes de comprar para consultar a previsão.</p>
           </section>
 
           <section className="tr-section" aria-labelledby="acompanhar">

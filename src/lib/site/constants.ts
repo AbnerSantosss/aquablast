@@ -113,14 +113,14 @@ export const productPhoto = (color: Color): HeroPhoto => ({
 });
 
 export const KIT_PHOTO: HeroPhoto = {
-  src: "/campanha-kit-azul-preto.webp",
+  src: "/kit-azul-preto-v40.webp",
   title: "Kit AquaBlast azul + preto",
   alt: "Arte do kit com um AquaBlast azul e um preto inteiros",
   kind: "art",
 };
 
 export const CAMPAIGN_PHOTO: HeroPhoto = {
-  src: "/campanha-abertura.webp",
+  src: "/produto-azul.webp",
   title: "1 unidade AquaBlast",
   alt: "Arte promocional do brinquedo lançador de água com luz LED, recarga USB e reservatório em tambor",
   kind: "campaign",

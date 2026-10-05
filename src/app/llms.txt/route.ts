@@ -18,7 +18,7 @@ function buildLlmsTxt(): string {
     "## Produto",
     "",
     "- Brinquedo de água elétrico (lançador de água) com efeito luminoso (luz LED).",
-    "- Presente de Dia das Crianças para filho, neto ou sobrinho; brincadeira ao ar livre.",
+    "- Diversão de verão para brincar em família no quintal e na piscina.",
     "- Bateria recarregável por USB.",
     "- Reservatório em tambor.",
     "- Cores: azul, vermelho e preto.",

@@ -23,11 +23,13 @@ import "@/styles/site/responsivo.css";
 import "@/styles/site/mobile-ordem-venda.css";
 // Primeira tela do celular: titulo, nota, video sem moldura, botao e preco (pedido 2026-10-03 22h41). So celular.
 import "@/styles/site/mobile-dobra.css";
+import "@/styles/site/summer-sections.css";
+import "@/styles/site/summer.css";
 
 export const metadata: Metadata = {
-  title: "AquaBlast — O presente que vira uma boa lembrança",
+  title: "AquaBlast — Seu verão mais divertido",
   description:
-    "Presenteie com mais brincadeira, risadas e tempo juntos. Conheça o AquaBlast e escolha uma unidade ou o kit para compartilhar a diversão.",
+    "Brinquedo de água elétrico com luz LED e recarga USB. Escolha as cores do seu AquaBlast e leve a diversão para o quintal.",
   applicationName: "AquaBlast",
   // Arquivos reais em public/ (a mesma gota de SITE_ICON): o Google Search não usa favicon em data: URI.
   icons: {

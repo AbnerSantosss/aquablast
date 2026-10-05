@@ -1,41 +1,19 @@
-/* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
 
 export function Gifting() {
   return (
-    <section className="section gifting" id="familia">
-      <div className="container gifting-grid">
-        <div className="gifting-copy">
-          {/* Meta Ads (dono, 27/09): deixar explicito que e um brinquedo lancador de agua. */}
-          <span className="eyebrow">BRINQUEDO LANÇADOR DE ÁGUA PARA A FAMÍLIA</span>
-          <h2>
-            A surpresa passa.
-            <br />
-            <em>A lembrança fica.</em>
-          </h2>
-          {/* Celular (dono, 01/10): o Clarity mostrou ~2 s de atencao no texto longo, entao no celular
-              fica so a frase curta; o texto longo continua no desktop. Classes em mobile-ordem-venda.css. */}
-          <p>
-            <strong>O AquaBlast é um brinquedo lançador de água</strong>
-            <span className="gifting-short"> para brincar ao ar livre com a família.</span>
-            <span className="gifting-long">
-              , feito para brincar ao ar livre com a família: um presente de Dia das Crianças para filho, neto ou
-              sobrinho. Primeiro vem o sorriso ao abrir o presente. Depois, os jatos de água, as corridas pelo
-              quintal e aquele pedido de “só mais uma vez!”.
-            </span>
-          </p>
+    <section className="section summer-gifting" id="familia">
+      <div className="container summer-gifting-grid">
+        <div>
+          <span className="eyebrow">TAMBÉM É PRESENTE</span>
+          <h2>Um presente que <em>vira brincadeira.</em></h2>
+          <p>No aniversário ou no Natal, dê um motivo para reunir a família no quintal. Com o kit, você entra na diversão também.</p>
+          <a className="text-link" href="#ofertas">Escolher meu AquaBlast →</a>
         </div>
-        <img
-          className="gifting-photo"
-          src="/presente-diversao-familia.webp"
-          srcSet="/thumbs/presente-diversao-familia-720.webp 720w, /presente-diversao-familia.webp 1536w"
-          sizes="(max-width: 42.5rem) calc(100vw - 2.25rem), (max-width: 56.25rem) calc(100vw - 3rem), 36.1rem"
-          width={1536}
-          height={1024}
-          alt="Cena ilustrativa de uma família brincando com o brinquedo lançador de água AquaBlast no jardim, ao lado de uma caixa de presente aberta"
-          loading="lazy"
-          decoding="async"
-        />
-        <a className="button button-green gift-cta" href="#ofertas">Quero dar diversão de presente</a>
+        <figure>
+          <Image src="/family-play.webp" alt="Cena ilustrativa de pai e filho brincando no quintal" width={1536} height={1024} sizes="(max-width: 680px) 90vw, 480px" />
+          <figcaption>Imagem ilustrativa.</figcaption>
+        </figure>
       </div>
     </section>
   );

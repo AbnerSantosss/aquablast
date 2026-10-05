@@ -79,3 +79,8 @@ A política "chegou quebrado, enviamos outro sem custo" existe e é publicada em
 3. **Depois de pagar, o pedido se explica sozinho.** Página do pedido, e-mail e rastreio respondem "onde está minha compra" sem WhatsApp.
 4. **A campanha troca, a loja fica.** O que é sazonal é isolado e removível; a estrutura e a marca não dependem da data.
 5. **Painel para uma pessoa só.** Tudo cabe na tela, ações arriscadas são explícitas e segredos são protegidos do preenchimento automático e da exposição.
+
+
+## Autorização de campanha — 2026-10-05
+
+O dono autorizou executar PLANO-VIRADA-VERAO.md e PROMPT-CLI-VIRADA-VERAO.md. A restrição de copy/imagens de 29/09 fica suspensa somente para esta virada de verão. Preços, paleta, pagamentos e eventos permanecem preservados. Sem push/deploy; revisão local. Registro: wiki/pedidos/2026-10-05-virada-verao.md.

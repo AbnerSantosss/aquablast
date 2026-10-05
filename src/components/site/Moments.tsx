@@ -2,9 +2,9 @@ import { videos } from "@/data/videos";
 import { SelectOfferLink } from "./SelectOfferLink";
 
 const slots = [
-  { index: "01 / EM AÇÃO", title: "AquaBlast em ação • 01", label: "Vídeo 1: AquaBlast em ação" },
-  { index: "02 / DE PERTO", title: "AquaBlast em ação • 02", label: "Vídeo 2: AquaBlast em ação" },
-  { index: "03 / EM FAMÍLIA", title: "AquaBlast em ação • 03", label: "Vídeo 3: AquaBlast em ação" },
+  { title: "AquaBlast em ação", label: "Vídeo 1: AquaBlast em ação" },
+  { title: "Veja de perto", label: "Vídeo 2: detalhes do AquaBlast" },
+  { title: "Mais diversão ao ar livre", label: "Vídeo 3: AquaBlast em ação" },
 ];
 
 /**
@@ -17,11 +17,11 @@ export function Moments() {
       <div className="container">
         <div className="section-heading">
           <div>
-            <span className="eyebrow">VEJA A DIVERSÃO ACONTECER</span>
+            <span className="eyebrow">VEJA EM AÇÃO</span>
             <h2>
-              Brincadeira de verdade.
+              Água, quintal e
               <br />
-              <em>Em cada detalhe.</em>
+              <em>todo mundo junto.</em>
             </h2>
           </div>
           <p>Assista ao AquaBlast em ação.</p>

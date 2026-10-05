@@ -117,7 +117,7 @@ export function StepEntrega({
               </span>
               <span className="ship-price">
                 <b>FRETE GRÁTIS</b>
-                <small>Chega antes do Dia das Crianças</small>
+                <small>Prazo conforme a região</small>
               </span>
             </label>
           </div>

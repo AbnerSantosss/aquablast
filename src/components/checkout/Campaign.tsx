@@ -2,7 +2,7 @@ import Image from "next/image";
 import type { Theme } from "@/lib/checkout/own/theme";
 import type { Selection } from "@/lib/checkout/own/catalog";
 import type { Color } from "@/lib/site/types";
-import { Gift } from "lucide-react";
+import { Sun } from "lucide-react";
 import { colorName, effectiveSelectionClient, thumbOf } from "./OrderSummary";
 
 /**
@@ -15,7 +15,7 @@ function splitTitle(title: string): [string, string] {
   return [`${words.slice(0, -2).join(" ")} `, words.slice(-2).join(" ")];
 }
 
-/** "DIA DAS CRIANÇAS" -> "Dia das Crianças" (rótulo acessível igual ao da origem: "Campanha Dia das Crianças"). */
+/** Normaliza a chamada para o rótulo acessível da campanha. */
 function titleCase(text: string): string {
   return text
     .toLocaleLowerCase("pt-BR")
@@ -56,7 +56,7 @@ export function Campaign({ theme, selection, bump = false, bumpColor = null }: {
           <em>{tail}</em>
         </h1>
         {theme.bannerSubtitle ? <p>{theme.bannerSubtitle}</p> : null}
-        <div className="campaign-gift"><Gift size={16} aria-hidden="true" />{isKit ? "Diversão para compartilhar" : "Um presente, muitas aventuras"}</div>
+        <div className="campaign-gift"><Sun size={16} aria-hidden="true" />Diversão para o verão inteiro</div>
       </div>
       <div className="campaign-products">
         {selected.colors.map((color, index) => <Image key={`${index}-${color}`} src={thumbOf(color, 610)} width={280} height={280} alt={`AquaBlast ${colorName(color)}`} priority sizes="(max-width: 600px) 44vw, 280px" />)}

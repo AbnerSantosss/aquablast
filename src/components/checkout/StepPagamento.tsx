@@ -29,6 +29,8 @@ import type { PayMethodUi } from "./types";
  * e foca a 1ª cor. Com cor, a miniatura vira a foto dessa cor. Desmarcar limpa a cor (o Checkout cuida).
  */
 export function StepPagamento({
+  paymentSync = "idle",
+  onRetrySync,
   cartToken,
   color,
   canBump,
@@ -51,6 +53,8 @@ export function StepPagamento({
   onPaid,
   onPending,
 }: {
+  paymentSync?: "idle" | "saving" | "error";
+  onRetrySync?: () => void;
   cartToken: string;
   color: Color;
   canBump: boolean;
@@ -79,7 +83,7 @@ export function StepPagamento({
   const hasBump = canBump && bump;
   const missingColor = hasBump && !bumpColor;
   const colorsRef = useRef<HTMLDivElement>(null);
-  const paymentRef = useRef<HTMLDivElement>(null);
+  const paymentRef = useRef<HTMLFieldSetElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
   const [confirmedColor, setConfirmedColor] = useState<Color | null>(bumpColor);
   const selectionPending = hasBump && (!bumpColor || confirmedColor !== bumpColor);
@@ -184,7 +188,12 @@ export function StepPagamento({
           </div> : null}
         </section>
       ) : null}
-      <div
+      {paymentSync !== "idle" ? <p className="ck-payment-sync" role="status">
+        {paymentSync === "saving" ? "Atualizando o total do pedido…" : <>Não foi possível atualizar o total. <button type="button" onClick={onRetrySync}>Tentar novamente</button></>}
+      </p> : null}
+      <fieldset
+        disabled={paymentSync !== "idle"}
+        aria-busy={paymentSync === "saving" || undefined}
         className="pay-acc"
         ref={paymentRef}
         role="radiogroup"
@@ -259,7 +268,7 @@ export function StepPagamento({
             ) : null}
           </div>
         ))}
-      </div>
+      </fieldset>
     </div>
   );
 }

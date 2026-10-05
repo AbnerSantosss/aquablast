@@ -78,7 +78,7 @@
   }
 }
 
-/* Selo "Mais vendido" do kit no topo do card, a esquerda, pulsando (dono, 01/10; texto escolhido pelo dono). So celular; no desktop fica o selo na foto. */
+/* Selo "Selo legado" do kit no topo do card, a esquerda, pulsando (dono, 01/10; texto escolhido pelo dono). So celular; no desktop fica o selo na foto. */
 .kit-top-tag {
   display: none;
 }

@@ -14,8 +14,14 @@ const summary = reviewSummary(reviews);
 const STARS = "★★★★★";
 
 // Como no reviews.js: no desktop, fotos e vídeos dos clientes ficam juntos na primeira página.
-const mediaReviews = reviews.filter((review) => review.media);
-const textReviews = reviews.filter((review) => !review.media);
+// Prioriza relatos reais sobre diversão e o disparo, sem mudar textos, notas ou excluir avaliações.
+const featuredIds = ["review-juliana", "review-carlos", "review-elcio"];
+const summerReviews = [...reviews].sort((a, b) => {
+  const rank = (id: string) => { const index = featuredIds.indexOf(id); return index < 0 ? featuredIds.length : index; };
+  return rank(a.id) - rank(b.id);
+});
+const mediaReviews = summerReviews.filter((review) => review.media);
+const textReviews = summerReviews.filter((review) => !review.media);
 const desktopReviews = [...mediaReviews, ...textReviews];
 const desktopPageSize = Math.max(4, mediaReviews.length);
 const MOBILE_PAGE_SIZE = 4;
@@ -116,7 +122,7 @@ export function Reviews() {
   // Ao trocar de layout a página volta para 1 (listener "change" do original).
   const requestedPage = paging.mobile === mobile ? paging.page : 1;
 
-  const filtered = mobile ? reviews : desktopReviews;
+  const filtered = mobile ? summerReviews : desktopReviews;
   const state = getReviewPage(filtered.length, requestedPage, mobile ? MOBILE_PAGE_SIZE : desktopPageSize);
   const visible = new Set(filtered.slice(state.start, state.end));
   const pageSummary = filtered.length
@@ -160,7 +166,7 @@ export function Reviews() {
           {pageSummary}
         </p>
         <div className="reviews-list">
-          {reviews.map((review) => (
+          {summerReviews.map((review) => (
             <ReviewArticle key={review.id} review={review} hidden={!visible.has(review)} />
           ))}
         </div>

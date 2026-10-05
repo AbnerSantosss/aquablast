@@ -159,7 +159,7 @@ const product = {
     absoluteUrl("/produto-preto.webp"),
   ],
   description:
-    "Brinquedo de água elétrico (lançador de água) com efeito luminoso, bateria recarregável por USB e reservatório em tambor. Presente de Dia das Crianças disponível em 1 unidade (azul, vermelho ou preto) ou kit com 2 unidades.",
+    "Brinquedo de água elétrico (lançador de água) com efeito luminoso, bateria recarregável por USB e reservatório em tambor. Para brincar no quintal e na piscina, disponível em 1 unidade (azul, vermelho ou preto) ou kit com 2 unidades.",
   brand: { "@type": "Brand", name: BRAND_NAME },
   color: ["Azul", "Vermelho", "Preto"],
   offers: [

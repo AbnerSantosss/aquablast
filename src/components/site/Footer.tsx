@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
 
 import Link from "next/link";
 import { CONTACT_EMAIL, RETURNS_PATH } from "@/lib/site/constants";
@@ -15,13 +15,13 @@ export function Footer({ whatsapp = null }: { whatsapp?: SupportWhatsapp | null 
           <p>
             Mais brincadeira.
             <br />
-            Mais presença. Mais infância.
+            Mais verão em família.
           </p>
         </div>
         <div>
           <h3>Explore</h3>
           <a href="#diversao">A diversão</a>
-          <a href="#familia">Por que presentear</a>
+          <a href="#familia">Também é presente</a>
           <a href="#ofertas">Escolha o seu</a>
         </div>
         <div>
@@ -43,7 +43,7 @@ export function Footer({ whatsapp = null }: { whatsapp?: SupportWhatsapp | null 
         </div>
         <div className="footer-contact">
           <span className="icon-box">
-            <img className="icon" src="/icons/headphones.svg" alt="" loading="lazy" decoding="async" />
+            <Image className="icon" src="/icons/headphones.svg" alt="" width={24} height={24} />
           </span>
           <h3>
             Gente de verdade
@@ -51,7 +51,7 @@ export function Footer({ whatsapp = null }: { whatsapp?: SupportWhatsapp | null 
             para conversar com você.
           </h3>
           <a href={`mailto:${CONTACT_EMAIL}`} className="text-link">
-            Fale com a AquaBlast <img className="icon" src="/icons/arrow-right.svg" alt="" loading="lazy" decoding="async" />
+            Fale com a AquaBlast <Image className="icon" src="/icons/arrow-right.svg" alt="" width={24} height={24} />
           </a>
         </div>
       </div>

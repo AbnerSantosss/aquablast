@@ -217,7 +217,7 @@
     font-size: 0.75rem;
     white-space: nowrap;
   }
-  /* "Mais vendido": o mesmo selo do painel do desktop, parado, no canto do botao do kit. */
+  /* "Selo legado": o mesmo selo do painel do desktop, parado, no canto do botao do kit. */
   body .aquablast-home .top-buy-option > .top-buy-tag {
     top: 0;
     right: 0.5rem;

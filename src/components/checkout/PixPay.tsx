@@ -10,7 +10,7 @@ import type { PixResult } from "./types";
 import { pad2, ttlLabel, useClock } from "./useClock";
 
 /**
- * Gera o Pix no servidor e consulta a confirmação a cada 5 s enquanto válido.
+ * Gera o Pix e consulta a confirmação a cada 5 s (15 s após o vencimento).
  * QR Code visível por padrão, acompanhado do código copia e cola.
  * No gateway simulado, código e imagem são apenas demonstrações não pagáveis.
  */
@@ -60,17 +60,24 @@ export function PixPay({
   const publicToken = pix?.publicToken ?? "";
 
   useEffect(() => {
-    if (phase !== "ready" || expired || !publicToken) return;
+    if (phase !== "ready" || !publicToken) return;
     let cancelled = false;
+    let checking = false;
     const poll = async () => {
-      if (document.hidden || cancelled) return;
+      if (document.hidden || cancelled || checking) return;
+      checking = true;
       const result = await getStatus(publicToken);
+      checking = false;
       if (!cancelled && result.ok && result.status === "paid") onPaidRef.current(publicToken);
     };
-    const id = window.setInterval(poll, 5000);
+    // A confirmação pode chegar depois do vencimento ou enquanto o app do banco está aberto.
+    void poll();
+    document.addEventListener("visibilitychange", poll);
+    const id = window.setInterval(poll, expired ? 15_000 : 5000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      document.removeEventListener("visibilitychange", poll);
     };
   }, [phase, expired, publicToken]);
 

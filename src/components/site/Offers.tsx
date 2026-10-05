@@ -1,8 +1,8 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
 
 import type { MouseEvent, ReactNode } from "react";
-import { COLOR_LABELS, PRICES } from "@/lib/site/constants";
+import { COLOR_LABELS, KIT_SAVING, PRICES } from "@/lib/site/constants";
 import type { Pack } from "@/lib/site/types";
 import { UnitColorCue, UnitSwatches } from "./ColorSwatches";
 import { KitColorSteps } from "./KitColorSteps";
@@ -11,10 +11,10 @@ import { PurchaseLink } from "./PurchaseLink";
 
 function OfferBenefits() {
   return (
-    <ul className="offer-benefits" aria-label="Benefícios incluídos">
+    <ul className="offer-benefits" aria-label="Detalhes do produto">
       <li>
         <span className="offer-benefit-photo light-detail">
-          <img src="/thumbs/efeito-luz-280.webp" alt="Detalhe do cano luminoso" loading="lazy" decoding="async" />
+          <Image src="/thumbs/efeito-luz-280.webp" alt="Detalhe da luz LED" width={90} height={90} />
         </span>
         <span>
           Efeito
@@ -24,7 +24,7 @@ function OfferBenefits() {
       </li>
       <li>
         <span className="offer-benefit-photo">
-          <img src="/thumbs/acessorio-bateria-90.webp" alt="Bateria recarregável do AquaBlast" loading="lazy" decoding="async" />
+          <Image src="/thumbs/acessorio-bateria-90.webp" alt="Bateria recarregável do AquaBlast" width={90} height={90} />
         </span>
         <span>
           Bateria
@@ -34,7 +34,7 @@ function OfferBenefits() {
       </li>
       <li>
         <span className="offer-benefit-photo">
-          <img src="/thumbs/acessorio-tambor-90.webp" alt="Reservatório em tambor do AquaBlast" loading="lazy" decoding="async" />
+          <Image src="/thumbs/acessorio-tambor-90.webp" alt="Reservatório em tambor do AquaBlast" width={90} height={90} />
         </span>
         <span>
           Reservatório
@@ -46,17 +46,13 @@ function OfferBenefits() {
   );
 }
 
-function OfferFooter({ pack, buy, deliveryPromise }: { pack: Pack; buy: string; deliveryPromise: string | null }) {
+function OfferFooter({ pack, buy }: { pack: Pack; buy: string }) {
   const price = PRICES[pack];
   return (
     <>
-      <div className="offer-shipping offer-shipping-seal">
-        <img src="/thumbs/envio-375.webp" alt="Dia das Crianças: envio rápido e postagem ágil" width={1672} height={941} loading="lazy" decoding="async" />
-        <span>
-          <strong>Frete grátis</strong> para todo o Brasil · prazo pelo CEP
-          {/* Aviso com data limite (lib/site/delivery-promise.ts): vem pronto do servidor; some depois da data. */}
-          {deliveryPromise ? <em className="offer-delivery-promise">{deliveryPromise}</em> : null}
-        </span>
+      <div className="offer-shipping summer-offer-shipping">
+        <Image src="/icons/truck.svg" alt="" width={24} height={24} />
+        <span><strong>Frete grátis</strong> para todo o Brasil</span>
       </div>
       {/* Preco (pedido do dono, 01/10): valor a vista no Pix em destaque, cartao parcelado como o "ou" embaixo. */}
       <div className="offer-price-line">
@@ -65,7 +61,7 @@ function OfferFooter({ pack, buy, deliveryPromise }: { pack: Pack; buy: string; 
         </div>
         <div className="pix-price-row">
           <span className="pix-label">
-            <img className="pix-icon" src="/icons/pix.svg" alt="" loading="lazy" decoding="async" />
+            <Image className="pix-icon" src="/icons/pix.svg" alt="" width={90} height={90} />
             à vista no Pix
           </span>
           <span className="pix-discount">{price.pixDiscount} de desconto</span>
@@ -76,11 +72,11 @@ function OfferFooter({ pack, buy, deliveryPromise }: { pack: Pack; buy: string; 
       </div>
       <div className="offer-reassurance">
         <span>
-          <img className="icon" src="/icons/check.svg" alt="" loading="lazy" decoding="async" />
+          <Image className="icon" src="/icons/check.svg" alt="" width={90} height={90} />
           Cores à sua escolha
         </span>
         <span>
-          <img className="icon" src="/icons/headphones.svg" alt="" loading="lazy" decoding="async" />
+          <Image className="icon" src="/icons/headphones.svg" alt="" width={90} height={90} />
           Atendimento humano
         </span>
       </div>
@@ -107,30 +103,53 @@ function PriceCard({ pack, className, children }: { pack: Pack; className: strin
   );
 }
 
-export function Offers({ deliveryPromise }: { deliveryPromise: string | null }) {
-  const { color, colorTouched, pack } = useSelection();
+export function Offers() {
+  const { color, colorTouched, pack, kitColors } = useSelection();
   const colorLabel = COLOR_LABELS[color];
 
   return (
-    <section className="section offers" id="ofertas">
+    <section className="section offers summer-offers" id="ofertas">
       <div className="container">
         <div className="section-heading centered offer-title">
-          <span className="eyebrow">MENOS TELA. MAIS DIVERSÃO.</span>
+          <span className="eyebrow">OFERTA DE VERÃO</span>
           <h2>
-            Escolha o <em>presente ideal.</em>
+            Escolha como <em>vai brincar.</em>
           </h2>
         </div>
         <div className="price-grid">
+          <PriceCard pack="kit" className="price-card kit-card">
+            <div className="price-header">
+              <h3>Kit com 2 AquaBlast</h3>
+              <span className="summer-kit-saving">Economize {KIT_SAVING}</span>
+              <span className="offer-card-tag kit-emotion-tag">
+                <strong>Um pra você, um pra eles</strong>
+                <small>Escolha a cor de cada um</small>
+              </span>
+            </div>
+            <div className="packshot summer-kit-products">
+              {kitColors.map((kitColor, index) => (
+                <Image key={index} src={`/produto-${kitColor}.webp`} width={1254} height={1254}
+                  sizes="(max-width: 680px) 150px, 220px" alt={`AquaBlast ${index + 1}: ${COLOR_LABELS[kitColor].toLowerCase()}`} />
+              ))}
+              <span className="packshot-caption">Diversão em dupla, com as suas cores.</span>
+            </div>
+            <div className="offer-card-body">
+              <p className="offer-included">2 AquaBlast com cores à sua escolha</p>
+              <OfferBenefits />
+              <KitColorSteps context="offer" />
+              <OfferFooter pack="kit" buy="Quero meu kit de verão" />
+            </div>
+          </PriceCard>
           <PriceCard pack="unit" className="price-card">
             <div className="price-header">
               <h3>1 unidade AquaBlast</h3>
-              <span className="offer-card-tag">IDEAL PARA PRESENTEAR</span>
+              <span className="offer-card-tag">PRA COMEÇAR A BRINCADEIRA</span>
             </div>
             <div className="packshot single unit-campaign-art">
               <div className="unit-art-scene">
-                <img className="unit-product" src={`/thumbs/produto-${color}-610.webp`} srcSet={`/thumbs/produto-${color}-390.webp 390w, /thumbs/produto-${color}-610.webp 610w`} sizes="(max-width: 768px) 200px, 420px" alt={`AquaBlast ${colorLabel.toLowerCase()}`} loading="lazy" decoding="async" />
+                <Image className="unit-product" src={`/thumbs/produto-${color}-610.webp`} sizes="(max-width: 768px) 200px, 420px" alt={`AquaBlast ${colorLabel.toLowerCase()}`} width={610} height={610} />
               </div>
-              <span className="packshot-caption">Uma surpresa. Muitos sorrisos.</span>
+              <span className="packshot-caption">Quintal, água e vontade de brincar.</span>
             </div>
             <div className="offer-card-body">
               <p className="offer-included">1 AquaBlast na cor que você escolher</p>
@@ -146,39 +165,7 @@ export function Offers({ deliveryPromise }: { deliveryPromise: string | null }) 
                 </span>
                 <UnitSwatches label="Cor da unidade" />
               </div>
-              <OfferFooter pack="unit" buy="Comprar 1 unidade" deliveryPromise={deliveryPromise} />
-            </div>
-          </PriceCard>
-          <PriceCard pack="kit" className="price-card kit-card">
-            {/* Celular (dono, 01/10): selo no topo do card, pulsando. CSS em mobile-ordem-venda.css. */}
-            <span className="kit-top-tag" aria-hidden="true">Mais vendido</span>
-            <div className="price-header">
-              <h3>Kit com 2 AquaBlast</h3>
-              <span className="offer-card-tag kit-emotion-tag">
-                <strong>Brinque em dupla!</strong>
-                <small>Diversão garantida</small>
-              </span>
-            </div>
-            <div className="packshot pair kit-matching kit-artwork kit-family-art">
-              <span className="kit-best-tag">Mais vendido</span>
-              <img
-                className="kit-family-photo"
-                src="/thumbs/kit-familia-v45-1020.webp"
-                srcSet="/thumbs/kit-familia-v45-720.webp 720w, /thumbs/kit-familia-v45-1020.webp 1020w"
-                sizes="(max-width: 42.5rem) calc(100vw - 2.25rem), 31rem"
-                width={1500}
-                height={500}
-                alt="Imagem ilustrativa de pai e filho brincando com AquaBlast preto e azul no jardim"
-                loading="lazy"
-                decoding="async"
-              />
-              <span className="packshot-caption">Diversão em dobro. Escolha suas cores abaixo.</span>
-            </div>
-            <div className="offer-card-body">
-              <p className="offer-included">2 AquaBlast com cores à sua escolha</p>
-              <OfferBenefits />
-              <KitColorSteps context="offer" />
-              <OfferFooter pack="kit" buy="Comprar kit com 2" deliveryPromise={deliveryPromise} />
+              <OfferFooter pack="unit" buy="Quero o meu" />
             </div>
           </PriceCard>
         </div>

@@ -20,32 +20,17 @@ export const HOME_URL = SITE_URL;
 /** URL absoluta de um caminho do site (`/og-aquablast.jpg` -> `https://.../og-aquablast.jpg`). */
 export const absoluteUrl = (path: string): string => `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 
-// Vocabulário (dono, 27/09): sem "pistola"/"arma" por causa do Meta Ads. O termo de busca é
-// "brinquedo de água" (Google Trends BR 12 meses: 54, contra 1 de "lançador de água"); "lançador"
-// fica só no texto da página. Ver wiki/pedidos/2026-09-27-seo-palavras-presente.md.
-
-// Campanha sazonal: trocar ou apagar (string vazia) depois de 12/10. Com ela, o title troca
-// "com luz LED | AquaBlast" pela campanha ("presente dia das crianças" dispara na semana do dia 12).
-export const CAMPAIGN = "Presente de Dia das Crianças";
-
-/** Title da home: 57 caracteres com a campanha, 50 sem. Termo principal no início. */
-export const SEO_TITLE = CAMPAIGN
-  ? `Brinquedo de água elétrico | ${CAMPAIGN}`
-  : "Brinquedo de água elétrico com luz LED | AquaBlast";
-
-/** Title de compartilhamento (WhatsApp, Facebook, X): pode ser mais longo que o da SERP. */
-export const OG_TITLE = "AquaBlast: brinquedo de água elétrico e recarregável com luz LED";
+// O produto é apresentado como brinquedo de água elétrico em toda a campanha.
+export const CAMPAIGN = "Brinquedo de água para o verão";
+export const SEO_TITLE = "Brinquedo de água elétrico para o verão | AquaBlast";
+export const OG_TITLE = "AquaBlast: seu verão mais divertido, no quintal ou na piscina";
 
 const OFFER_LINE = `1 unidade por ${PRICES.unit.pix} ou kit com 2 por ${PRICES.kit.pix} no Pix.`;
-
-/** Meta description (~157 caracteres com os preços de hoje, ~108 sem CAMPAIGN). Sem CAMPAIGN, a frase continua correta. */
-export const SEO_DESCRIPTION = `Brinquedo de água elétrico com LED e recarga USB${
-  CAMPAIGN ? `, ${CAMPAIGN.charAt(0).toLowerCase()}${CAMPAIGN.slice(1)} para filho ou neto` : ""
-}. ${OFFER_LINE}`;
+export const SEO_DESCRIPTION = `Brinquedo de água elétrico com LED e recarga USB para brincar no quintal e na piscina. ${OFFER_LINE} Frete grátis.`;
 
 // Data da última mudança de conteúdo da home (AAAA-MM-DD). Vai para o <lastmod>
 // do sitemap e o dateModified do schema. Atualize quando mudar texto, preço ou oferta.
-export const CONTENT_UPDATED_AT = "2026-09-27";
+export const CONTENT_UPDATED_AT = "2026-10-05";
 
 // aggregateRating no Product: o dono confirmou em 2026-09-26 que as avaliações de
 // src/data/reviews.ts são de clientes reais. Nota e total saem de reviewSummary(),
@@ -58,13 +43,13 @@ export const SHOW_AGGREGATE_RATING: boolean = true;
 // Se o frete mudar, desligar. Prazo de entrega NÃO entra no schema (não confirmado).
 export const FREE_SHIPPING_BR: boolean = true;
 
-/** Imagem de compartilhamento (JPG 1200x630 < 300 KB, feita das fotos oficiais). */
+/** Composição de verão 1200x630 com as fotos oficiais do produto. */
 export const OG_IMAGE = {
-  url: "/og-aquablast.jpg",
+  url: "/og-verao.png",
   width: 1200,
   height: 630,
-  type: "image/jpeg",
-  alt: "Brinquedo de água elétrico AquaBlast nas cores azul, vermelho e preto",
+  type: "image/png",
+  alt: "Oferta de Verão AquaBlast: brinquedos de água elétricos azul e preto para brincar junto",
 };
 
 /** Logo da Organization no schema (PNG 512x512 rastreável; o Google não usa data: URI nem SVG aqui). */

@@ -7,7 +7,7 @@ import { ensureBootstrap } from "@/lib/bootstrap";
 import { getCartByToken } from "@/lib/checkout/own/cart";
 import { selectionFromCart, skuOf, titleOf } from "@/lib/checkout/own/catalog";
 import { cardBrandOf, cardLast4, onlyDigits, validCardExpiry, validCPF, validLuhn } from "@/lib/checkout/own/masks";
-import { createOrderFromCart, effectiveSelection } from "@/lib/checkout/own/order";
+import { createOrderFromCart, effectiveSelection, orderContactFromCart } from "@/lib/checkout/own/order";
 import { quote, type Quote } from "@/lib/checkout/own/pricing";
 import { describeInputError, paySchema, type PayInput } from "@/lib/checkout/own/schemas";
 import { decryptText } from "@/lib/crypto";
@@ -182,6 +182,9 @@ export async function POST(request: Request): Promise<Response> {
   if (input.method === "pix") {
     const existing = await reusablePix(cart, q, gw);
     if (existing?.pixCode && existing.pixExpiresAt) {
+      // O cliente pode ter corrigido seus dados sem alterar valor ou produto.
+      // Atualiza a entrega, preservando o código e a tentativa de Pix ainda válida.
+      await updateOrderFields(existing.id, orderContactFromCart(cart));
       return payResponse(200, {
         ok: true,
         status: "pending",

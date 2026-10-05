@@ -20,6 +20,25 @@ export function effectiveSelection(cart: CheckoutCart, q: Quote): Selection {
   return { pack: "kit", colors: [raw[0] ?? base.colors[0], raw[1] ?? raw[0] ?? base.colors[0]] };
 }
 
+/** Dados atuais do comprador e da entrega, inclusive ao reaproveitar um pedido pendente. */
+export function orderContactFromCart(cart: CheckoutCart) {
+  const extra = cart.addressLine2?.trim() ?? "";
+  const recipient = cart.recipient && cart.recipient.trim() !== (cart.customerName ?? "").trim() ? `A/C ${cart.recipient.trim()}` : "";
+  return {
+    customerName: cart.customerName,
+    customerEmail: cart.customerEmail?.toLowerCase() ?? null,
+    customerPhone: cart.customerPhone,
+    customerDocumentEnc: cart.customerDocumentEnc,
+    addressLine1: [cart.addressLine1, cart.addressNumber].filter(Boolean).join(", ") || null,
+    addressLine2: [extra, recipient].filter(Boolean).join(" - ") || null,
+    addressNeighborhood: cart.addressNeighborhood,
+    addressCity: cart.addressCity,
+    addressState: cart.addressState,
+    addressPostalCode: cart.addressPostalCode,
+    addressCountry: "Brasil",
+  };
+}
+
 /**
  * Cria o pedido a partir do carrinho no momento do pagamento (Fase 4.7). Só servidor.
  * - Reaproveita o pedido pendente já ligado ao carrinho (cart.orderId) quando o comprador tenta de novo
@@ -38,12 +57,10 @@ export async function createOrderFromCart(cart: CheckoutCart, q: Quote): Promise
 
   const previous = cart.orderId ? await getOrderById(cart.orderId) : null;
   if (previous && previous.paymentStatus === "pending" && previous.status !== "cancelled") {
-    await updateOrderFields(previous.id, { paymentMethod: q.method, installments: q.installments, amountTotal, items, pixCode: null, pixQrUrl: null, pixExpiresAt: null });
+    await updateOrderFields(previous.id, { ...orderContactFromCart(cart), paymentMethod: q.method, installments: q.installments, amountTotal, items, pixCode: null, pixQrUrl: null, pixExpiresAt: null });
     return { order: (await getOrderById(previous.id))!, created: false };
   }
 
-  const extra = cart.addressLine2?.trim() ?? "";
-  const recipient = cart.recipient && cart.recipient.trim() !== (cart.customerName ?? "").trim() ? `A/C ${cart.recipient.trim()}` : "";
   const values: typeof orders.$inferInsert = {
     orderNumber: generateOrderNumber(),
     externalId: previous ? `${cart.id}:${Date.now().toString(36)}` : cart.id,
@@ -54,17 +71,7 @@ export async function createOrderFromCart(cart: CheckoutCart, q: Quote): Promise
     installments: q.installments,
     publicToken: randomToken(24),
     cartId: cart.id,
-    customerName: cart.customerName,
-    customerEmail: cart.customerEmail?.toLowerCase() ?? null,
-    customerPhone: cart.customerPhone,
-    customerDocumentEnc: cart.customerDocumentEnc,
-    addressLine1: [cart.addressLine1, cart.addressNumber].filter(Boolean).join(", ") || null,
-    addressLine2: [extra, recipient].filter(Boolean).join(" - ") || null,
-    addressNeighborhood: cart.addressNeighborhood,
-    addressCity: cart.addressCity,
-    addressState: cart.addressState,
-    addressPostalCode: cart.addressPostalCode,
-    addressCountry: "Brasil",
+    ...orderContactFromCart(cart),
     items,
     amountTotal,
     currency: "BRL",
