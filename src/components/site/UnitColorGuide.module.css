@@ -1,0 +1,2 @@
+.continue { text-decoration: none; }
+.continue:focus-visible { outline: 3px solid #087ec0; outline-offset: 3px; }

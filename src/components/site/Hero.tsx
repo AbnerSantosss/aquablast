@@ -3,9 +3,9 @@
 import Image from "next/image";
 import { useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { COLOR_LABELS } from "@/lib/site/constants";
 import { galleryImageLoader, includedPhotography, kitGalleryPhotography, overviewPhotography, productGalleryScenes } from "@/lib/site/product-photography";
 import { HeroBuyPanel } from "./HeroBuyPanel";
+import { GalleryPhotoCallout } from "./GalleryPhotoCallout";
 import { useSelection } from "./SelectionProvider";
 
 export function Hero() {
@@ -24,22 +24,18 @@ export function Hero() {
     <section id="inicio" className="summer-hero" aria-labelledby="hero-title">
       <div className="summer-product container">
         <div className="summer-gallery" aria-label="Galeria do AquaBlast">
-          <div className={`summer-photo${photo === 0 ? " summer-photo-overview" : ""}`} tabIndex={0} role="group" aria-label="Foto do produto; use as setas para navegar"
+          <div className={`summer-photo${photo === 0 ? " summer-photo-overview" : ""}`} style={{ aspectRatio: `${currentPhoto.width} / ${currentPhoto.height}` }} tabIndex={0} role="group" aria-label="Foto do produto; use as setas para navegar" aria-describedby={photo > 0 ? "gallery-photo-description" : undefined}
             onKeyDown={(event) => { if (event.key === "ArrowRight" || event.key === "ArrowLeft") { event.preventDefault(); move(event.key === "ArrowRight" ? 1 : -1); } }}
             onTouchStart={(event) => { touchX.current = event.touches[0].clientX; }}
             onTouchEnd={(event) => { if (touchX.current !== null) { const delta = event.changedTouches[0].clientX - touchX.current; if (Math.abs(delta) > 45) move(delta < 0 ? 1 : -1); } touchX.current = null; }}>
-            <Image key={currentPhoto.src} className="summer-scene" src={currentPhoto.src} alt={currentPhoto.alt} fill loader={galleryImageLoader} placeholder="blur" blurDataURL={currentPhoto.blurDataURL} sizes="(max-width: 680px) 285px, (max-width: 900px) 600px, (max-width: 1180px) 50vw, 588px" {...(photo === 0 ? { preload: true } : { loading: "lazy" as const })} onLoad={() => setGalleryReady(true)} />
-            {photo !== 0 && <div className="summer-photo-heading">
-              <strong>{currentPhoto.label}</strong>
-              {photo === 1 && <span>{pair ? "Em cada unidade" : COLOR_LABELS[color]}</span>}
-            </div>}
+            <Image key={currentPhoto.src} className="summer-scene" src={currentPhoto.src} alt={currentPhoto.alt} fill loader={galleryImageLoader} placeholder="blur" blurDataURL={currentPhoto.blurDataURL} sizes="(max-width: 628px) calc(100vw - 28px), (max-width: 900px) 600px, (max-width: 1328px) 44vw, 562px" {...(photo === 0 ? { preload: true } : { loading: "lazy" as const })} onLoad={() => setGalleryReady(true)} />
+            <GalleryPhotoCallout photo={photo} />
             <button type="button" className="summer-gallery-prev" onClick={() => move(-1)} aria-label="Foto anterior"><ChevronLeft size={19} /></button>
             <button type="button" className="summer-gallery-next" onClick={() => move(1)} aria-label="Próxima foto"><ChevronRight size={19} /></button>
             <span className="summer-photo-count" aria-live="polite">{photo + 1}/{totalPhotos}</span>
-            {photo !== 0 && <p className="summer-photo-caption">{currentPhoto.caption}</p>}
           </div>
           <div className="summer-thumbs" role="group" aria-label="Fotos do produto">
-            {photos.map((item, index) => <button type="button" key={item.src} aria-label={index === 1 ? "Ver produto e acessórios" : "Ver " + item.label} aria-pressed={photo === index} onClick={() => setPhoto(index)}><Image src={galleryReady ? item.thumbSrc : item.blurDataURL} alt="" width={120} height={80} unoptimized loading="lazy" fetchPriority="low" /><span>{item.label}</span></button>)}
+            {photos.map((item, index) => <button type="button" key={item.src} aria-label={index === 1 ? "Ver produto e acessórios" : "Ver " + item.label} aria-pressed={photo === index} onClick={() => setPhoto(index)}><Image src={galleryReady ? item.thumbSrc : item.blurDataURL} alt="" width={item.width} height={item.height} unoptimized loading="lazy" fetchPriority="low" /><span>{item.label}</span></button>)}
           </div>
         </div>
         <HeroBuyPanel onSelectionChange={(reason, nextPack) => {

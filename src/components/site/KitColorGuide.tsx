@@ -14,11 +14,12 @@ export type KitColorGuideProps = {
   /** Increment to open the first unconfirmed unit, or the completed kit summary. */
   openRequest: number;
   onSelectionChange: () => void;
+  showSummary?: boolean;
 };
 
 const UNITS = [0, 1] as const;
 
-export function KitColorGuide({ openRequest, onSelectionChange }: KitColorGuideProps) {
+export function KitColorGuide({ openRequest, onSelectionChange, showSummary = true }: KitColorGuideProps) {
   const { kitColors, kitConfirmed, selectKitColor } = useSelection();
   const [chosenStep, setChosenStep] = useState<GuideStep | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -26,7 +27,7 @@ export function KitColorGuide({ openRequest, onSelectionChange }: KitColorGuideP
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const restoreOverflowRef = useRef<string | null>(null);
   const confirmFocusRef = useRef(false);
-  const handledRequest = useRef(openRequest);
+  const handledRequest = useRef(0);
   const titleId = useId();
   const descriptionId = useId();
   const missing: GuideStep = !kitConfirmed[0] ? 0 : !kitConfirmed[1] ? 1 : 2;
@@ -79,7 +80,8 @@ export function KitColorGuide({ openRequest, onSelectionChange }: KitColorGuideP
   }
 
   return (
-    <div className={styles.guide} data-kit-guide data-kit-ready={ready || undefined}>
+    <div className={showSummary ? styles.guide : undefined} data-kit-guide data-kit-ready={ready || undefined}>
+      {showSummary && <>
       <p className={styles.hint} aria-live="polite">
         {ready ? "Cores do seu kit" : "Escolha a cor de cada AquaBlast"}
         {ready && <span><Check size={13} aria-hidden="true" /> Kit pronto</span>}
@@ -106,6 +108,7 @@ export function KitColorGuide({ openRequest, onSelectionChange }: KitColorGuideP
         ))}
       </div>
 
+      </>}
       <dialog
         ref={dialogRef}
         className={styles.dialog}

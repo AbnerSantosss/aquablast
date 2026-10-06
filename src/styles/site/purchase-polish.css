@@ -1,0 +1,134 @@
+/* Quantidade: superficies distintas, com a mesma espessura de borda nos dois estados. */
+#inicio .summer-packs button {
+  position: relative;
+  min-width: 0;
+  border: 2px solid #b7d0e2;
+  border-radius: 12px;
+  background: linear-gradient(165deg, #f8fcff, #eaf3fa);
+  box-shadow: inset 0 1px 0 #fff, 0 2px 5px #08365308;
+  transition: background .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+#inicio .summer-packs .summer-pack-kit {
+  border-color: #b4d7c4;
+  background: linear-gradient(165deg, #f7fcf9, #e8f5ee);
+}
+
+#inicio .summer-packs button::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 11px;
+  height: 11px;
+  border: 1px solid #8baec5;
+  border-radius: 50%;
+  background: #fff;
+  pointer-events: none;
+}
+
+#inicio .summer-packs button[aria-pressed="true"] {
+  border-color: var(--blue);
+  background: linear-gradient(165deg, #eff9ff, #dcefff);
+  box-shadow: inset 0 1px 0 #fff, 0 2px 7px #006bca12;
+}
+
+#inicio .summer-packs button[aria-pressed="true"]::after {
+  border-color: var(--blue);
+  background: var(--blue);
+  box-shadow: inset 0 0 0 2px #fff;
+}
+
+#inicio .summer-packs strong { padding-inline: 12px; }
+
+#inicio .summer-packs button:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}
+
+@media (hover: hover) {
+  #inicio .summer-packs button:hover {
+    border-color: var(--blue);
+    box-shadow: inset 0 1px 0 #fff, 0 3px 9px #006bca18;
+  }
+}
+
+#inicio .summer-buy-button {
+  transition: background .18s ease, box-shadow .18s ease;
+}
+
+#inicio .summer-buy-button:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 4px;
+}
+
+@media (min-width: 901px) and (hover: hover) {
+  #inicio .summer-buy-button:hover {
+    background: #059844;
+    box-shadow: 0 4px 14px #06a64a30, inset 0 1px 0 #ffffff24;
+  }
+}
+
+/* O blur fica apenas no halo: rotulo, area de toque e posicao continuam nitidos. */
+@media (max-width: 900px) {
+  #inicio .summer-buy-button,
+  .aquablast-home .summer-mobile-buy .button {
+    position: relative;
+    isolation: isolate;
+    overflow: visible;
+    border: 1px solid #06a64a;
+    background: #06a64a;
+    box-shadow: inset 0 1px 0 #ffffff24, 0 3px 10px #087e3a16;
+  }
+
+  #inicio .summer-buy-button::after,
+  .aquablast-home .summer-mobile-buy .button::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--green);
+    filter: blur(8px);
+    opacity: .16;
+    pointer-events: none;
+    animation: summer-mobile-soft-glow 5s ease-in-out infinite;
+  }
+
+  .aquablast-home .summer-mobile-buy .button:focus-visible {
+    outline: 3px solid var(--blue);
+    outline-offset: 4px;
+  }
+
+  #inicio .summer-buy-button:is(:hover, :focus-visible)::after,
+  .aquablast-home .summer-mobile-buy .button:is(:hover, :focus-visible)::after {
+    animation-play-state: paused;
+  }
+
+  #inicio .summer-buy-button:active,
+  .aquablast-home .summer-mobile-buy .button:active {
+    background: #076e33;
+    box-shadow: inset 0 2px 4px #003c2426;
+  }
+}
+
+@keyframes summer-mobile-soft-glow {
+  0%, 100% { opacity: .16; }
+  50% { opacity: .3; }
+}
+
+@media (max-width: 900px) and (hover: hover) {
+  #inicio .summer-buy-button:hover,
+  .aquablast-home .summer-mobile-buy .button:hover { background: #076e33; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #inicio .summer-packs button,
+  #inicio .summer-buy-button,
+  .aquablast-home .summer-mobile-buy .button { transition: none; }
+  #inicio .summer-buy-button::after,
+  .aquablast-home .summer-mobile-buy .button::after {
+    animation: none;
+    opacity: .16;
+  }
+}

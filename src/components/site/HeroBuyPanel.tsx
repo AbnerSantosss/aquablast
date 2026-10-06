@@ -3,10 +3,11 @@
 import Image from "next/image";
 import { useState } from "react";
 import { reviews } from "@/data/reviews";
-import { COLOR_KEYS, COLOR_LABELS, KIT_SAVING, PRICES } from "@/lib/site/constants";
+import { KIT_SAVING, PRICES } from "@/lib/site/constants";
 import { reviewSummary } from "@/lib/site/reviews-summary";
 import { HeroTrustBadges } from "./HeroTrustBadges";
 import { KitColorGuide } from "./KitColorGuide";
+import { UnitColorGuide } from "./UnitColorGuide";
 import { PurchaseLink } from "./PurchaseLink";
 import { useSelection } from "./SelectionProvider";
 
@@ -17,11 +18,13 @@ type HeroBuyPanelProps = {
 };
 
 export function HeroBuyPanel({ onSelectionChange }: HeroBuyPanelProps) {
-  const { pack, setPack, color, chooseColor, kitReady } = useSelection();
+  const { pack, setPack, kitReady } = useSelection();
   const [guideRequest, setGuideRequest] = useState(0);
+  const [unitGuideRequest, setUnitGuideRequest] = useState(0);
   const pair = pack === "kit";
   const price = PRICES[pack];
   const openKitGuide = () => setGuideRequest((request) => request + 1);
+  const openUnitGuide = () => setUnitGuideRequest((request) => request + 1);
 
   return (
     <div className="summer-buy desktop-product-panel mobile-top-buy">
@@ -49,7 +52,8 @@ export function HeroBuyPanel({ onSelectionChange }: HeroBuyPanelProps) {
           type="button"
           className="summer-pack-kit"
           aria-pressed={pair}
-          onClick={() => { setPack("kit"); onSelectionChange("pack", "kit"); }}
+          aria-haspopup="dialog"
+          onClick={() => { setPack("kit"); onSelectionChange("pack", "kit"); openKitGuide(); }}
         >
           <em className="summer-saving-tag">Economize {KIT_SAVING}</em>
           <strong>Kit com 2</strong>
@@ -64,36 +68,13 @@ export function HeroBuyPanel({ onSelectionChange }: HeroBuyPanelProps) {
           <span>{PRICES.unit.pix} no Pix</span>
         </button>
       </div>
-      {pair ? (
-        <KitColorGuide openRequest={guideRequest} onSelectionChange={() => onSelectionChange("color")} />
-      ) : (
-        <div className="summer-colors">
-          <div
-            className="summer-color-row"
-            role="group"
-            aria-label="Cor do AquaBlast no topo"
-          >
-            <span>Cor</span>
-            {COLOR_KEYS.map((option) => (
-              <button
-                key={option}
-                type="button"
-                data-color={option}
-                aria-label={COLOR_LABELS[option]}
-                aria-pressed={color === option}
-                onClick={() => {
-                  chooseColor(option);
-                  onSelectionChange("color");
-                }}
-              >
-                <Image src={"/thumbs/produto-" + option + "-110.webp"} alt="" width={60} height={60} sizes="48px" />
-                <span>{COLOR_LABELS[option]}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      {pair && !kitReady ? (
+      <KitColorGuide openRequest={guideRequest} showSummary={pair} onSelectionChange={() => onSelectionChange("color")} />
+      <UnitColorGuide openRequest={unitGuideRequest} onSelectionChange={() => onSelectionChange("color")} />
+      {!pair ? (
+        <button id="hero-unit-guide-trigger" type="button" className="button button-green summer-buy-button" aria-haspopup="dialog" onClick={openUnitGuide}>
+          Quero o meu
+        </button>
+      ) : !kitReady ? (
         <button id="hero-kit-guide-trigger" type="button" className="button button-green summer-buy-button" aria-haspopup="dialog" onClick={openKitGuide}>
           Escolher cores do kit
         </button>
