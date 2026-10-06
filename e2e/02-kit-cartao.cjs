@@ -12,12 +12,34 @@ async function cartao(page, numero, { nome = "MARIA T SILVA", validade = "1230",
   await L.field(page, "cc-cpf").fill(cpf);
 }
 
+async function abrirResumo(page) {
+  const toggle = page.locator(".ck-summary-toggle");
+  if (await toggle.isVisible() && await toggle.getAttribute("aria-expanded") === "false") await toggle.click();
+}
+
+async function erroDoCampo(page, name, message) {
+  const input = L.field(page, name);
+  await L.waitText(page.locator(".ck-cardform .ck-card-field-error"), message);
+  assert.equal(await input.getAttribute("aria-invalid"), "true", `${name}: erro associado ao campo`);
+  const errorId = await input.getAttribute("aria-describedby");
+  assert.ok(errorId, `${name}: faltou aria-describedby`);
+  await L.waitText(page.locator(`[id="${errorId}"]`), message);
+  await page.waitForFunction((n) => document.activeElement?.getAttribute("name") === n, name);
+  assert.ok(await input.evaluate((e) => e === document.activeElement), `foco deveria ir para ${name}`);
+}
+
 async function run(variant) {
   const { browser, page, requests, pageErrors } = await L.open(variant);
   try {
     await L.goCheckout(page, "pack=kit&cor1=azul&cor2=preto");
+    await abrirResumo(page);
     await L.waitText(page.locator(".selected-product"), "Kit com 2 AquaBlast");
-    await L.waitText(page.locator(".selected-product p"), /^1 \S+ \+ 1 \S+$/);
+    const kitThumbs = page.locator(".selected-product .ck-kit-thumb");
+    assert.equal(await kitThumbs.count(), 2, "duas unidades identificadas no resumo");
+    await L.waitText(kitThumbs.nth(0), "1º azul");
+    await L.waitText(kitThumbs.nth(1), "2º preto");
+    assert.equal(await kitThumbs.nth(0).locator("img").getAttribute("alt"), "1º AquaBlast azul");
+    assert.equal(await kitThumbs.nth(1).locator("img").getAttribute("alt"), "2º AquaBlast preto");
     // Antes de escolher a forma (2026-09-29): Pix do kit em destaque, parcela do cartao abaixo.
     await L.waitText(page.locator(".order-summary .total"), /^(?=[\s\S]*À vista\s*no Pix)(?=[\s\S]*Economize R\$ 30,00)(?=[\s\S]*R\$ 249,90)/);
     await L.waitText(page.locator(".order-summary .total-alt"), /ou 12x de R\$ 23,33 sem juros no cartão/);
@@ -34,30 +56,29 @@ async function run(variant) {
     assert.equal(await L.field(page, "cc-number").getAttribute("inputmode"), "numeric");
     assert.equal(await L.field(page, "cc-cpf").inputValue(), "");
     await L.waitText(page.locator(".order-summary .total"), /Total no cartão\s*12x de R\$ 23,33\s*sem juros no cartão/);
+    const pagar = page.locator('.ck-cardform button[type="submit"]');
+    await L.waitText(pagar, "Pagar R$ 279,90");
+    await L.waitText(page.locator(".ck-card-payment-total"), /Total no cartão\s*R\$ 279,90\s*12x de R\$ 23,33 sem juros/);
 
     // Luhn invalido: mascara, bandeira e foco no numero.
     await cartao(page, L.CARD_BAD_LUHN);
     assert.equal(await L.field(page, "cc-exp").inputValue(), "12/30");
     assert.equal(await L.field(page, "cc-cpf").inputValue(), "529.982.247-25");
     await L.waitText(page.locator(".ck-brand"), "· Visa");
-    await L.btn(page, "FINALIZAR COMPRA").click();
-    await L.waitText(page.locator(".ck-cardform p.error"), "Número do cartão inválido. Confira os dígitos.");
-    assert.ok(await L.field(page, "cc-number").evaluate((e) => e === document.activeElement), "foco deveria ir ao numero");
+    await pagar.click();
+    await erroDoCampo(page, "cc-number", "Número do cartão inválido. Confira os dígitos.");
 
     await cartao(page, L.CARD_OK, { validade: "0120" });
-    await L.btn(page, "FINALIZAR COMPRA").click();
-    await L.waitText(page.locator(".ck-cardform p.error"), "Validade inválida ou vencida");
-    assert.ok(await L.field(page, "cc-exp").evaluate((e) => e === document.activeElement));
+    await pagar.click();
+    await erroDoCampo(page, "cc-exp", "Validade inválida ou vencida");
 
     await cartao(page, L.CARD_OK, { nome: "MARIA" });
-    await L.btn(page, "FINALIZAR COMPRA").click();
-    await L.waitText(page.locator(".ck-cardform p.error"), "nome e sobrenome");
-    assert.ok(await L.field(page, "cc-name").evaluate((e) => e === document.activeElement));
+    await pagar.click();
+    await erroDoCampo(page, "cc-name", "nome e sobrenome");
 
     await cartao(page, L.CARD_OK, { cpf: "52998224724" });
-    await L.btn(page, "FINALIZAR COMPRA").click();
-    await L.waitText(page.locator(".ck-cardform p.error"), "Confira o CPF do titular do cartão.");
-    assert.ok(await L.field(page, "cc-cpf").evaluate((e) => e === document.activeElement));
+    await pagar.click();
+    await erroDoCampo(page, "cc-cpf", "Confira o CPF do titular do cartão.");
 
     // Parcelas: 12x por padrao; da para trocar.
     const inst = L.field(page, "cc-installments");
@@ -65,11 +86,12 @@ async function run(variant) {
     assert.match(await selText(), /^12x de R\$\s23,33 sem juros$/);
     await inst.selectOption("3");
     assert.match(await selText(), /^3x de R\$\s93,30 sem juros$/);
+    await L.waitText(page.locator(".ck-card-payment-total"), /Total no cartão\s*R\$ 279,90\s*3x de R\$ 93,30 sem juros/);
     await inst.selectOption("12");
 
     // Recusado pelo simulado: mensagem do gateway, numero e CVV limpos.
     await cartao(page, L.CARD_REFUSED);
-    await L.btn(page, "FINALIZAR COMPRA").click();
+    await pagar.click();
     await L.waitText(page.locator(".ck-cardform p.error"), /não autorizado|recusad/i, 15000);
     assert.equal(await L.field(page, "cc-csc").inputValue(), "");
     assert.equal(await L.field(page, "cc-number").inputValue(), "");
@@ -77,7 +99,7 @@ async function run(variant) {
 
     // Aprovado.
     await cartao(page, L.CARD_OK);
-    await L.btn(page, "FINALIZAR COMPRA").click();
+    await pagar.click();
     await page.waitForURL(/\/checkout\/pedido\//, { timeout: 20000 });
     // Tela de compra confirmada (2026-09-28): forma de pagamento, itens e frete sairam da tela.
     await L.waitText(page.locator(".oc-hero"), /Obrigado pela sua compra, \S+!/);

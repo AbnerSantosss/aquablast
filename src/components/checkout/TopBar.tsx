@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Droplets, Sun } from "lucide-react";
+import { Droplets, LockKeyhole } from "lucide-react";
 import type { Theme } from "@/lib/checkout/own/theme";
 
 export function Brand({ storeName }: { storeName: string }) {
@@ -16,7 +16,7 @@ export function TopBar({ theme }: { theme: Theme }) {
   return (
     <header className="ck-top">
       <Brand storeName={theme.storeName} />
-      <div className="ck-season-badge"><Sun size={16} aria-hidden="true" /><span>Oferta de Verão</span></div>
+      <div className="ck-season-badge"><LockKeyhole size={16} aria-hidden="true" /><span>Checkout AquaBlast</span></div>
     </header>
   );
 }

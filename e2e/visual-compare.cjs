@@ -20,7 +20,7 @@ const WIDTHS_ALL = [
   { width: 412, height: 915, tag: "412", mobile: true },
 ];
 const WIDTHS = ONLY ? WIDTHS_ALL.filter((w) => w.tag === ONLY) : WIDTHS_ALL;
-const BLOCKS = [".ship-bar", ".ck-top", ".campaign", ".ck-flow", ".order-summary", ".trust-seals", ".ck-footer", ".ck-steps", ".pay-acc", ".order-bump", ".ck-pix", ".ck-success", ".ck-cardform"];
+const BLOCKS = [".ship-bar", ".ck-top", ".campaign", ".ck-flow", ".order-summary", ".ck-summary-toggle", ".trust-seals", ".ck-footer", ".ck-steps", ".pay-acc", ".order-bump", ".ck-pix", ".pix-payment", ".ck-success", ".oc-hero", ".ck-cardform"];
 
 async function openSide(side, v) {
   const browser = await chromium.launch();
@@ -93,7 +93,13 @@ function diff(a, b) {
   };
 }
 
-// Passos do fluxo, iguais nos dois lados (mesmos `name` de campo e textos de botao da origem).
+// Estados equivalentes. A origem histórica confirma o frete em dois toques; o checkout atual avança direto.
+async function submitVisibleForm(p) {
+  const submit = p.locator('.ck-flow form button[type="submit"]:visible');
+  L.assert.equal(await submit.count(), 1, "deveria existir um único envio visível no formulário atual");
+  await submit.click();
+}
+
 const STEPS = [
   ["1-dados-vazio", async () => {}],
   ["1-dados-preenchido", async (p) => {
@@ -103,41 +109,45 @@ const STEPS = [
     await p.locator("[name=cpf]").fill(L.cliente.cpf);
   }],
   ["2-entrega-vazia", async (p) => {
-    await p.getByRole("button", { name: "CONTINUAR", exact: true }).click();
+    await submitVisibleForm(p);
     await p.locator("[name=cep]").waitFor();
   }],
-  ["2-entrega-confirmada", async (p) => {
+  ["2-entrega-preenchida", async (p, side) => {
     await p.locator("[name=cep]").fill(L.endereco.cep);
     await p.waitForFunction(() => document.querySelector(".cep-city")?.textContent?.includes("São Paulo/SP"), null, { timeout: 10000 });
     await p.locator("[name=number]").fill(L.endereco.number);
-    await p.getByRole("button", { name: "CONFIRMAR ENDEREÇO", exact: true }).click();
+    if (side === "origem") await p.getByRole("button", { name: "CONFIRMAR ENDEREÇO", exact: true }).click();
     await p.locator(".ship-options").waitFor();
   }],
   ["3-pagamento-pix", async (p) => {
-    await p.getByRole("button", { name: "CONTINUAR", exact: true }).click();
+    await submitVisibleForm(p);
     await p.locator(".pay-acc").waitFor({ timeout: 10000 });
-    // A origem abre no Pix; o nosso abre no cartao desde 2026-09-28. Escolhe o Pix nos dois lados para comparar igual.
+    // Compara o mesmo método explicitamente nos dois lados.
     await p.locator(".pay-head", { hasText: "Pix" }).first().click();
   }],
   ["3-pagamento-cartao", async (p) => {
     await p.locator(".pay-head", { hasText: "Cartão de crédito" }).click();
     await p.locator("[name=cc-number]").waitFor();
   }],
-  ["3-bump-pix", async (p) => {
+  ["3-bump-pix", async (p, side) => {
     await p.locator(".pay-head", { hasText: "Pix" }).click();
-    await p.locator(".bump-choice").click();
-    await p.locator(".bump-choice", { hasText: "ADICIONADO AO PEDIDO" }).waitFor();
-    // So o nosso pede a cor da 2a unidade (2026-09-30); a origem nao tem o seletor.
-    const cor = p.locator('input[name="bump-color"]').first();
-    if (await cor.count()) await cor.check();
+    if (side === "origem") {
+      await p.locator(".bump-choice").click();
+      await p.locator(".bump-choice", { hasText: "ADICIONADO AO PEDIDO" }).waitFor();
+    } else {
+      await p.locator(".bump-open-trigger").click();
+      await p.locator('input[name="bump-color"][value="preto"]').check();
+      await p.getByRole("button", { name: "Selecionar segunda unidade com desconto", exact: true }).click();
+      await L.waitText(p.locator(".bump-choice"), "SEGUNDA UNIDADE SELECIONADA");
+    }
   }],
-  ["4-pix-gerado", async (p) => {
-    await p.locator(".ck-pix-start .ck-pay-btn").click();
+  ["4-pix-gerado", async (p, side) => {
+    await p.locator(side === "origem" ? ".ck-pix-start .ck-pay-btn" : ".pix-payment-start .pix-primary").click();
     await p.locator("[name=pix-code]").waitFor({ timeout: 15000 });
   }],
-  ["5-sucesso", async (p) => {
+  ["5-sucesso", async (p, side) => {
     await p.getByRole("button", { name: "Simular pagamento aprovado" }).click();
-    await p.locator(".ck-success").waitFor({ timeout: 20000 });
+    await p.locator(side === "origem" ? ".ck-success" : ".oc-hero").waitFor({ timeout: 20000 });
   }],
 ];
 
@@ -150,8 +160,8 @@ const STEPS = [
       for (const [name, act] of STEPS) {
         const id = `${v.tag}-${name}`;
         try {
-          await act(o.page).catch(async (e) => { await o.page.screenshot({ path: path.join(OUT, `${id}-origem-ERRO.png`), fullPage: true }); throw new Error(`origem: ${e.message}`); });
-          await act(n.page).catch(async (e) => { await n.page.screenshot({ path: path.join(OUT, `${id}-nosso-ERRO.png`), fullPage: true }); throw new Error(`nosso: ${e.message}`); });
+          await act(o.page, "origem").catch(async (e) => { await o.page.screenshot({ path: path.join(OUT, `${id}-origem-ERRO.png`), fullPage: true }); throw new Error(`origem: ${e.message}`); });
+          await act(n.page, "nosso").catch(async (e) => { await n.page.screenshot({ path: path.join(OUT, `${id}-nosso-ERRO.png`), fullPage: true }); throw new Error(`nosso: ${e.message}`); });
           await o.page.clock.runFor(800);
           await n.page.clock.runFor(800);
           await o.page.mouse.move(0, 0);

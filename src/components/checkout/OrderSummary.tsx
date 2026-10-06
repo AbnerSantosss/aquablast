@@ -1,5 +1,6 @@
-import { Check, CreditCard } from "lucide-react";
+import { Check, ChevronDown, CreditCard, ShoppingBag } from "lucide-react";
 import Image from "next/image";
+import { useState, type ReactNode } from "react";
 import type { Quote } from "@/lib/checkout/own/pricing";
 import { money } from "@/lib/checkout/own/masks";
 import type { Selection } from "@/lib/checkout/own/catalog";
@@ -44,6 +45,7 @@ export function OrderSummary({
   couponBusy = false,
   onCouponApply,
   deliveryPromise = null,
+  selectionEditor,
 }: {
   selection: Selection;
   bump: boolean;
@@ -61,7 +63,9 @@ export function OrderSummary({
   onCouponApply?: (code: string) => Promise<string | null>;
   /** Aviso de entrega com data limite (lib/site/delivery-promise.ts), decidido no servidor; null depois da data. */
   deliveryPromise?: string | null;
+  selectionEditor?: ReactNode;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const noMethod = !cardEnabled && !pixEnabled;
   const showCard = cardEnabled || noMethod;
   const showPix = pixEnabled || noMethod;
@@ -69,31 +73,41 @@ export function OrderSummary({
   const q = quotes[view];
   const card = quotes.card;
   const pix = quotes.pix;
-  const isKit = selection.pack === "kit";
-  const hasBump = !isKit && bump;
+  const selected = effectiveSelectionClient(selection, bump, bumpColor);
+  const isKit = selected.pack === "kit";
+  const hasBump = selection.pack !== "kit" && bump;
   const total = paid ? paid.amountCents : q.amountCents;
   const couponOff = paid ? 0 : q.couponDiscountCents;
   const pixSaving = card.amountCents - pix.amountCents;
-  const [c1, c2] = selection.colors;
+  const [c1] = selected.colors;
 
   const installments = paid ? paid.installments : card.installments;
   const per = paid ? Math.round(paid.amountCents / Math.max(1, paid.installments)) : card.installmentCents;
 
   return (
-    <aside className="ck-card order-summary" aria-label="Resumo do pedido">
+    <aside className="ck-card order-summary" aria-label="Resumo do pedido" data-expanded={expanded}>
+      <button type="button" className="ck-summary-toggle" aria-expanded={expanded} aria-controls="checkout-summary-details" onClick={() => setExpanded((current) => !current)}>
+        <span className="ck-summary-toggle-label"><ShoppingBag size={19} aria-hidden="true" /><span>{expanded ? "Ocultar resumo" : "Ver resumo do pedido"}<small>{isKit || hasBump ? "2 AquaBlast" : "1 AquaBlast"} · {paid ? "Valor pago" : view === "pix" ? "Total no Pix" : "Total no cartão"}</small></span></span>
+        <span className="ck-summary-toggle-total">{money(total)}<ChevronDown size={17} aria-hidden="true" /></span>
+      </button>
+      <div className="ck-summary-details" id="checkout-summary-details">
       <h2 className="ck-sum-title">Resumo do pedido</h2>
-      <div className="selected-product ck-summary-product">
+      <div className={`selected-product ck-summary-product${isKit ? " is-kit" : ""}`}>
         {isKit ? (
           <span className="ck-kit-thumbs">
-            <Image src={thumbOf(c1)} width={40} height={80} alt={`AquaBlast ${colorName(c1)}`} />
-            <Image src={thumbOf(c2 ?? c1)} width={40} height={80} alt={`AquaBlast ${colorName(c2 ?? c1)}`} />
+            {selected.colors.map((color, index) => (
+              <span className="ck-kit-thumb" key={`${index}-${color}`}>
+                <Image src={thumbOf(color)} width={52} height={52} alt={`${index + 1}º AquaBlast ${colorName(color)}`} />
+                <span>{index + 1}º {colorName(color)}</span>
+              </span>
+            ))}
           </span>
         ) : (
           <Image src={thumbOf(c1)} width={80} height={80} alt={`AquaBlast ${colorName(c1)}`} />
         )}
         <div className="ck-product-pricing">
           <h4>{isKit ? "Kit com 2 AquaBlast" : "1 unidade AquaBlast"}</h4>
-          <p>{isKit ? `1 ${colorName(c1)} + 1 ${colorName(c2 ?? c1)}` : `Cor ${colorName(c1)}`}</p>
+          {!isKit ? <p>Cor {colorName(c1)}</p> : null}
           <div className={`total is-${view}`} aria-live="polite">
             <div className="ck-total-heading">
               {view === "card" ? <span><CreditCard size={20} aria-hidden="true" />Total no cartão</span> : null}
@@ -134,13 +148,19 @@ export function OrderSummary({
           ) : null}
         </div>
       </div>
+      {selectionEditor ? (
+        <details className="ck-summary-color-editor">
+          <summary>Alterar cores do pedido <ChevronDown size={16} aria-hidden="true" /></summary>
+          {selectionEditor}
+        </details>
+      ) : null}
       {!paid && showPix && onCouponApply ? (
         <CouponField coupon={coupon} applied={!!coupon && pix.couponDiscountCents > 0} busy={couponBusy} onApply={onCouponApply} />
       ) : null}
       {hasBump ? (
         <div className="bump-summary">
           <span>
-            <Check size={15} aria-hidden="true" /> + 1 AquaBlast {bumpColor ? colorName(bumpColor) : "· cor a escolher"}
+            <Check size={15} aria-hidden="true" /> {bumpColor ? "2ª unidade com desconto" : "+ 1 AquaBlast · cor a escolher"}
           </span>
           <b>{money(q.bumpDeltaCents)}</b>
         </div>
@@ -156,8 +176,13 @@ export function OrderSummary({
           <dt>Entrega</dt>
           <dd className="green">Grátis</dd>
         </div>
+        <div className="ck-final-total">
+          <dt>{paid ? "Total pago" : view === "card" ? "Total no cartão" : "Total no Pix"}</dt>
+          <dd>{money(total)}</dd>
+        </div>
       </dl>
       {!paid && deliveryPromise ? <p className="ck-delivery-promise">{deliveryPromise}</p> : null}
+      </div>
     </aside>
   );
 }

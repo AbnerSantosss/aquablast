@@ -1,7 +1,8 @@
 /**
  * Máscaras e validações do checkout (Fase 4.3). Arquivo puro: serve no cliente e no servidor.
  * `money`, `validCPF`, `maskPhone`, `maskCPF`, `maskCEP`, `validMobile` foram copiados de ORIGEM/lib/checkout.ts
- * sem alterar a lógica. `onlyDigits`, `validLuhn`, `validCardExpiry`, `cardBrandOf` e `cardLast4` são
+ * preservando a validação. `maskPhone` também aceita o +55 recebido pelo preenchimento automático.
+ * `onlyDigits`, `validLuhn`, `validCardExpiry`, `cardBrandOf` e `cardLast4` são
  * complementos para a validação do cartão no servidor (Fase 6/7); nunca gravam nem logam nada.
  */
 
@@ -22,7 +23,10 @@ export function validCPF(input: string) {
 const digits = (value: string, max: number) => value.replace(/\D/g, "").slice(0, max);
 
 export function maskPhone(value: string) {
-  const d = digits(value, 11);
+  const raw = value.replace(/\D/g, "");
+  // Só remove o DDI de um celular brasileiro completo; um DDD 55 com 11 dígitos continua intacto.
+  const national = raw.length === 13 && raw.startsWith("55") ? raw.slice(2) : raw;
+  const d = national.slice(0, 11);
   if (d.length <= 2) return d.length ? `(${d}` : "";
   const split = d.length > 10 ? 7 : 6;
   return d.length <= split ? `(${d.slice(0, 2)}) ${d.slice(2)}` : `(${d.slice(0, 2)}) ${d.slice(2, split)}-${d.slice(split)}`;

@@ -29,37 +29,40 @@ function titleCase(text: string): string {
  * Textos e fundos personalizados continuam vindo do tema; as imagens do produto acompanham as cores.
  */
 export function Campaign({ theme, selection, bump = false, bumpColor = null }: { theme: Theme; selection: Selection; bump?: boolean; bumpColor?: Color | null }) {
-  if (!theme.bannerEnabled) return null;
+  const title = theme.bannerTitle.trim();
+  const eyebrow = theme.bannerEyebrow.trim();
+  const subtitle = theme.bannerSubtitle.trim();
+  if (!theme.bannerEnabled || !(title || eyebrow || subtitle)) return null;
   const selected = effectiveSelectionClient(selection, bump, bumpColor);
   const isKit = selected.pack === "kit";
   const defaultBanner = theme.bannerImage === "/checkout/banner-immersive.webp";
-  const lifestyle = defaultBanner && !isKit;
   const background = defaultBanner
-    ? isKit ? "/kit-background-v40.webp" : `/checkout/campaign-child-${selected.colors[0]}-v2.webp`
+    ? "/kit-background-v40.webp"
     : theme.bannerImage;
-  const [head, tail] = splitTitle(theme.bannerTitle);
+  const [head, tail] = splitTitle(title);
   return (
-    <section className={`campaign campaign-selected ${isKit ? "campaign-kit" : "campaign-unit"}${lifestyle ? " campaign-lifestyle" : ""}`} aria-label={theme.bannerEyebrow ? `Campanha ${titleCase(theme.bannerEyebrow)}` : "Campanha"}>
+    <section className={`campaign campaign-selected ${isKit ? "campaign-kit" : "campaign-unit"}`} aria-label={theme.bannerEyebrow ? `Campanha ${titleCase(theme.bannerEyebrow)}` : "Campanha"}>
       <div className="campaign-photo">
         <Image
           src={background}
-          alt={lifestyle ? `Cena ilustrativa de uma criança se divertindo no jardim com o AquaBlast ${colorName(selected.colors[0])}` : ""}
+          alt=""
           fill
-          sizes="(max-width: 760px) 100vw, 1180px"
-          priority
+          sizes="(max-width: 760px) 100vw, 1152px"
+          loading="eager"
+          fetchPriority="high"
         />
       </div>
       <div className="campaign-copy">
-        {theme.bannerEyebrow ? <span>{theme.bannerEyebrow}</span> : null}
-        <h1>
+        {eyebrow ? <span>{eyebrow}</span> : null}
+        {title ? <h2>
           {head}
           <em>{tail}</em>
-        </h1>
-        {theme.bannerSubtitle ? <p>{theme.bannerSubtitle}</p> : null}
+        </h2> : null}
+        {subtitle ? <p>{subtitle}</p> : null}
         <div className="campaign-gift"><Sun size={16} aria-hidden="true" />Diversão para o verão inteiro</div>
       </div>
       <div className="campaign-products">
-        {selected.colors.map((color, index) => <Image key={`${index}-${color}`} src={thumbOf(color, 610)} width={280} height={280} alt={`AquaBlast ${colorName(color)}`} priority sizes="(max-width: 600px) 44vw, 280px" />)}
+        {selected.colors.map((color, index) => <Image key={`${index}-${color}`} src={thumbOf(color, 610)} width={280} height={280} alt={`${isKit ? `${index + 1}º ` : ""}AquaBlast ${colorName(color)}`} loading="eager" sizes={isKit ? "(max-width: 760px) 24vw, 220px" : "(max-width: 760px) 45vw, 280px"} />)}
         <span className="campaign-selection">{isKit ? "Kit com 2" : "1 AquaBlast"} · {selected.colors.map(colorName).join(" + ")}</span>
       </div>
     </section>

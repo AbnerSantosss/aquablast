@@ -120,26 +120,64 @@ async function fillDados(page, c = cliente) {
 }
 
 async function submitDados(page) {
-  await btn(page, "CONTINUAR").click();
+  await submitCurrentForm(page);
   await field(page, "cep").waitFor({ timeout: 10000 });
 }
 
-async function fillEntrega(page, { manual = false } = {}) {
+/** A ação principal da etapa, sem depender do texto personalizado no painel. */
+async function submitCurrentForm(page) {
+  const submit = page.locator('.ck-step[aria-current="step"] form button[type="submit"]');
+  assert.equal(await submit.count(), 1, "deveria haver uma ação de envio no formulário atual");
+  await submit.click();
+}
+
+/** Abre somente o campo opcional que o cenário precisa editar ou conferir. */
+async function revealEntregaField(page, name) {
+  const input = field(page, name);
+  if (await input.isVisible()) return input;
+  assert.ok(["extra", "recipient"].includes(name), `campo obrigatório ${name} deveria estar visível após CEP`);
+  const section = page.locator(name === "extra" ? ".delivery-optional" : ".delivery-recipient-summary");
+  const trigger = section.locator('button[aria-expanded="false"]');
+  assert.equal(await trigger.count(), 1, `ação para abrir ${name} deveria estar disponível`);
+  await trigger.click();
+  await input.waitFor({ state: "visible", timeout: 5000 });
+  return input;
+}
+
+/** O resumo fica recolhido no celular; a conferência detalhada abre o mesmo controle do cliente. */
+async function revealSummary(page) {
+  const toggle = page.locator(".ck-summary-toggle");
+  if (await toggle.isVisible() && (await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+  await page.locator(".ck-summary-details").waitFor({ state: "visible", timeout: 5000 });
+}
+
+async function fillEntrega(page, { manual = false, extra, recipient } = {}) {
   await field(page, "cep").fill(endereco.cep);
+  await field(page, "street").waitFor({ state: "visible", timeout: 10000 });
   if (!manual) {
     await page.waitForFunction(() => document.querySelector(".cep-city")?.textContent?.includes("São Paulo/SP"), null, { timeout: 10000 });
     assert.equal(await field(page, "street").inputValue(), endereco.street);
     assert.equal(await field(page, "district").inputValue(), endereco.district);
+  } else {
+    await page.locator(".cep-manual").waitFor({ state: "visible", timeout: 10000 });
+    await field(page, "street").fill(endereco.street);
+    await field(page, "district").fill(endereco.district);
+    await field(page, "city").fill(endereco.city);
+    await field(page, "state").selectOption(endereco.state);
   }
   await field(page, "number").fill(endereco.number);
+  if (extra !== undefined) await (await revealEntregaField(page, "extra")).fill(extra);
   const rec = field(page, "recipient");
-  if (!(await rec.inputValue())) await rec.fill(cliente.name);
+  if (recipient !== undefined) await (await revealEntregaField(page, "recipient")).fill(recipient);
+  else if (await rec.isVisible()) {
+    if (!(await rec.inputValue())) await rec.fill(cliente.name);
+    assert.equal(await rec.inputValue(), cliente.name, "destinatário deveria vir dos dados do cliente");
+  } else await waitText(page.locator(".delivery-recipient-summary"), cliente.name);
 }
 
 async function submitEntrega(page) {
-  await btn(page, "CONFIRMAR ENDEREÇO").click();
-  await page.locator(".ship-options").waitFor({ timeout: 10000 });
-  await btn(page, "CONTINUAR").click();
+  await waitText(page.locator(".ship-opt"), /Frete grátis.*Entrega com rastreamento/);
+  await submitCurrentForm(page);
   await page.locator(".pay-acc").waitFor({ timeout: 10000 });
 }
 
@@ -159,8 +197,7 @@ async function toPayment(page, query) {
 
 /**
  * Cabecalho de uma forma de pagamento na etapa 3, pelo value do radio ("pix" | "card"): nao depende do texto,
- * que pode mencionar a outra forma. Desde 2026-09-28 o CARTAO abre selecionado quando esta ligado; quem quer
- * Pix precisa escolher (choosePix).
+ * que pode mencionar a outra forma. Pix abre primeiro quando disponível; choosePix também cobre a troca de cartão.
  */
 const payHead = (page, method) => page.locator(".pay-head").filter({ has: page.locator(`input[value="${method}"]`) });
 
@@ -196,6 +233,6 @@ async function scenario(id, title, fn) {
 module.exports = {
   BASE, OUT, cliente, endereco, CARD_OK, CARD_REFUSED, CARD_BAD_LUHN, assert, withDb,
   open, checkNetwork, noHorizontalScroll, shot, field, btn, waitText,
-  fillDados, submitDados, fillEntrega, submitEntrega, goCheckout, toPayment, cartTokenOf, payHead, choosePix,
+  fillDados, submitDados, fillEntrega, submitEntrega, submitCurrentForm, revealEntregaField, revealSummary, goCheckout, toPayment, cartTokenOf, payHead, choosePix,
   clearRateLimits, setSetting, deleteSetting, scenario,
 };

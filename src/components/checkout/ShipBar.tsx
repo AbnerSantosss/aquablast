@@ -3,7 +3,7 @@ import type { Theme } from "@/lib/checkout/own/theme";
 
 /**
  * Divide o texto do tema em "destaque" + "resto" para reproduzir o negrito da origem
- * (`<strong>Frete FULL grátis</strong> para todo o Brasil`) sem mudar o campo do painel: o destaque é tudo
+ * (`<strong>Frete grátis</strong> para todo o Brasil`) sem mudar o campo do painel: o destaque é tudo
  * antes do primeiro " para ". Sem " para ", o texto inteiro fica em negrito.
  */
 function splitLead(text: string): [string, string] {

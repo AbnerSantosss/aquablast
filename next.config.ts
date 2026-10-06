@@ -56,6 +56,8 @@ const nextConfig: NextConfig = {
       // e o dono vai regravar vídeos, então um prazo longo demais prenderia a versão velha no navegador.
       { source: "/videos/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }] },
       { source: "/thumbs/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }] },
+      // A galeria usa variantes prontas com hash: uma troca da arte gera URLs novas.
+      { source: "/media/gallery-fast/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
       { source: "/admin/(.*)", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }, { key: "Cache-Control", value: "private, no-store" }] },
       { source: "/rastrear", headers: [{ key: "X-Robots-Tag", value: "noindex" }] },
       // App do painel (PWA): o SW precisa ser buscado sempre fresco (senão uma versão velha fica presa até 24 h);

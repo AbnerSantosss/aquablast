@@ -69,7 +69,7 @@ export function SuccessView({
           <dt>Entrega</dt>
           <dd>
             <span>{address}</span>
-            <small>Frete FULL grátis · Com código de rastreamento</small>
+            <small>Frete grátis · Com código de rastreamento</small>
           </dd>
         </div>
         <div>

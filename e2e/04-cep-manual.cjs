@@ -10,7 +10,7 @@ async function run(variant) {
     await L.fillDados(page);
     await L.submitDados(page);
     await L.field(page, "cep").fill("99999999");
-    await L.waitText(page.locator(".cep-manual"), "Não encontramos o CEP automaticamente. Preencha o endereço abaixo.");
+    await L.waitText(page.locator(".cep-manual"), "Não encontramos o CEP automaticamente. Você pode preencher o endereço abaixo.");
     const street = L.field(page, "street");
     assert.ok(await street.isEnabled());
     await page.waitForFunction(() => document.activeElement?.getAttribute("name") === "street", null, { timeout: 5000 });
@@ -19,18 +19,18 @@ async function run(variant) {
     await L.field(page, "number").fill("50");
     await L.field(page, "district").fill("Centro Histórico");
     await L.field(page, "city").fill("Porto Alegre");
-    const rec = L.field(page, "recipient");
-    if (!(await rec.inputValue())) await rec.fill(L.cliente.name);
-    await L.btn(page, "CONFIRMAR ENDEREÇO").click();
+    await L.waitText(page.locator(".delivery-recipient-summary"), L.cliente.name);
+    await L.submitCurrentForm(page);
     await L.waitText(page.locator("p.error"), "Selecione o estado.");
     // Popup explicito (2026-10-02): o foco fica no popup; "CORRIGIR AGORA" fecha e leva o foco ao estado.
     await L.btn(page, "CORRIGIR AGORA").click();
     assert.ok(await page.locator(".state-select").evaluate((e) => e === document.activeElement), "foco deveria ir ao estado");
+    await L.waitText(page.locator("#ck-state-error"), "Selecione o estado.");
+    assert.match(await L.field(page, "state").getAttribute("aria-describedby"), /ck-state-error/, "erro deveria estar associado ao estado");
     await L.shot(page, `c4-${variant.tag}-cep-manual-erro-estado`);
     await page.locator(".state-select").selectOption("RS");
-    await L.btn(page, "CONFIRMAR ENDEREÇO").click();
-    await L.waitText(page.locator(".ship-opt"), "FRETE GRÁTIS");
-    await L.btn(page, "CONTINUAR").click();
+    await L.waitText(page.locator(".ship-opt"), /Frete grátis.*Entrega com rastreamento/);
+    await L.submitEntrega(page);
     await L.waitText(page.locator(".ck-step[aria-current=step]"), "Pagamento");
     const done1 = page.locator(".ck-done").nth(1);
     await L.waitText(done1, "Rua dos Andradas, 50");

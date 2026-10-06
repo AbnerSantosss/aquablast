@@ -19,7 +19,7 @@ export const themeDefaults = {
   timerLabel: "Oferta de Verão",
   timerEnd: "2026-10-12T23:59:59-03:00",
   shipBarEnabled: true,
-  shipBarText: "Frete FULL grátis para todo o Brasil",
+  shipBarText: "Frete grátis para todo o Brasil",
   shipBarNote: "Frete grátis · rastreio pelo site",
   bannerEnabled: true,
   bannerEyebrow: "OFERTA DE VERÃO",
@@ -27,7 +27,7 @@ export const themeDefaults = {
   bannerSubtitle: "Diversão para o verão inteiro.",
   bannerImage: "/checkout/banner-immersive.webp",
   buttonLabel: "CONTINUAR",
-  badgeText: "FRETE FULL GRÁTIS",
+  badgeText: "FRETE GRÁTIS",
   footerText: "Momentos que viram boas lembranças.",
   // Identificação da empresa no rodapé (Decreto 7.962/2013). Informados pelo dono em 2026-09-30; a razão social
   // ainda não foi informada, então fica vazia e o rodapé usa o nome da loja.

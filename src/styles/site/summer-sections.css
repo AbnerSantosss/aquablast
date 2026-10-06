@@ -103,8 +103,9 @@
 
 /* Revisão visual de 05/10: ofertas compactas e fotografias com composição. */
 #ofertas.summer-offers { padding: 28px 0; }
+#ofertas.summer-offers::before { background-image: linear-gradient(120deg,#032644e8,#005d81c9 50%,#032644ed),url('/media/premium-v2/family.webp'); background-position: center 40%; background-size: cover; }
 #ofertas.summer-offers .offer-title { margin-bottom: 22px; }
-#ofertas.summer-offers .price-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); grid-template-rows: none; align-items: start; max-width: 960px; gap: 24px; }
+#ofertas.summer-offers .price-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); grid-template-rows: none; align-items: start; max-width: 760px; gap: 24px; }
 #ofertas.summer-offers .price-grid > .price-card[data-price-card] { grid-area: auto; display: flex; flex-direction: column; gap: 0; padding: 0; height: auto; min-height: 0; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: white; box-shadow: var(--shadow); }
 #ofertas.summer-offers .price-grid > .price-card.is-selected { border-color: var(--blue); }
 #ofertas.summer-offers .summer-offer-card::before,#ofertas.summer-offers .summer-offer-card::after { content: none; }
@@ -112,14 +113,10 @@
 .summer-offer-head >span:not(.summer-saving-tag) { font-size: 10px; font-weight: 800; letter-spacing: .1em; color: var(--blue); }
 .summer-offer-head h3 { color: var(--navy); font-size: 20px; line-height: 1.2; margin: 0; }
 .summer-offer-head .summer-saving-tag { font-size: 10px; padding: 3px 8px; }
-.summer-offer-art { position: relative; height: clamp(145px,22vh,190px); margin: 0 12px; border-radius: 12px; background: var(--deep) url('/oferta-unidade-cenario.webp') center 70%/cover; overflow: hidden; }
-.summer-offer-toys { display: flex; align-items: center; justify-content: center; height: 100%; width: 80%; padding: 4px 12px; }
-.summer-offer-toys img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 8px 8px #062e5512); }
-.is-pair .summer-offer-toys img { width: 50%; }
-.summer-offer-accessories { position: absolute; top: 8px; right: 8px; bottom: 8px; width: 54px; display: grid; grid-template-rows: repeat(3,minmax(0,1fr)); gap: 3px; border-radius: 10px; padding: 5px; background: white; }
-.summer-offer-accessories img { width: 100%; height: 100%; object-fit: contain; }
+.summer-offer-art { position: relative; width: calc(100% - 24px); height: auto; aspect-ratio: 1; flex-shrink: 0; margin: 0 12px; border-radius: 12px; background: var(--deep); overflow: hidden; }
+.summer-offer-art >img { object-fit: contain; }
 .summer-offer-contents { margin: 7px 12px 0; font-size: 12px; line-height: 1.4; color: var(--muted); text-align: center; }
-.summer-offer-options { padding: 10px 14px; min-height: 164px; display: flex; align-items: center; }
+.summer-offer-options { padding: 8px 14px; min-height: 0; display: flex; align-items: center; }
 #ofertas.summer-offers .summer-offer-options .color-choice { position: relative; display: flex; flex-direction: column; justify-content: center; width: 100%; min-height: 0; height: auto; margin: 0; padding: 10px; gap: 6px; background: var(--pale); border: 1px solid var(--line); border-radius: 12px; }
 #ofertas.summer-offers .summer-offer-options .color-choice >span { font-size: 13px; }
 #ofertas.summer-offers .summer-offer-options .swatches { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; width: 100%; max-width: none; padding: 0; border: 0; background: transparent; box-shadow: none; animation: none; }
@@ -172,7 +169,6 @@
   #ofertas.summer-offers .price-grid { grid-template-columns: minmax(0,1fr); max-width: 460px; gap: 18px; }
   .summer-offer-head { min-height: 60px; padding: 10px 14px; }
   .summer-offer-head h3 { font-size: 19px; }
-  .summer-offer-art { height: 156px; }
   .summer-offer-options { min-height: 0; padding: 10px 12px; }
   .summer-offer-footer { padding: 0 12px 12px; }
   .summer-detail-art { height: 220px; }
@@ -180,9 +176,8 @@
   .summer-details-grid article >div:last-child { padding: 18px; }
 }
 @media(min-width:681px) {
-  .summer-offer-art { height: clamp(130px,19vh,155px); }
-  .summer-offer-head { padding-block: 8px; min-height: 62px; }
-  .summer-offer-options { padding-block: 6px; min-height: 154px; }
+  .summer-offer-head { padding-block: 8px; min-height: 58px; }
+  .summer-offer-options { padding-block: 6px; }
   #ofertas.summer-offers .summer-offer-footer .kit-selection-hint { margin-block: 4px; }
   .summer-offer-installments { margin-bottom: 6px; }
 }

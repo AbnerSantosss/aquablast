@@ -1,5 +1,4 @@
-import { CreditCard } from "lucide-react";
-import Image from "next/image";
+import { CreditCard, RotateCcw, ShieldCheck, Truck } from "lucide-react";
 import { PixLogo } from "./PixLogo";
 import type { PayMethodUi } from "./types";
 
@@ -7,9 +6,9 @@ export function TrustSeals({ methods, maxInstallments }: { methods: PayMethodUi[
   return (
     <section className="trust-seals" aria-label="Garantias da compra">
       <ul>
-        <li><Image src="/checkout/selos/selo-seguro.webp" width={52} height={52} alt="" /><span><strong>Compra segura</strong><small>Seus dados protegidos</small></span></li>
-        <li><Image src="/checkout/selos/selo-envio.webp" width={52} height={52} alt="" /><span><strong>Entrega rastreada</strong><small>Acompanhe seu pedido</small></span></li>
-        <li><Image src="/checkout/selos/selo-garantia.webp" width={52} height={52} alt="" /><span><strong>Devolução em 7 dias</strong><small>Após o recebimento</small></span></li>
+        <li><ShieldCheck aria-hidden="true" /><span><strong>Dados protegidos</strong><small>Durante a compra</small></span></li>
+        <li><Truck aria-hidden="true" /><span><strong>Entrega rastreada</strong><small>Acompanhe seu pedido</small></span></li>
+        <li><RotateCcw aria-hidden="true" /><span><strong>Devolução em 7 dias</strong><small>Após o recebimento</small></span></li>
       </ul>
       {methods.length > 0 ? <div className="ck-trust-payments">
         {methods.includes("pix") ? <span><PixLogo size={17} />Pix</span> : null}

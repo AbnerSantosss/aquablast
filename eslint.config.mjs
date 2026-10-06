@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Rascunhos da geração de imagens (fontes, prompts, relatórios); fora do git.
+    "outputs/**",
   ]),
 ]);
 

@@ -1,0 +1,64 @@
+.guide { min-width: 0; width: 100%; }
+.hint { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 6px; color: var(--c-ink, #083a5e); font-size: 13px; font-weight: 700; line-height: 1.3; }
+.hint > span { display: inline-flex; align-items: center; gap: 3px; color: #087c48; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.unit { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; min-height: 58px; padding: 5px 7px; border: 2px solid #d2e3ee; border-radius: 10px; color: var(--c-ink, #083a5e); background: #fff; text-align: left; cursor: pointer; font: inherit; }
+.unit[data-current] { border-color: transparent; background: linear-gradient(#f6fcff, #f6fcff) padding-box, linear-gradient(115deg, #006ce0, #19c4dc 60%, #ffba3b) border-box; box-shadow: 0 0 0 3px rgb(0 132 226 / 7%); }
+.unit[data-confirmed] { background-color: #f4fbff; }
+.unit > img { width: 38px; height: 38px; object-fit: contain; flex: none; }
+.unit:not([data-confirmed]) > img { opacity: .55; }
+.unit > svg { margin-left: auto; flex: none; }
+.unitCopy { display: grid; gap: 1px; min-width: 0; }
+.unitCopy small { color: #537087; font-size: 11px; line-height: 1.2; }
+.unitCopy strong { font-size: 13px; line-height: 1.25; }
+.unit:hover { border-color: #0084cf; }
+.dialog { box-sizing: border-box; width: min(520px, calc(100vw - 28px)); max-width: none; max-height: calc(100dvh - 32px); margin: auto; padding: 20px; border: 1px solid #d4e6f1; border-radius: 20px; color: var(--c-ink, #083a5e); background: #fff; box-shadow: 0 24px 80px rgb(3 29 50 / 28%); overflow: auto; overscroll-behavior: contain; }
+.dialog::backdrop { background: rgb(3 22 37 / 62%); }
+.dialogHeader { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.eyebrow { color: #007ac1; font-size: 11px; letter-spacing: .08em; font-weight: 800; }
+.close { display: grid; place-items: center; flex: none; width: 44px; height: 44px; padding: 0; border: 1px solid #deebf2; border-radius: 50%; color: #214965; background: #f7fafc; cursor: pointer; }
+.steps { display: flex; align-items: center; gap: 8px; margin: 12px 0 22px; }
+.steps button { display: flex; align-items: center; gap: 7px; min-height: 44px; padding: 5px 11px; border: 1px solid #d6e5ef; border-radius: 9px; color: #42627a; background: #f8fbfd; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.steps button > span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #e2edf4; }
+.steps button[aria-current="step"] { color: #005da4; border-color: #168bd5; background: #edf8ff; }
+.steps button[aria-current="step"] > span { background: #007bbb; color: #fff; }
+.steps button:disabled { opacity: .55; cursor: default; }
+.title { margin: 0 0 8px; color: var(--c-ink, #083a5e); font-size: 24px; font-weight: 800; line-height: 1.2; letter-spacing: -.035em; }
+.description { margin: 0 0 22px; color: #506b80; font-size: 14px; line-height: 1.5; }
+.choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px; border: 2px solid transparent; border-radius: 15px; background: linear-gradient(#fff, #fff) padding-box, linear-gradient(115deg, #006ce0, #19c4dc 60%, #ffba3b) border-box; }
+.choices button { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 0; min-height: 125px; padding: 12px 4px 10px; border: 2px solid #d9e7ef; border-radius: 10px; color: var(--c-ink, #083a5e); background: #fff; font: inherit; font-size: 14px; cursor: pointer; transition: border-color 150ms ease, background-color 150ms ease; }
+.choices button > img { width: 100%; height: 82px; object-fit: contain; }
+.choices button:hover { border-color: #7dabc7; }
+.choices button[aria-pressed="true"] { background: #edf9ff; border-color: #0084cf; }
+.selectedCheck { position: absolute; top: 5px; right: 5px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #007dba; color: #fff; visibility: hidden; }
+.choices button[aria-pressed="true"] .selectedCheck { visibility: visible; }
+.footer { display: flex; align-items: center; gap: 10px; margin-top: 24px; }
+.back, .next { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 11px 14px; border: 1px solid transparent; border-radius: 10px; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
+.back { color: #355d77; background: #f0f6fa; border-color: #e0ebf2; }
+.next { flex: 1; color: #fff; background: var(--c-button, #00a950); }
+.next:disabled { background: #e4edf2; color: #64798a; cursor: not-allowed; }
+.review { display: grid; gap: 10px; }
+.reviewUnit { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid #d5e7f1; border-radius: 12px; background: #f7fcff; }
+.reviewUnit > img { width: 64px; height: 64px; object-fit: contain; }
+.reviewUnit > span { display: grid; gap: 3px; flex: 1; }
+.reviewUnit small { color: #587084; font-size: 12px; }
+.reviewUnit strong { font-size: 17px; }
+.reviewUnit button { min-height: 44px; padding: 8px; border: 0; border-radius: 6px; background: transparent; color: #006bbc; font: inherit; font-size: 13px; font-weight: 700; text-decoration: underline; cursor: pointer; }
+.guide button:focus-visible, .dialog button:focus-visible, .title:focus-visible { outline: 3px solid #087ec0; outline-offset: 3px; }
+@media (max-width: 480px) {
+  .hint { font-size: 12px; }
+  .unit { min-height: 50px; gap: 4px; padding: 3px 5px; }
+  .unit > img { width: 30px; height: 32px; }
+  .unit > svg { width: 12px; }
+  .unitCopy strong { font-size: 12px; }
+  .unitCopy small { font-size: 10px; }
+  .dialog { padding: 16px; border-radius: 16px; }
+  .title { font-size: 22px; }
+  .choices { padding: 8px; gap: 6px; }
+  .choices button { min-height: 115px; font-size: 12px; }
+  .choices button > img { height: 72px; }
+  .back, .next { gap: 5px; padding-inline: 10px; font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .choices button { transition: none; }
+}

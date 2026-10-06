@@ -1,0 +1,130 @@
+.trust.trust {
+  --trust-ink: var(--navy, #073b63);
+  --trust-muted: #456077;
+  --trust-line: #dce9ef;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+  margin-top: 2px;
+  padding-top: 12px;
+  border-top: 1px solid var(--trust-line);
+  color: var(--trust-ink);
+}
+
+.trust .benefit {
+  display: flex;
+  min-width: 0;
+  align-items: stretch;
+}
+
+.trust .benefit + .benefit {
+  border-left: 1px solid var(--trust-line);
+}
+
+.trust .item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 7px;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 5px 7px 7px;
+  border-radius: 8px;
+  color: var(--trust-ink);
+  text-align: center;
+  text-decoration: none;
+}
+
+.trust a.item {
+  transition: background-color 160ms ease;
+}
+
+.trust a.item:hover,
+.trust a.item:active {
+  background: #edf8fb;
+}
+
+.trust a.item:focus-visible {
+  outline: 3px solid var(--blue, #0075dc);
+  outline-offset: 2px;
+  background: #edf8fb;
+}
+
+.trust .emblem {
+  position: relative;
+  display: grid;
+  flex: 0 0 42px;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #3ec5d7;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #0e5a7f, var(--trust-ink) 76%);
+  box-shadow: 0 2px 5px #073b6314;
+}
+
+.trust .emblem::after {
+  position: absolute;
+  inset: 3px;
+  border: 1px solid #99e8ed40;
+  border-radius: inherit;
+  content: "";
+  pointer-events: none;
+}
+
+.trust .emblem svg {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  color: #d9fbf1;
+}
+
+.trust .copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.trust .title {
+  color: var(--trust-ink);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+.trust .description {
+  color: var(--trust-muted);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.35;
+  text-wrap: balance;
+}
+
+@media (min-width: 1200px) {
+  .trust .item {
+    flex-direction: row;
+    justify-content: center;
+    gap: 9px;
+    text-align: left;
+  }
+
+  .trust .copy {
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trust a.item {
+    transition: none;
+  }
+}

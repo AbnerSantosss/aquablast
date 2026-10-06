@@ -11,6 +11,10 @@ function currentCampaign(theme: Theme): Theme {
   }
   if (oldCampaign && theme.bannerTitle === "O presente para brincar junto.") next.bannerTitle = themeDefaults.bannerTitle;
   if (oldCampaign && theme.bannerSubtitle === "Mais água. Mais risadas. Mais momentos em família.") next.bannerSubtitle = themeDefaults.bannerSubtitle;
+  // Temas já salvos também deixam de usar a antiga denominação de frete.
+  for (const field of ["shipBarText", "shipBarNote", "badgeText"] as const) {
+    next[field] = next[field].replace(/\b(frete)\s+full\b/gi, "$1");
+  }
   return next;
 }
 

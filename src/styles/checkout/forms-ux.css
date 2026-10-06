@@ -1,0 +1,185 @@
+/* Campos e entrega: menos esforço no celular, com correção visível junto ao campo. */
+.ck .field .field-hint,
+.ck .field .field-error {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.ck .field .field-error {
+  color: var(--c-timer);
+  font-weight: 700;
+}
+
+.ck .field:has(.field-hint) .field-ok,
+.ck .field:has(.field-error) .field-ok {
+  top: 28px;
+}
+
+.ck .delivery-address-fields {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ck .address-reveal-help {
+  margin: 0;
+  color: var(--c-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.ck .delivery-number-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.ck .ck-number-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 58px;
+  min-width: 112px;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--c-primary) 24%, transparent);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--c-primary);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ck .ck-number-toggle.is-selected {
+  border-color: var(--c-primary);
+  background: color-mix(in srgb, var(--c-accent) 10%, #fff);
+}
+
+.ck .ck-text-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--c-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ck .ck-text-action:focus-visible,
+.ck .ck-number-toggle:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 3px;
+}
+
+.ck .ck-text-action:disabled {
+  cursor: wait;
+  opacity: .6;
+}
+
+.ck .delivery-optional {
+  min-width: 0;
+}
+
+.ck .ck-expand-action {
+  justify-content: space-between;
+  width: 100%;
+  padding-left: 0;
+}
+
+.ck .ck-expand-action[aria-expanded="true"] svg {
+  rotate: 180deg;
+}
+
+.ck .delivery-recipient {
+  padding-top: 2px;
+  border-top: 1px solid color-mix(in srgb, var(--c-primary) 12%, transparent);
+}
+
+.ck .delivery-recipient-summary {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  color: var(--c-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.ck .delivery-recipient-summary strong {
+  display: block;
+  color: var(--c-text);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.ck .delivery-recipient-summary > svg {
+  color: var(--c-primary);
+}
+
+.ck .cep-manual-recovery {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: start;
+}
+
+.ck .cep-manual-recovery p {
+  margin: 0;
+}
+
+.ck .cep-manual-recovery .ck-text-action {
+  grid-column: 2;
+  justify-self: start;
+  padding-left: 0;
+}
+
+.ck .ship-options-included {
+  margin-top: 18px;
+}
+
+.ck .ship-options-included .ship-opt {
+  cursor: default;
+}
+
+@media (max-width: 760px) {
+  .ck .delivery-number-row .field,
+  .ck .delivery-address-fields > *,
+  .ck .delivery-address-fields .field-row > * {
+    min-width: 0;
+  }
+
+  .ck .field .field-hint,
+  .ck .field .field-error {
+    font-size: 13px;
+  }
+
+  .ck .ship-options-included .ship-opt {
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .ck .ship-options-included .ship-price {
+    grid-column: auto;
+    text-align: right;
+    align-items: flex-end;
+  }
+
+  .ck .ship-options-included .ship-price small {
+    max-width: 88px;
+    font-size: 11px;
+  }
+}

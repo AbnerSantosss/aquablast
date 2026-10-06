@@ -5,6 +5,9 @@ import { InternoBadge } from "@/components/site/InternoBadge";
 import "@/styles/checkout/checkout.css";
 import "@/styles/checkout/refinements.css";
 import "@/styles/checkout/summer-checkout.css";
+import "@/styles/checkout/mobile-ux.css";
+import "@/styles/checkout/forms-ux.css";
+import "@/styles/checkout/payment-ux.css";
 
 /**
  * Layout do grupo de rotas (checkout) — fase 8.4 do plano. Vale para /checkout, /checkout/pedido/[token]

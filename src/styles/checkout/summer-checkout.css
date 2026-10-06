@@ -16,3 +16,57 @@
 @media (max-width: 380px) {
   .ck .ck-season-badge { font-size: 11px; padding: 7px 9px; gap: 5px; }
 }
+
+/* A foto não fica atrás do fundo do próprio banner durante a pintura inicial. */
+.ck .campaign-selected .campaign-photo { z-index: 0; }
+.ck .campaign-selected .campaign-copy { position: relative; z-index: 1; }
+.ck .campaign-selected .campaign-products { z-index: 1; }
+
+/* Cada unidade conserva sua foto e sua identificação, inclusive no kit da oferta extra. */
+.ck .ck-summary-product.is-kit { flex-wrap: wrap; }
+.ck .ck-summary-product.is-kit > .ck-kit-thumbs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  height: auto;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+}
+.ck .ck-kit-thumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid var(--c-line);
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.ck .selected-product .ck-kit-thumb img {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  padding: 0;
+  object-fit: contain;
+  background: transparent;
+}
+.ck .ck-summary-product.is-kit > .ck-product-pricing { flex-basis: 100%; min-width: 0; }
+
+/* Selos inteiros: arte sem máscara circular e texto livre para se ajustar à tela. */
+.ck .trust-seals { min-width: 0; }
+.ck .trust-seals li img { border-radius: 0; object-fit: contain; }
+.ck .trust-seals li > span { min-width: 0; max-width: 100%; }
+.ck .trust-seals strong, .ck .trust-seals small { overflow-wrap: anywhere; }
+.ck .ck-payseals li { min-width: 0; max-width: 100%; }
+.ck .ck-payseals li > span { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  .ck .trust-seals { padding: 18px; }
+  .ck .trust-seals ul { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .ck .trust-seals li { flex-direction: row; align-items: center; gap: 12px; text-align: left; }
+  .ck .trust-seals li:last-child:nth-child(odd) { grid-column: auto; }
+  .ck .trust-seals li img { width: 48px; height: 48px; }
+  .ck .trust-seals strong, .ck .trust-seals small { text-wrap: initial; }
+}

@@ -4,6 +4,7 @@ import { Check, CreditCard, Mail, MapPin, Phone } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Selection } from "@/lib/checkout/own/catalog";
+import { changeAddressCep, fillAddressFromCep } from "@/lib/checkout/own/address-form";
 import { maskCEP, maskCPF, maskPhone, money, validMobile } from "@/lib/checkout/own/masks";
 import type { Quote } from "@/lib/checkout/own/pricing";
 import type { Theme } from "@/lib/checkout/own/theme";
@@ -11,6 +12,7 @@ import { themeVars } from "@/lib/checkout/own/theme";
 import { readAdIds } from "@/lib/tracking-ads/capture";
 import { isApiFail, postCart, postOpened, type CartPayload, type CartStep, type CartTrackingInput } from "./api";
 import { Campaign } from "./Campaign";
+import { CheckoutProgress } from "./CheckoutProgress";
 import { ColorPick } from "./ColorPick";
 import { ConsentBanner, readStored } from "./ConsentBanner";
 import { loadClarity } from "./clarity";
@@ -318,20 +320,22 @@ export function Checkout({
       uf = clean(j?.uf, 2).toUpperCase(),
       hasUf = UFS.includes(uf);
     if (street && city && hasUf) {
-      setData((p) => ({ ...p, street, district, city, state: uf }));
+      setData((p) => fillAddressFromCep(p, { street, district, city, state: uf }));
       focusNext.current = "input[name=number]";
       setCepState("found");
       return;
     }
     // CEP não encontrado, rede fora ou CEP geral da cidade (sem rua): libera tudo para preenchimento manual, aproveitando cidade/UF se vierem.
-    setData((p) => ({ ...p, city: city || p.city, state: hasUf ? uf : p.state }));
+    // Ao tentar o mesmo CEP novamente, não apaga o endereço que a pessoa já preencheu manualmente.
+    // A troca para outro CEP já limpou esses campos em changeAddressCep.
+    setData((p) => fillAddressFromCep(p, { street: street || p.street, district: district || p.district, city: city || p.city, state: hasUf ? uf : p.state }));
     focusNext.current = "input[name=street]";
     setCepState("manual");
   }
 
   function change(key: FieldKey, value: string) {
     const masked = key === "phone" ? maskPhone(value) : key === "cpf" ? maskCPF(value) : key === "cep" ? maskCEP(value) : value;
-    setData((p) => ({ ...p, [key]: masked }));
+    setData((p) => key === "cep" ? changeAddressCep(p, masked) : { ...p, [key]: masked });
     setError("");
     if (key === badField) setBadField(null);
     if (ADDRESS_KEYS.includes(key)) setAddrOk(false);
@@ -406,18 +410,13 @@ export function Checkout({
     if (step === 2) {
       if (!/^\d{8}$/.test(data.cep.replace(/\D/g, ""))) return fail("Informe um CEP com 8 dígitos.", "[name=cep]", "Confira o endereço");
       if (cepState === "loading") return fail("Aguarde um instante: estamos buscando o seu CEP.", undefined, "Só um instante");
-      if (!addrOk) {
-        if (!data.street.trim()) return fail("Informe o endereço (rua ou avenida).", "[name=street]", "Confira o endereço");
-        if (!data.number.trim()) return fail("Informe o número. Se não houver, escreva S/N.", "[name=number]", "Confira o endereço");
-        if (!data.district.trim()) return fail("Informe o bairro.", "[name=district]", "Confira o endereço");
-        if (!data.city.trim()) return fail("Informe a cidade.", "[name=city]", "Confira o endereço");
-        if (!UFS.includes(data.state)) return fail("Selecione o estado.", ".state-select", "Confira o endereço");
-        if (!fullName(data.recipient)) return fail("Informe o nome de quem vai receber (nome e sobrenome).", "[name=recipient]", "Confira o endereço");
-        setError("");
-        focusNext.current = ".ship-options input[type=radio]";
-        setAddrOk(true);
-        return;
-      }
+      if (!data.street.trim()) return fail("Informe o endereço (rua ou avenida).", "[name=street]", "Confira o endereço");
+      if (!data.number.trim()) return fail("Informe o número. Se não houver, escreva S/N.", "[name=number]", "Confira o endereço");
+      if (!data.district.trim()) return fail("Informe o bairro.", "[name=district]", "Confira o endereço");
+      if (!data.city.trim()) return fail("Informe a cidade.", "[name=city]", "Confira o endereço");
+      if (!UFS.includes(data.state)) return fail("Selecione o estado.", "[name=state]", "Confira o endereço");
+      if (!fullName(data.recipient)) return fail("Informe o nome de quem vai receber (nome e sobrenome).", "[name=recipient]", "Confira o endereço");
+      setAddrOk(true);
       setError("");
       const result = await send(() => saveCart("pagamento", bump, { customer: true, address: true }));
       if (isApiFail(result)) return failServer(result);
@@ -563,7 +562,8 @@ export function Checkout({
     n === 1 ? (
       <StepDados data={data} onChange={change} onContactBlur={handleContactBlur} onSubmit={onSubmit} cpfMasked={cpfMasked} busy={busy} buttonLabel={theme.buttonLabel} error={errorBox} />
     ) : n === 2 ? (
-      <StepEntrega data={data} onChange={change} onSubmit={onSubmit} cepState={cepState} addrOk={addrOk} busy={busy} buttonLabel={theme.buttonLabel} error={errorBox} />
+      <StepEntrega data={data} onChange={change} onSubmit={onSubmit} cepState={cepState} addrOk={addrOk} busy={busy} buttonLabel={theme.buttonLabel} error={errorBox}
+        onRetryCep={() => { const digits = data.cep.replace(/\D/g, ""); if (digits.length === 8) void lookupCep(digits); }} />
     ) : cartToken ? (
       <StepPagamento
         paymentSync={paymentSync}
@@ -595,11 +595,11 @@ export function Checkout({
     );
 
   return (
-    <div className="ck ck-root" style={themeVars(theme)}>
+    <div className={`ck ck-root ck-conversion${paid ? " ck-conversion-paid" : ""}`} style={themeVars(theme)}>
       <ShipBar theme={theme} />
       <TopBar theme={theme} />
       <main className="container ck-main">
-        <Campaign theme={theme} selection={selection} bump={paid ? bump : hasBump} bumpColor={bumpColor} />
+        {!paid && step === 1 ? <Campaign theme={theme} selection={selection} bump={hasBump} bumpColor={bumpColor} /> : null}
         {notice ? (
           <div className="notice" role="alert">
             {notice}{" "}
@@ -608,8 +608,23 @@ export function Checkout({
             </button>
           </div>
         ) : null}
-        {!paid && step < 3 ? <ColorPick selection={selection} onChange={handleColorChange} /> : null}
+        {!paid ? <CheckoutProgress step={step} busy={busy || couponBusy} onEdit={goTo} /> : null}
         <div className="ck-grid">
+          <OrderSummary
+            selection={selection}
+            bump={paid ? bump : hasBump}
+            bumpColor={bumpColor}
+            quotes={quotes}
+            payView={payView}
+            cardEnabled={methods.includes("card")}
+            pixEnabled={methods.includes("pix")}
+            paid={paid ?? null}
+            coupon={coupon}
+            couponBusy={couponBusy || busy}
+            onCouponApply={applyCoupon}
+            deliveryPromise={deliveryPromise}
+            selectionEditor={!paid && step < 3 ? <ColorPick selection={selection} onChange={handleColorChange} /> : null}
+          />
           <section className="ck-card ck-flow" aria-label="Finalize seu pedido">
             {paid ? (
               <SuccessView
@@ -651,7 +666,7 @@ export function Checkout({
                     {state === "current" ? (
                       <div className="ck-step-body" ref={panel}>
                         <fieldset className="ck-step-fields" disabled={couponBusy}>
-                          <BadFieldContext.Provider value={badField}>{body(n)}</BadFieldContext.Provider>
+                          <BadFieldContext.Provider value={{ field: badField, message: error }}>{body(n)}</BadFieldContext.Provider>
                         </fieldset>
                       </div>
                     ) : null}
@@ -660,20 +675,6 @@ export function Checkout({
               })}
             </ol>
           </section>
-          <OrderSummary
-            selection={selection}
-            bump={paid ? bump : hasBump}
-            bumpColor={bumpColor}
-            quotes={quotes}
-            payView={payView}
-            cardEnabled={methods.includes("card")}
-            pixEnabled={methods.includes("pix")}
-            paid={paid ?? null}
-            coupon={coupon}
-            couponBusy={couponBusy || busy}
-            onCouponApply={applyCoupon}
-            deliveryPromise={deliveryPromise}
-          />
           <TrustSeals methods={methods} maxInstallments={maxInstallments} />
         </div>
       </main>

@@ -107,6 +107,13 @@ export function StepPagamento({
     paymentRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
     paymentRef.current?.querySelector<HTMLInputElement>('input[name="pay-method"]:checked')?.focus({ preventScroll: true });
   }
+  function continueWithOneUnit() {
+    setConfirmedColor(null);
+    setNudged(false);
+    onBumpChange(false);
+    const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    paymentRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
+  }
   const shown = hasBump && bumpColor ? bumpColor : color;
 
   const options = (
@@ -185,6 +192,7 @@ export function StepPagamento({
               {selectionPending ? "Selecionar segunda unidade com desconto" : "Continuar para o pagamento"}
             </button>
             {!selectionPending ? <p role="status"><Check size={15} aria-hidden="true" />Segunda unidade {colorName(bumpColor!)} selecionada</p> : null}
+            <button type="button" className="bump-skip" onClick={continueWithOneUnit}>Continuar só com 1 unidade</button>
           </div> : null}
         </section>
       ) : null}

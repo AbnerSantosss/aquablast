@@ -1,0 +1,116 @@
+/* Checkout: total antes do formulário, progresso editável e menos distração no pagamento. */
+.ck-conversion .ck-top { justify-content: space-between; max-width: 1152px; margin: auto; padding: 18px 28px 0; }
+.ck-conversion .ck-season-badge { background: transparent; border: 0; padding: 4px 0; color: var(--c-muted); }
+.ck-conversion .campaign-selected { min-height: 0; height: 130px; aspect-ratio: auto; }
+.ck-conversion .campaign-selected .campaign-copy { width: 58%; max-width: 58%; padding: 18px 24px; }
+.ck-conversion .campaign-selected h2 { font-family: var(--font-display), sans-serif; font-size: 25px; font-weight: 750; line-height: 1.15; margin-top: 4px; }
+.ck-conversion .campaign-selected h2 em { font-style: normal; color: var(--c-accent); }
+.ck-conversion .campaign-selected p { margin-top: 6px; font-size: 13px; }
+.ck-conversion .campaign-selected .campaign-gift { display: none; }
+.ck-conversion .campaign-selected .campaign-products { inset: 7px 18px 7px 60%; padding-bottom: 18px; }
+.ck-conversion .campaign-selected .campaign-products img { width: 50%; max-width: 150px; height: 100%; object-fit: contain; }
+.ck-conversion .campaign-unit .campaign-products img { width: 100%; }
+.ck-conversion .campaign-selected .campaign-selection { font-size: 11px; line-height: 1.35; }
+.ck-progress-wrap { margin: 22px 0 0; }
+.ck-checkout-intro { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+.ck-checkout-intro h1 { font-family: var(--font-display), sans-serif; color: var(--c-primary); font-size: 26px; letter-spacing: -.4px; line-height: 1.25; }
+.ck-checkout-intro p { color: var(--c-muted); font-size: 13px; }
+.ck-progress { margin-top: 14px; }
+.ck-progress ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; list-style: none; margin: 0; padding: 0; }
+.ck-progress li { min-width: 0; border-bottom: 2px solid var(--c-line); }
+.ck-progress li.is-done, .ck-progress li.is-current { border-color: var(--c-primary); }
+.ck-progress button { display: flex; align-items: center; gap: 9px; min-height: 44px; width: 100%; padding: 0 8px 8px; background: transparent; border: 0; color: var(--c-muted); font-size: 13px; text-align: left; }
+.ck-progress button:disabled { opacity: 1; cursor: default; }
+.ck-progress button > span { display: grid; place-items: center; flex: 0 0 24px; width: 24px; height: 24px; background: var(--c-line); color: var(--c-primary); border-radius: 50%; font-weight: 700; }
+.ck-progress .is-current button, .ck-progress .is-done button { color: var(--c-primary); }
+.ck-progress .is-current button > span, .ck-progress .is-done button > span { color: white; background: var(--c-primary); }
+.ck-progress .is-done button:hover b { text-decoration: underline; text-underline-offset: 3px; }
+.ck-conversion .ck-card { box-shadow: 0 2px 8px #06376005; }
+.ck-conversion .ck-grid { margin-top: 16px; }
+.ck-conversion .ck-flow { padding: 24px; }
+.ck-conversion:not(.ck-conversion-paid) .ck-step { padding-left: 0; padding-bottom: 12px; }
+.ck-conversion:not(.ck-conversion-paid) .ck-step::before { display: none; }
+.ck-conversion:not(.ck-conversion-paid) .ck-step-head .ck-dot { display: none; }
+.ck-conversion:not(.ck-conversion-paid) .ck-step.is-todo { display: none; }
+.ck-conversion:not(.ck-conversion-paid) .ck-step.is-done .ck-step-head { display: none; }
+.ck-conversion:not(.ck-conversion-paid) .ck-done { padding: 10px 12px; margin: 0; border-radius: 9px; box-shadow: none; background: #f7fafc; }
+.ck-conversion:not(.ck-conversion-paid) .ck-done-info { gap: 3px; }
+.ck-conversion:not(.ck-conversion-paid) .ck-done-info > span { font-size: 12px; }
+.ck-conversion:not(.ck-conversion-paid) .ck-done-title { font-size: 13px; line-height: 1.4; }
+.ck-conversion:not(.ck-conversion-paid) .ck-done-info .ck-ship-tag { display: none; }
+.ck-conversion:not(.ck-conversion-paid) .ck-step-head { min-height: 30px; }
+.ck-conversion:not(.ck-conversion-paid) .ck-step-head h3 { font-size: 20px; }
+.ck-conversion .ck-summary-toggle { display: none; }
+.ck-conversion .ck-final-total { padding-top: 12px; margin-top: 4px; border-top: 1px solid var(--c-line); align-items: baseline; }
+.ck-conversion .ck-final-total dt { font-weight: 700; color: var(--c-primary); }
+.ck-conversion .ck-final-total dd { font-size: 20px; color: var(--c-primary); white-space: nowrap; }
+.ck-conversion .ck-summary-color-editor { border-bottom: 1px solid var(--c-line); }
+.ck-conversion .ck-summary-color-editor summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; min-height: 44px; font-size: 13px; color: var(--c-primary); list-style: none; }
+.ck-conversion .ck-summary-color-editor summary::-webkit-details-marker { display: none; }
+.ck-conversion .ck-summary-color-editor summary:focus-visible { outline: 3px solid var(--c-accent); outline-offset: 2px; border-radius: 4px; }
+.ck-conversion .ck-summary-color-editor[open] summary svg { transform: rotate(180deg); }
+.ck-conversion .ck-summary-color-editor .ck-color-pick { margin: 0 0 12px; box-shadow: none; }
+.ck-conversion .trust-seals { padding: 18px; }
+.ck-conversion .trust-seals ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.ck-conversion .trust-seals li { display: flex; flex-direction: column; align-items: center; gap: 7px; text-align: center; min-width: 0; }
+.ck-conversion .trust-seals li:last-child:nth-child(odd) { grid-column: auto; }
+.ck-conversion .trust-seals li > svg { width: 28px; height: 28px; color: var(--c-primary); }
+.ck-conversion .trust-seals strong { font-size: 12px; line-height: 1.3; text-wrap: balance; }
+.ck-conversion .trust-seals small { font-size: 11px; line-height: 1.35; }
+.ck-conversion .ck-trust-payments { justify-content: center; margin-top: 12px; padding-top: 10px; }
+
+@media (max-width: 900px) {
+  .ck-conversion .ck-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "sum" "flow" "seals"; gap: 12px; }
+  .ck-conversion .order-summary { position: static; padding: 0; overflow: visible; }
+  .ck-conversion .ck-summary-toggle { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; min-height: 68px; padding: 12px 16px; border: 0; border-radius: 14px; background: #edf6fb; color: var(--c-primary); text-align: left; }
+  .ck-summary-toggle-label { display: flex; align-items: center; gap: 9px; min-width: 0; font-size: 13px; font-weight: 650; }
+  .ck-summary-toggle-label > svg { flex-shrink: 0; }
+  .ck-summary-toggle-label small { display: block; margin-top: 2px; color: var(--c-muted); font-size: 11px; font-weight: 400; }
+  .ck-summary-toggle-total { display: flex; align-items: center; gap: 5px; flex-shrink: 0; font-size: 18px; font-weight: 750; white-space: nowrap; }
+  .ck-conversion .order-summary[data-expanded="true"] .ck-summary-toggle-total svg { transform: rotate(180deg); }
+  .ck-conversion .ck-summary-details { padding: 16px; border-top: 1px solid var(--c-line); }
+  .ck-conversion .order-summary[data-expanded="false"] .ck-summary-details { display: none; }
+  .ck-conversion .order-summary .ck-sum-title { display: none; }
+  .ck-conversion .order-summary .selected-product { padding-top: 0; }
+  .ck-conversion .ck-flow { padding: 18px 16px; }
+  .ck-conversion .ck-step.is-done .ck-done-info > span { display: none; }
+  .ck-conversion .ck-done { min-height: 46px; align-items: center; }
+  .ck-conversion .ck-done-title { font-size: 12px; }
+  .ck-conversion .ck-edit { min-height: 44px; font-size: 11px; padding: 0 6px; }
+}
+@media (max-width: 760px) {
+  .ck-conversion .ck-top { padding: 12px 16px 0; flex-wrap: nowrap; gap: 12px; }
+  .ck-conversion .ck-season-badge { font-size: 11px; gap: 5px; }
+  .ck-conversion .ck-main { padding-top: 12px; }
+  .ck-conversion .campaign-selected { height: auto; min-height: 86px; width: 100%; margin: 0; border-radius: 10px; }
+  .ck-conversion .campaign-selected .campaign-copy { padding: 10px 0 10px 14px; width: 57%; max-width: 57%; }
+  .ck-conversion .campaign-selected .campaign-copy > span { font-size: 8px; letter-spacing: .7px; }
+  .ck-conversion .campaign-selected h2 { font-size: 17px; max-width: 15ch; line-height: 1.12; letter-spacing: -.3px; }
+  .ck-conversion .campaign-selected p { display: none; }
+  .ck-conversion .campaign-selected .campaign-products { inset: 5px 8px 5px 58%; padding-bottom: 15px; }
+  .ck-conversion .campaign-selected .campaign-products img { max-width: 90px; transform: none; margin: 0; }
+  .ck-conversion .campaign-selected .campaign-selection { font-size: 8px; padding: 2px 5px; }
+  .ck-progress-wrap { margin-top: 16px; }
+  .ck-checkout-intro { gap: 4px; }
+  .ck-checkout-intro h1 { width: 100%; font-size: 23px; }
+  .ck-checkout-intro p { font-size: 12px; }
+  .ck-progress { margin-top: 10px; }
+  .ck-progress button { font-size: 12px; gap: 6px; padding-left: 0; padding-right: 0; }
+  .ck-conversion .ck-grid { margin-top: 12px; }
+  .ck-conversion .trust-seals { padding: 16px 12px; }
+  .ck-conversion .trust-seals ul { gap: 7px; }
+  .ck-conversion .trust-seals strong { font-size: 11px; }
+  .ck-conversion .trust-seals small { font-size: 10px; }
+  .ck-conversion .ck-footer-in { gap: 16px; padding-top: 24px; padding-bottom: 20px; }
+  .ck-conversion .ck-footer-brand { display: none; }
+  .ck-conversion .ck-footer .pay-methods { grid-column: 1 / -1; }
+  .ck-conversion .ck-footer h2 { margin-bottom: 6px; }
+  .ck-conversion .ck-footer-nav a { font-size: 12px; }
+  .ck-conversion .ck-footer-bottom .container { gap: 10px; }
+}
+@media (max-width: 359px) {
+  .ck-conversion .ck-summary-toggle { padding-left: 12px; padding-right: 12px; }
+  .ck-summary-toggle-label { font-size: 12px; gap: 6px; }
+  .ck-summary-toggle-total { font-size: 16px; }
+  .ck-conversion .trust-seals small { display: none; }
+}

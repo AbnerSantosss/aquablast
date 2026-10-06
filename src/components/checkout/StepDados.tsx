@@ -36,17 +36,18 @@ export function StepDados({
 }) {
   const keepCpf = !!cpfMasked && data.cpf === "";
   const ready = fullName(data.name) && emailOk(data.email) && validMobile(data.phone) && (validCPF(data.cpf) || keepCpf) && !busy;
+  const continueLabel = buttonLabel.trim().toUpperCase() === "CONTINUAR" ? "Ir para entrega" : buttonLabel;
   return (
     <form onSubmit={onSubmit} noValidate>
       <div className="form-fields">
-        <Field name="name" label="Nome completo" placeholder="Digite seu nome completo" value={data.name} onChange={onChange} opts={{ autoComplete: "name", ok: fullName(data.name) }} />
+        <Field name="name" label="Nome completo" placeholder="Digite seu nome completo" value={data.name} onChange={onChange} opts={{ autoComplete: "name", autoCapitalize: "words", maxLength: 120, enterKeyHint: "next", ok: fullName(data.name) }} />
         <Field
           name="email"
           label="E-mail"
           placeholder="voce@exemplo.com"
           value={data.email}
           onChange={onChange}
-          opts={{ type: "email", autoComplete: "email", ok: emailOk(data.email), onBlur: onContactBlur }}
+          opts={{ type: "email", inputMode: "email", autoComplete: "email", autoCapitalize: "none", autoCorrect: "off", spellCheck: false, maxLength: 160, enterKeyHint: "next", ok: emailOk(data.email), onBlur: onContactBlur, hint: "Confirmação e rastreio do pedido." }}
         />
         <div className="field-row id-row">
           <Field
@@ -55,7 +56,7 @@ export function StepDados({
             placeholder="(00) 00000-0000"
             value={data.phone}
             onChange={onChange}
-            opts={{ type: "tel", autoComplete: "tel", inputMode: "tel", maxLength: 15, ok: validMobile(data.phone), onBlur: onContactBlur }}
+            opts={{ type: "tel", autoComplete: "tel", inputMode: "tel", maxLength: 20, enterKeyHint: "next", ok: validMobile(data.phone), onBlur: onContactBlur, hint: "Contato para acompanhar a entrega." }}
           />
           <Field
             name="cpf"
@@ -63,7 +64,7 @@ export function StepDados({
             placeholder={cpfMasked ?? "000.000.000-00"}
             value={data.cpf}
             onChange={onChange}
-            opts={{ inputMode: "numeric", maxLength: 14, ok: validCPF(data.cpf) || keepCpf, optional: keepCpf }}
+            opts={{ inputMode: "numeric", maxLength: 14, enterKeyHint: "done", autoComplete: "off", ok: validCPF(data.cpf) || keepCpf, optional: keepCpf, hint: keepCpf ? "CPF já informado. Preencha apenas se quiser alterar." : "Necessário para a entrega do pedido." }}
           />
         </div>
         <p className="inline-help">
@@ -81,7 +82,7 @@ export function StepDados({
           aria-busy={busy || undefined}
           onMouseDown={(e) => e.preventDefault()}
         >
-          {buttonLabel}
+          {continueLabel}
         </button>
       </div>
     </form>

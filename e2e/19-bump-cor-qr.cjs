@@ -3,11 +3,11 @@
 // (etapa C do pedido 2026-09-30-rastreio-sla-pix-qr-bump-cor-pixels).
 // Alvo: dev em http://localhost:3100 + banco local. Rodar: NODE_PATH="$(npm root -g)" node e2e/19-bump-cor-qr.cjs
 //
-// 19a (1440): bump marcado sem cor -> aviso "Escolha a cor para continuar", FINALIZAR nao chama /pay e leva o foco
+// 19a (1440): bump marcado sem cor -> aviso "Escolha a cor para continuar", Gerar Pix nao chama /pay e leva o foco
 //     para as cores; escolhe Vermelho -> resumo "vermelho", Pix gera com bumpColor no corpo; qrUrl da resposta e
 //     data:image/svg e decodifica igual ao codigo; banco: carrinho ["azul","vermelho"] e item AQB-KIT-AZUL-VERMELHO.
 //     Pagina do pedido (/checkout/pedido/<token>, PixWatch): QR real visivel, decodificado == campo pix-code.
-// 19b (360, celular): cores cabem sem rolagem lateral; pagina do pedido com o QR recolhido em "Mostrar QR Code";
+// 19b (360, celular): cores cabem sem rolagem lateral; pagina do pedido com QR sempre visivel, copia-e-cola antes;
 //     POST direto em /api/checkout/pay com bump e sem bumpColor -> 400 "Escolha a cor da 2a unidade" sem criar pedido.
 //
 // Decodificacao: jsQR (NAO e dependencia do projeto). Procura em E2E_JSQR ou no scratchpad da sessao que validou o
@@ -69,10 +69,23 @@ async function payCalls(requests) {
   return requests.filter((r) => r.url.startsWith(`${L.BASE}/api/checkout/pay`) && r.method === "POST");
 }
 
+async function abrirResumo(page) {
+  const toggle = page.locator(".ck-summary-toggle");
+  if (await toggle.isVisible() && await toggle.getAttribute("aria-expanded") === "false") await toggle.click();
+}
+
+async function aguardarTotalConfirmado(page) {
+  await page.waitForFunction(() => {
+    const methods = document.querySelector("fieldset.pay-acc");
+    return methods && !methods.disabled;
+  }, null, { timeout: 15000 });
+}
+
 async function c19a() {
   const { browser, page, requests, pageErrors } = await L.open({ width: 1440, height: 900 });
   try {
     await L.toPayment(page, "pack=unit&cor=azul");
+    await abrirResumo(page);
     await L.choosePix(page);
     await L.waitText(page.locator(".order-bump h4"), "Leve a segunda unidade com desconto");
     assert.equal(await page.locator(".bump-colors").count(), 0, "cores so aparecem com o bump marcado");
@@ -89,10 +102,11 @@ async function c19a() {
       assert.ok(b && b.height >= 44, `cor com alvo de ${b ? b.height : 0}px (< 44)`);
     }
 
-    // Sem cor: FINALIZAR nao cobra, destaca o bump e leva o foco para as cores.
+    // Sem cor: Gerar Pix nao cobra, destaca o bump e leva o foco para as cores.
     const before = (await payCalls(requests)).length;
-    const fin = page.locator(".pix-payment-start .pix-primary"); // "Gerar código Pix"
-    assert.equal(await fin.getAttribute("aria-disabled"), "true", "FINALIZAR deveria estar aria-disabled sem a cor");
+    const fin = page.locator(".pix-payment-start .pix-primary"); // "Gerar Pix de R$..."
+    await aguardarTotalConfirmado(page);
+    assert.equal(await fin.getAttribute("aria-disabled"), "true", "Gerar Pix deveria estar aria-disabled sem a cor");
     // aria-disabled (nao disabled): o clique continua chegando e serve para levar a pessoa ate as cores.
     // O Playwright trata aria-disabled como desabilitado, por isso o force.
     await fin.click({ force: true });
@@ -106,10 +120,22 @@ async function c19a() {
 
     // Escolhe Vermelho: resumo, miniatura e Pix.
     await page.locator('input[name="bump-color"][value="vermelho"]').check();
-    await L.waitText(page.locator(".bump-summary"), /\+ 1 AquaBlast vermelho.*R\$ 90,00/);
+    await L.waitText(page.locator(".bump-summary"), /2ª unidade com desconto.*R\$ 90,00/);
+    const kitThumbs = page.locator(".selected-product .ck-kit-thumb");
+    assert.equal(await kitThumbs.count(), 2, "resumo com as duas unidades");
+    await L.waitText(kitThumbs.nth(0), "1º azul");
+    await L.waitText(kitThumbs.nth(1), "2º vermelho");
+    assert.equal(await kitThumbs.nth(0).locator("img").getAttribute("alt"), "1º AquaBlast azul");
+    assert.equal(await kitThumbs.nth(1).locator("img").getAttribute("alt"), "2º AquaBlast vermelho");
     await L.waitText(page.locator(".order-summary .total b"), "R$ 249,90");
     assert.equal(await page.locator(".bump-color-alert").textContent(), "", "aviso some com a cor escolhida");
     // Cor escolhida mas nao confirmada: o Pix continua bloqueado ate "Selecionar segunda unidade com desconto".
+    await aguardarTotalConfirmado(page);
+    assert.equal(await fin.getAttribute("aria-disabled"), "true", "Gerar Pix segue bloqueado antes de confirmar a segunda unidade");
+    await fin.click({ force: true });
+    await page.waitForFunction(() => document.activeElement?.textContent?.includes("Selecionar segunda unidade com desconto"));
+    await L.waitText(page.locator(".bump-color-alert"), "Confirme a segunda unidade para continuar.");
+    assert.equal((await payCalls(requests)).length, before, "nenhum /pay antes de confirmar a cor escolhida");
     await L.btn(page, "Selecionar segunda unidade com desconto").click();
     await L.waitText(page.locator(".bump-choice"), "SEGUNDA UNIDADE SELECIONADA");
     assert.equal(await page.locator(".bump-product img").getAttribute("alt"), "2ª AquaBlast vermelho");
@@ -129,6 +155,10 @@ async function c19a() {
     const code = L.field(page, "pix-code");
     await code.waitFor({ timeout: 15000 });
     assert.equal(await code.inputValue(), body.pix.code);
+    await page.locator(".pix-qr-content").waitFor({ state: "visible" });
+    const copyBox = await page.locator(".pix-code-area .pix-primary").boundingBox();
+    const readyQrBox = await page.locator(".pix-qr-content").boundingBox();
+    assert.ok(copyBox && readyQrBox && copyBox.y + copyBox.height <= readyQrBox.y, "copia-e-cola aparece antes do QR na etapa de pagamento");
 
     // Banco: carrinho com as duas cores, pedido com o kit azul + vermelho.
     const token = await L.cartTokenOf(page);
@@ -194,21 +224,37 @@ async function c19b(publicTokenHint) {
     const n1 = await one("select count(*)::int n from orders o join checkout_carts c on c.id = o.cart_id where c.token = $1", [token]);
     assert.equal(n1.n, n0.n, "nao deveria criar pedido");
 
-    // Pagina do pedido no celular: QR recolhido atras de "Mostrar QR Code", copia-e-cola primeiro.
+    // A oferta continua opcional: sair da seleção remove o bump e libera a compra avulsa sem chamar /pay.
+    const beforeSkip = (await payCalls(requests)).length;
+    const skip = page.getByRole("button", { name: "Continuar só com 1 unidade", exact: true });
+    const skipBox = await skip.boundingBox();
+    assert.ok(skipBox && skipBox.height >= 44, "continuar com 1 unidade tem alvo mínimo de 44px");
+    await skip.click();
+    await aguardarTotalConfirmado(page);
+    assert.equal(await page.locator(".bump-colors").count(), 0, "cores somem ao retirar a segunda unidade");
+    assert.equal(await page.locator(".order-bump.added").count(), 0, "oferta retirada");
+    assert.equal(await page.locator(".pix-payment-start .pix-primary").getAttribute("aria-disabled"), null, "Pix avulso liberado");
+    await L.waitText(page.locator(".pix-payment-total strong"), "R$ 159,90");
+    assert.equal((await payCalls(requests)).length, beforeSkip, "retirar bump não gera cobrança");
+
+    // Pagina do pedido no celular: QR visivel sem abrir acordeão, copia-e-cola vem primeiro.
     if (publicTokenHint) {
       await page.goto(`${L.BASE}/checkout/pedido/${publicTokenHint}`, { waitUntil: "networkidle" });
-      const toggle = page.getByRole("button", { name: "Mostrar QR Code" });
-      await toggle.waitFor({ timeout: 15000 });
-      const tb = await toggle.boundingBox();
-      assert.ok(tb && tb.height >= 44, `botao Mostrar QR Code com ${tb ? tb.height : 0}px`);
-      assert.equal(await page.locator(".ck-qr-real img").isVisible(), false, "QR comeca recolhido no celular");
+      const mobileQr = page.locator(".ck-qr-real img");
+      await mobileQr.waitFor({ state: "visible", timeout: 15000 });
+      assert.equal(await page.locator(".ck-qr-toggle").count(), 0, "QR não depende de botão para abrir no celular");
+      const mobileCopy = page.locator(".ck-pix-watch .ck-copy");
+      const mobileCopyBox = await mobileCopy.boundingBox();
+      const mobileQrBox = await mobileQr.boundingBox();
+      assert.ok(mobileCopyBox && mobileCopyBox.height >= 44, "copiar código tem alvo mínimo de 44px");
+      assert.ok(mobileCopyBox && mobileQrBox && mobileCopyBox.y + mobileCopyBox.height <= mobileQrBox.y, "copia-e-cola antes do QR no celular");
+      const mobileCode = await L.field(page, "pix-code").inputValue();
+      const mobileSrc = await mobileQr.getAttribute("src");
+      assert.ok(String(mobileSrc).startsWith("data:image/svg+xml"), "QR mobile real vem do copia-e-cola");
+      const fromMobile = await decodeQr(page, mobileSrc);
+      if (fromMobile !== null) assert.equal(fromMobile, mobileCode, "QR mobile decodifica igual ao copia-e-cola");
       await L.noHorizontalScroll(page);
-      await L.shot(page, "c19-pedido-360-recolhido", false);
-      await toggle.click();
-      await page.locator(".ck-qr-real img").waitFor({ state: "visible" });
-      assert.equal(await page.getByRole("button", { name: "Esconder QR Code" }).getAttribute("aria-expanded"), "true");
-      await L.noHorizontalScroll(page);
-      await page.locator(".ck-pix").screenshot({ path: path.join(L.OUT, "c19-pedido-360-aberto.png") });
+      await page.locator(".ck-pix").screenshot({ path: path.join(L.OUT, "c19-pedido-360-qr-visivel.png") });
     }
 
     L.checkNetwork(requests);
@@ -231,6 +277,6 @@ if (require.main === module) {
       ))?.public_token ?? null;
       return r;
     });
-    await L.scenario("19b", "360px: cores sem rolagem lateral, QR recolhido no pedido, POST sem cor -> 400", () => c19b(publicToken));
+    await L.scenario("19b", "360px: cores sem rolagem lateral, bump opcional, QR visivel no pedido, POST sem cor -> 400", () => c19b(publicToken));
   })();
 }

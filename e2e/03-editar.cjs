@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-// Cenario 3: EDITAR nas etapas concluidas mantem os dados; mexer no endereco pede nova confirmacao do frete.
+// Cenario 3: EDITAR mantém os dados; envio revalida endereço sem exigir confirmação intermediária de frete.
 const L = require("./_lib.cjs");
 const { assert } = L;
 
@@ -21,12 +21,24 @@ async function run(variant) {
     await L.waitText(atual, "Entrega");
     assert.equal(await L.field(page, "street").inputValue(), L.endereco.street);
     assert.equal(await L.field(page, "number").inputValue(), L.endereco.number);
-    assert.equal(await L.field(page, "recipient").inputValue(), L.cliente.name);
+    await L.waitText(page.locator(".delivery-recipient-summary"), L.cliente.name);
+    assert.equal(await (await L.revealEntregaField(page, "recipient")).inputValue(), L.cliente.name);
     await page.locator(".ship-opt").waitFor({ timeout: 5000 });
+    // Mesmo sem segundo toque de confirmação, um endereço incompleto continua bloqueando a próxima etapa.
+    await L.field(page, "number").fill("");
+    await L.submitCurrentForm(page);
+    await L.waitText(page.locator(".ck-alert"), "Informe o número. Se não houver, escreva S/N.");
+    await L.btn(page, "CORRIGIR AGORA").click();
+    assert.ok(await L.field(page, "number").evaluate((e) => e === document.activeElement), "foco deveria ir ao número");
+    await L.waitText(atual, "Entrega");
     await L.field(page, "number").fill("1001");
-    await page.locator(".ship-opt").waitFor({ state: "detached", timeout: 5000 });
-    assert.ok(await L.btn(page, "CONFIRMAR ENDEREÇO").isVisible(), "deveria pedir nova confirmacao do endereco");
+    await L.waitText(page.locator(".ship-opt"), /Frete grátis.*Entrega com rastreamento/);
+    assert.ok(await L.btn(page, "Ir para pagamento").isVisible(), "deveria haver uma ação direta de avanço");
     await L.shot(page, `c3-${variant.tag}-editar-entrega`);
+    await L.submitEntrega(page);
+    await L.waitText(page.locator(".ck-done").nth(1), `${L.endereco.street}, 1001`);
+    await page.getByRole("button", { name: "Editar entrega" }).click();
+    assert.equal(await L.field(page, "number").inputValue(), "1001", "novo número deveria ser preservado");
     await page.getByRole("button", { name: "Editar seus dados" }).click();
     assert.equal(await L.field(page, "email").inputValue(), L.cliente.email);
     L.checkNetwork(requests);

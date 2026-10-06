@@ -3,6 +3,7 @@ import Image from "next/image";
 import type { MouseEvent, ReactNode } from "react";
 import { COLOR_LABELS, KIT_SAVING, PRICES } from "@/lib/site/constants";
 import type { Color, Pack } from "@/lib/site/types";
+import { productPhotography } from "@/lib/site/product-photography";
 import { UnitSwatches } from "./ColorSwatches";
 import { KitColorSteps } from "./KitColorSteps";
 import { useSelection } from "./SelectionProvider";
@@ -30,14 +31,10 @@ function PriceCard({ pack, children }: { pack: Pack; children: ReactNode }) {
 }
 
 function OfferArt({ colors }: { colors: Color[] }) {
+  const photo = productPhotography(colors, "offer");
   return (
-    <div className={"summer-offer-art" + (colors.length === 2 ? " is-pair" : "")}>
-      <div className="summer-offer-toys">{colors.map((color, index) => <Image key={index} src={"/produto-" + color + ".webp"} alt={"AquaBlast " + COLOR_LABELS[color]} width={610} height={610} sizes="(max-width: 680px) 200px, 260px" />)}</div>
-      <div className="summer-offer-accessories" aria-label="Acessórios que acompanham cada brinquedo">
-        <Image src="/acessorio-tambor.webp" alt="Tambor" width={65} height={65} />
-        <Image src="/acessorio-bateria.webp" alt="Bateria recarregável" width={65} height={65} />
-        <Image src="/acessorio-cabo.webp" alt="Cabo USB" width={65} height={65} />
-      </div>
+    <div className="summer-offer-art">
+      <Image src={photo.src} alt={photo.alt} fill sizes="(max-width: 500px) calc(100vw - 56px), (max-width: 680px) 434px, (max-width: 800px) 44vw, 342px" />
     </div>
   );
 }
@@ -49,6 +46,13 @@ export function Offers() {
       <div className="container">
         <div className="section-heading centered offer-title"><span className="eyebrow">OFERTA DE VERÃO</span><h2>Escolha como <em>vai brincar.</em></h2></div>
         <div className="price-grid">
+          <PriceCard pack="kit">
+            <div className="summer-offer-head"><span className="summer-saving-tag">Economize {KIT_SAVING}</span><h3>Kit com 2 AquaBlast</h3></div>
+            <OfferArt colors={kitColors} />
+            <p className="summer-offer-contents">Com tambores, bateria e cabo USB</p>
+            <div className="summer-offer-options"><KitColorSteps context="offer" /></div>
+            <OfferFooter pack="kit" buy="Quero meu kit de verão" />
+          </PriceCard>
           <PriceCard pack="unit">
             <div className="summer-offer-head"><span>PARA COMEÇAR</span><h3>1 unidade AquaBlast</h3></div>
             <OfferArt colors={[color]} />
@@ -60,13 +64,6 @@ export function Offers() {
               </div>
             </div>
             <OfferFooter pack="unit" buy="Quero o meu" />
-          </PriceCard>
-          <PriceCard pack="kit">
-            <div className="summer-offer-head"><span className="summer-saving-tag">Economize {KIT_SAVING}</span><h3>Kit com 2 AquaBlast</h3></div>
-            <OfferArt colors={kitColors} />
-            <p className="summer-offer-contents">Cada um com tambor, bateria e cabo USB</p>
-            <div className="summer-offer-options"><KitColorSteps context="offer" /></div>
-            <OfferFooter pack="kit" buy="Quero meu kit de verão" />
           </PriceCard>
         </div>
       </div>

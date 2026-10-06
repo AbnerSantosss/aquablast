@@ -11,7 +11,7 @@ export function PaySeals({ storeName }: { storeName: string }) {
       <li>
         <ShieldCheck aria-hidden="true" />
         <span>
-          <b>Pagamento</b> <span>100% seguro</span>
+          <b>Conexão</b> <span>criptografada</span>
         </span>
       </li>
       <li className="ck-payseals-brand">
@@ -21,7 +21,7 @@ export function PaySeals({ storeName }: { storeName: string }) {
       <li>
         <LockKeyhole aria-hidden="true" />
         <span>
-          <b>Site blindado</b> <span>Certificado SSL</span>
+          <b>Dados do cartão</b> <span>não armazenados</span>
         </span>
       </li>
     </ul>

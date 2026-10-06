@@ -42,5 +42,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# rascunhos da geracao de imagens (fontes, prompts, relatorios de tamanho)
+/outputs/
+
 # testes e2e da fase 14 (capturas, e-mails do coletor, resultados, backup de settings)
 e2e/out/

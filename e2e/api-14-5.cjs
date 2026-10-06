@@ -145,7 +145,7 @@ t("5.7", "Cron: cartao recusado sem nova tentativa -> e-mail payment_refused", a
     await L.field(page, "cc-csc").fill("123");
     await L.field(page, "cc-name").fill("MARIA T SILVA");
     await L.field(page, "cc-cpf").fill(L.cliente.cpf);
-    await L.btn(page, "FINALIZAR COMPRA").click();
+    await page.locator('.ck-cardform button[type="submit"]').click();
     await L.waitText(page.locator(".ck-cardform p.error"), /não autorizado/i, 15000);
     token = await L.cartTokenOf(page);
   } finally {

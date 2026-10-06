@@ -1,0 +1,93 @@
+{
+  "overview": {
+    "src": "/media/gallery-fast/overview-2790fb7d0b-960.webp",
+    "thumbSrc": "/media/gallery-fast/overview-2790fb7d0b-240.webp",
+    "width": 960,
+    "height": 640,
+    "blurDataURL": "data:image/webp;base64,UklGRj4AAABXRUJQVlA4IDIAAADQAQCdASoIAAUAA8BgJYgCdAEfaUICwAD+5ToYx4Yxe59SH5HWloo9y6yRL919dSNAAA=="
+  },
+  "kit-azul-preto": {
+    "src": "/media/gallery-fast/kit-azul-preto-e5d641ec80-960.webp",
+    "thumbSrc": "/media/gallery-fast/kit-azul-preto-e5d641ec80-240.webp",
+    "width": 960,
+    "height": 640,
+    "blurDataURL": "data:image/webp;base64,UklGRkYAAABXRUJQVlA4IDoAAADwAQCdASoIAAUAA8BgJQBOiP/wNxHdapAA/trQFyG9q6Ay2C8IfMkjYIJ4Z5/a6eldAp/TXd/itAAA"
+  },
+  "kit-azul-azul": {
+    "src": "/media/gallery-fast/kit-azul-azul-3fd7b44c2d-960.webp",
+    "thumbSrc": "/media/gallery-fast/kit-azul-azul-3fd7b44c2d-240.webp",
+    "width": 960,
+    "height": 960,
+    "blurDataURL": "data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAADQAQCdASoIAAgAA8BgJZgCdAEQD08L4AD+7IWvapWzvIaD6seV2cXzSyNv5nsrgKGgQRXDv73OcDEAAAA="
+  },
+  "kit-azul-vermelho": {
+    "src": "/media/gallery-fast/kit-azul-vermelho-4486371744-960.webp",
+    "thumbSrc": "/media/gallery-fast/kit-azul-vermelho-4486371744-240.webp",
+    "width": 960,
+    "height": 960,
+    "blurDataURL": "data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAADQAQCdASoIAAgAA8BgJYgCdAELS3lEAAD+7IWvapWzvKLujOXCDPzErVrSlWoI9AwptdawHYlk/dgmoAA="
+  },
+  "kit-preto-preto": {
+    "src": "/media/gallery-fast/kit-preto-preto-73b2ecd64c-960.webp",
+    "thumbSrc": "/media/gallery-fast/kit-preto-preto-73b2ecd64c-240.webp",
+    "width": 960,
+    "height": 960,
+    "blurDataURL": "data:image/webp;base64,UklGRkYAAABXRUJQVlA4IDoAAADQAQCdASoIAAgAA8BgJYgCdAEOuwWOAAD+7IWvZ7Qer4R5kVCL7/Zi/zuNhVysqnLR+Kh31ujMrgAA"
+  },
+  "kit-preto-vermelho": {
+    "src": "/media/gallery-fast/kit-preto-vermelho-82a0ed385a-960.webp",
+    "thumbSrc": "/media/gallery-fast/kit-preto-vermelho-82a0ed385a-240.webp",
+    "width": 960,
+    "height": 960,
+    "blurDataURL": "data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAACwAQCdASoIAAgAA8BgJQBOgCHXWT3gAP7shbB+ZFSIFQXDJDdtbRRwTDL+jzXqB+A08IOQInvGo8hgPAA="
+  },
+  "kit-vermelho-vermelho": {
+    "src": "/media/gallery-fast/kit-vermelho-vermelho-3e9b41ce32-960.webp",
+    "thumbSrc": "/media/gallery-fast/kit-vermelho-vermelho-3e9b41ce32-240.webp",
+    "width": 960,
+    "height": 960,
+    "blurDataURL": "data:image/webp;base64,UklGRkoAAABXRUJQVlA4ID4AAACwAQCdASoIAAgAA8BgJQBOgCHfwHkAAP7pkj+jnd91G+bjuYwUrxQX5nyPGJNFPwGnhByu+9RG/n2CagAAAA=="
+  },
+  "included-azul": {
+    "src": "/media/gallery-fast/included-azul-87f4eb5da6-960.webp",
+    "thumbSrc": "/media/gallery-fast/included-azul-87f4eb5da6-240.webp",
+    "width": 960,
+    "height": 640,
+    "blurDataURL": "data:image/webp;base64,UklGRjYAAABXRUJQVlA4ICoAAACQAQCdASoIAAUAA8BgJQBOgBucqMAA/vDoRzagldSRkFmlAlhQ/x9BtgA="
+  },
+  "included-preto": {
+    "src": "/media/gallery-fast/included-preto-a21503f01b-960.webp",
+    "thumbSrc": "/media/gallery-fast/included-preto-a21503f01b-240.webp",
+    "width": 960,
+    "height": 640,
+    "blurDataURL": "data:image/webp;base64,UklGRjIAAABXRUJQVlA4ICYAAADQAQCdASoIAAUAA8BgJYwCdAEDdq3YAAD+8Og7/pAREDWpITyoAA=="
+  },
+  "included-vermelho": {
+    "src": "/media/gallery-fast/included-vermelho-2f21507d11-960.webp",
+    "thumbSrc": "/media/gallery-fast/included-vermelho-2f21507d11-240.webp",
+    "width": 960,
+    "height": 640,
+    "blurDataURL": "data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAADQAQCdASoIAAUAA8BgJQBOgCPw4cUjgAD+8OuCXVLb6jkNSL5uJ9CYCMUkTgAA"
+  },
+  "detail": {
+    "src": "/media/gallery-fast/detail-dd997c80dd-960.webp",
+    "thumbSrc": "/media/gallery-fast/detail-dd997c80dd-240.webp",
+    "width": 960,
+    "height": 640,
+    "blurDataURL": "data:image/webp;base64,UklGRjwAAABXRUJQVlA4IDAAAADQAQCdASoIAAUAA8BgJZgCdAEO94TtQAD+7NvynmD1LzD1i+vW7CBBFcO/B6118AA="
+  },
+  "led": {
+    "src": "/media/gallery-fast/led-ca6df16e40-960.webp",
+    "thumbSrc": "/media/gallery-fast/led-ca6df16e40-240.webp",
+    "width": 960,
+    "height": 640,
+    "blurDataURL": "data:image/webp;base64,UklGRkQAAABXRUJQVlA4IDgAAACwAQCdASoIAAUAA8BgJZACdAD0eqnsAP7yv9Zq6pt6nMg+S2oa4QR+ogV7rjEKllnmRxYgRgYAAA=="
+  },
+  "family": {
+    "src": "/media/gallery-fast/family-adb24334e6-960.webp",
+    "thumbSrc": "/media/gallery-fast/family-adb24334e6-240.webp",
+    "width": 960,
+    "height": 640,
+    "blurDataURL": "data:image/webp;base64,UklGRkAAAABXRUJQVlA4IDQAAACwAQCdASoIAAUAA8BgJZgCdADbIP3oAPqcN+ONd+QPfmQOtJbyrEbETbaXc5J5uGxgJQAA"
+  }
+}

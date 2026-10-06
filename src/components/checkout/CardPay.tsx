@@ -1,7 +1,7 @@
 "use client";
 
 import { CircleAlert, CreditCard, LoaderCircle, LockKeyhole } from "lucide-react";
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import Image from "next/image";
 import { gatewayTokenizes, tokenizeCard } from "@/lib/gateways/browser";
 import type { GatewayName } from "@/lib/gateways/types";
@@ -12,6 +12,7 @@ import type { CardFormData } from "./types";
 
 const EMPTY = { number: "", name: "", exp: "", cvv: "", cpf: "" };
 type CardKey = keyof typeof EMPTY;
+const CARD_INPUTS: Record<CardKey, string> = { number: "cc-number", name: "cc-name", exp: "cc-exp", cvv: "cc-csc", cpf: "cc-cpf" };
 
 // Cartão de teste público do gateway simulado, montado em partes para não aparecer como número de cartão no código.
 const TEST_CARD = ["4242", "4242", "4242", "4242"].join(" ");
@@ -65,8 +66,10 @@ export function CardPay({
   const [f, setF] = useState(EMPTY);
   const [inst, setInst] = useState(String(max));
   const [error, setError] = useState("");
+  const [errorField, setErrorField] = useState<CardKey | null>(null);
   const [busy, setBusy] = useState(false);
   const form = useRef<HTMLFormElement>(null);
+  const errorId = useId();
 
   const digits = onlyDigits(f.number);
   const brand = cardBrandOf(digits);
@@ -85,11 +88,22 @@ export function CardPay({
               : v;
     setF((p) => ({ ...p, [k]: masked }));
     setError("");
+    setErrorField(null);
   }
 
-  function fail(msg: string, name: string) {
+  function fail(msg: string, key: CardKey) {
     setError(msg);
-    form.current?.querySelector<HTMLInputElement>(`[name=${name}]`)?.focus();
+    setErrorField(key);
+    window.requestAnimationFrame(() => form.current?.querySelector<HTMLInputElement>(`[name=${CARD_INPUTS[key]}]`)?.focus());
+  }
+  function fieldError(key: CardKey) {
+    return error && errorField === key ? <small className="ck-card-field-error" id={`${errorId}-${key}`} role="alert">{error}</small> : null;
+  }
+  function errorAttrs(key: CardKey) {
+    return {
+      "aria-invalid": errorField === key || undefined,
+      "aria-describedby": errorField === key ? `${errorId}-${key}` : undefined,
+    };
   }
 
   async function pay(e: React.FormEvent<HTMLFormElement>) {
@@ -100,12 +114,13 @@ export function CardPay({
       return;
     }
     const exp = parseExp(f.exp);
-    if (!validLuhn(digits)) return fail("Número do cartão inválido. Confira os dígitos.", "cc-number");
-    if (!exp || !validCardExpiry(exp.month, exp.year)) return fail("Validade inválida ou vencida. Use o formato MM/AA.", "cc-exp");
-    if (!/^\d{3,4}$/.test(f.cvv)) return fail("Informe o CVV com 3 ou 4 dígitos.", "cc-csc");
-    if (f.name.trim().split(/\s+/).length < 2) return fail("Informe o nome impresso no cartão (nome e sobrenome).", "cc-name");
-    if (!validCPF(f.cpf)) return fail("Confira o CPF do titular do cartão.", "cc-cpf");
+    if (!validLuhn(digits)) return fail("Número do cartão inválido. Confira os dígitos.", "number");
+    if (!exp || !validCardExpiry(exp.month, exp.year)) return fail("Validade inválida ou vencida. Use o formato MM/AA.", "exp");
+    if (!/^\d{3,4}$/.test(f.cvv)) return fail("Informe o CVV com 3 ou 4 dígitos.", "cvv");
+    if (f.name.trim().split(/\s+/).length < 2) return fail("Informe o nome impresso no cartão (nome e sobrenome).", "name");
+    if (!validCPF(f.cpf)) return fail("Confira o CPF do titular do cartão.", "cpf");
     setError("");
+    setErrorField(null);
     setBusy(true);
     const installments = Number(inst);
     const extra = bump && bumpColor ? { bumpColor } : {};
@@ -174,30 +189,35 @@ export function CardPay({
         )}
       </p>
       <div className="form-fields">
-        <label className="field has-icon">
+        <label className={`field has-icon${errorField === "number" ? " is-bad" : ""}`}>
           <CreditCard className="field-icon" size={22} aria-hidden="true" />
           <span>
             Número do cartão{brand ? <em className="ck-brand"> · {brand}</em> : null}
           </span>
-          <input name="cc-number" autoComplete="cc-number" inputMode="numeric" maxLength={19} placeholder="0000 0000 0000 0000" value={f.number} onChange={(e) => set("number", e.target.value)} disabled={busy} />
+          <input name="cc-number" autoComplete="cc-number" inputMode="numeric" maxLength={19} placeholder="0000 0000 0000 0000" value={f.number} onChange={(e) => set("number", e.target.value)} disabled={busy} required {...errorAttrs("number")} />
+          {fieldError("number")}
         </label>
         <div className="field-row">
-          <label className="field">
+          <label className={`field${errorField === "exp" ? " is-bad" : ""}`}>
             <span>Validade</span>
-            <input name="cc-exp" autoComplete="cc-exp" inputMode="numeric" maxLength={5} placeholder="MM/AA" value={f.exp} onChange={(e) => set("exp", e.target.value)} disabled={busy} />
+            <input name="cc-exp" autoComplete="cc-exp" inputMode="numeric" maxLength={5} placeholder="MM/AA" value={f.exp} onChange={(e) => set("exp", e.target.value)} disabled={busy} required {...errorAttrs("exp")} />
+            {fieldError("exp")}
           </label>
-          <label className="field">
+          <label className={`field${errorField === "cvv" ? " is-bad" : ""}`}>
             <span>CVV</span>
-            <input name="cc-csc" autoComplete="cc-csc" inputMode="numeric" maxLength={4} placeholder="123" value={f.cvv} onChange={(e) => set("cvv", e.target.value)} disabled={busy} />
+            <input name="cc-csc" autoComplete="cc-csc" inputMode="numeric" maxLength={4} placeholder="123" value={f.cvv} onChange={(e) => set("cvv", e.target.value)} disabled={busy} required {...errorAttrs("cvv")} />
+            {fieldError("cvv")}
           </label>
         </div>
-        <label className="field">
+        <label className={`field${errorField === "name" ? " is-bad" : ""}`}>
           <span>Nome como no cartão</span>
-          <input name="cc-name" autoComplete="cc-name" placeholder="Maria M Silva" value={f.name} onChange={(e) => set("name", e.target.value)} disabled={busy} />
+          <input name="cc-name" autoComplete="cc-name" placeholder="Maria M Silva" value={f.name} onChange={(e) => set("name", e.target.value)} disabled={busy} required {...errorAttrs("name")} />
+          {fieldError("name")}
         </label>
-        <label className="field">
+        <label className={`field${errorField === "cpf" ? " is-bad" : ""}`}>
           <span>CPF do titular do cartão</span>
-          <input name="cc-cpf" autoComplete="off" inputMode="numeric" maxLength={14} placeholder="000.000.000-00" value={f.cpf} onChange={(e) => set("cpf", e.target.value)} disabled={busy} />
+          <input name="cc-cpf" autoComplete="off" inputMode="numeric" maxLength={14} placeholder="000.000.000-00" value={f.cpf} onChange={(e) => set("cpf", e.target.value)} disabled={busy} required {...errorAttrs("cpf")} />
+          {fieldError("cpf")}
         </label>
         <label className="field">
           <span>Número de parcelas</span>
@@ -210,12 +230,17 @@ export function CardPay({
           </select>
         </label>
       </div>
-      {error ? (
+      {error && !errorField ? (
         <p className="error" role="alert">
           <CircleAlert size={16} aria-hidden="true" />
           {error}
         </p>
       ) : null}
+      <div className="ck-card-payment-total">
+        <span>Total no cartão</span>
+        <strong>{money(amountCents)}</strong>
+        <small>{Number(inst) > 1 ? `${inst}x de ${money(per(Number(inst)))} sem juros` : "Pagamento à vista"}</small>
+      </div>
       <button type="submit" className="primary-button ck-pay-btn" disabled={busy} aria-disabled={blocked || undefined}>
         {busy ? (
           <>
@@ -223,7 +248,7 @@ export function CardPay({
             Processando…
           </>
         ) : (
-          "FINALIZAR COMPRA"
+          `Pagar ${money(amountCents)}`
         )}
       </button>
       <PaySeals storeName={storeName} />

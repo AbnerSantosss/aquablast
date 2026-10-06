@@ -46,6 +46,11 @@ export function PixPay({
   const [error, setError] = useState("");
   const [copyMsg, setCopyMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [simulating, setSimulating] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<"pending" | "refused" | "canceled">("pending");
+  const [statusMessage, setStatusMessage] = useState("");
+  const [checkingStatus, setCheckingStatus] = useState(false);
+  const checkStatusRef = useRef<(() => Promise<void>) | null>(null);
+  const paidReportedRef = useRef(false);
   const now = useClock(phase === "ready");
   const onPaidRef = useRef(onPaid);
 
@@ -63,25 +68,48 @@ export function PixPay({
     if (phase !== "ready" || !publicToken) return;
     let cancelled = false;
     let checking = false;
-    const poll = async () => {
-      if (document.hidden || cancelled || checking) return;
+    let manualRequested = false;
+    const poll = async (manual = false) => {
+      if ((!manual && document.hidden) || cancelled || paidReportedRef.current) return;
+      if (manual) {
+        manualRequested = true;
+        setCheckingStatus(true);
+      }
+      if (checking) return;
       checking = true;
       const result = await getStatus(publicToken);
       checking = false;
-      if (!cancelled && result.ok && result.status === "paid") onPaidRef.current(publicToken);
+      if (cancelled) return;
+      setCheckingStatus(false);
+      if (isApiFail(result)) {
+        setStatusMessage("Não foi possível consultar o pagamento. Verifique sua conexão e tente verificar novamente.");
+        return;
+      }
+      if (result.status === "paid") {
+        paidReportedRef.current = true;
+        onPaidRef.current(publicToken);
+        return;
+      }
+      setPaymentStatus(result.status);
+      setStatusMessage(manualRequested && result.status === "pending" ? "O pagamento ainda não foi confirmado. Se você já pagou, aguarde: esta página atualiza automaticamente." : "");
+      manualRequested = false;
     };
+    checkStatusRef.current = () => poll(true);
     // A confirmação pode chegar depois do vencimento ou enquanto o app do banco está aberto.
     void poll();
-    document.addEventListener("visibilitychange", poll);
-    const id = window.setInterval(poll, expired ? 15_000 : 5000);
+    const checkWhenVisible = () => void poll();
+    document.addEventListener("visibilitychange", checkWhenVisible);
+    const id = window.setInterval(checkWhenVisible, expired ? 15_000 : 5000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
-      document.removeEventListener("visibilitychange", poll);
+      document.removeEventListener("visibilitychange", checkWhenVisible);
+      checkStatusRef.current = null;
     };
   }, [phase, expired, publicToken]);
 
   async function generate() {
+    if (phase === "loading") return;
     if (blocked) {
       onBlocked?.();
       return;
@@ -89,6 +117,8 @@ export function PixPay({
     setPhase("loading");
     setCopyMsg(null);
     setError("");
+    setStatusMessage("");
+    paidReportedRef.current = false;
     const result = await postPay({ cartToken, method: "pix", installments: 1, bump, ...(bump && bumpColor ? { bumpColor } : {}), ...(coupon ? { coupon } : {}) });
     if (isApiFail(result)) {
       setError(result.message ?? result.error);
@@ -106,6 +136,7 @@ export function PixPay({
       const remain = new Date(result.pix.expiresAt).getTime() - nowMs;
       const localExpiresMs = nowMs + (remain > 0 && remain <= ttlSeconds * 1000 + 5000 ? remain : ttlSeconds * 1000);
       setPix({ ...result.pix, publicToken: result.publicToken, localExpiresMs });
+      setPaymentStatus("pending");
       setPhase("ready");
       return;
     }
@@ -153,10 +184,20 @@ export function PixPay({
   );
   const instructions = (
     <ol className="pix-instructions">
-      <li><span>1</span><p>Copie o código Pix abaixo.</p></li>
+      <li><span>1</span><p>Copie o código Pix.</p></li>
       <li><span>2</span><p>No app do banco, escolha <b>Pix Copia e Cola</b>.</p></li>
       <li><span>3</span><p>Confira os dados e confirme o pagamento.</p></li>
     </ol>
+  );
+
+  const verifyPayment = (
+    <div className="pix-check-payment">
+      <button type="button" className="pix-status-check" onClick={() => void checkStatusRef.current?.()} disabled={checkingStatus}>
+        {checkingStatus ? <LoaderCircle className="spin" size={17} aria-hidden="true" /> : <RefreshCw size={17} aria-hidden="true" />}
+        {checkingStatus ? "Verificando pagamento…" : "Já paguei. Verificar pagamento"}
+      </button>
+      <p className="pix-status-feedback" role="status">{statusMessage}</p>
+    </div>
   );
 
   if (phase !== "ready" || !pix) {
@@ -169,9 +210,22 @@ export function PixPay({
         </div>
         {errorBox}
         <button type="button" className="pix-primary" onClick={() => void generate()} disabled={phase === "loading"} aria-disabled={blocked || undefined}>
-          {phase === "loading" ? <><LoaderCircle className="spin" size={18} aria-hidden="true" />Gerando código…</> : <>Gerar código Pix<ArrowRight size={18} aria-hidden="true" /></>}
+          {phase === "loading" ? <><LoaderCircle className="spin" size={18} aria-hidden="true" />Gerando código…</> : <>Gerar Pix de {money(amountCents)}<ArrowRight size={18} aria-hidden="true" /></>}
         </button>
         <p className="pix-footnote"><Timer size={15} aria-hidden="true" />Válido por {ttl} após a geração.</p>
+      </div>
+    );
+  }
+
+  if (paymentStatus !== "pending") {
+    return (
+      <div className="pix-payment pix-payment-expired">
+        <span className="pix-expired-icon"><CircleAlert size={26} aria-hidden="true" /></span>
+        <h4>{paymentStatus === "canceled" ? "Este código foi cancelado" : "Pagamento não aprovado"}</h4>
+        <p>Você pode gerar outro código para pagar <b>{money(amountCents)}</b>. Se já pagou, confira o pagamento no app do banco antes de gerar um novo.</p>
+        {errorBox}
+        <button type="button" className="pix-primary" onClick={() => void generate()}><RefreshCw size={18} aria-hidden="true" />Gerar novo Pix de {money(amountCents)}</button>
+        {verifyPayment}
       </div>
     );
   }
@@ -185,6 +239,7 @@ export function PixPay({
         {errorBox}
         <button type="button" className="pix-primary" onClick={() => void generate()}><RefreshCw size={18} aria-hidden="true" />Gerar novo código Pix</button>
         <small>Se você já pagou, confira a confirmação no aplicativo do banco antes de tentar novamente.</small>
+        {verifyPayment}
       </div>
     );
   }
@@ -193,11 +248,6 @@ export function PixPay({
     <div className="pix-payment pix-payment-ready">
       <div className="pix-payment-status" role="status"><span />Aguardando pagamento{testMode ? " · demonstração" : ""}</div>
       {amount}
-      {testMode || pix.qrUrl ? <div className="pix-qr-content">
-        {testMode ? <DemoQr seed={pix.code} /> : <Image src={pix.qrUrl!} width={224} height={224} unoptimized alt="QR Code para pagar com Pix" />}
-        <p>{testMode ? "Imagem de demonstração. Não efetue pagamento." : "Escaneie o QR Code com o app do seu banco ou use o código abaixo."}</p>
-      </div> : null}
-      {instructions}
       <div className="pix-code-area">
         <label htmlFor="checkout-pix-code">Pix Copia e Cola</label>
         <input id="checkout-pix-code" name="pix-code" readOnly value={pix.code} onFocus={(e) => e.currentTarget.select()} />
@@ -208,7 +258,13 @@ export function PixPay({
         {copyMsg ? <p role="status" className={copyMsg.ok ? "pix-copy-feedback" : "error"}>{copyMsg.ok ? "Agora abra o app do banco e cole o código." : copyMsg.text}</p> : null}
         <p className="pix-validity" aria-live="off"><Timer size={15} aria-hidden="true" />Código válido por <b>{pad2(Math.floor(left / 60))}:{pad2(left % 60)}</b></p>
       </div>
+      {instructions}
+      {testMode || pix.qrUrl ? <div className="pix-qr-content">
+        {testMode ? <DemoQr seed={pix.code} /> : <Image src={pix.qrUrl!} width={224} height={224} unoptimized alt="QR Code para pagar com Pix" />}
+        <p>{testMode ? "Imagem de demonstração. Não efetue pagamento." : "Em outro aparelho? Escaneie o QR Code com o app do banco."}</p>
+      </div> : null}
       <p className="pix-footnote">Após pagar, volte a esta página para acompanhar a confirmação.</p>
+      {verifyPayment}
       {errorBox}
       {testMode ? <button type="button" className="pix-test-action" onClick={() => void simulatePaid()} disabled={simulating}>{simulating ? "Simulando…" : "Simular pagamento aprovado"}</button> : null}
     </div>

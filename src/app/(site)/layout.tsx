@@ -25,6 +25,7 @@ import "@/styles/site/mobile-ordem-venda.css";
 import "@/styles/site/mobile-dobra.css";
 import "@/styles/site/summer-sections.css";
 import "@/styles/site/summer.css";
+import "@/styles/site/hero-desktop.css";
 
 export const metadata: Metadata = {
   title: "AquaBlast — Seu verão mais divertido",
