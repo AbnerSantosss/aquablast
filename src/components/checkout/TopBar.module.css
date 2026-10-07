@@ -1,0 +1,50 @@
+:global(.ck-reference) .top.top {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 16px;
+  width: min(100%, 1232px);
+  max-width: none;
+  min-height: 72px;
+  margin: 0 auto;
+  padding: 12px 26px;
+}
+
+:global(.ck-reference) .top :global(.brand) {
+  min-height: 40px;
+  color: var(--c-primary);
+  font-size: 27px;
+  font-style: italic;
+  letter-spacing: -1px;
+}
+
+:global(.ck-reference) .top :global(.brand) svg { width: 29px; height: 29px; stroke-width: 2.1; }
+
+:global(.ck-reference) .top .protection {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #607c87;
+  font-size: 11px;
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+
+:global(.ck-reference) .protection svg { color: #007f98; }
+:global(.ck-reference) .protection span { display: flex; flex-direction: column; }
+:global(.ck-reference) .protection strong { color: #355666; font-size: 12px; font-weight: 700; }
+
+@media (max-width: 760px) {
+  :global(.ck-reference) .top.top { min-height: 58px; padding: 8px 16px; gap: 10px; }
+  :global(.ck-reference) .top :global(.brand) { font-size: 23px; letter-spacing: -.8px; }
+  :global(.ck-reference) .top :global(.brand) svg { width: 25px; height: 25px; }
+  :global(.ck-reference) .top .protection { gap: 5px; font-size: 9px; }
+  :global(.ck-reference) .protection strong { font-size: 10px; }
+  :global(.ck-reference) .protection svg { width: 18px; height: 18px; }
+}

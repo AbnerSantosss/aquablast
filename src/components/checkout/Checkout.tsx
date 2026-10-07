@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, CreditCard, Mail, MapPin, Phone } from "lucide-react";
+import { Check, CreditCard, LockKeyhole, Mail, MapPin, Phone } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Selection } from "@/lib/checkout/own/catalog";
@@ -13,6 +13,7 @@ import { readAdIds } from "@/lib/tracking-ads/capture";
 import { isApiFail, postCart, postOpened, type CartPayload, type CartStep, type CartTrackingInput } from "./api";
 import { Campaign } from "./Campaign";
 import { CheckoutProgress } from "./CheckoutProgress";
+import { CheckoutReviews, type CheckoutReview } from "./CheckoutReviews";
 import { ColorPick } from "./ColorPick";
 import { ConsentBanner, readStored } from "./ConsentBanner";
 import { loadClarity } from "./clarity";
@@ -96,6 +97,7 @@ export function Checkout({
   initial,
   paid,
   deliveryPromise = null,
+  checkoutReviews = [],
 }: {
   theme: Theme;
   selection: Selection;
@@ -118,6 +120,7 @@ export function Checkout({
   paid?: PaidInfo;
   /** Aviso de entrega com data limite, decidido no servidor (lib/site/delivery-promise.ts); null depois da data. */
   deliveryPromise?: string | null;
+  checkoutReviews?: CheckoutReview[];
 }) {
   const router = useRouter();
   // A cor pode ser trocada aqui (ColorPick); a seleção da URL/carrinho é só o ponto de partida.
@@ -595,9 +598,10 @@ export function Checkout({
     );
 
   return (
-    <div className={`ck ck-root ck-conversion${paid ? " ck-conversion-paid" : ""}`} style={themeVars(theme)}>
-      <ShipBar theme={theme} />
+    <div className={`ck ck-root ck-conversion${paid ? " ck-conversion-paid" : " ck-reference"}`} style={themeVars(theme)}>
+      {paid ? <ShipBar theme={theme} /> : null}
       <TopBar theme={theme} />
+      {!paid ? <ShipBar theme={theme} /> : null}
       <main className="container ck-main">
         {!paid && step === 1 ? <Campaign theme={theme} selection={selection} bump={hasBump} bumpColor={bumpColor} /> : null}
         {notice ? (
@@ -643,7 +647,7 @@ export function Checkout({
                 const n = i + 1;
                 const state = paid || n < step ? "done" : n === step ? "current" : "todo";
                 return (
-                  <li key={name} className={`ck-step is-${state}`} aria-current={state === "current" ? "step" : undefined}>
+                  <li key={name} className={`ck-step is-${state}`} data-step={n} aria-current={state === "current" ? "step" : undefined}>
                     <div className="ck-step-head">
                       <span className="ck-dot" aria-hidden="true">
                         {state === "done" ? <Check size={16} strokeWidth={3} /> : n}
@@ -653,6 +657,16 @@ export function Checkout({
                         {state === "done" ? <span className="ck-u-sr-only"> (concluída)</span> : null}
                       </h3>
                     </div>
+                    {!paid && state === "todo" ? (
+                      <div className="ck-stage-preview">
+                        <p>{n === 2 ? "Informe seus dados para adicionar o endereço de entrega." : "Após informar a entrega, escolha como deseja pagar."}</p>
+                        {n === 3 ? <div className="ck-payment-preview" aria-label="Formas de pagamento disponíveis">
+                          {methods.includes("pix") ? <span><PixLogo size={21} /><span><strong>Pix</strong><small>{money(quotes.pix.amountCents)} à vista</small></span></span> : null}
+                          {methods.includes("card") ? <span><CreditCard size={21} aria-hidden="true" /><span><strong>Cartão de crédito</strong><small>{quotes.card.installments > 1 ? `${quotes.card.installments}x de ${money(quotes.card.installmentCents)} sem juros` : `${money(quotes.card.amountCents)} à vista`}</small></span></span> : null}
+                        </div> : null}
+                        <small className="ck-stage-lock"><LockKeyhole size={13} aria-hidden="true" />{n === 2 ? "Disponível após seus dados" : "Disponível após a entrega"}</small>
+                      </div>
+                    ) : null}
                     {state === "done" ? (
                       <div className="ck-done">
                         <div className="ck-done-info">{doneCard(i)}</div>
@@ -665,11 +679,13 @@ export function Checkout({
                     ) : null}
                     {state === "current" ? (
                       <div className="ck-step-body" ref={panel}>
+                        <p className="ck-stage-intro">{n === 1 ? "Preencha seus dados para receber a confirmação e acompanhar seu pedido." : n === 2 ? "Cadastre o endereço onde você quer receber seu AquaBlast." : "Escolha a forma de pagamento para finalizar seu pedido."}</p>
                         <fieldset className="ck-step-fields" disabled={couponBusy}>
                           <BadFieldContext.Provider value={{ field: badField, message: error }}>{body(n)}</BadFieldContext.Provider>
                         </fieldset>
                       </div>
                     ) : null}
+                    {!paid && n === 3 && state === "todo" ? <CheckoutReviews reviews={checkoutReviews} /> : null}
                   </li>
                 );
               })}

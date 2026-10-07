@@ -1,5 +1,4 @@
 import { COLOR_LABELS } from "./constants";
-import type { ImageLoaderProps } from "next/image";
 import galleryImages from "./gallery-images.json";
 import type { Color } from "./types";
 
@@ -7,10 +6,9 @@ const directory = "/media/premium-v2";
 
 const galleryWidths = [480, 640, 960, 1280] as const;
 
-// Variantes prontas evitam comprimir a foto principal durante o primeiro acesso.
-export function galleryImageLoader({ src, width }: ImageLoaderProps) {
-  const targetWidth = galleryWidths.find((candidate) => candidate >= width) ?? 1280;
-  return src.replace(/-\d+\.webp$/, `-${targetWidth}.webp`);
+// Descritores com a largura real de cada variante pronta, sem compressão na chegada.
+export function galleryImageSrcSet(src: string) {
+  return galleryWidths.map((width) => `${src.replace(/-\d+\.webp$/, `-${width}.webp`)} ${width}w`).join(", ");
 }
 
 export function productPhotography(colors: readonly Color[], format: "gallery" | "offer" = "gallery") {
@@ -30,15 +28,15 @@ export function productPhotography(colors: readonly Color[], format: "gallery" |
 export function includedPhotography(color: Color) {
   return {
     ...galleryImages[`included-${color}`],
-    alt: `Itens de cada AquaBlast ${COLOR_LABELS[color]}: lançador, tambor de água e mira separados, bateria recarregável e cabo USB`,
+    alt: `Itens de cada AquaBlast ${COLOR_LABELS[color]}: lançador, tambor de água e visor separados, bateria recarregável e cabo USB`,
   };
 }
 
 export const overviewPhotography = {
   ...galleryImages.overview,
   label: "AquaBlast",
-  caption: "Mira inclusa, luz LED e tambor de água",
-  alt: "AquaBlast azul completo: lançador de água elétrico, com detalhes da mira inclusa, luz LED frontal e tambor de água",
+  caption: "Visor incluso, luz LED e tambor de água",
+  alt: "AquaBlast azul completo: lançador de água elétrico, com detalhes do visor incluso, luz LED frontal e tambor de água",
 };
 
 const kitPhotographs = {
@@ -56,7 +54,7 @@ export function kitGalleryPhotography(colors: readonly [Color, Color]) {
     ...kitPhotographs[key],
     label: "Kit com 2",
     caption: colors.map((color) => COLOR_LABELS[color]).join(" + "),
-    alt: `Kit com duas AquaBlast nas cores ${colors.map((color) => COLOR_LABELS[color]).join(" e ")}, cada uma com mira e tambor de água`,
+    alt: `Kit com duas AquaBlast nas cores ${colors.map((color) => COLOR_LABELS[color]).join(" e ")}, cada uma com visor e tambor de água`,
   };
 }
 

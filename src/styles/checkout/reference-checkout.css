@@ -1,0 +1,136 @@
+/* Composição de referência: três colunas no desktop, etapas sequenciais no celular.
+   Escopo exclusivo do checkout em andamento; confirmação e políticas mantêm seu layout. */
+.ck.ck-reference { background: #f5f9fb; }
+.ck.ck-reference .ck-main { width: min(1200px, calc(100% - 48px)); max-width: 1200px; padding: 20px 0 48px; }
+.ck.ck-reference .ship-bar { background: var(--c-primary); min-height: 29px; font-size: 11px; }
+.ck.ck-reference .ship-bar-date, .ck.ck-reference .ship-bar > i { display: none; }
+.ck.ck-reference .ck-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "ident pay sum" "delivery pay sum" "seals seals sum";
+  grid-template-rows: auto auto 1fr;
+  gap: 18px;
+  align-items: start;
+  margin-top: 22px;
+}
+.ck.ck-reference .ck-flow, .ck.ck-reference .ck-steps { display: contents; }
+.ck.ck-reference .ck-step { min-width: 0; padding: 22px; margin: 0; border: 1px solid var(--c-line); border-radius: 10px; background: #fff; box-shadow: 0 3px 14px #06376003; }
+.ck.ck-reference .ck-step[data-step="1"] { grid-area: ident; }
+.ck.ck-reference .ck-step[data-step="2"] { grid-area: delivery; }
+.ck.ck-reference .ck-step[data-step="3"] { grid-area: pay; }
+.ck.ck-reference .ck-step.is-current { border-color: color-mix(in srgb, var(--c-accent) 60%, var(--c-line)); }
+.ck.ck-reference .ck-step.is-todo { display: block; background: #ffffffa6; }
+.ck.ck-reference .ck-step.is-done .ck-step-head { display: flex; }
+.ck.ck-reference .ck-step-head { display: flex; gap: 9px; min-height: 24px; margin: 0; align-items: center; }
+.ck.ck-reference .ck-step-head .ck-dot { position: static; display: grid; place-items: center; flex: 0 0 23px; width: 23px; height: 23px; border: 0; box-shadow: none; font-size: 12px; background: var(--c-primary); color: #fff; }
+.ck.ck-reference .is-todo .ck-step-head .ck-dot { color: var(--c-muted); background: #e8eff3; }
+.ck.ck-reference .is-done .ck-step-head .ck-dot { background: var(--c-button); }
+.ck.ck-reference .ck-step-head h3 { font-family: var(--font-text), sans-serif; font-size: 17px; line-height: 1.3; font-weight: 750; color: var(--c-primary); }
+.ck.ck-reference .ck-step.is-todo h3 { color: var(--c-muted); }
+.ck.ck-reference .ck-step-body { padding-top: 0; margin-top: 0; }
+.ck.ck-reference .ck-stage-intro, .ck.ck-reference .ck-stage-preview > p { color: var(--c-muted); font-size: 12px; line-height: 1.5; margin: 10px 0 18px; }
+.ck.ck-reference .ck-stage-lock { display: flex; align-items: center; gap: 6px; margin-top: 14px; color: var(--c-muted); font-size: 11px; line-height: 1.4; }
+.ck.ck-reference .ck-payment-preview { display: grid; gap: 10px; }
+.ck.ck-reference .ck-payment-preview > span { display: flex; align-items: center; gap: 10px; padding: 12px; background: #f7fafc; border: 1px solid var(--c-line); border-radius: 6px; }
+.ck.ck-reference .ck-payment-preview strong { display: block; font-size: 13px; font-weight: 650; }
+.ck.ck-reference .ck-payment-preview small { display: block; font-size: 11px; margin-top: 3px; color: var(--c-muted); }
+.ck.ck-reference .ck-payment-preview svg { flex-shrink: 0; color: var(--c-primary); }
+.ck.ck-reference .form-fields { gap: 15px; }
+.ck.ck-reference .field { padding: 0; gap: 0; border: 0; background: transparent; box-shadow: none; border-radius: 0; min-width: 0; overflow: visible; }
+.ck.ck-reference .field:focus-within { border: 0; box-shadow: none; }
+.ck.ck-reference .field > span { padding: 0; margin: 0 0 6px; font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--c-text); }
+.ck.ck-reference .field input, .ck.ck-reference .field select { width: 100%; height: 43px; min-height: 43px; padding: 9px 11px; border: 1px solid #ccdae3; border-radius: 5px; background: #fff; color: var(--c-text); box-shadow: 0 1px 3px #06376004 inset; font-size: 14px; line-height: 1.4; }
+.ck.ck-reference .field input:focus, .ck.ck-reference .field select:focus { border-color: var(--c-primary); outline: 2px solid color-mix(in srgb, var(--c-accent) 30%, transparent); outline-offset: 1px; }
+.ck.ck-reference .field input::placeholder { color: #7e8f9e; font-size: inherit; }
+.ck.ck-reference .field.is-bad input, .ck.ck-reference .field.is-bad select { border-color: var(--c-timer); }
+.ck.ck-reference .field .field-hint { margin-top: 5px; font-size: 11px; line-height: 1.4; }
+.ck.ck-reference .field .field-error { margin-top: 5px; font-size: 12px; }
+.ck.ck-reference .field .field-ok { top: 42px; right: 12px; }
+.ck.ck-reference .field.is-ok input { padding-right: 33px; }
+.ck.ck-reference .id-row { grid-template-columns: minmax(0, 1fr); gap: 15px; }
+.ck.ck-reference .inline-help { margin: 0; gap: 7px; font-size: 11px; line-height: 1.45; color: var(--c-muted); }
+.ck.ck-reference .inline-help svg { flex: 0 0 14px; }
+.ck.ck-reference .ck-actions { margin-top: 17px; }
+.ck.ck-reference .ck-actions .primary-button { color: #fff; background: var(--c-ok); }
+.ck.ck-reference .ck-actions .primary-button:hover:not(:disabled) { background: var(--c-primary); }
+.ck.ck-reference .ck-actions .primary-button, .ck.ck-reference .ck-pay-btn { width: 100%; min-height: 46px; padding: 12px 16px; border-radius: 6px; font-size: 15px; text-transform: none; letter-spacing: 0; box-shadow: 0 3px 8px color-mix(in srgb, var(--c-button) 15%, transparent); }
+.ck.ck-reference .ck-done { margin-top: 12px; padding: 0; gap: 12px; background: transparent; }
+.ck.ck-reference .ck-done-title { font-size: 13px; }
+.ck.ck-reference .ck-done-info { min-width: 0; overflow-wrap: anywhere; }
+.ck.ck-reference .ck-edit { min-height: 40px; padding: 8px; font-size: 11px; }
+.ck.ck-reference .ck-number-toggle { min-height: 43px; min-width: 105px; border-radius: 5px; font-size: 12px; align-self: end; }
+.ck.ck-reference .delivery-number-district { display: grid; grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr); gap: 12px; align-items: start; }
+.ck.ck-reference .delivery-address-fields > .ck-number-toggle { justify-self: start; min-height: 44px; margin-top: -6px; padding: 8px 12px; font-size: 12px; }
+.ck.ck-reference .cep-row { display: block; }
+.ck.ck-reference .cep-city { font-size: 12px; margin-top: 7px; }
+.ck.ck-reference .ship-opt { padding: 12px; gap: 8px; }
+.ck.ck-reference .ship-name strong, .ck.ck-reference .ship-price b { font-size: 13px; }
+.ck.ck-reference .ship-name small, .ck.ck-reference .ship-price small { font-size: 11px; }
+.ck.ck-reference .ck-reference-reviews { border-top: 1px solid var(--c-line); margin-top: 26px; padding-top: 22px; }
+.ck.ck-reference .ck-reference-reviews h4 { margin: 0 0 20px; font-size: 13px; color: var(--c-primary); }
+.ck.ck-reference .ck-reference-reviews figure { margin: 0 0 23px; }
+.ck.ck-reference .ck-review-stars { display: flex; gap: 3px; color: var(--c-button); }
+.ck.ck-reference .ck-reference-reviews blockquote { margin: 9px 0 11px; color: var(--c-text); font-size: 12px; line-height: 1.55; }
+.ck.ck-reference .ck-reference-reviews figcaption { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--c-muted); }
+.ck.ck-reference .ck-reference-reviews figcaption span { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #e4f3f8; color: var(--c-primary); font-weight: 700; }
+.ck.ck-reference .ck-reference-reviews > a { display: inline-flex; align-items: center; min-height: 34px; color: var(--c-primary); font-size: 11px; text-decoration: underline; text-underline-offset: 3px; }
+.ck.ck-reference .trust-seals { grid-area: seals; margin: 0; border-radius: 10px; }
+.ck.ck-reference .order-summary { grid-area: sum; min-width: 0; position: sticky; top: 20px; }
+.ck.ck-reference .pay-acc { gap: 12px; }
+.ck.ck-reference .payment-content { margin: 0; min-width: 0; }
+.ck.ck-reference .pay-item { border-radius: 7px; }
+.ck.ck-reference .pay-head { gap: 9px; padding: 13px; }
+.ck.ck-reference .pay-body { padding: 14px; }
+.ck.ck-reference .pix-payment-total > strong { font-size: 26px; }
+.ck.ck-reference .ck-card-intro { display: none; }
+.ck.ck-reference .ck-cardform .field-row { gap: 10px; }
+.ck.ck-reference .ck-pix-watch.has-real-qr { display: flex; flex-direction: column; }
+.ck.ck-reference .ck-pix-watch .ck-qr-box { width: min(100%, 240px); margin: auto; }
+.ck.ck-reference .ck-pix-watch .ck-copy-row { flex-direction: column; }
+.ck.ck-reference .ck-pix-watch .ck-copy { width: 100%; }
+.ck.ck-reference .ck-footer { margin-top: 0; }
+
+@media (max-width: 1099px) {
+  .ck.ck-reference .ck-main { width: 100%; max-width: 720px; padding-top: 20px; background: #f0f7fb; }
+  .ck.ck-reference .ck-main > .campaign { width: calc(100% - 40px); margin-inline: 20px; }
+  .ck.ck-reference .ck-progress-wrap { margin-inline: 20px; }
+  .ck.ck-reference .ck-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "sum" "ident" "delivery" "pay" "seals"; gap: 0; }
+  .ck.ck-reference .order-summary { position: static; margin: 0 20px 24px; width: auto; }
+  .ck.ck-reference .ck-step { padding: 24px 24px; border: 0; border-top: 1px solid var(--c-line); border-radius: 0; box-shadow: none; background: #fff; }
+  .ck.ck-reference .ck-step-head h3 { font-size: 20px; }
+  .ck.ck-reference .ck-step-head .ck-dot { width: 24px; height: 24px; flex-basis: 24px; }
+  .ck.ck-reference .ck-stage-intro { font-size: 14px; line-height: 1.5; margin: 14px 0 24px; }
+  .ck.ck-reference .ck-step.is-done { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding-top: 14px; padding-bottom: 14px; }
+  .ck.ck-reference .ck-step.is-done .ck-done { margin: 0; }
+  .ck.ck-reference .ck-step.is-done .ck-done-info { display: none; }
+  .ck.ck-reference .ck-step.is-todo .ck-stage-preview { display: none; }
+  .ck.ck-reference .field > span { font-size: 13px; margin-bottom: 7px; }
+  .ck.ck-reference .field input, .ck.ck-reference .field select { height: 49px; min-height: 49px; border-radius: 6px; font-size: 16px; padding: 12px; }
+  .ck.ck-reference .field .field-ok { top: 45px; }
+  .ck.ck-reference .form-fields, .ck.ck-reference .id-row, .ck.ck-reference .delivery-address-fields { gap: 18px; }
+  .ck.ck-reference .id-row > .field:first-child { width: 70%; }
+  .ck.ck-reference .ck-actions { margin-top: 24px; }
+  .ck.ck-reference .ck-actions .primary-button { min-height: 50px; border-radius: 6px; }
+  .ck.ck-reference .trust-seals { margin: 20px; }
+  .ck.ck-reference .ck-reference-reviews { display: none; }
+  .ck.ck-reference .ck-payment-preview { display: none; }
+  .ck.ck-reference .ck-step.is-todo { padding-top: 16px; padding-bottom: 16px; }
+  .ck.ck-reference .ck-stage-preview > p { margin: 8px 0 0; }
+  .ck.ck-reference .ck-stage-lock { display: none; }
+  .ck.ck-reference .ck-step.is-done .ck-done { align-items: start; }
+  .ck.ck-reference .ck-step.is-done .ck-done-info > span { display: none; }
+}
+@media (max-width: 600px) {
+  .ck.ck-reference .ck-main { width: 100%; padding: 16px 0 24px; }
+  .ck.ck-reference .ck-main > .campaign { width: calc(100% - 32px); margin-inline: 16px; }
+  .ck.ck-reference .ck-progress-wrap { margin-inline: 16px; }
+  .ck.ck-reference .order-summary { margin-inline: 16px; }
+  .ck.ck-reference .ship-bar { min-height: 26px; font-size: 10px; }
+  .ck.ck-reference .ck-grid { margin-top: 15px; }
+  .ck.ck-reference .ck-step { padding: 24px 20px; border-radius: 0; }
+  .ck.ck-reference .ck-step-head h3 { font-size: 19px; }
+  .ck.ck-reference .ck-stage-intro { font-size: 13px; margin-bottom: 22px; }
+  .ck.ck-reference .field .field-hint { font-size: 11px; }
+  .ck.ck-reference .ck-actions .primary-button, .ck.ck-reference .ck-pay-btn { min-height: 48px; }
+  .ck.ck-reference .ck-number-toggle { min-height: 46px; }
+}

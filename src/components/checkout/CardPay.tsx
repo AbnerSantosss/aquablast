@@ -1,14 +1,14 @@
 "use client";
 
 import { CircleAlert, CreditCard, LoaderCircle, LockKeyhole } from "lucide-react";
-import { useId, useRef, useState } from "react";
-import Image from "next/image";
+import { useId, useRef, useState, type ReactNode } from "react";
 import { gatewayTokenizes, tokenizeCard } from "@/lib/gateways/browser";
 import type { GatewayName } from "@/lib/gateways/types";
 import { cardBrandOf, cardLast4, maskCPF, money, onlyDigits, validCardExpiry, validCPF, validLuhn } from "@/lib/checkout/own/masks";
 import { isApiFail, postPay } from "./api";
 import { PaySeals } from "./PaySeals";
 import type { CardFormData } from "./types";
+import styles from "./CardPay.module.css";
 
 const EMPTY = { number: "", name: "", exp: "", cvv: "", cpf: "" };
 type CardKey = keyof typeof EMPTY;
@@ -44,6 +44,7 @@ export function CardPay({
   publicConfig,
   testMode,
   storeName,
+  beforeSubmit,
   onPending,
   onPaid,
 }: {
@@ -59,6 +60,7 @@ export function CardPay({
   publicConfig: Record<string, string>;
   testMode: boolean;
   storeName: string;
+  beforeSubmit?: ReactNode;
   onPending: (publicToken: string) => void;
   onPaid: (publicToken: string) => void;
 }) {
@@ -168,17 +170,14 @@ export function CardPay({
   }
 
   return (
-    <form className="ck-cardform" onSubmit={(e) => void pay(e)} noValidate ref={form}>
-      <div className="ck-card-intro">
-        <Image src="/checkout/payment-card.svg" width={360} height={216} alt="Ilustração de um cartão de crédito" className="ck-card-illustration" />
-        <div><span>SEU PAGAMENTO</span><h4>Praticidade em cada parcela</h4><p>Preencha os dados do cartão e escolha como prefere parcelar.</p></div>
-      </div>
-      <p className="ck-card-warn">
+    <form className={`ck-cardform ${styles.form}`} onSubmit={(e) => void pay(e)} noValidate ref={form}>
+      <p className={styles.notice}>
         {testMode ? (
           <>
             <CircleAlert size={17} aria-hidden="true" />
             <span>
-              Não use um cartão real. Para testar use <b>{TEST_CARD}</b>, validade futura e CVV <b>123</b>.
+              <strong>Ambiente de teste</strong>
+              Não use um cartão real. Use <b className={styles.testNumber}>{TEST_CARD}</b>, validade futura e CVV <b>123</b>.
             </span>
           </>
         ) : (
@@ -188,40 +187,40 @@ export function CardPay({
           </>
         )}
       </p>
-      <div className="form-fields">
-        <label className={`field has-icon${errorField === "number" ? " is-bad" : ""}`}>
-          <CreditCard className="field-icon" size={22} aria-hidden="true" />
-          <span>
-            Número do cartão{brand ? <em className="ck-brand"> · {brand}</em> : null}
+      <div className={styles.fields}>
+        <label className={styles.field}>
+          <span className={styles.label}>
+            <CreditCard size={16} aria-hidden="true" />
+            Número do cartão{brand ? <em className={styles.brand}>{brand}</em> : null}
           </span>
           <input name="cc-number" autoComplete="cc-number" inputMode="numeric" maxLength={19} placeholder="0000 0000 0000 0000" value={f.number} onChange={(e) => set("number", e.target.value)} disabled={busy} required {...errorAttrs("number")} />
           {fieldError("number")}
         </label>
-        <div className="field-row">
-          <label className={`field${errorField === "exp" ? " is-bad" : ""}`}>
+        <div className={styles.shortFields}>
+          <label className={styles.field}>
             <span>Validade</span>
             <input name="cc-exp" autoComplete="cc-exp" inputMode="numeric" maxLength={5} placeholder="MM/AA" value={f.exp} onChange={(e) => set("exp", e.target.value)} disabled={busy} required {...errorAttrs("exp")} />
             {fieldError("exp")}
           </label>
-          <label className={`field${errorField === "cvv" ? " is-bad" : ""}`}>
+          <label className={styles.field}>
             <span>CVV</span>
             <input name="cc-csc" autoComplete="cc-csc" inputMode="numeric" maxLength={4} placeholder="123" value={f.cvv} onChange={(e) => set("cvv", e.target.value)} disabled={busy} required {...errorAttrs("cvv")} />
             {fieldError("cvv")}
           </label>
         </div>
-        <label className={`field${errorField === "name" ? " is-bad" : ""}`}>
+        <label className={styles.field}>
           <span>Nome como no cartão</span>
           <input name="cc-name" autoComplete="cc-name" placeholder="Maria M Silva" value={f.name} onChange={(e) => set("name", e.target.value)} disabled={busy} required {...errorAttrs("name")} />
           {fieldError("name")}
         </label>
-        <label className={`field${errorField === "cpf" ? " is-bad" : ""}`}>
+        <label className={styles.field}>
           <span>CPF do titular do cartão</span>
           <input name="cc-cpf" autoComplete="off" inputMode="numeric" maxLength={14} placeholder="000.000.000-00" value={f.cpf} onChange={(e) => set("cpf", e.target.value)} disabled={busy} required {...errorAttrs("cpf")} />
           {fieldError("cpf")}
         </label>
-        <label className="field">
+        <label className={styles.field}>
           <span>Número de parcelas</span>
-          <select name="cc-installments" className="ck-select inst-select" value={inst} onChange={(e) => setInst(e.target.value)} disabled={busy}>
+          <select name="cc-installments" value={inst} onChange={(e) => setInst(e.target.value)} disabled={busy}>
             {Array.from({ length: max }, (_, i) => i + 1).map((n) => (
               <option key={n} value={String(n)}>
                 {n}x de {money(per(n))} sem juros{n === 1 ? " (total)" : ""}
@@ -236,22 +235,23 @@ export function CardPay({
           {error}
         </p>
       ) : null}
-      <div className="ck-card-payment-total">
+      {beforeSubmit}
+      <div className={`ck-card-payment-total ${styles.total}`}>
         <span>Total no cartão</span>
         <strong>{money(amountCents)}</strong>
         <small>{Number(inst) > 1 ? `${inst}x de ${money(per(Number(inst)))} sem juros` : "Pagamento à vista"}</small>
       </div>
-      <button type="submit" className="primary-button ck-pay-btn" disabled={busy} aria-disabled={blocked || undefined}>
+      <button type="submit" className={`primary-button ck-pay-btn ${styles.submit}`} disabled={busy} aria-disabled={blocked || undefined}>
         {busy ? (
           <>
             <LoaderCircle className="spin" size={19} aria-hidden="true" />
             Processando…
           </>
         ) : (
-          `Pagar ${money(amountCents)}`
+          <><LockKeyhole size={17} aria-hidden="true" />Pagar {money(amountCents)}</>
         )}
       </button>
-      <PaySeals storeName={storeName} />
+      <div className={styles.seals}><PaySeals storeName={storeName} /></div>
     </form>
   );
 }

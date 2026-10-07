@@ -47,24 +47,24 @@ export function StepDados({
           placeholder="voce@exemplo.com"
           value={data.email}
           onChange={onChange}
-          opts={{ type: "email", inputMode: "email", autoComplete: "email", autoCapitalize: "none", autoCorrect: "off", spellCheck: false, maxLength: 160, enterKeyHint: "next", ok: emailOk(data.email), onBlur: onContactBlur, hint: "Confirmação e rastreio do pedido." }}
+          opts={{ type: "email", inputMode: "email", autoComplete: "email", autoCapitalize: "none", autoCorrect: "off", spellCheck: false, maxLength: 160, enterKeyHint: "next", ok: emailOk(data.email), onBlur: onContactBlur }}
         />
         <div className="field-row id-row">
-          <Field
-            name="phone"
-            label="Celular com DDD"
-            placeholder="(00) 00000-0000"
-            value={data.phone}
-            onChange={onChange}
-            opts={{ type: "tel", autoComplete: "tel", inputMode: "tel", maxLength: 20, enterKeyHint: "next", ok: validMobile(data.phone), onBlur: onContactBlur, hint: "Contato para acompanhar a entrega." }}
-          />
           <Field
             name="cpf"
             label="CPF"
             placeholder={cpfMasked ?? "000.000.000-00"}
             value={data.cpf}
             onChange={onChange}
-            opts={{ inputMode: "numeric", maxLength: 14, enterKeyHint: "done", autoComplete: "off", ok: validCPF(data.cpf) || keepCpf, optional: keepCpf, hint: keepCpf ? "CPF já informado. Preencha apenas se quiser alterar." : "Necessário para a entrega do pedido." }}
+            opts={{ inputMode: "numeric", maxLength: 14, enterKeyHint: "next", autoComplete: "off", ok: validCPF(data.cpf) || keepCpf, optional: keepCpf, hint: keepCpf ? "CPF já informado. Preencha apenas se quiser alterar." : undefined }}
+          />
+          <Field
+            name="phone"
+            label="Celular com DDD"
+            placeholder="(00) 00000-0000"
+            value={data.phone}
+            onChange={onChange}
+            opts={{ type: "tel", autoComplete: "tel", inputMode: "tel", maxLength: 20, enterKeyHint: "done", ok: validMobile(data.phone), onBlur: onContactBlur }}
           />
         </div>
         <p className="inline-help">

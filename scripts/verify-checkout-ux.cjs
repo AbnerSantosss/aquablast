@@ -6,7 +6,9 @@
  * Executes the actual TS/TSX modules with TypeScript's installed compiler.
  * Settings are an in-memory fixture built from the defaults' literal AST nodes;
  * the settings module itself is never imported. next/image is replaced with an
- * ordinary <img> for React server rendering. This does not validate mobile CSS,
+ * ordinary <img> for React server rendering. Allowed CSS modules are read as text
+ * and replaced with inert class-name maps; their contents are never executed.
+ * This does not validate mobile CSS,
  * browser interactions, live prices or a real payment.
  */
 const assert = require("node:assert/strict");
@@ -32,6 +34,7 @@ const allowedSources = new Set([
   "components/checkout/CouponField.tsx",
 ]);
 const allowedPackages = new Set(["zod", "react", "react/jsx-runtime", "lucide-react", "node:crypto"]);
+const allowedStyles = new Set(["components/checkout/OrderSummary.module.css", "components/checkout/CouponField.module.css"]);
 const moduleCache = new Map();
 const settingsOverrides = new Map();
 const tests = [];
@@ -118,6 +121,12 @@ function sourceModule(filename) {
     const base = request.startsWith("@/") ? path.join(sourceRoot, request.slice(2)) :
       request.startsWith(".") ? path.resolve(path.dirname(resolved), request) : null;
     assert.ok(base, `package import blocked: ${request}`);
+    if (request.endsWith(".module.css")) {
+      const relativeStyle = path.relative(sourceRoot, base).replaceAll(path.sep, "/");
+      assert.ok(allowedStyles.has(relativeStyle), `style import blocked: ${relativeStyle}`);
+      const styleText = fs.readFileSync(base, "utf8");
+      return Object.freeze(Object.fromEntries([...styleText.matchAll(/\.([A-Za-z_][\w-]*)/g)].map((match) => [match[1], `isolated-${match[1]}`])));
+    }
     const target = [base, `${base}.ts`, `${base}.tsx`].find((candidate) =>
       fs.existsSync(candidate) && fs.statSync(candidate).isFile());
     assert.ok(target, `source import not found: ${request}`);
@@ -134,7 +143,7 @@ const catalog = fromSource("lib/checkout/own/catalog.ts");
 const schemas = fromSource("lib/checkout/own/schemas.ts");
 const pricing = fromSource("lib/checkout/own/pricing.ts");
 const address = fromSource("lib/checkout/own/address-form.ts");
-const { OrderSummary, effectiveSelectionClient } = fromSource("components/checkout/OrderSummary.tsx");
+const { OrderSummary, effectiveSelectionClient, summaryIsExpanded } = fromSource("components/checkout/OrderSummary.tsx");
 const { money } = fromSource("lib/checkout/own/masks.ts");
 const plain = (value) => JSON.parse(JSON.stringify(value));
 const text = (html) => html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -160,9 +169,21 @@ function summary(props) {
 }
 
 function finalTotal(html) {
-  const match = /<div class="ck-final-total">([\s\S]*?)<\/div>/.exec(html);
-  assert.ok(match, "summary must show a semantic final total row");
-  return text(match[1]);
+  const pairs = [...html.matchAll(/<dt>([\s\S]*?)<\/dt>\s*<dd[^>]*>([\s\S]*?)<\/dd>/g)];
+  const total = pairs.find((pair) => /^Total (?:pago|no Pix|no cartão)$/.test(text(pair[1])));
+  assert.ok(total, "summary must show a semantic final total row");
+  return `${text(total[1])} ${text(total[2])}`;
+}
+
+function amountRow(html, label) {
+  const pairs = [...html.matchAll(/<dt>([\s\S]*?)<\/dt>\s*<dd[^>]*>([\s\S]*?)<\/dd>/g)];
+  const row = pairs.find((pair) => text(pair[1]) === label);
+  assert.ok(row, `summary must contain the ${label} row`);
+  return text(row[2]);
+}
+
+function productRows(html) {
+  return [...html.matchAll(/<li\b([^>]*data-summary-unit="\d+"[^>]*)>([\s\S]*?)<\/li>/g)].map((match) => ({ attrs: attributes(match[1]), html: match[2] }));
 }
 
 function checkDelivery(html) {
@@ -310,19 +331,56 @@ test("general/unavailable CEP fallback cannot inherit the former city or number"
   assert.equal(partial.recipient, oldAddress.recipient);
 });
 
-test("summary disclosure is a semantic non-submit button with a valid target", async () => {
+test("mobile summary starts compact with a semantic non-submit button and valid target", async () => {
   const quotes = await pricing.quoteBoth("unit", false, 12);
   const html = summary({ selection: { pack: "unit", colors: ["azul"] }, quotes });
-  const tag = /<button\b[^>]*class="ck-summary-toggle"[^>]*>/.exec(html);
+  const tag = [...html.matchAll(/<button\b[^>]*>/g)].find((match) => attributes(match[0])["aria-controls"] === "checkout-summary-details");
   assert.ok(tag, "summary must expose a button");
   const attrs = attributes(tag[0]);
   assert.equal(attrs.type, "button");
-  assert.equal(attrs["aria-expanded"], "false");
+  assert.equal(attrs["aria-expanded"], "false", "the mobile reference starts with title, total and delivery benefit");
+  assert.match(html, /<aside\b[^>]*data-expanded="false"/);
   assert.ok(attrs["aria-controls"]);
   assert.ok(html.includes(`id="${attrs["aria-controls"]}"`));
+  assert.match(html, /<div\b[^>]*id="checkout-summary-details"[^>]*hidden=""/);
   assert.ok(text(html).includes(cleanMoney(money(quotes.pix.amountCents))));
   assert.ok(finalTotal(html).includes(cleanMoney(money(quotes.pix.amountCents))));
   checkDelivery(html);
+});
+
+test("summary disclosure follows the viewport only until the customer chooses", () => {
+  assert.equal(summaryIsExpanded(null, true, false), false, "mobile starts collapsed");
+  assert.equal(summaryIsExpanded(null, false, false), true, "desktop starts expanded");
+  for (const mobile of [true, false]) {
+    assert.equal(summaryIsExpanded(true, mobile, false), true, "opening survives resize/quote renders");
+    assert.equal(summaryIsExpanded(false, mobile, false), false, "closing survives resize/quote renders");
+    assert.equal(summaryIsExpanded(null, mobile, true), true, "paid summary starts open");
+  }
+});
+
+test("inline coupon and totals precede products, with delivery benefit outside the disclosure", async () => {
+  const html = summary({ selection: { pack: "kit", colors: ["azul", "preto"] }, quotes: await pricing.quoteBoth("kit", false, 12), onCouponApply: async () => null });
+  const couponPosition = html.indexOf('aria-label="Cupom de desconto"');
+  const totalPosition = html.indexOf("Total no Pix</dt>");
+  const productPosition = html.indexOf('aria-label="Produtos e cores escolhidas"');
+  assert.ok(couponPosition > 0 && couponPosition < totalPosition && totalPosition < productPosition);
+  assert.match(html, /<label[^>]*for="checkout-coupon"[^>]*>Tem um cupom\?<\/label>/);
+  assert.match(html, /<button[^>]*type="submit"[^>]*>Adicionar<\/button>/);
+  assert.match(html, /<input[^>]*id="checkout-coupon"[^>]*name="coupon"/);
+  assert.ok(!html.includes("<dialog"), "the coupon is inline rather than behind a modal");
+  const detailsStart = html.indexOf('id="checkout-summary-details"');
+  const openStart = html.lastIndexOf("<div", detailsStart);
+  let depth = 0;
+  let detailsEnd = -1;
+  for (const tag of html.slice(openStart).matchAll(/<\/?div\b[^>]*>/g)) {
+    depth += tag[0].startsWith("</") ? -1 : 1;
+    if (depth === 0) { detailsEnd = openStart + tag.index + tag[0].length; break; }
+  }
+  assert.ok(detailsEnd > openStart);
+  const benefitPosition = html.indexOf('data-summary-benefit="shipping"');
+  assert.ok(benefitPosition > detailsEnd, "delivery benefit remains outside the hidden disclosure");
+  assert.match(html, /Seu pedido tem <strong>frete grátis<\/strong>/);
+  assert.ok(!/cashback|brinde/i.test(text(html)), "no fictional reference promotion is copied");
 });
 
 for (const selectedColors of [["azul", "preto"], ["vermelho", "vermelho"]]) {
@@ -330,10 +388,15 @@ for (const selectedColors of [["azul", "preto"], ["vermelho", "vermelho"]]) {
     const quotes = await pricing.quoteBoth("kit", false, 12);
     const html = summary({ selection: { pack: "kit", colors: selectedColors }, quotes });
     const images = [...html.matchAll(/<img\b[^>]*>/g)].map((match) => attributes(match[0]));
+    const rows = productRows(html);
     assert.equal(images.length, 2, "kit must render two separate product images");
+    assert.equal(rows.length, 2, "each unit must have its own semantic product row");
     selectedColors.forEach((color, index) => {
       assert.equal(images[index].src, `/thumbs/produto-${color}-110.webp`);
-      assert.match(images[index].alt, new RegExp(`^${index + 1}[ºª] AquaBlast ${constants.COLOR_LABELS[color].toLowerCase()}$`));
+      assert.equal(images[index].alt, `AquaBlast ${constants.COLOR_LABELS[color].toLowerCase()}`);
+      assert.equal(rows[index].attrs["data-summary-unit"], String(index + 1));
+      assert.equal(rows[index].attrs["data-summary-color"], color);
+      assert.ok(text(rows[index].html).includes(`${index + 1}ª unidade · ${constants.COLOR_LABELS[color]}`));
     });
     assert.ok(finalTotal(html).includes(cleanMoney(money(quotes.pix.amountCents))));
     checkDelivery(html);
@@ -355,9 +418,10 @@ test("pending bump includes its price and delivery without inventing a second co
   const html = summary({ selection, bump: true, bumpColor: null, quotes });
   const images = [...html.matchAll(/<img\b[^>]*>/g)];
   assert.equal(images.length, 1);
-  const bumpRow = /<div class="bump-summary">([\s\S]*?)<\/div>/.exec(html);
+  const bumpRow = /<div\b[^>]*data-summary-bump="pending"[^>]*>([\s\S]*?)<\/div>/.exec(html);
   assert.ok(bumpRow, "a pending bump must remain visible in the summary");
   assert.ok(text(bumpRow[1]).includes(cleanMoney(money(quotes.pix.bumpDeltaCents))));
+  assert.ok(text(bumpRow[1]).includes("falta escolher a cor"));
   assert.ok(finalTotal(html).includes(cleanMoney(money(quotes.pix.amountCents))));
   checkDelivery(html);
 });
@@ -369,7 +433,34 @@ test("confirmed bump renders the chosen second color rather than repeating the f
   const images = [...html.matchAll(/<img\b[^>]*>/g)].map((match) => attributes(match[0]));
   assert.equal(images.length, 2);
   assert.equal(images[1].src, "/thumbs/produto-vermelho-110.webp");
-  assert.match(images[1].alt, /^2[ºª] AquaBlast vermelho$/);
+  assert.equal(images[1].alt, "AquaBlast vermelho");
+  const rows = productRows(html);
+  assert.equal(rows[1].attrs["data-summary-unit"], "2");
+  assert.equal(rows[1].attrs["data-summary-color"], "vermelho");
+  assert.match(html, /data-summary-bump="confirmed"/);
+});
+
+test("summary separates the server Pix discount from the coupon without double counting", async () => {
+  settingsOverrides.set("checkout.testCoupon", { enabled: true, code: "TESTE", pixCents: 500 });
+  try {
+    const quotes = await pricing.quoteBoth("kit", false, 12, "TESTE");
+    const html = summary({ selection: { pack: "kit", colors: ["azul", "preto"] }, quotes, coupon: "TESTE", onCouponApply: async () => null });
+    assert.equal(amountRow(html, "Produtos"), cleanMoney(money(27990)));
+    assert.equal(amountRow(html, "Desconto no Pix"), `− ${cleanMoney(money(3000))}`);
+    assert.equal(amountRow(html, "Desconto do cupom no Pix"), `− ${cleanMoney(money(24490))}`);
+    assert.equal(finalTotal(html), `Total no Pix ${cleanMoney(money(500))}`);
+    assert.match(html, /Cupom aplicado ao pagamento no Pix/);
+    checkDelivery(html);
+  } finally { settingsOverrides.clear(); }
+});
+
+test("Pix-only summary uses its quote without inventing a card discount", async () => {
+  const quotes = await pricing.quoteBoth("unit", false, 12);
+  const html = summary({ selection: { pack: "unit", colors: ["azul"] }, quotes, cardEnabled: false });
+  assert.equal(amountRow(html, "Produtos"), cleanMoney(money(quotes.pix.amountCents)));
+  assert.equal(finalTotal(html), `Total no Pix ${cleanMoney(money(quotes.pix.amountCents))}`);
+  assert.ok(!text(html).includes("Desconto no Pix"));
+  assert.ok(!text(html).includes("sem juros no cartão"));
 });
 
 test("paid summary uses the paid amount, not the current quote", async () => {

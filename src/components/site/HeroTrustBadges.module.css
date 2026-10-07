@@ -128,3 +128,12 @@
     transition: none;
   }
 }
+
+@media (max-width: 900px) {
+  .trust.trust { padding-top: 7px; }
+  .trust .item { gap: 4px; padding: 3px 4px 5px; }
+  .trust .emblem { flex-basis: 28px; width: 28px; height: 28px; }
+  .trust .emblem svg { width: 17px; height: 17px; }
+  .trust .title { font-size: 10px; }
+  .trust .description { font-size: 9px; }
+}

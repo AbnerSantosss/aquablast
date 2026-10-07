@@ -11,7 +11,7 @@ type PhotoCallout = {
 const callouts: readonly (readonly PhotoCallout[])[] = [
   [
     { label: "Lançador", x: 37, y: 8, targetX: 43, targetY: 29 },
-    { label: "Mira inclusa", x: 82, y: 8, targetX: 83, targetY: 25 },
+    { label: "Visor incluso", x: 82, y: 8, targetX: 83, targetY: 25 },
     { label: "Bateria", x: 17, y: 91, targetX: 18, targetY: 65 },
     { label: "Cabo USB", x: 46, y: 91, targetX: 35, targetY: 73 },
     { label: "Tambor de água", x: 77, y: 91, targetX: 79, targetY: 68 },

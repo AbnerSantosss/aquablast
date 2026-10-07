@@ -6,6 +6,13 @@ import type { CheckoutPack } from "./catalog";
 import { normalizeCoupon, quoteBoth, type Quote } from "./pricing";
 import { getTheme } from "./theme-server";
 import type { Theme } from "./theme";
+import { reviews } from "@/data/reviews";
+import type { CheckoutReview } from "@/components/checkout/CheckoutReviews";
+
+const checkoutReviews: CheckoutReview[] = ["review-carlos", "review-elcio"]
+  .map((id) => reviews.find((review) => review.id === id))
+  .filter((review) => review !== undefined)
+  .map(({ id, score, author, avatar, comment }) => ({ id, score, author, avatar, comment }));
 
 /**
  * Props do `<Checkout />` montadas no servidor (plano 8.8). Usado por `/checkout` (carrinho novo) e por
@@ -32,6 +39,7 @@ export interface CheckoutServerProps {
   support: { href: string; external: boolean };
   /** `ads.consentRequired`: desligado, o banner de cookies não aparece e os identificadores de anúncio vão sempre. */
   consentRequired: boolean;
+  checkoutReviews: CheckoutReview[];
 }
 
 export async function loadCheckoutProps(pack: CheckoutPack, bump: boolean, couponRaw?: string): Promise<{ mode: "proprio" | "zedy"; props: CheckoutServerProps }> {
@@ -54,6 +62,6 @@ export async function loadCheckoutProps(pack: CheckoutPack, bump: boolean, coupo
 
   return {
     mode,
-    props: { theme, methods, maxInstallments, pixTtlSeconds, bumpEnabled, pixGateway: pixGw?.name ?? null, cardGateway: cardGw?.name ?? null, cardPublicConfig, cardPending, quotesInitial, coupon, support, consentRequired: s["ads.consentRequired"] !== false },
+    props: { theme, methods, maxInstallments, pixTtlSeconds, bumpEnabled, pixGateway: pixGw?.name ?? null, cardGateway: cardGw?.name ?? null, cardPublicConfig, cardPending, quotesInitial, coupon, support, consentRequired: s["ads.consentRequired"] !== false, checkoutReviews },
   };
 }

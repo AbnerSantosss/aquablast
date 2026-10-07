@@ -2,12 +2,13 @@
 
 import Image from "next/image";
 import { Check, CircleAlert, Copy, LoaderCircle, RefreshCw, Timer, Smartphone, ArrowRight } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { money } from "@/lib/checkout/own/masks";
 import { getStatus, isApiFail, postPay, postSimulatePaid } from "./api";
 import { DemoQr } from "./PaySeals";
 import type { PixResult } from "./types";
 import { pad2, ttlLabel, useClock } from "./useClock";
+import styles from "./PixPay.module.css";
 
 /**
  * Gera o Pix e consulta a confirmação a cada 5 s (15 s após o vencimento).
@@ -26,6 +27,7 @@ export function PixPay({
   testMode,
   storeName,
   onPaid,
+  beforeSubmit,
 }: {
   cartToken: string;
   bump: boolean;
@@ -40,6 +42,7 @@ export function PixPay({
   testMode: boolean;
   storeName: string;
   onPaid: (publicToken: string) => void;
+  beforeSubmit?: ReactNode;
 }) {
   const [phase, setPhase] = useState<"idle" | "loading" | "ready">("idle");
   const [pix, setPix] = useState<(PixResult & { publicToken: string; localExpiresMs: number }) | null>(null);
@@ -176,14 +179,14 @@ export function PixPay({
   ) : null;
 
   const amount = (
-    <div className="pix-payment-total">
+    <div className={`${styles.amount} pix-payment-total`}>
       <span>Total a pagar no Pix</span>
       <strong>{money(amountCents)}</strong>
       <small>Compra em {storeName} · pagamento à vista</small>
     </div>
   );
   const instructions = (
-    <ol className="pix-instructions">
+    <ol className={`${styles.instructions} pix-instructions`}>
       <li><span>1</span><p>Copie o código Pix.</p></li>
       <li><span>2</span><p>No app do banco, escolha <b>Pix Copia e Cola</b>.</p></li>
       <li><span>3</span><p>Confira os dados e confirme o pagamento.</p></li>
@@ -191,8 +194,8 @@ export function PixPay({
   );
 
   const verifyPayment = (
-    <div className="pix-check-payment">
-      <button type="button" className="pix-status-check" onClick={() => void checkStatusRef.current?.()} disabled={checkingStatus}>
+    <div className={`${styles.verify} pix-check-payment`}>
+      <button type="button" className={`${styles.verifyButton} pix-status-check`} onClick={() => void checkStatusRef.current?.()} disabled={checkingStatus}>
         {checkingStatus ? <LoaderCircle className="spin" size={17} aria-hidden="true" /> : <RefreshCw size={17} aria-hidden="true" />}
         {checkingStatus ? "Verificando pagamento…" : "Já paguei. Verificar pagamento"}
       </button>
@@ -202,14 +205,15 @@ export function PixPay({
 
   if (phase !== "ready" || !pix) {
     return (
-      <div className="pix-payment pix-payment-start" aria-busy={phase === "loading"}>
+      <div className={`${styles.payment} pix-payment pix-payment-start`} aria-busy={phase === "loading"}>
         {amount}
         <div className="pix-bank-guide">
           <Smartphone size={23} aria-hidden="true" />
           <div><strong>Pague pelo aplicativo do seu banco</strong><p>Gere o código, copie e cole no app. A confirmação aparece aqui após o pagamento.</p></div>
         </div>
         {errorBox}
-        <button type="button" className="pix-primary" onClick={() => void generate()} disabled={phase === "loading"} aria-disabled={blocked || undefined}>
+        {beforeSubmit}
+        <button type="button" className={`${styles.primary} pix-primary`} onClick={() => void generate()} disabled={phase === "loading"} aria-disabled={blocked || undefined}>
           {phase === "loading" ? <><LoaderCircle className="spin" size={18} aria-hidden="true" />Gerando código…</> : <>Gerar Pix de {money(amountCents)}<ArrowRight size={18} aria-hidden="true" /></>}
         </button>
         <p className="pix-footnote"><Timer size={15} aria-hidden="true" />Válido por {ttl} após a geração.</p>
@@ -219,12 +223,12 @@ export function PixPay({
 
   if (paymentStatus !== "pending") {
     return (
-      <div className="pix-payment pix-payment-expired">
+      <div className={`${styles.payment} pix-payment pix-payment-expired`}>
         <span className="pix-expired-icon"><CircleAlert size={26} aria-hidden="true" /></span>
         <h4>{paymentStatus === "canceled" ? "Este código foi cancelado" : "Pagamento não aprovado"}</h4>
         <p>Você pode gerar outro código para pagar <b>{money(amountCents)}</b>. Se já pagou, confira o pagamento no app do banco antes de gerar um novo.</p>
         {errorBox}
-        <button type="button" className="pix-primary" onClick={() => void generate()}><RefreshCw size={18} aria-hidden="true" />Gerar novo Pix de {money(amountCents)}</button>
+        <button type="button" className={`${styles.primary} pix-primary`} onClick={() => void generate()}><RefreshCw size={18} aria-hidden="true" />Gerar novo Pix de {money(amountCents)}</button>
         {verifyPayment}
       </div>
     );
@@ -232,12 +236,12 @@ export function PixPay({
 
   if (expired) {
     return (
-      <div className="pix-payment pix-payment-expired">
+      <div className={`${styles.payment} pix-payment pix-payment-expired`}>
         <span className="pix-expired-icon"><Timer size={26} aria-hidden="true" /></span>
         <h4>Vamos gerar um novo código?</h4>
         <p>O código anterior expirou. Gere outro para continuar o pagamento de <b>{money(amountCents)}</b>.</p>
         {errorBox}
-        <button type="button" className="pix-primary" onClick={() => void generate()}><RefreshCw size={18} aria-hidden="true" />Gerar novo código Pix</button>
+        <button type="button" className={`${styles.primary} pix-primary`} onClick={() => void generate()}><RefreshCw size={18} aria-hidden="true" />Gerar novo código Pix</button>
         <small>Se você já pagou, confira a confirmação no aplicativo do banco antes de tentar novamente.</small>
         {verifyPayment}
       </div>
@@ -245,26 +249,40 @@ export function PixPay({
   }
 
   return (
-    <div className="pix-payment pix-payment-ready">
-      <div className="pix-payment-status" role="status"><span />Aguardando pagamento{testMode ? " · demonstração" : ""}</div>
-      {amount}
-      <div className="pix-code-area">
+    <div className={`${styles.payment} ${styles.ready} pix-payment pix-payment-ready`}>
+      <header className={styles.header}>
+        <h4>Seu Pix foi gerado</h4>
+        <div className={styles.status} role="status"><span aria-hidden="true" />Aguardando pagamento{testMode ? " · demonstração" : ""}</div>
+        <p>Após pagar no app do banco, volte a esta tela. Seu pedido será confirmado assim que recebermos o pagamento.</p>
+      </header>
+      <div className={styles.timer} aria-live="off">
+        <span><Timer size={15} aria-hidden="true" />Este código expira em</span>
+        <strong className={styles.countdown} aria-label={`${Math.floor(left / 60)} minutos e ${left % 60} segundos`}>
+          {pad2(Math.floor(left / 60))}<i aria-hidden="true">:</i>{pad2(left % 60)}
+        </strong>
+        <small>Tempo restante para pagar este Pix</small>
+      </div>
+      <div className={styles.readyAmount}>
+        <span>Valor no Pix</span><strong>{money(amountCents)}</strong>
+      </div>
+      <div className={styles.copyArea}>
         <label htmlFor="checkout-pix-code">Pix Copia e Cola</label>
-        <input id="checkout-pix-code" name="pix-code" readOnly value={pix.code} onFocus={(e) => e.currentTarget.select()} />
-        <button type="button" className="pix-primary" onClick={() => void copy()}>
+        <input id="checkout-pix-code" name="pix-code" readOnly value={pix.code} onFocus={(e) => e.currentTarget.select()} spellCheck={false} aria-describedby="checkout-pix-copy-help" />
+        <button type="button" className={`${styles.primary} pix-primary`} onClick={() => void copy()}>
           {copyMsg?.ok ? <Check size={19} aria-hidden="true" /> : <Copy size={19} aria-hidden="true" />}
           {copyMsg?.ok ? "Código copiado" : "Copiar código Pix"}
         </button>
+        <p id="checkout-pix-copy-help" className={styles.copyHelp}>Cole o código no Pix Copia e Cola do seu banco.</p>
         {copyMsg ? <p role="status" className={copyMsg.ok ? "pix-copy-feedback" : "error"}>{copyMsg.ok ? "Agora abra o app do banco e cole o código." : copyMsg.text}</p> : null}
-        <p className="pix-validity" aria-live="off"><Timer size={15} aria-hidden="true" />Código válido por <b>{pad2(Math.floor(left / 60))}:{pad2(left % 60)}</b></p>
       </div>
-      {instructions}
-      {testMode || pix.qrUrl ? <div className="pix-qr-content">
+      {testMode || pix.qrUrl ? <div className={`${styles.qr} pix-qr-content`}>
+        <h5>Ou pague pelo QR Code</h5>
         {testMode ? <DemoQr seed={pix.code} /> : <Image src={pix.qrUrl!} width={224} height={224} unoptimized alt="QR Code para pagar com Pix" />}
         <p>{testMode ? "Imagem de demonstração. Não efetue pagamento." : "Em outro aparelho? Escaneie o QR Code com o app do banco."}</p>
       </div> : null}
-      <p className="pix-footnote">Após pagar, volte a esta página para acompanhar a confirmação.</p>
+      {instructions}
       {verifyPayment}
+      <p className={styles.storeNote}>Compra em {storeName}. Antes de pagar, confira o valor e os dados exibidos no app do banco.</p>
       {errorBox}
       {testMode ? <button type="button" className="pix-test-action" onClick={() => void simulatePaid()} disabled={simulating}>{simulating ? "Simulando…" : "Simular pagamento aprovado"}</button> : null}
     </div>

@@ -33,7 +33,7 @@ export function HeroBuyPanel({ onSelectionChange }: HeroBuyPanelProps) {
       <a className="summer-rating" href="#avaliacoes">
         <span aria-hidden="true">★★★★★</span>
         <strong data-hero-review-average>{summary.averageText}</strong>
-        <span data-hero-review-count>675 avaliações</span>
+        <span data-hero-review-count>{summary.countText}</span>
       </a>
       <p className="summer-description">Disparos sequenciais, luz LED amarela e bateria recarregável por USB.</p>
       <div className="summer-price" aria-live="polite">
@@ -68,7 +68,7 @@ export function HeroBuyPanel({ onSelectionChange }: HeroBuyPanelProps) {
           <span>{PRICES.unit.pix} no Pix</span>
         </button>
       </div>
-      <KitColorGuide openRequest={guideRequest} showSummary={pair} onSelectionChange={() => onSelectionChange("color")} />
+      <KitColorGuide openRequest={guideRequest} showSummary={pair && (guideRequest > 0 || kitReady)} onSelectionChange={() => onSelectionChange("color")} />
       <UnitColorGuide openRequest={unitGuideRequest} onSelectionChange={() => onSelectionChange("color")} />
       {!pair ? (
         <button id="hero-unit-guide-trigger" type="button" className="button button-green summer-buy-button" aria-haspopup="dialog" onClick={openUnitGuide}>
@@ -76,7 +76,7 @@ export function HeroBuyPanel({ onSelectionChange }: HeroBuyPanelProps) {
         </button>
       ) : !kitReady ? (
         <button id="hero-kit-guide-trigger" type="button" className="button button-green summer-buy-button" aria-haspopup="dialog" onClick={openKitGuide}>
-          Escolher cores do kit
+          Quero meu kit
         </button>
       ) : (
         <PurchaseLink direct pack={pack} className="button button-green summer-buy-button">

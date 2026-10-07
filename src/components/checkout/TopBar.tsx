@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Droplets, LockKeyhole } from "lucide-react";
+import { Droplets, ShieldCheck } from "lucide-react";
 import type { Theme } from "@/lib/checkout/own/theme";
+import styles from "./TopBar.module.css";
 
 export function Brand({ storeName }: { storeName: string }) {
   return (
@@ -14,9 +15,9 @@ export function Brand({ storeName }: { storeName: string }) {
 /** A oferta de verão não tem data nem contagem regressiva. */
 export function TopBar({ theme }: { theme: Theme }) {
   return (
-    <header className="ck-top">
+    <header className={`${styles.top} ck-top`}>
       <Brand storeName={theme.storeName} />
-      <div className="ck-season-badge"><LockKeyhole size={16} aria-hidden="true" /><span>Checkout AquaBlast</span></div>
+      <div className={`${styles.protection} ck-season-badge`}><ShieldCheck size={20} aria-hidden="true" /><span>Ambiente <strong>protegido</strong></span></div>
     </header>
   );
 }

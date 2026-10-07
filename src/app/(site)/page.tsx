@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Accessories } from "@/components/site/Accessories";
 import { DeliveryTicker, SkipLink } from "@/components/site/Announcement";
 import { Faq } from "@/components/site/Faq";
@@ -50,12 +51,25 @@ export const metadata: Metadata = {
   },
 };
 
-/** Landing page do AquaBlast — porta 1:1 do index.html original. */
-export default async function HomePage() {
+// Somente os trechos que usam o contato aguardam o banco. O cache por render de
+// getSupportWhatsapp compartilha a leitura entre ambos, sem atrasar a galeria.
+async function HomeJsonLd() {
   const whatsapp = await getSupportWhatsapp();
+  return <JsonLd whatsapp={whatsapp} />;
+}
+
+async function HomeFooter() {
+  const whatsapp = await getSupportWhatsapp();
+  return <Footer whatsapp={whatsapp} />;
+}
+
+/** Landing page do AquaBlast — porta 1:1 do index.html original. */
+export default function HomePage() {
   return (
     <>
-      <JsonLd whatsapp={whatsapp} />
+      <Suspense fallback={null}>
+        <HomeJsonLd />
+      </Suspense>
       <div className="aquablast-home">
         <SkipLink />
         <DeliveryTicker />
@@ -73,7 +87,9 @@ export default async function HomePage() {
               <Faq />
               <SummerClosing />
             </main>
-            <Footer whatsapp={whatsapp} />
+            <Suspense fallback={<Footer />}>
+              <HomeFooter />
+            </Suspense>
             <MobileBuy />
             <ReviewViewer />
           </ReviewViewerProvider>

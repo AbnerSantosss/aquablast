@@ -23,11 +23,17 @@
 .summer-trust { display: flex; justify-content: space-between; gap: 6px; font-size: 11px; color: var(--muted); }.summer-trust >* { display: flex; align-items: center; gap: 5px; }.summer-trust svg { flex-shrink: 0; color: var(--green); }
 .summer-hero button:focus-visible,.summer-hero a:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
 .aquablast-home .summer-mobile-buy { display: none; }
+.aquablast-home .summer-mobile-buy[hidden] { display: none; }
 @media(max-width: 900px) {
   .aquablast-home #conteudo { display: block; }.aquablast-home #conteudo >* { order: initial; }
   .summer-product.container { width: calc(100% - 28px); gap: 12px; grid-template-columns: 1fr; max-width: 600px; }
   #inicio.summer-hero { padding: 10px 0 22px; }
   .summer-photo { border-radius: 12px; }
+  .summer-photo {
+    /* Reduz altura e largura juntas: arte e balões mantêm a mesma proporção. */
+    width: min(100%, calc(clamp(150px, calc(100svh - 475px), 240px) * var(--photo-ratio, 1.5)));
+    margin-inline: auto;
+  }
   #inicio .summer-buy { gap: 8px; }.summer-thumbs { padding-top: 6px; gap: 6px; }.summer-thumbs button { width: 44px; height: 44px; flex-basis: 44px; }
   #inicio #hero-title { font-size: 25px; }.summer-eyebrow { display: none; }
   .summer-price { padding-block: 0; }.summer-price strong { font-size: 32px; }
