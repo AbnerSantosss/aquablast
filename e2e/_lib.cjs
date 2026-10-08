@@ -151,6 +151,10 @@ async function revealSummary(page) {
   await page.locator(".ck-summary-details").waitFor({ state: "visible", timeout: 5000 });
 }
 
+/** Compact Pix controls shared by checkout and pending order. */
+const pixCountdown = (page) => page.locator('[data-pix-countdown]');
+const pixCopy = (page) => page.locator('[data-pix-copy]');
+
 async function fillEntrega(page, { manual = false, extra, recipient } = {}) {
   await field(page, "cep").fill(endereco.cep);
   await field(page, "street").waitFor({ state: "visible", timeout: 10000 });
@@ -234,5 +238,6 @@ module.exports = {
   BASE, OUT, cliente, endereco, CARD_OK, CARD_REFUSED, CARD_BAD_LUHN, assert, withDb,
   open, checkNetwork, noHorizontalScroll, shot, field, btn, waitText,
   fillDados, submitDados, fillEntrega, submitEntrega, submitCurrentForm, revealEntregaField, revealSummary, goCheckout, toPayment, cartTokenOf, payHead, choosePix,
+  pixCountdown, pixCopy,
   clearRateLimits, setSetting, deleteSetting, scenario,
 };

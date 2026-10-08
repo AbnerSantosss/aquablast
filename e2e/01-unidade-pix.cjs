@@ -81,11 +81,11 @@ async function run(variant = { width: 1440, height: 900, tag: "desktop" }) {
     // A geração informa o total real; depois mantém validade e cópia visíveis.
     await L.btn(page, "Gerar Pix de R$ 249,90").click();
     const code = L.field(page, "pix-code");
-    await code.waitFor({ timeout: 15000 });
+    await code.waitFor({ state: "attached", timeout: 15000 });
     assert.match(await code.inputValue(), /^SIMULADO-NAO-PAGUE-sim_/);
-    await L.waitText(page.locator(".pix-validity"), /Código válido por (10:00|09:[45]\d)/);
-    await page.locator(".pix-code-area .pix-primary").click();
-    await L.waitText(page.locator(".pix-code-area .pix-primary"), "Código copiado");
+    await L.waitText(page.locator("[data-pix-countdown]"), /^(10:00|09:[45]\d)$/);
+    await page.locator("[data-pix-copy]").click();
+    await L.waitText(page.locator("[data-pix-copy]"), "Código copiado");
     await L.shot(page, `c1-${variant.tag}-4-pix-gerado`);
 
     await L.btn(page, "Simular pagamento aprovado").click();

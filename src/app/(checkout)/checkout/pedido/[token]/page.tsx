@@ -188,7 +188,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ token: 
           </p>
           <p>{body}</p>
           {showPixWatch && order.pixCode ? (
-            <PixWatch code={order.pixCode} qrUrl={pixQrForScreen(order.pixCode, order.pixQrUrl)} expiresAt={order.pixExpiresAt!.toISOString()} publicToken={token} />
+            <PixWatch amountCents={Math.round(Number(order.amountTotal ?? "0") * 100)} code={order.pixCode} qrUrl={pixQrForScreen(order.pixCode, order.pixQrUrl)} expiresAt={order.pixExpiresAt!.toISOString()} publicToken={token} />
           ) : null}
           {whatsapp ? (
             <p>

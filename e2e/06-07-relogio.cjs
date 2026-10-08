@@ -35,13 +35,13 @@ async function pixExpira(variant) {
     await gerando.waitFor({ timeout: 3000 });
     assert.ok(await gerando.isDisabled(), "botao deveria ficar desabilitado enquanto gera");
     const code = L.field(page, "pix-code");
-    await code.waitFor({ timeout: 15000 });
+    await code.waitFor({ state: "attached", timeout: 15000 });
     assert.match(await code.inputValue(), /^SIMULADO-NAO-PAGUE-sim_/);
     await page.clock.fastForward("10:01");
     await L.waitText(page.locator(".pix-payment-expired"), "Vamos gerar um novo código?");
     await L.shot(page, `c7-${variant.tag}-pix-expirado`);
     await L.btn(page, "Gerar novo código Pix").click();
-    await L.waitText(page.locator(".pix-validity b"), /^(10:00|09:5\d)$/, 15000);
+    await L.waitText(page.locator("[data-pix-countdown]"), /^(10:00|09:5\d)$/, 15000);
     L.checkNetwork(requests);
     assert.deepEqual(pageErrors, []);
   } finally {

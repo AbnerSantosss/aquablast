@@ -153,12 +153,12 @@ async function c19a() {
     const fromApi = await decodeQr(page, body.pix.qrUrl);
     if (fromApi !== null) assert.equal(fromApi, body.pix.code, "QR da resposta decodifica diferente do copia-e-cola");
     const code = L.field(page, "pix-code");
-    await code.waitFor({ timeout: 15000 });
+    await code.waitFor({ state: "attached", timeout: 15000 });
     assert.equal(await code.inputValue(), body.pix.code);
-    await page.locator(".pix-qr-content").waitFor({ state: "visible" });
-    const copyBox = await page.locator(".pix-code-area .pix-primary").boundingBox();
-    const readyQrBox = await page.locator(".pix-qr-content").boundingBox();
-    assert.ok(copyBox && readyQrBox && copyBox.y + copyBox.height <= readyQrBox.y, "copia-e-cola aparece antes do QR na etapa de pagamento");
+    await page.locator("[data-pix-qr]").waitFor({ state: "visible" });
+    const copyBox = await page.locator("[data-pix-copy]").boundingBox();
+    const readyQrBox = await page.locator("[data-pix-qr]").boundingBox();
+    assert.ok(copyBox && readyQrBox && readyQrBox.y >= 0 && readyQrBox.y + readyQrBox.height <= copyBox.y && copyBox.y + copyBox.height <= page.viewportSize().height, "QR e copiar Pix cabem na altura da tela");
 
     // Banco: carrinho com as duas cores, pedido com o kit azul + vermelho.
     const token = await L.cartTokenOf(page);
@@ -175,13 +175,13 @@ async function c19a() {
 
     // Pedido retomado (PixWatch): QR real visivel e igual ao codigo.
     await page.goto(`${L.BASE}/checkout/pedido/${order.public_token}`, { waitUntil: "networkidle" });
-    const img = page.locator(".ck-qr-real img");
+    const img = page.locator("[data-pix-qr] img");
     await img.waitFor({ state: "visible", timeout: 15000 });
     const src = await img.getAttribute("src");
     assert.ok(String(src).startsWith("data:image/svg+xml"), "img do QR deveria ser data:image/svg");
     const box = await img.boundingBox();
-    assert.ok(box && box.width >= 200 && box.width <= 260, `QR com ${box ? box.width : 0}px (esperado ~240)`);
-    await L.waitText(page.locator(".ck-qr-real figcaption"), "Aponte a câmera do app do banco");
+    assert.ok(box && box.width >= 128 && box.width <= 224, `QR com ${box ? box.width : 0}px (esperado 128–224)`);
+    await L.waitText(page.locator("[data-pix-payment-code]"), "Escaneie o QR Code");
     const pageCode = await L.field(page, "pix-code").inputValue();
     assert.equal(pageCode, body.pix.code, "codigo da pagina do pedido");
     const fromPage = await decodeQr(page, src);
@@ -237,24 +237,24 @@ async function c19b(publicTokenHint) {
     await L.waitText(page.locator(".pix-payment-total strong"), "R$ 159,90");
     assert.equal((await payCalls(requests)).length, beforeSkip, "retirar bump não gera cobrança");
 
-    // Pagina do pedido no celular: QR visivel sem abrir acordeão, copia-e-cola vem primeiro.
+    // Pagina do pedido no celular: QR visivel sem abrir acordeão, QR e copia juntos na primeira tela.
     if (publicTokenHint) {
       await page.goto(`${L.BASE}/checkout/pedido/${publicTokenHint}`, { waitUntil: "networkidle" });
-      const mobileQr = page.locator(".ck-qr-real img");
+      const mobileQr = page.locator("[data-pix-qr] img");
       await mobileQr.waitFor({ state: "visible", timeout: 15000 });
       assert.equal(await page.locator(".ck-qr-toggle").count(), 0, "QR não depende de botão para abrir no celular");
-      const mobileCopy = page.locator(".ck-pix-watch .ck-copy");
+      const mobileCopy = page.locator("[data-pix-copy]");
       const mobileCopyBox = await mobileCopy.boundingBox();
       const mobileQrBox = await mobileQr.boundingBox();
       assert.ok(mobileCopyBox && mobileCopyBox.height >= 44, "copiar código tem alvo mínimo de 44px");
-      assert.ok(mobileCopyBox && mobileQrBox && mobileCopyBox.y + mobileCopyBox.height <= mobileQrBox.y, "copia-e-cola antes do QR no celular");
+      assert.ok(mobileCopyBox && mobileQrBox && mobileQrBox.y >= 0 && mobileQrBox.y + mobileQrBox.height <= mobileCopyBox.y && mobileCopyBox.y + mobileCopyBox.height <= page.viewportSize().height, "QR e copiar Pix visiveis juntos no celular");
       const mobileCode = await L.field(page, "pix-code").inputValue();
       const mobileSrc = await mobileQr.getAttribute("src");
       assert.ok(String(mobileSrc).startsWith("data:image/svg+xml"), "QR mobile real vem do copia-e-cola");
       const fromMobile = await decodeQr(page, mobileSrc);
       if (fromMobile !== null) assert.equal(fromMobile, mobileCode, "QR mobile decodifica igual ao copia-e-cola");
       await L.noHorizontalScroll(page);
-      await page.locator(".ck-pix").screenshot({ path: path.join(L.OUT, "c19-pedido-360-qr-visivel.png") });
+      await page.locator("[data-pix-payment-code]").screenshot({ path: path.join(L.OUT, "c19-pedido-360-qr-visivel.png") });
     }
 
     L.checkNetwork(requests);

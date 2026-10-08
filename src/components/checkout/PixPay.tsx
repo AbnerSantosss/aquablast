@@ -1,13 +1,12 @@
 "use client";
 
-import Image from "next/image";
-import { Check, CircleAlert, Copy, LoaderCircle, RefreshCw, Timer, Smartphone, ArrowRight } from "lucide-react";
+import { CircleAlert, LoaderCircle, RefreshCw, Timer, Smartphone, ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { money } from "@/lib/checkout/own/masks";
 import { getStatus, isApiFail, postPay, postSimulatePaid } from "./api";
-import { DemoQr } from "./PaySeals";
+import { PixPaymentCode } from "./PixPaymentCode";
 import type { PixResult } from "./types";
-import { pad2, ttlLabel, useClock } from "./useClock";
+import { ttlLabel, useClock } from "./useClock";
 import styles from "./PixPay.module.css";
 
 /**
@@ -47,7 +46,6 @@ export function PixPay({
   const [phase, setPhase] = useState<"idle" | "loading" | "ready">("idle");
   const [pix, setPix] = useState<(PixResult & { publicToken: string; localExpiresMs: number }) | null>(null);
   const [error, setError] = useState("");
-  const [copyMsg, setCopyMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [simulating, setSimulating] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "refused" | "canceled">("pending");
   const [statusMessage, setStatusMessage] = useState("");
@@ -118,7 +116,6 @@ export function PixPay({
       return;
     }
     setPhase("loading");
-    setCopyMsg(null);
     setError("");
     setStatusMessage("");
     paidReportedRef.current = false;
@@ -145,16 +142,6 @@ export function PixPay({
     }
     setError(result.message ?? "Não foi possível gerar o Pix. Tente de novo.");
     setPhase("idle");
-  }
-
-  async function copy() {
-    try {
-      if (expired || !navigator.clipboard || !pix) throw new Error("sem clipboard");
-      await navigator.clipboard.writeText(pix.code);
-      setCopyMsg({ ok: true, text: "Código copiado" });
-    } catch {
-      setCopyMsg({ ok: false, text: "Não foi possível copiar. Selecione o código acima e copie manualmente." });
-    }
   }
 
   async function simulatePaid() {
@@ -185,14 +172,6 @@ export function PixPay({
       <small>Compra em {storeName} · pagamento à vista</small>
     </div>
   );
-  const instructions = (
-    <ol className={`${styles.instructions} pix-instructions`}>
-      <li><span>1</span><p>Copie o código Pix.</p></li>
-      <li><span>2</span><p>No app do banco, escolha <b>Pix Copia e Cola</b>.</p></li>
-      <li><span>3</span><p>Confira os dados e confirme o pagamento.</p></li>
-    </ol>
-  );
-
   const verifyPayment = (
     <div className={`${styles.verify} pix-check-payment`}>
       <button type="button" className={`${styles.verifyButton} pix-status-check`} onClick={() => void checkStatusRef.current?.()} disabled={checkingStatus}>
@@ -249,42 +228,10 @@ export function PixPay({
   }
 
   return (
-    <div className={`${styles.payment} ${styles.ready} pix-payment pix-payment-ready`}>
-      <header className={styles.header}>
-        <h4>Seu Pix foi gerado</h4>
-        <div className={styles.status} role="status"><span aria-hidden="true" />Aguardando pagamento{testMode ? " · demonstração" : ""}</div>
-        <p>Após pagar no app do banco, volte a esta tela. Seu pedido será confirmado assim que recebermos o pagamento.</p>
-      </header>
-      <div className={styles.timer} aria-live="off">
-        <span><Timer size={15} aria-hidden="true" />Este código expira em</span>
-        <strong className={styles.countdown} aria-label={`${Math.floor(left / 60)} minutos e ${left % 60} segundos`}>
-          {pad2(Math.floor(left / 60))}<i aria-hidden="true">:</i>{pad2(left % 60)}
-        </strong>
-        <small>Tempo restante para pagar este Pix</small>
-      </div>
-      <div className={styles.readyAmount}>
-        <span>Valor no Pix</span><strong>{money(amountCents)}</strong>
-      </div>
-      <div className={styles.copyArea}>
-        <label htmlFor="checkout-pix-code">Pix Copia e Cola</label>
-        <input id="checkout-pix-code" name="pix-code" readOnly value={pix.code} onFocus={(e) => e.currentTarget.select()} spellCheck={false} aria-describedby="checkout-pix-copy-help" />
-        <button type="button" className={`${styles.primary} pix-primary`} onClick={() => void copy()}>
-          {copyMsg?.ok ? <Check size={19} aria-hidden="true" /> : <Copy size={19} aria-hidden="true" />}
-          {copyMsg?.ok ? "Código copiado" : "Copiar código Pix"}
-        </button>
-        <p id="checkout-pix-copy-help" className={styles.copyHelp}>Cole o código no Pix Copia e Cola do seu banco.</p>
-        {copyMsg ? <p role="status" className={copyMsg.ok ? "pix-copy-feedback" : "error"}>{copyMsg.ok ? "Agora abra o app do banco e cole o código." : copyMsg.text}</p> : null}
-      </div>
-      {testMode || pix.qrUrl ? <div className={`${styles.qr} pix-qr-content`}>
-        <h5>Ou pague pelo QR Code</h5>
-        {testMode ? <DemoQr seed={pix.code} /> : <Image src={pix.qrUrl!} width={224} height={224} unoptimized alt="QR Code para pagar com Pix" />}
-        <p>{testMode ? "Imagem de demonstração. Não efetue pagamento." : "Em outro aparelho? Escaneie o QR Code com o app do banco."}</p>
-      </div> : null}
-      {instructions}
+    <PixPaymentCode key={pix.code} code={pix.code} qrUrl={pix.qrUrl} seconds={left} amountCents={amountCents} testMode={testMode} storeName={storeName}>
       {verifyPayment}
-      <p className={styles.storeNote}>Compra em {storeName}. Antes de pagar, confira o valor e os dados exibidos no app do banco.</p>
       {errorBox}
       {testMode ? <button type="button" className="pix-test-action" onClick={() => void simulatePaid()} disabled={simulating}>{simulating ? "Simulando…" : "Simular pagamento aprovado"}</button> : null}
-    </div>
+    </PixPaymentCode>
   );
 }

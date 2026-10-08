@@ -1,23 +1,21 @@
 "use client";
 
-import { Check, CircleAlert, Copy, LoaderCircle, RefreshCw, Timer } from "lucide-react";
+import { LoaderCircle, RefreshCw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStatus, isApiFail } from "./api";
-import { PixQr } from "./PixQr";
-import { pad2, useClock } from "./useClock";
+import { PixPaymentCode } from "./PixPaymentCode";
+import { useClock } from "./useClock";
 
 /**
- * Pix pendente na página durável /checkout/pedido/[token] (plano 8.8), com as mesmas classes do `PixPay`
- * (origem app/simulated-payment.tsx): `.ck-pix`, `.ck-pix-head`, `.ck-copy-row` com `label.field`, `.ck-pix-steps`.
+ * Pix pendente na página durável /checkout/pedido/[token] (plano 8.8), com o painel responsivo compartilhado `PixPaymentCode`.
  * Só leitura: aqui não existe `cartToken` (a página lê o pedido direto do banco), então não dá para gerar um
  * código novo se este expirar. Consulta o status a cada 5 s (pausado com a aba oculta); ao detectar `paid` chama
  * `router.refresh()` para o Server Component reler o pedido e mostrar a confirmação.
  */
-export function PixWatch({ code, qrUrl, expiresAt, publicToken }: { code: string; qrUrl: string | null; expiresAt: string; publicToken: string }) {
+export function PixWatch({ code, qrUrl, expiresAt, publicToken, amountCents }: { amountCents?: number; code: string; qrUrl: string | null; expiresAt: string; publicToken: string }) {
   const router = useRouter();
   const now = useClock();
-  const [copyMsg, setCopyMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [statusMessage, setStatusMessage] = useState("");
   const [checkingStatus, setCheckingStatus] = useState(false);
   const [terminalStatus, setTerminalStatus] = useState<"refused" | "canceled" | null>(null);
@@ -71,15 +69,6 @@ export function PixWatch({ code, qrUrl, expiresAt, publicToken }: { code: string
     };
   }, [publicToken, expired, router]);
 
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopyMsg({ ok: true, text: "Código copiado." });
-    } catch {
-      setCopyMsg({ ok: false, text: "Não foi possível copiar. Selecione o código e copie manualmente." });
-    }
-  };
-
   const verifyPayment = (
     <div className="pix-check-payment">
       <button type="button" className="pix-status-check" onClick={() => void checkStatusRef.current?.()} disabled={checkingStatus}>
@@ -121,44 +110,8 @@ export function PixWatch({ code, qrUrl, expiresAt, publicToken }: { code: string
   const left = now === null ? null : Math.max(0, Math.ceil((expiresMs - now) / 1000));
 
   return (
-    <div className={`ck-pix ck-pix-watch${qrUrl ? " has-real-qr" : " no-qr"}`}>
-      <div className="ck-pix-info">
-        <div className="ck-pix-head">
-          <p>Pague com Pix</p>
-          {left !== null ? (
-            <p className="ck-pix-timer" aria-live="off">
-              <Timer size={16} aria-hidden="true" />
-              Expira em{" "}
-              <b>
-                {pad2(Math.floor(left / 60))}:{pad2(left % 60)}
-              </b>
-            </p>
-          ) : null}
-        </div>
-        <div className="ck-copy-row">
-          <label className="field">
-            <span>Pix copia e cola</span>
-            <input name="pix-code" readOnly value={code} onFocus={(e) => e.currentTarget.select()} />
-          </label>
-          <button type="button" className="ck-copy" onClick={() => void copy()}>
-            <Copy size={17} aria-hidden="true" />
-            Copiar código
-          </button>
-        </div>
-        {copyMsg ? (
-          <p role="status" className={copyMsg.ok ? "ck-copied" : "error"}>
-            {copyMsg.ok ? <Check size={16} aria-hidden="true" /> : <CircleAlert size={16} aria-hidden="true" />}
-            {copyMsg.text}
-          </p>
-        ) : null}
-        <ol className="ck-pix-steps">
-          <li>Abra o app do banco</li>
-          <li>Escolha Pix</li>
-          <li>{qrUrl ? "Escaneie ou cole o código" : "Cole o código"}</li>
-        </ol>
-        {verifyPayment}
-      </div>
-      {qrUrl ? <PixQr src={qrUrl} /> : null}
-    </div>
+    <PixPaymentCode key={code} code={code} qrUrl={qrUrl} seconds={left} amountCents={amountCents}>
+      {verifyPayment}
+    </PixPaymentCode>
   );
 }
