@@ -1,4 +1,5 @@
 import { COLOR_LABELS } from "./constants";
+import { heroVideo } from "@/data/videos";
 import galleryImages from "./gallery-images.json";
 import type { Color } from "./types";
 
@@ -58,6 +59,18 @@ export function kitGalleryPhotography(colors: readonly [Color, Color]) {
   };
 }
 
+export const galleryVideoPhotography = {
+  src: heroVideo.poster,
+  thumbSrc: "/thumbs/video-jato-reservatorio-amplo-poster-108.webp",
+  blurDataURL: "data:image/webp;base64,UklGRoAAAABXRUJQVlA4IHQAAADwAwCdASoMABUAPxFwsFAsJiSisAgBgCIJagCdACHPMM0MXedbWa8AAPzQlWD9x7zxjusp0X5pTsUrc1pQDwKN8EjmAaR/8J/DPAzcT0Y9xhGdOJbjQYgOp/7Q1ZtzOVDWXyScuLcMKZxqqmPDMm0OBkAAAA==",
+  width: 960,
+  height: 960,
+  videoSrc: heroVideo.src,
+  label: "Vídeo",
+  caption: "AquaBlast em ação",
+  alt: "Capa do vídeo de demonstração do AquaBlast",
+};
+
 export const productGalleryScenes = [
   {
     ...galleryImages.detail,
@@ -70,11 +83,5 @@ export const productGalleryScenes = [
     label: "Luz LED",
     caption: "Luz LED amarela",
     alt: "Imagem ilustrativa do detalhe da luz LED amarela na ponta do AquaBlast",
-  },
-  {
-    ...galleryImages.family,
-    label: "Em família",
-    caption: "Em família",
-    alt: "Cena ilustrativa de uma família brincando com o AquaBlast ao ar livre",
   },
 ] as const;

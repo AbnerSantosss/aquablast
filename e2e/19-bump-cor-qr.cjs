@@ -74,6 +74,24 @@ async function abrirResumo(page) {
   if (await toggle.isVisible() && await toggle.getAttribute("aria-expanded") === "false") await toggle.click();
 }
 
+/**
+ * Screenshot de um elemento com nova tentativa: o checkout re-renderiza enquanto a cotacao chega e o Playwright
+ * respondia "Element is not attached" / "Node is either not visible" no meio da troca de nos.
+ */
+async function shotElemento(page, seletor, arquivo) {
+  for (let tentativa = 1; ; tentativa++) {
+    try {
+      const el = page.locator(seletor).first();
+      await el.waitFor({ state: "visible", timeout: 10000 });
+      await el.screenshot({ path: path.join(L.OUT, arquivo) });
+      return;
+    } catch (err) {
+      if (tentativa >= 3) throw err;
+      await page.waitForTimeout(400);
+    }
+  }
+}
+
 async function aguardarTotalConfirmado(page) {
   await page.waitForFunction(() => {
     const methods = document.querySelector("fieldset.pay-acc");
@@ -96,11 +114,17 @@ async function c19a() {
     assert.equal(await page.locator('input[name="bump-color"]').count(), 3, "3 cores");
     assert.equal(await page.locator('input[name="bump-color"]:checked').count(), 0, "nenhuma cor pre-escolhida");
     assert.equal(await page.locator(".bump-color-alert").getAttribute("aria-live"), "polite");
-    await L.waitText(page.locator(".bump-summary"), /cor a escolher/);
-    for (const opt of await page.locator("label.bump-color").all()) {
-      const b = await opt.boundingBox();
-      assert.ok(b && b.height >= 44, `cor com alvo de ${b ? b.height : 0}px (< 44)`);
-    }
+    // Resumo novo (49f7d26): a linha do bump é [data-summary-bump]; sem cor fica "pending" (antes ".bump-summary" com "cor a escolher").
+    await L.waitText(L.summaryBump(page), /2ª unidade: falta escolher a cor\s*\+ R\$ 90,00/);
+    assert.equal(await L.summaryBump(page).getAttribute("data-summary-bump"), "pending");
+    assert.equal(await L.summaryUnit(page, 2).count(), 0, "sem cor, a 2ª unidade ainda não entra na lista de produtos");
+    // Alvo minimo das cores. Mede no DOM de uma vez (page.evaluate): o bloco re-renderiza enquanto a cotacao chega e handles
+    // antigos de locator.all() viravam boundingBox null ("cor com alvo de 0px"). ColorPick.tsx tambem usa label.bump-color
+    // (cor do produto): por isso o seletor restringe a .bump-colors.
+    await aguardarTotalConfirmado(page);
+    const alturasCores = await page.evaluate(() => [...document.querySelectorAll(".bump-colors label.bump-color")].map((e) => e.getBoundingClientRect().height));
+    assert.equal(alturasCores.length, 3, "3 cores no bump");
+    for (const h of alturasCores) assert.ok(h >= 44, `cor com alvo de ${h}px (< 44)`);
 
     // Sem cor: Gerar Pix nao cobra, destaca o bump e leva o foco para as cores.
     const before = (await payCalls(requests)).length;
@@ -120,14 +144,12 @@ async function c19a() {
 
     // Escolhe Vermelho: resumo, miniatura e Pix.
     await page.locator('input[name="bump-color"][value="vermelho"]').check();
-    await L.waitText(page.locator(".bump-summary"), /2ª unidade com desconto.*R\$ 90,00/);
-    const kitThumbs = page.locator(".selected-product .ck-kit-thumb");
-    assert.equal(await kitThumbs.count(), 2, "resumo com as duas unidades");
-    await L.waitText(kitThumbs.nth(0), "1º azul");
-    await L.waitText(kitThumbs.nth(1), "2º vermelho");
-    assert.equal(await kitThumbs.nth(0).locator("img").getAttribute("alt"), "1º AquaBlast azul");
-    assert.equal(await kitThumbs.nth(1).locator("img").getAttribute("alt"), "2º AquaBlast vermelho");
-    await L.waitText(page.locator(".order-summary .total b"), "R$ 249,90");
+    await L.waitText(L.summaryBump(page), /2ª unidade adicionada\s*\+ R\$ 90,00/);
+    assert.equal(await L.summaryBump(page).getAttribute("data-summary-bump"), "confirmed");
+    assert.equal(await L.summary(page).locator("[data-summary-unit]").count(), 2, "resumo com as duas unidades");
+    await L.expectSummaryUnit(page, 1, "azul", { kit: true });
+    await L.expectSummaryUnit(page, 2, "vermelho", { kit: true });
+    await L.waitText(L.summaryTotal(page, "pix"), /^R\$ 239,90$/);
     assert.equal(await page.locator(".bump-color-alert").textContent(), "", "aviso some com a cor escolhida");
     // Cor escolhida mas nao confirmada: o Pix continua bloqueado ate "Selecionar segunda unidade com desconto".
     await aguardarTotalConfirmado(page);
@@ -156,7 +178,7 @@ async function c19a() {
     await code.waitFor({ state: "attached", timeout: 15000 });
     assert.equal(await code.inputValue(), body.pix.code);
     await page.locator("[data-pix-qr]").waitFor({ state: "visible" });
-    const copyBox = await page.locator("[data-pix-copy]").boundingBox();
+    const copyBox = await L.pixCopy(page).boundingBox(); // antes ".pix-code-area .pix-primary"
     const readyQrBox = await page.locator("[data-pix-qr]").boundingBox();
     assert.ok(copyBox && readyQrBox && readyQrBox.y >= 0 && readyQrBox.y + readyQrBox.height <= copyBox.y && copyBox.y + copyBox.height <= page.viewportSize().height, "QR e copiar Pix cabem na altura da tela");
 
@@ -204,8 +226,13 @@ async function c19b(publicTokenHint) {
     await L.choosePix(page);
     await page.locator(".bump-open-trigger").click();
     await page.locator(".bump-colors").waitFor();
+    // Espera a animacao das cores terminar: no meio dela o bloco re-renderiza e o screenshot falhava com "Element is not attached".
+    await page.waitForFunction(() => {
+      const els = [...document.querySelectorAll(".bump-colors label.bump-color")];
+      return els.length === 3 && els.every((e) => getComputedStyle(e).opacity === "1");
+    }, null, { timeout: 10000 });
     await L.noHorizontalScroll(page);
-    await page.locator(".order-bump").screenshot({ path: path.join(L.OUT, "c19-bump-360.png") });
+    await shotElemento(page, ".order-bump", "c19-bump-360.png");
 
     // POST direto sem a cor: 400 e nenhum pedido novo.
     const token = await L.cartTokenOf(page);
@@ -234,7 +261,7 @@ async function c19b(publicTokenHint) {
     assert.equal(await page.locator(".bump-colors").count(), 0, "cores somem ao retirar a segunda unidade");
     assert.equal(await page.locator(".order-bump.added").count(), 0, "oferta retirada");
     assert.equal(await page.locator(".pix-payment-start .pix-primary").getAttribute("aria-disabled"), null, "Pix avulso liberado");
-    await L.waitText(page.locator(".pix-payment-total strong"), "R$ 159,90");
+    await L.waitText(page.locator(".pix-payment-total strong"), "R$ 159,89");
     assert.equal((await payCalls(requests)).length, beforeSkip, "retirar bump não gera cobrança");
 
     // Pagina do pedido no celular: QR visivel sem abrir acordeão, QR e copia juntos na primeira tela.
@@ -254,7 +281,7 @@ async function c19b(publicTokenHint) {
       const fromMobile = await decodeQr(page, mobileSrc);
       if (fromMobile !== null) assert.equal(fromMobile, mobileCode, "QR mobile decodifica igual ao copia-e-cola");
       await L.noHorizontalScroll(page);
-      await page.locator("[data-pix-payment-code]").screenshot({ path: path.join(L.OUT, "c19-pedido-360-qr-visivel.png") });
+      await shotElemento(page, "[data-pix-payment-code]", "c19-pedido-360-qr-visivel.png");
     }
 
     L.checkNetwork(requests);

@@ -1,0 +1,107 @@
+.section {
+  padding: clamp(2rem, 5vw, 3.5rem) 0;
+  background: var(--pale);
+  color: var(--text);
+}
+
+.container {
+  width: min(64rem, calc(100% - 3rem));
+  margin-inline: auto;
+}
+
+.section h2 {
+  margin: 0 auto 1.5rem;
+  max-width: 28ch;
+  color: var(--navy);
+  font-size: clamp(1.625rem, 3vw, 2.25rem);
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: -.025em;
+  text-align: center;
+}
+
+.tableFrame {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: white;
+  box-shadow: var(--shadow);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.featureColumn { width: 44%; }
+.productColumn { width: 25%; }
+.manualColumn { width: 31%; }
+
+.table th,
+.table td {
+  padding: 1.125rem 1rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.table thead th {
+  color: var(--navy);
+  font-weight: 900;
+}
+
+.table tbody th {
+  font-weight: 700;
+  text-align: left;
+}
+
+.table tbody tr {
+  border-top: 1px solid var(--line);
+}
+
+.table .product {
+  background: var(--pale);
+  color: var(--green);
+  font-weight: 800;
+}
+
+.table thead .product {
+  background: var(--navy);
+  color: white;
+}
+
+.answer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .375rem;
+}
+
+.answer svg {
+  flex-shrink: 0;
+}
+
+@media (max-width: 42.5rem) {
+  .container {
+    width: calc(100% - 2.25rem);
+  }
+
+  .table {
+    font-size: .875rem;
+  }
+
+  .table th,
+  .table td {
+    padding: .875rem .5rem;
+  }
+
+  .featureColumn { width: 43%; }
+  .productColumn { width: 27%; }
+  .manualColumn { width: 30%; }
+
+  .answer {
+    gap: .25rem;
+  }
+}

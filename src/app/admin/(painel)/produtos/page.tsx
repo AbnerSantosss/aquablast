@@ -3,7 +3,8 @@ import { requireAdmin } from "@/lib/auth/session";
 import { saveBumpSettings, saveInstallmentsSettings, savePricesSettings } from "@/lib/admin/actions/products";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { getSettings } from "@/lib/settings";
-import { KIT_SAVING, PRICES } from "@/lib/site/constants";
+import { buildSitePrices } from "@/lib/site/prices";
+import { FULL_SHIPPING_CENTS, FULL_SHIPPING_LABEL } from "@/lib/checkout/own/shipping";
 
 export const metadata = { title: "Produtos | Painel AquaBlast" };
 
@@ -13,6 +14,7 @@ export default async function ProdutosPage() {
   await requireAdmin();
   const s = await getSettings(["checkout.prices", "checkout.maxInstallments", "checkout.bumpEnabled"] as const);
   const prices = s["checkout.prices"];
+  const site = buildSitePrices(prices, s["checkout.maxInstallments"]);
   const parcela = (totalCents: number, n: number) => cents(Math.round(totalCents / n)); // mesmo arredondamento do checkout (pricing.ts)
 
   return (
@@ -31,7 +33,7 @@ export default async function ProdutosPage() {
               <h2>Preços</h2>
             </div>
             <p className="small muted">
-              Valores em reais, separados por vírgula (ex.: 159,90). O preço do Pix precisa ser igual ou menor que o do cartão.
+              Valores em reais, separados por vírgula (ex.: 149,90). O preço do Pix precisa ser igual ou menor que o do cartão.
             </p>
             <ActionForm action={savePricesSettings} confirm="Alterar os preços do checkout próprio agora?">
               <div className="grid-2">
@@ -44,11 +46,11 @@ export default async function ProdutosPage() {
                   <input name="unitCard" defaultValue={(prices.unit.card / 100).toFixed(2).replace(".", ",")} required />
                 </label>
                 <label className="field">
-                  <span>Kit — Pix</span>
+                  <span>Com 2ª unidade — Pix</span>
                   <input name="kitPix" defaultValue={(prices.kit.pix / 100).toFixed(2).replace(".", ",")} required />
                 </label>
                 <label className="field">
-                  <span>Kit — Cartão</span>
+                  <span>Com 2ª unidade — Cartão</span>
                   <input name="kitCard" defaultValue={(prices.kit.card / 100).toFixed(2).replace(".", ",")} required />
                 </label>
               </div>
@@ -84,7 +86,7 @@ export default async function ProdutosPage() {
             <ActionForm action={saveBumpSettings}>
               <label className="check">
                 <input type="checkbox" name="bumpEnabled" defaultChecked={s["checkout.bumpEnabled"]} />
-                <span>Mostrar o order bump (oferta do kit) na tela de pagamento</span>
+                <span>Mostrar a oferta opcional da 2ª unidade na tela de pagamento</span>
               </label>
               <div className="actions">
                 <button type="submit" className="btn btn-primary">
@@ -119,7 +121,7 @@ export default async function ProdutosPage() {
                   <td>{parcela(prices.unit.card, s["checkout.maxInstallments"])}</td>
                 </tr>
                 <tr>
-                  <td>Kit</td>
+                  <td>Com 2ª unidade</td>
                   <td>{cents(prices.kit.pix)}</td>
                   <td>{cents(prices.kit.card)}</td>
                   <td>{parcela(prices.kit.card, s["checkout.maxInstallments"])}</td>
@@ -127,9 +129,19 @@ export default async function ProdutosPage() {
               </tbody>
             </table>
             <p className="small muted" style={{ marginTop: "0.5rem" }}>
-              Textos do site público (página de vendas) usam os valores fixos de <code>site/constants.ts</code>: unidade{" "}
-              {PRICES.unit.pix} / {PRICES.unit.card}, kit {PRICES.kit.pix} / {PRICES.kit.card}, economia do kit {KIT_SAVING}. Esses
-              textos só mudam com um pedido explícito, não junto com os preços do checkout desta tela.
+              A página de vendas oferece uma unidade: {site.unit.pix} no Pix ou {site.unit.card} no cartão.
+              A segunda unidade é opcional no checkout: +{cents(prices.kit.pix - prices.unit.pix)} no Pix
+              ou +{cents(prices.kit.card - prices.unit.card)} no cartão. Os valores acima são dos produtos,
+              sem frete. Ao salvar, o site atualiza na próxima visita. No modo Zedy, o valor cobrado lá
+              é cadastrado na própria Zedy.
+            </p>
+          </section>
+          <section className="card">
+            <div className="card-head"><h2>{FULL_SHIPPING_LABEL}</h2></div>
+            <p>Uma unidade: {cents(FULL_SHIPPING_CENTS)}. Com a segunda unidade, frete grátis.</p>
+            <p className="small muted">
+              Total de uma unidade com frete: {cents(prices.unit.pix + FULL_SHIPPING_CENTS)} no Pix ou {cents(prices.unit.card + FULL_SHIPPING_CENTS)} no cartão.
+              Com a segunda unidade: {cents(prices.kit.pix)} no Pix ou {cents(prices.kit.card)} no cartão, já com frete grátis.
             </p>
           </section>
         </div>

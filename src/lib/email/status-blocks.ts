@@ -3,7 +3,7 @@
 // serve para pedido com e sem código de rastreio. Não existe mais bloco da transportadora: o cliente não vê o nome dela,
 // o código nem o link externo, e acompanha tudo pelo nosso /rastrear ({{bloco_rastreio}} sai sempre vazio).
 import type { Order, OrderStatus } from "@/db/schema";
-import { escapeHtml } from "./templates";
+import { EMAIL_FONT, escapeHtml } from "./templates";
 
 /** Só os campos que a linha do tempo usa (a pré-visualização do painel monta um pedido de exemplo com eles). */
 export type ProgressOrder = Pick<Order, "status" | "paidAt" | "approvedAt" | "shippedAt" | "inTransitAt" | "outForDeliveryAt" | "deliveredAt">;
@@ -41,17 +41,24 @@ export function progressHtml(order: ProgressOrder): string {
     return isCurrent ? { bg: ORANGE, fg: "#ffffff", mark: String(i + 1), weight: "800" } : { bg: BLUE, fg: "#ffffff", mark: "&#10003;", weight: "600" };
   });
   // Três linhas (barra segmentada, bolinhas, nomes): sem position/margem negativa, que o Outlook e o Gmail ignoram.
-  const bars = look.map((l) => `<td width="20%" style="padding:0 3px;"><div style="height:5px;line-height:5px;font-size:0;border-radius:3px;background:${l.bg};">&nbsp;</div></td>`).join("");
+  // Barra e bolinha são células de tabela com tamanho fixo (2026-10-07): o Outlook desktop ignora largura e altura
+  // de <div>, e a bolinha virava uma faixa colorida da largura da coluna. Lá ela sai quadrada (sem canto redondo).
+  const bars = look
+    .map(
+      (l) =>
+        `<td width="20%" style="padding:0 3px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td height="5" bgcolor="${l.bg}" style="height:5px;line-height:5px;mso-line-height-rule:exactly;font-size:1px;border-radius:3px;background:${l.bg};">&nbsp;</td></tr></table></td>`,
+    )
+    .join("");
   const dots = look
     .map(
       (l) =>
-        `<td width="20%" align="center" style="padding:10px 0 0;"><div style="width:30px;height:30px;line-height:30px;border-radius:50%;background:${l.bg};color:${l.fg};font-size:14px;font-weight:800;text-align:center;margin:0 auto;">${l.mark}</div></td>`,
+        `<td width="20%" align="center" style="padding:10px 0 0;"><table role="presentation" align="center" width="30" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;"><tr><td width="30" height="30" align="center" valign="middle" bgcolor="${l.bg}" style="width:30px;height:30px;line-height:30px;mso-line-height-rule:exactly;border-radius:50%;background:${l.bg};color:${l.fg};font-family:${EMAIL_FONT};font-size:14px;font-weight:800;text-align:center;">${l.mark}</td></tr></table></td>`,
     )
     .join("");
   // Na ocorrência, a etapa travada troca o nome por "Ocorrência" (não dá a entender que ela aconteceu).
   const labels = STEPS.map((s, i) => {
     const label = look[i].bg === RED ? `<span style="color:${RED};">Ocorrência</span>` : s.label;
-    return `<td width="20%" align="center" valign="top" style="padding:6px 2px 0;font-size:12px;line-height:1.3;color:#0f2c3a;font-weight:${look[i].weight};">${label}</td>`;
+    return `<td width="20%" align="center" valign="top" style="padding:6px 2px 0;font-family:${EMAIL_FONT};font-size:12px;line-height:1.3;color:#0f2c3a;font-weight:${look[i].weight};">${label}</td>`;
   }).join("");
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 22px;border-collapse:collapse;"><tr>${bars}</tr><tr>${dots}</tr><tr>${labels}</tr></table>`;
 }
@@ -59,7 +66,7 @@ export function progressHtml(order: ProgressOrder): string {
 /** Código de rastreio do pedido (o mesmo em todos os e-mails). Vazio quando o e-mail não leva código. */
 export function accessBlockHtml(accessCode: string | undefined): string {
   if (!accessCode) return "";
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 6px;border-collapse:separate;"><tr><td style="padding:14px 16px;background:#f3f8fb;border:1px solid #dbe7ee;border-radius:10px;">
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 6px;border-collapse:separate;"><tr><td bgcolor="#f3f8fb" style="padding:14px 16px;background:#f3f8fb;border:1px solid #dbe7ee;border-radius:10px;font-family:${EMAIL_FONT};">
       <div style="font-size:12px;font-weight:700;color:#55707e;text-transform:uppercase;letter-spacing:.5px;">Seu código de rastreio</div>
       <div style="margin-top:6px;font-family:Consolas,'Courier New',monospace;font-size:18px;line-height:1.45;font-weight:700;color:#12303f;letter-spacing:1px;">${escapeHtml(accessCode)}</div>
       <div style="margin-top:8px;font-size:13px;line-height:1.5;color:#55707e;">Use este código para acompanhar o pedido no nosso site.</div>
@@ -70,7 +77,7 @@ export function accessBlockHtml(accessCode: string | undefined): string {
 export function messageBlockHtml(message: string | undefined): string {
   const text = message?.trim();
   if (!text) return "";
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 18px;border-collapse:separate;"><tr><td style="padding:14px 16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;">
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 18px;border-collapse:separate;"><tr><td bgcolor="#fff7ed" style="padding:14px 16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;font-family:${EMAIL_FONT};">
       <div style="font-size:12px;font-weight:700;color:#9a3412;text-transform:uppercase;letter-spacing:.4px;">Recado da nossa equipe</div>
       <div style="font-size:15px;color:#0f2c3a;margin-top:4px;">${escapeHtml(text).replace(/\r?\n/g, "<br>")}</div>
     </td></tr></table>`;

@@ -1,6 +1,7 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
+import Image from "next/image";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, type MouseEvent } from "react";
 import { reviews } from "@/data/reviews";
 import { MOBILE_QUERY } from "@/lib/site/constants";
@@ -20,8 +21,11 @@ const summerReviews = [...reviews].sort((a, b) => {
   const rank = (id: string) => { const index = featuredIds.indexOf(id); return index < 0 ? featuredIds.length : index; };
   return rank(a.id) - rank(b.id);
 });
-const mediaReviews = summerReviews.filter((review) => review.media);
-const textReviews = summerReviews.filter((review) => !review.media);
+// Os originais sao preservados; estes dois videos exibem termo proibido na embalagem.
+const excludedVideoPaths = new Set(["/reviews/igor-1.mp4", "/reviews/igor-2.mp4"]);
+const reviewMedia = (review: Review) => (review.media?.items ?? []).filter((item) => !excludedVideoPaths.has(item.href));
+const mediaReviews = summerReviews.filter((review) => reviewMedia(review).length > 0);
+const textReviews = summerReviews.filter((review) => !reviewMedia(review).length);
 const desktopReviews = [...mediaReviews, ...textReviews];
 const desktopPageSize = Math.max(4, mediaReviews.length);
 const MOBILE_PAGE_SIZE = 4;
@@ -32,7 +36,7 @@ function ReviewMediaLink({ review, item, index }: { review: Review; item: Review
     if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) return;
     if (typeof HTMLDialogElement === "undefined" || typeof HTMLDialogElement.prototype.showModal !== "function") return;
     event.preventDefault();
-    open(review.author, review.media?.items ?? [], index, event.currentTarget);
+    open(review.author, reviewMedia(review), index, event.currentTarget);
   };
   // O selo do vídeo mostra "▶ 0:13"; a duração entra no rótulo para o nome conter o texto visível
   // (evita o "label-content-name-mismatch" do Lighthouse).
@@ -45,11 +49,12 @@ function ReviewMediaLink({ review, item, index }: { review: Review; item: Review
       aria-label={label}
       onClick={onClick}
     >
-      <img
+      <Image
         src={item.image.src}
         alt={item.image.alt}
         width={item.image.width}
         height={item.image.height}
+        sizes="80px"
         loading="lazy"
         decoding="async"
       />
@@ -64,6 +69,7 @@ function ReviewMediaLink({ review, item, index }: { review: Review; item: Review
 }
 
 function ReviewArticle({ review, hidden }: { review: Review; hidden: boolean }) {
+  const media = reviewMedia(review);
   return (
     <article
       className="customer-review"
@@ -104,9 +110,9 @@ function ReviewArticle({ review, hidden }: { review: Review; hidden: boolean }) 
           </dl>
         ) : null}
         {review.comment ? <p className="review-comment">{review.comment}</p> : null}
-        {review.media ? (
+        {review.media && media.length > 0 ? (
           <div className="review-media" role="group" aria-label={review.media.label}>
-            {review.media.items.map((item, index) => (
+            {media.map((item, index) => (
               <ReviewMediaLink key={item.href} review={review} item={item} index={index} />
             ))}
           </div>
@@ -181,7 +187,7 @@ export function Reviews() {
             disabled={state.page === 1}
             onClick={() => goTo(state.page - 1)}
           >
-            <img src="/icons/chevron-left.svg" alt="" loading="lazy" decoding="async" />
+            <ChevronLeft size={16} aria-hidden="true" />
           </button>
           <div className="reviews-page-numbers" data-reviews-pages="">
             {state.numbers.map((number, index) =>
@@ -212,7 +218,7 @@ export function Reviews() {
             disabled={state.page === state.pageCount}
             onClick={() => goTo(state.page + 1)}
           >
-            <img src="/icons/chevron-right.svg" alt="" loading="lazy" decoding="async" />
+            <ChevronRight size={16} aria-hidden="true" />
           </button>
         </nav>
         <p className="reviews-page-summary" data-reviews-page-summary="">

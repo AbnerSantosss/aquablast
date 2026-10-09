@@ -1,11 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
-import { PRICES } from "@/lib/site/constants";
-import { useSelection } from "./SelectionProvider";
-import { PurchaseLink } from "./PurchaseLink";
+import { money } from "@/lib/checkout/own/masks";
+import { FULL_SHIPPING_CENTS, FULL_SHIPPING_LABEL } from "@/lib/checkout/own/shipping";
+import { usePrices } from "./PricesProvider";
 
 export function MobileBuy() {
-  const { pack, kitReady } = useSelection();
+  const prices = usePrices();
   const [showBar, setShowBar] = useState(false);
   useEffect(() => {
     const hero = document.getElementById("inicio");
@@ -17,7 +17,7 @@ export function MobileBuy() {
     return () => observer.disconnect();
   }, []);
   return <aside hidden={!showBar} className="mobile-buy summer-mobile-buy mobile-top-buy" aria-label="Compra rápida">
-    <div><small>{pack === "kit" ? "Kit com 2 AquaBlast" : "1 unidade AquaBlast"}</small><strong>{PRICES[pack].pix}<span> no Pix</span></strong></div>
-    {pack === "unit" ? <button type="button" className="button button-green" aria-haspopup="dialog" onClick={() => document.getElementById("hero-unit-guide-trigger")?.click()}>Quero o meu</button> : !kitReady ? <button type="button" className="button button-green" aria-haspopup="dialog" onClick={() => document.getElementById("hero-kit-guide-trigger")?.click()}>Escolher cores</button> : <PurchaseLink direct pack={pack} className="button button-green">Quero meu kit</PurchaseLink>}
+    <div><small>1 unidade AquaBlast</small><strong>{prices.unit.pix}<span> no Pix</span></strong><small>+ {FULL_SHIPPING_LABEL} {money(FULL_SHIPPING_CENTS)}</small></div>
+    <button type="button" className="button button-green" aria-haspopup="dialog" onClick={() => document.getElementById("hero-unit-guide-trigger")?.click()}>Quero o meu</button>
   </aside>;
 }

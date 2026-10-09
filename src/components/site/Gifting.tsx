@@ -7,7 +7,7 @@ export function Gifting() {
         <div>
           <span className="eyebrow">TAMBÉM É PRESENTE</span>
           <h2>Um presente que <em>vira brincadeira.</em></h2>
-          <p>No aniversário ou no Natal, dê um motivo para reunir a família no quintal. Com o kit, você entra na diversão também.</p>
+          <p>No aniversário ou no Natal, dê um motivo para reunir a família no quintal. Escolha a cor do AquaBlast e presenteie com diversão ao ar livre.</p>
           <a className="text-link" href="#ofertas">Escolher meu AquaBlast →</a>
         </div>
         <figure>

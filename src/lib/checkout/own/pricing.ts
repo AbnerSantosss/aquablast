@@ -1,6 +1,7 @@
 import { safeEqual } from "@/lib/crypto";
 import { getSetting } from "@/lib/settings";
 import type { CheckoutPack } from "./catalog";
+import { shippingCentsForPack } from "./shipping";
 
 /**
  * Preço do checkout próprio (Fase 4.2). O preço é SEMPRE calculado aqui, no servidor.
@@ -12,6 +13,11 @@ export interface Quote {
   /** Pack efetivo (unidade com bump vira kit). */
   pack: CheckoutPack;
   method: PayMethod;
+  /** Produtos antes do cupom, sem frete. O adicional de 2ª unidade altera apenas este subtotal. */
+  productSubtotalCents: number;
+  /** Frete FULL da oferta, antes do cupom de teste: 999 na unidade e zero com duas unidades. */
+  shippingCents: number;
+  /** Total cobrado, incluindo frete e eventual desconto de teste. */
   amountCents: number;
   /** Quanto custa a mais aceitar a 2ª unidade (kit − unidade, no mesmo método). */
   bumpDeltaCents: number;
@@ -50,13 +56,17 @@ export async function quote(pack: CheckoutPack, method: PayMethod, bump: boolean
   const prices = await getSetting("checkout.prices");
   const max = await getSetting("checkout.maxInstallments");
   const finalPack: CheckoutPack = pack === "unit" && bump ? "kit" : pack;
-  const listCents = prices[finalPack][method];
+  const productSubtotalCents = prices[finalPack][method];
+  const shippingCents = shippingCentsForPack(finalPack);
+  const listCents = productSubtotalCents + shippingCents;
   const couponCents = await testCouponPixCents(coupon, method);
   const amountCents = couponCents !== null && couponCents < listCents ? couponCents : listCents;
   const n = method === "card" ? Math.min(Math.max(1, Math.trunc(installments)), Math.max(1, max)) : 1;
   return {
     pack: finalPack,
     method,
+    productSubtotalCents,
+    shippingCents,
     amountCents,
     bumpDeltaCents: prices.kit[method] - prices.unit[method],
     bumpSavingCents: prices.unit[method] * 2 - prices.kit[method],

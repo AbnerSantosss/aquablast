@@ -3,9 +3,11 @@
 const L = require("./_lib.cjs");
 const { assert } = L;
 
+// Alvos menores que 44px ficam anotados e reprovam o cenário no fim: assim uma falha não esconde as medições seguintes.
+const pequenos = [];
 async function alturaMin(locator, nome) {
   const box = await locator.boundingBox();
-  assert.ok(box && box.height >= 44, `${nome}: alvo de toque com ${box ? box.height : 0}px (< 44)`);
+  if (!(box && box.height >= 44)) pequenos.push(`${nome}: alvo de toque com ${box ? Math.round(box.height * 10) / 10 : 0}px (< 44)`);
 }
 
 async function run(variant) {
@@ -26,7 +28,13 @@ async function run(variant) {
     await alturaMin(page.getByRole("button", { name: "Continuar só com 1 unidade", exact: true }), "continuar com 1 unidade");
     // Cor da 2a unidade (2026-09-30): obrigatoria; os 3 cartoes de cor precisam caber em 360px com alvo >= 44px.
     await L.noHorizontalScroll(page);
-    for (const opt of await page.locator("label.bump-color").all()) await alturaMin(opt, "cor da 2a unidade");
+    // Mede no DOM de uma vez: o bloco re-renderiza enquanto a cotacao chega e handles de locator.all() viravam
+    // boundingBox null ("alvo de toque com 0px"). ColorPick.tsx tambem usa label.bump-color (cor do produto): so as do bump.
+    await page.waitForFunction(() => document.querySelectorAll(".bump-colors label.bump-color").length === 3, null, { timeout: 10000 });
+    await page.waitForFunction(() => { const m = document.querySelector("fieldset.pay-acc"); return m && !m.disabled; }, null, { timeout: 15000 });
+    for (const h of await page.evaluate(() => [...document.querySelectorAll(".bump-colors label.bump-color")].map((e) => e.getBoundingClientRect().height))) {
+      if (h < 44) pequenos.push(`cor da 2a unidade: alvo de toque com ${Math.round(h * 10) / 10}px (< 44)`);
+    }
     await page.locator('input[name="bump-color"][value="vermelho"]').check();
     await L.btn(page, "Selecionar segunda unidade com desconto").click();
     const gerarPix = page.locator(".pix-payment-start .pix-primary");
@@ -35,9 +43,9 @@ async function run(variant) {
     const code = L.field(page, "pix-code");
     await code.waitFor({ state: "attached", timeout: 15000 });
     assert.match(await code.inputValue(), /^SIMULADO-NAO-PAGUE-sim_/);
-    await alturaMin(page.locator("[data-pix-copy]"), "copiar código Pix");
+    await alturaMin(L.pixCopy(page), "copiar código Pix");
     await page.locator("[data-pix-qr]").waitFor({ state: "visible" });
-    const copiarBox = await page.locator("[data-pix-copy]").boundingBox();
+    const copiarBox = await L.pixCopy(page).boundingBox();
     const qrBox = await page.locator("[data-pix-qr]").boundingBox();
     assert.ok(copiarBox && qrBox && qrBox.y >= 0 && qrBox.y + qrBox.height <= copiarBox.y && copiarBox.y + copiarBox.height <= page.viewportSize().height, "QR e copiar Pix devem caber juntos na primeira tela");
     await L.noHorizontalScroll(page);
@@ -45,12 +53,15 @@ async function run(variant) {
     await L.payHead(page, "card").click();
     await L.field(page, "cc-number").waitFor();
     await L.noHorizontalScroll(page);
-    for (const nome of ["Editar seus dados", "Editar entrega"]) await alturaMin(page.getByRole("button", { name: nome }), nome);
+    for (const nome of ["Editar seus dados", "Editar entrega"]) await alturaMin(L.editStep(page, nome), nome);
+    // A barra de progresso (49f7d26) ganhou botões com o mesmo nome: também são alvo de toque.
+    for (const nome of ["Editar seus dados", "Editar entrega"]) await alturaMin(L.progressEdit(page, nome), `${nome} (barra de progresso)`);
     await alturaMin(page.locator('.ck-cardform button[type="submit"]'), "pagar com cartão");
     for (const head of await page.locator(".pay-head").all()) await alturaMin(head, ".pay-head");
     await L.shot(page, `c5-360-cartao`);
     L.checkNetwork(requests);
     assert.deepEqual(pageErrors, []);
+    assert.equal(pequenos.length, 0, pequenos.join(" | "));
   } finally {
     await browser.close();
   }

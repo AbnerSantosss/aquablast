@@ -1,3 +1,4 @@
+import { checkoutPricingOfOrder } from "@/lib/checkout/own/order-pricing";
 import { notFound, redirect } from "next/navigation";
 import { Checkout } from "@/components/checkout/Checkout";
 import { OrderConfirmed } from "@/components/checkout/OrderConfirmed";
@@ -131,6 +132,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ token: 
     // Pedido pago: tela de compra confirmada (layout do dono, 2026-09-28). As etapas seguem o status real do pedido.
     const [theme, attempt, whatsapp] = await Promise.all([getTheme(), getLastPaidAttempt(order.id), getSupportWhatsapp()]);
     const amountCents = attempt?.amountCents ?? Math.round(Number(order.amountTotal ?? "0") * 100);
+    const savedPricing = checkoutPricingOfOrder(order.items, amountCents);
     return (
       <OrderConfirmed
         theme={theme}
@@ -142,6 +144,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ token: 
           items: order.items.length > 0 ? order.items.map(itemLabel) : ["Pedido AquaBlast"],
           payment: paymentLabel(attempt?.method ?? order.paymentMethod, attempt?.installments ?? order.installments),
           total: money(amountCents),
+          shipping: savedPricing ? (savedPricing.shippingCents === 0 ? "Grátis" : money(Math.min(savedPricing.shippingCents, amountCents))) : null,
           address: addressLine(order),
           email: order.customerEmail,
         }}

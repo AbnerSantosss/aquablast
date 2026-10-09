@@ -5,6 +5,8 @@
 // adaptados de zod 3 para zod 4 (z.strictObject, { error }) e com as imagens em /checkout/... em vez de /images/...
 import type { CSSProperties } from "react";
 import { z } from "zod";
+import { money } from "./masks";
+import { FULL_SHIPPING_CENTS, FULL_SHIPPING_LABEL } from "./shipping";
 
 /** Cada campo tem padrão próprio, então registros antigos (ou vazios) continuam válidos. */
 export const themeDefaults = {
@@ -19,15 +21,15 @@ export const themeDefaults = {
   timerLabel: "Oferta de Verão",
   timerEnd: "2026-10-12T23:59:59-03:00",
   shipBarEnabled: true,
-  shipBarText: "Frete grátis para todo o Brasil",
-  shipBarNote: "Frete grátis · rastreio pelo site",
+  shipBarText: `${FULL_SHIPPING_LABEL} por ${money(FULL_SHIPPING_CENTS)}`,
+  shipBarNote: "Rastreio pelo site",
   bannerEnabled: true,
   bannerEyebrow: "OFERTA DE VERÃO",
   bannerTitle: "Seu verão mais divertido.",
   bannerSubtitle: "Diversão para o verão inteiro.",
   bannerImage: "/checkout/banner-immersive.webp",
   buttonLabel: "CONTINUAR",
-  badgeText: "FRETE GRÁTIS",
+  badgeText: "FRETE FULL",
   footerText: "Momentos que viram boas lembranças.",
   // Identificação da empresa no rodapé (Decreto 7.962/2013). Informados pelo dono em 2026-09-30; a razão social
   // ainda não foi informada, então fica vazia e o rodapé usa o nome da loja.

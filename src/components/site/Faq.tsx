@@ -1,8 +1,10 @@
 import Image from "next/image";
 
-import { faq } from "@/data/faq";
+import { buildFaq } from "@/data/faq";
+import type { SitePrices } from "@/lib/site/prices";
 
-export function Faq() {
+export function Faq({ prices }: { prices: SitePrices }) {
+  const faq = buildFaq(prices);
   return (
     <section className="section faq" id="duvidas">
       <div className="container faq-grid">

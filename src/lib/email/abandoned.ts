@@ -228,16 +228,25 @@ export async function runPaymentFollowUps(limit = 50): Promise<AbandonedRunResul
   const now = new Date();
   const cutoff = new Date(now.getTime() - 30 * 60_000);
 
-  const pixRows = await db.query.orders.findMany({
-    where: and(
-      eq(orders.checkoutProvider, OWN_PROVIDER),
-      eq(orders.paymentStatus, "pending"),
-      eq(orders.paymentMethod, "pix"),
-      isNotNull(orders.pixExpiresAt),
-      lt(orders.pixExpiresAt, cutoff),
-    ),
-    limit,
-  });
+  // Quem ja recebeu o pix_expired fica fora ANTES do limit. Pedido Pix vencido nunca sai de "pending", entao sem este
+  // filtro os 50 mais antigos (ja avisados) ocupavam a janela para sempre e os novos nao recebiam o e-mail (achado em
+  // 2026-10-09 pelo e2e api-5.9 com 64 pedidos vencidos no banco local). `db.select` em vez de `db.query`: o `not exists`
+  // em `sql` segue o mesmo padrao do carrinho abandonado acima.
+  const pixRows = await db
+    .select()
+    .from(orders)
+    .where(
+      and(
+        eq(orders.checkoutProvider, OWN_PROVIDER),
+        eq(orders.paymentStatus, "pending"),
+        eq(orders.paymentMethod, "pix"),
+        isNotNull(orders.pixExpiresAt),
+        lt(orders.pixExpiresAt, cutoff),
+        sql`not exists (select 1 from ${emailLog} where ${emailLog.orderId} = ${orders.id} and ${emailLog.templateKey} = 'pix_expired')`,
+      ),
+    )
+    .orderBy(orders.pixExpiresAt)
+    .limit(limit);
 
   for (const order of pixRows) {
     result.checked++;

@@ -33,16 +33,16 @@ async function run(variant) {
   try {
     await L.goCheckout(page, "pack=kit&cor1=azul&cor2=preto");
     await abrirResumo(page);
-    await L.waitText(page.locator(".selected-product"), "Kit com 2 AquaBlast");
-    const kitThumbs = page.locator(".selected-product .ck-kit-thumb");
-    assert.equal(await kitThumbs.count(), 2, "duas unidades identificadas no resumo");
-    await L.waitText(kitThumbs.nth(0), "1º azul");
-    await L.waitText(kitThumbs.nth(1), "2º preto");
-    assert.equal(await kitThumbs.nth(0).locator("img").getAttribute("alt"), "1º AquaBlast azul");
-    assert.equal(await kitThumbs.nth(1).locator("img").getAttribute("alt"), "2º AquaBlast preto");
+    // Resumo novo (49f7d26): o kit aparece como dois produtos ("1ª unidade · Azul", "2ª unidade · Preto"), cada um com a foto da cor.
+    // O título "Kit com 2 AquaBlast" saiu do resumo; o equivalente é a lista com exatamente duas unidades.
+    assert.equal(await L.summary(page).locator("[data-summary-unit]").count(), 2, "duas unidades identificadas no resumo");
+    await L.expectSummaryUnit(page, 1, "azul", { kit: true });
+    await L.expectSummaryUnit(page, 2, "preto", { kit: true });
     // Antes de escolher a forma (2026-09-29): Pix do kit em destaque, parcela do cartao abaixo.
-    await L.waitText(page.locator(".order-summary .total"), /^(?=[\s\S]*À vista\s*no Pix)(?=[\s\S]*Economize R\$ 30,00)(?=[\s\S]*R\$ 249,90)/);
-    await L.waitText(page.locator(".order-summary .total-alt"), /ou 12x de R\$ 23,33 sem juros no cartão/);
+    await L.waitText(L.summaryRow(page, "Produtos"), /^R\$ 269,90$/);
+    await L.waitText(L.summaryRow(page, "Desconto no Pix"), /^− R\$ 30,00$/);
+    await L.waitText(L.summaryTotal(page, "pix"), /^R\$ 239,90$/);
+    await L.waitText(L.summaryNote(page, /sem juros no cartão/), /^ou 12x de R\$ 22,49 sem juros no cartão$/);
     await L.fillDados(page);
     await L.submitDados(page);
     await L.fillEntrega(page);
@@ -51,20 +51,23 @@ async function run(variant) {
 
     // Desde o 7d1aafa o Pix abre selecionado: o cliente escolhe o cartao.
     await L.payHead(page, "card").click();
-    await L.waitText(page.locator(".ck-card-warn"), "Não use um cartão real.");
+    // O aviso do modo de teste perdeu a classe .ck-card-warn (agora é o 1º parágrafo do formulário).
+    await L.waitText(page.locator(".ck-cardform > p").first(), "Não use um cartão real.");
     assert.equal(await L.field(page, "cc-number").getAttribute("autocomplete"), "cc-number");
     assert.equal(await L.field(page, "cc-number").getAttribute("inputmode"), "numeric");
     assert.equal(await L.field(page, "cc-cpf").inputValue(), "");
-    await L.waitText(page.locator(".order-summary .total"), /Total no cartão\s*12x de R\$ 23,33\s*sem juros no cartão/);
+    await L.waitText(L.summaryTotal(page, "card"), /^R\$ 269,90$/);
+    await L.waitText(L.summaryNote(page, /12x de/), /^12x de R\$ 22,49 sem juros$/);
     const pagar = page.locator('.ck-cardform button[type="submit"]');
-    await L.waitText(pagar, "Pagar R$ 279,90");
-    await L.waitText(page.locator(".ck-card-payment-total"), /Total no cartão\s*R\$ 279,90\s*12x de R\$ 23,33 sem juros/);
+    await L.waitText(pagar, "Pagar R$ 269,90");
+    await L.waitText(page.locator(".ck-card-payment-total"), /Total no cartão\s*R\$ 269,90\s*12x de R\$ 22,49 sem juros/);
 
     // Luhn invalido: mascara, bandeira e foco no numero.
     await cartao(page, L.CARD_BAD_LUHN);
     assert.equal(await L.field(page, "cc-exp").inputValue(), "12/30");
     assert.equal(await L.field(page, "cc-cpf").inputValue(), "529.982.247-25");
-    await L.waitText(page.locator(".ck-brand"), "· Visa");
+    // A bandeira perdeu a classe .ck-brand: é o <em> dentro do rótulo "Número do cartão".
+    await L.waitText(page.locator(".ck-cardform label").filter({ has: L.field(page, "cc-number") }).locator("em"), /^(· )?Visa$/);
     await pagar.click();
     await erroDoCampo(page, "cc-number", "Número do cartão inválido. Confira os dígitos.");
 
@@ -83,10 +86,10 @@ async function run(variant) {
     // Parcelas: 12x por padrao; da para trocar.
     const inst = L.field(page, "cc-installments");
     const selText = () => inst.evaluate((s) => s.options[s.selectedIndex].text.replace(/\s+/g, " ").trim());
-    assert.match(await selText(), /^12x de R\$\s23,33 sem juros$/);
+    assert.match(await selText(), /^12x de R\$\s22,49 sem juros$/);
     await inst.selectOption("3");
-    assert.match(await selText(), /^3x de R\$\s93,30 sem juros$/);
-    await L.waitText(page.locator(".ck-card-payment-total"), /Total no cartão\s*R\$ 279,90\s*3x de R\$ 93,30 sem juros/);
+    assert.match(await selText(), /^3x de R\$\s89,97 sem juros$/);
+    await L.waitText(page.locator(".ck-card-payment-total"), /Total no cartão\s*R\$ 269,90\s*3x de R\$ 89,97 sem juros/);
     await inst.selectOption("12");
 
     // Recusado pelo simulado: mensagem do gateway, numero e CVV limpos.

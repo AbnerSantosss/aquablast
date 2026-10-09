@@ -2,6 +2,7 @@
 
 import { Check, Info, LoaderCircle, RotateCcw } from "lucide-react";
 import { useContext, useState, type ReactNode } from "react";
+import { money } from "@/lib/checkout/own/masks";
 import { BadFieldContext, feedbackFor, Field, fullName, UFS } from "./Field";
 import type { CepState, FieldKey, FormData } from "./types";
 
@@ -20,6 +21,7 @@ export function StepEntrega({
   addrOk,
   busy,
   buttonLabel,
+  shippingCents,
   error,
   onRetryCep,
 }: {
@@ -30,6 +32,7 @@ export function StepEntrega({
   addrOk: boolean;
   busy: boolean;
   buttonLabel: string;
+  shippingCents: number;
   error: ReactNode;
   onRetryCep?: () => void;
 }) {
@@ -122,13 +125,13 @@ export function StepEntrega({
         <h4 id="ship-title">Sua entrega</h4>
         <div className="ship-list" role="radiogroup" aria-labelledby="ship-title">
           <label className="ship-opt is-selected">
-            <input type="radio" name="ship-option" value="gratis" checked readOnly />
+            <input type="radio" name="ship-option" value="full" checked readOnly />
             <span className="ship-name">
-              <strong>Frete grátis</strong>
+              <strong>Frete FULL</strong>
               <small>Entrega com rastreamento</small>
             </span>
             <span className="ship-price">
-              <b>Grátis</b>
+              <b>{shippingCents === 0 ? "Grátis" : money(shippingCents)}</b>
               <small>Prazo conforme a região</small>
             </span>
           </label>

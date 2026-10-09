@@ -9,6 +9,7 @@ import { maskCEP, maskCPF, maskPhone, money, validMobile } from "@/lib/checkout/
 import type { Quote } from "@/lib/checkout/own/pricing";
 import type { Theme } from "@/lib/checkout/own/theme";
 import { themeVars } from "@/lib/checkout/own/theme";
+import { internoAtivo } from "@/lib/site/interno";
 import { readAdIds } from "@/lib/tracking-ads/capture";
 import { isApiFail, postCart, postOpened, type CartPayload, type CartStep, type CartTrackingInput } from "./api";
 import { Campaign } from "./Campaign";
@@ -33,7 +34,7 @@ import { TrustSeals } from "./TrustSeals";
 import type { Color } from "@/lib/site/types";
 import type { CepState, CheckoutInitial, FieldKey, FormData, PaidInfo, PayMethodUi, StepName } from "./types";
 
-const TOKEN_KEY = "ck-cart-token";
+const TOKEN_KEY = "ck-cart-token-unit-149";
 const STEP_NAMES = ["Seus dados", "Entrega", "Pagamento"] as const;
 const STEP_OF: Record<StepName, number> = { dados: 1, entrega: 2, pagamento: 3 };
 const EMPTY: FormData = { name: "", email: "", phone: "", cpf: "", cep: "", street: "", number: "", extra: "", district: "", city: "", state: "", recipient: "" };
@@ -185,12 +186,14 @@ export function Checkout({
   }, [cepState, addrOk, method]);
   useEffect(() => () => cepReq.current?.abort(), []);
   // Aviso "checkout aberto" para a equipe (2026-09-30). Uma vez por aba (id de visita no sessionStorage); o
-  // servidor ainda limita por visita e por IP. Não roda na tela de pedido já pago.
+  // servidor ainda limita por visita e por IP. Não roda na tela de pedido já pago nem no modo interno
+  // (`?interno=1`, pendência #167, 2026-10-09): visita do dono não gera InitiateCheckout nem e-mail "Checkout aberto".
   const openedSent = useRef(false);
   const visitId = useRef("");
   useEffect(() => {
     if (paid || openedSent.current) return;
     openedSent.current = true;
+    if (internoAtivo()) return;
     let visit = "";
     try {
       visit = sessionStorage.getItem("aqb-ck-visit") ?? "";
@@ -274,7 +277,8 @@ export function Checkout({
     if (isApiFail(result)) return result;
     tokenRef.current = result.token;
     setCartToken(result.token);
-    writeTokenToStorage(result.token);
+    // Recuperações explícitas não substituem o carrinho da oferta atual no navegador.
+    if (!initial) writeTokenToStorage(result.token);
     if (version === quoteVersion.current) setQuotes(result.quotes);
     return result;
   }
@@ -513,6 +517,10 @@ export function Checkout({
     : "";
   const restartHref = selection.pack === "kit" ? `/checkout?pack=kit&cor1=${c1}&cor2=${c2 ?? c1}` : `/checkout?pack=unit&cor=${c1}`;
   const payView: PayView = paid ? paid.method : step === 3 && methods.length > 0 ? method : "preview";
+  const shippingCents = paid ? (paid.shippingCents ?? null) : quotes[method].shippingCents;
+  const shippingText = shippingCents === null
+    ? "Entrega com rastreamento"
+    : `${paid ? "Frete" : "Frete FULL"} · ${shippingCents === 0 ? "Grátis" : money(shippingCents)}`;
 
   const doneCard = (i: number) =>
     i === 0 ? (
@@ -537,7 +545,7 @@ export function Checkout({
         <span>
           {data.city} - {data.state} | <span className="ck-nw">CEP: {data.cep}</span>
         </span>
-        <em className="ck-ship-tag">{theme.badgeText}</em>
+        <em className="ck-ship-tag">{shippingText}</em>
       </>
     ) : (
       <>
@@ -565,7 +573,7 @@ export function Checkout({
     n === 1 ? (
       <StepDados data={data} onChange={change} onContactBlur={handleContactBlur} onSubmit={onSubmit} cpfMasked={cpfMasked} busy={busy} buttonLabel={theme.buttonLabel} error={errorBox} />
     ) : n === 2 ? (
-      <StepEntrega data={data} onChange={change} onSubmit={onSubmit} cepState={cepState} addrOk={addrOk} busy={busy} buttonLabel={theme.buttonLabel} error={errorBox}
+      <StepEntrega data={data} onChange={change} onSubmit={onSubmit} cepState={cepState} addrOk={addrOk} busy={busy} buttonLabel={theme.buttonLabel} shippingCents={quotes[method].shippingCents} error={errorBox}
         onRetryCep={() => { const digits = data.cep.replace(/\D/g, ""); if (digits.length === 8) void lookupCep(digits); }} />
     ) : cartToken ? (
       <StepPagamento
@@ -599,11 +607,11 @@ export function Checkout({
 
   return (
     <div className={`ck ck-root ck-conversion${paid ? " ck-conversion-paid" : " ck-reference"}`} style={themeVars(theme)}>
-      {paid ? <ShipBar theme={theme} /> : null}
+      {paid ? <ShipBar theme={theme} shippingCents={shippingCents} paid /> : null}
       <TopBar theme={theme} />
-      {!paid ? <ShipBar theme={theme} /> : null}
+      {!paid ? <ShipBar theme={theme} shippingCents={shippingCents} /> : null}
       <main className="container ck-main">
-        {!paid && step === 1 ? <Campaign theme={theme} selection={selection} bump={hasBump} bumpColor={bumpColor} /> : null}
+        {!paid && step === 1 ? <Campaign theme={theme} selection={selection} shippingCents={quotes[method].shippingCents} bump={hasBump} bumpColor={bumpColor} /> : null}
         {notice ? (
           <div className="notice" role="alert">
             {notice}{" "}
@@ -640,6 +648,7 @@ export function Checkout({
                 email={data.email}
                 testMode={paid.testMode}
                 restartHref={restartHref}
+                shippingCents={paid.shippingCents}
               />
             ) : null}
             <ol className={`ck-steps${paid ? " is-complete" : ""}`} aria-label="Etapas da compra">

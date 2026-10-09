@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useId, useRef } from "react";
-import { ArrowRight, Check, X } from "lucide-react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { ArrowDown, ArrowRight, Check, X } from "lucide-react";
 import { COLOR_KEYS, COLOR_LABELS } from "@/lib/site/constants";
 import { PurchaseLink } from "./PurchaseLink";
 import { useSelection } from "./SelectionProvider";
@@ -17,6 +17,8 @@ export type UnitColorGuideProps = {
 
 export function UnitColorGuide({ openRequest, onSelectionChange }: UnitColorGuideProps) {
   const { color, colorTouched, chooseColor } = useSelection();
+  const [needsChoice, setNeedsChoice] = useState(false);
+  const choicesRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
@@ -29,6 +31,7 @@ export function UnitColorGuide({ openRequest, onSelectionChange }: UnitColorGuid
   const restoreAfterClose = useCallback(() => {
     // A queued close event must not unlock a dialog that has since reopened.
     if (dialogRef.current?.open) return;
+    setNeedsChoice(false);
     if (focusFrame.current !== null) cancelAnimationFrame(focusFrame.current);
     focusFrame.current = null;
     if (restoreOverflowRef.current !== null) {
@@ -84,7 +87,8 @@ export function UnitColorGuide({ openRequest, onSelectionChange }: UnitColorGuid
       <h2 ref={titleRef} id={titleId} className={styles.title} tabIndex={-1}>Escolha a cor do seu AquaBlast</h2>
       <p id={descriptionId} className={styles.description}>Toque na cor que você quer e continue para o pagamento.</p>
 
-      <div className={styles.choices} role="group" aria-label="Cor do seu AquaBlast">
+      {needsChoice && <p className={styles.choiceAlert} id={`${descriptionId}-error`} role="alert">Escolha uma das cores abaixo para continuar.<ArrowDown size={18} aria-hidden="true" /></p>}
+      <div ref={choicesRef} tabIndex={-1} className={styles.choices} data-attention={needsChoice || undefined} role="group" aria-describedby={needsChoice ? `${descriptionId}-error` : undefined} aria-label="Cor do seu AquaBlast">
         {COLOR_KEYS.map((option) => (
           <button
             key={option}
@@ -92,6 +96,7 @@ export function UnitColorGuide({ openRequest, onSelectionChange }: UnitColorGuid
             aria-pressed={colorTouched && color === option}
             onClick={() => {
               chooseColor(option);
+              setNeedsChoice(false);
               onSelectionChange();
             }}
           >
@@ -108,7 +113,13 @@ export function UnitColorGuide({ openRequest, onSelectionChange }: UnitColorGuid
             Continuar para pagamento <ArrowRight size={18} aria-hidden="true" />
           </PurchaseLink>
         ) : (
-          <button type="button" className={styles.next} disabled>
+          <button type="button" className={styles.next} data-awaiting onClick={() => {
+            setNeedsChoice(true);
+            requestAnimationFrame(() => {
+              choicesRef.current?.focus({ preventScroll: true });
+              choicesRef.current?.scrollIntoView({ block: "nearest" });
+            });
+          }}>
             Continuar para pagamento <ArrowRight size={18} aria-hidden="true" />
           </button>
         )}

@@ -18,6 +18,7 @@ export const dynamic = "force-dynamic";
 export default async function CheckoutPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await ensureBootstrap();
   const params = await searchParams;
+  // Preserva a quantidade e as cores escolhidas nos cards de oferta.
   const selection = selectionFromParams(params);
 
   const cupom = Array.isArray(params.cupom) ? params.cupom[0] : params.cupom;

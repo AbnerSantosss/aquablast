@@ -10,7 +10,7 @@ import { getSettings, type AdminAlertEvent } from "@/lib/settings";
 import { COLOR_LABELS } from "@/lib/site/constants";
 import { getEmailProvider } from "./provider";
 import { absoluteUrl } from "./send";
-import { escapeHtml, htmlToText } from "./templates";
+import { escapeHtml, htmlToText, internalFrame } from "./templates";
 
 /**
  * Avisos por e-mail para a equipe durante o checkout (pedido do dono, 2026-09-30): checkout aberto,
@@ -131,7 +131,7 @@ const EVENT_TITLE: Record<CheckoutAlertEvent, string> = {
 };
 
 function row(label: string, valueHtml: string): string {
-  return `<tr><td style="padding:6px 12px 6px 0;color:#4b6a78;font-size:13px;vertical-align:top;white-space:nowrap;">${escapeHtml(label)}</td><td style="padding:6px 0;font-size:14px;">${valueHtml}</td></tr>`;
+  return `<tr><td valign="top" style="padding:6px 12px 6px 0;font-family:Arial,Helvetica,sans-serif;color:#4b6a78;font-size:13px;vertical-align:top;white-space:nowrap;">${escapeHtml(label)}</td><td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;">${valueHtml}</td></tr>`;
 }
 
 /** Já saiu este aviso (com sucesso) para o carrinho/pedido? Evita repetir início, pagamento e pago. */
@@ -228,15 +228,12 @@ async function emailCheckoutEvent(a: CheckoutAlert): Promise<void> {
       order ? row("Pedido", `<a href="${escapeHtml(absoluteUrl(`/admin/pedidos/${order.id}`))}">${escapeHtml(order.orderNumber)}</a>`) : "",
     ].join("");
     const cartsLink = absoluteUrl("/admin/carrinhos");
-    const html = `<div style="margin:0;padding:24px 12px;background:#eaf6fb;font-family:Arial,Helvetica,sans-serif;color:#0f2c3a;">
-  <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:20px;padding:24px 28px;">
+    const html = internalFrame(`
     <p style="margin:0 0 4px;font-size:12px;color:#4b6a78;text-transform:uppercase;letter-spacing:.04em;">Aviso do checkout · ${escapeHtml(store)}</p>
     <p style="margin:0 0 16px;font-size:18px;font-weight:700;">${escapeHtml(EVENT_TITLE[a.event])}</p>
-    <table role="presentation" style="border-collapse:collapse;width:100%;">${rows}</table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;">${rows}</table>
     <p style="margin:18px 0 0;font-size:13px;"><a href="${escapeHtml(cartsLink)}">Ver carrinhos no painel</a></p>
-    <p style="margin:14px 0 0;font-size:12px;color:#4b6a78;">Escolha quais avisos chegam em Configurações &gt; Envios no painel.</p>
-  </div>
-</div>`;
+    <p style="margin:14px 0 0;font-size:12px;color:#4b6a78;">Escolha quais avisos chegam em Configurações &gt; Envios no painel.</p>`);
 
     const triggeredBy = "system:alerta";
     try {

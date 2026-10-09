@@ -131,15 +131,12 @@ async function submitCurrentForm(page) {
   await submit.click();
 }
 
-/** Abre somente o campo opcional que o cenário precisa editar ou conferir. */
+/**
+ * Campo da entrega pelo `name`. Desde o checkout de 2026-10-07 (49f7d26) complemento e destinatário ficam
+ * sempre na tela depois do CEP (antes abriam por um botão em .delivery-optional / .delivery-recipient-summary).
+ */
 async function revealEntregaField(page, name) {
   const input = field(page, name);
-  if (await input.isVisible()) return input;
-  assert.ok(["extra", "recipient"].includes(name), `campo obrigatório ${name} deveria estar visível após CEP`);
-  const section = page.locator(name === "extra" ? ".delivery-optional" : ".delivery-recipient-summary");
-  const trigger = section.locator('button[aria-expanded="false"]');
-  assert.equal(await trigger.count(), 1, `ação para abrir ${name} deveria estar disponível`);
-  await trigger.click();
   await input.waitFor({ state: "visible", timeout: 5000 });
   return input;
 }
@@ -151,9 +148,43 @@ async function revealSummary(page) {
   await page.locator(".ck-summary-details").waitFor({ state: "visible", timeout: 5000 });
 }
 
-/** Compact Pix controls shared by checkout and pending order. */
+// ---- Resumo do pedido ainda não pago (OrderSummary, 49f7d26) ----
+// As classes do resumo viraram CSS Modules; o que é estável: .order-summary, .ck-summary-details, o <dl> de
+// valores (dt/dd) e os atributos data-summary-*. O resumo do pedido PAGO continua com as classes antigas.
+const summary = (page) => page.locator(".order-summary .ck-summary-details");
+const summaryRowBy = (page, re) => summary(page).locator("dl > div").filter({ has: page.locator("dt", { hasText: re }) }).locator("dd");
+/** Valor (<dd>) da linha do resumo cujo rótulo (<dt>) é exatamente `label`: "Produtos", "Desconto no Pix", "Entrega"… */
+const summaryRow = (page, label) => summaryRowBy(page, new RegExp("^\\s*" + String(label).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*$"));
+/** Linha do total: `method` "pix" | "card" exige o rótulo daquela forma; sem ele aceita o total em destaque. */
+const summaryTotal = (page, method) =>
+  method ? summaryRow(page, method === "card" ? "Total no cartão" : "Total no Pix") : summaryRowBy(page, /^\s*Total no (Pix|cartão)\s*$/);
+/** Frase abaixo dos valores (parcelamento ou alternativa no Pix), localizada pelo texto. */
+const summaryNote = (page, re) => summary(page).locator("p").filter({ hasText: re });
+/** Produto n (1 ou 2) da lista "Produtos e cores escolhidas". */
+const summaryUnit = (page, n) => summary(page).locator(`[data-summary-unit="${n}"]`);
+/** Linha da 2ª unidade vinda do order bump: data-summary-bump = "pending" (sem cor) | "confirmed". */
+const summaryBump = (page) => summary(page).locator("[data-summary-bump]");
+/** Confere produto n do resumo: cor (atributo e texto) e foto com alt da cor. */
+async function expectSummaryUnit(page, n, color, { kit = false } = {}) {
+  const unit = summaryUnit(page, n);
+  await unit.waitFor({ state: "visible", timeout: 10000 });
+  assert.equal(await unit.getAttribute("data-summary-color"), color, `${n}ª unidade do resumo deveria ser ${color}`);
+  await waitText(unit, new RegExp("AquaBlast\\s*" + (kit ? `${n}ª unidade · ` : "Cor: ") + color + "\\s*Qtd\\. 1", "i"));
+  assert.equal(await unit.locator("img").getAttribute("alt"), `AquaBlast ${color}`, `foto da ${n}ª unidade`);
+}
+
+/**
+ * Botão "Editar …" do cartão da etapa concluída (.ck-edit). A barra de progresso (nav.ck-progress) tem um botão
+ * com o mesmo nome acessível; por isso o papel+nome sozinho não é mais único.
+ */
+const editStep = (page, name) => page.locator(".ck-steps").getByRole("button", { name, exact: true });
+const progressEdit = (page, name) => page.locator("nav.ck-progress").getByRole("button", { name, exact: true });
+
+// ---- Pix gerado na etapa 3 (PixPay, 49f7d26): .pix-validity e .pix-code-area saíram ----
+/** Contagem compacta do Pix ("10:00"). */
 const pixCountdown = (page) => page.locator('[data-pix-countdown]');
-const pixCopy = (page) => page.locator('[data-pix-copy]');
+/** Botão "Copiar código Pix" / "Código copiado". */
+const pixCopy = (page) => page.locator("[data-pix-copy]");
 
 async function fillEntrega(page, { manual = false, extra, recipient } = {}) {
   await field(page, "cep").fill(endereco.cep);
@@ -173,14 +204,15 @@ async function fillEntrega(page, { manual = false, extra, recipient } = {}) {
   if (extra !== undefined) await (await revealEntregaField(page, "extra")).fill(extra);
   const rec = field(page, "recipient");
   if (recipient !== undefined) await (await revealEntregaField(page, "recipient")).fill(recipient);
-  else if (await rec.isVisible()) {
-    if (!(await rec.inputValue())) await rec.fill(cliente.name);
+  else {
+    // O destinatário vem preenchido com o nome informado na etapa 1 (antes aparecia em .delivery-recipient-summary).
+    await rec.waitFor({ state: "visible", timeout: 5000 });
     assert.equal(await rec.inputValue(), cliente.name, "destinatário deveria vir dos dados do cliente");
-  } else await waitText(page.locator(".delivery-recipient-summary"), cliente.name);
+  }
 }
 
 async function submitEntrega(page) {
-  await waitText(page.locator(".ship-opt"), /Frete grátis.*Entrega com rastreamento/);
+  await waitText(page.locator(".ship-opt"), /Frete FULL.*Entrega com rastreamento/);
   await submitCurrentForm(page);
   await page.locator(".pay-acc").waitFor({ timeout: 10000 });
 }
@@ -210,8 +242,10 @@ async function choosePix(page) {
   await page.locator('.pay-item.is-open input[value="pix"]').waitFor({ timeout: 10000 });
 }
 
+// Mesma chave de TOKEN_KEY em src/components/checkout/Checkout.tsx (trocada para -unit-149 em 2026-10-08, para
+// descartar carrinhos antigos com o preco anterior). Se a chave mudar la, mudar aqui, senao "carrinho nao nasceu".
 async function cartTokenOf(page) {
-  return page.evaluate(() => { try { return window.localStorage.getItem("ck-cart-token"); } catch { return null; } });
+  return page.evaluate(() => { try { return window.localStorage.getItem("ck-cart-token-unit-149"); } catch { return null; } });
 }
 
 /** Executa um cenario e grava o resultado em e2e/out/results.json (passou/falhou + motivo). */
@@ -238,6 +272,6 @@ module.exports = {
   BASE, OUT, cliente, endereco, CARD_OK, CARD_REFUSED, CARD_BAD_LUHN, assert, withDb,
   open, checkNetwork, noHorizontalScroll, shot, field, btn, waitText,
   fillDados, submitDados, fillEntrega, submitEntrega, submitCurrentForm, revealEntregaField, revealSummary, goCheckout, toPayment, cartTokenOf, payHead, choosePix,
-  pixCountdown, pixCopy,
+  summary, summaryRow, summaryTotal, summaryNote, summaryUnit, summaryBump, expectSummaryUnit, editStep, progressEdit, pixCountdown, pixCopy,
   clearRateLimits, setSetting, deleteSetting, scenario,
 };

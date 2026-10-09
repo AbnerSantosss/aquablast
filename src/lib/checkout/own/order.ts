@@ -3,7 +3,8 @@ import { db } from "@/db";
 import { checkoutCarts, orders, paymentAttempts, type CheckoutCart, type Order } from "@/db/schema";
 import { randomToken } from "@/lib/crypto";
 import { addOrderEvent, generateOrderNumber, getOrderById, updateOrderFields } from "@/lib/orders/service";
-import { orderItemOf, selectionFromCart, type Selection } from "./catalog";
+import { selectionFromCart, type Selection } from "./catalog";
+import { orderItemFromQuote } from "./order-pricing";
 import type { Quote } from "./pricing";
 
 /** Provider gravado em orders.checkoutProvider para pedidos do checkout próprio. */
@@ -52,7 +53,7 @@ export function orderContactFromCart(cart: CheckoutCart) {
  */
 export async function createOrderFromCart(cart: CheckoutCart, q: Quote): Promise<{ order: Order; created: boolean }> {
   const sel = effectiveSelection(cart, q);
-  const items = [orderItemOf(sel, q.amountCents)];
+  const items = [orderItemFromQuote(sel, q)];
   const amountTotal = (q.amountCents / 100).toFixed(2);
 
   const previous = cart.orderId ? await getOrderById(cart.orderId) : null;

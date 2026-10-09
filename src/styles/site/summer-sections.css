@@ -41,6 +41,10 @@
 .summer-confidence-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
 .summer-confidence-grid article { display: flex; flex-direction: column; padding: 1.25rem; border: 1px solid var(--line); border-radius: 1rem; min-width: 0; }
 .summer-confidence-grid article > svg { color: var(--blue); margin-bottom: 1rem; }
+.summer-confidence-seal { display: grid; place-items: center; width: 80px; height: 80px; margin: 0 auto 1rem; flex: 0 0 80px; }
+.summer-confidence-seal img { width: 80px; height: 80px; object-fit: contain; }
+.summer-confidence-seal.is-pix { border-radius: 50%; background: linear-gradient(145deg, var(--blue), var(--deep)); box-shadow: var(--shadow); }
+.summer-confidence-seal.is-pix img { width: 52px; height: 52px; padding: 8px; border-radius: 14px; background: var(--pale); }
 .summer-confidence-grid p { margin-bottom: .75rem; }
 .summer-confidence-grid a { display: inline-flex; align-items: center; min-height: 2.75rem; margin-top: auto; color: var(--blue); font-weight: 700; font-size: .875rem; text-decoration: underline; text-underline-offset: .2rem; }
 #verao.summer-closing { background: var(--pale); text-align: center; }
@@ -148,7 +152,7 @@
 .summer-offer-delivery { display: flex; justify-content: center; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); margin: 6px 0 0; }
 /* Fotos existentes em cenas distintas, com foco no atributo demonstrado. */
 .summer-details-grid article { display: flex; flex-direction: column; }
-.summer-detail-art { position: relative; height: 230px; overflow: hidden; background: var(--deep); }
+.summer-detail-art { position: relative; width: 100%; flex-shrink: 0; height: 230px; overflow: hidden; background: var(--deep); }
 .summer-detail-art img { object-fit: contain; }
 .battery-detail { background: var(--deep) url('/battery-background-v40.webp') center/cover; }
 .summer-detail-art.battery-detail .detail-toy { width: 80% !important; height: 86% !important; inset: 0 auto auto -8% !important; }

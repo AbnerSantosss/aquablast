@@ -1,5 +1,7 @@
-import { PackageSearch, ShieldCheck, Truck } from "lucide-react";
+import { BadgePercent, PackageSearch, Truck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { FULL_SHIPPING_LABEL } from "@/lib/checkout/own/shipping";
+import { DELIVERY_PATH } from "@/lib/site/constants";
 import styles from "./HeroTrustBadges.module.css";
 
 type TrustBenefit = {
@@ -10,9 +12,9 @@ type TrustBenefit = {
 };
 
 const benefits: TrustBenefit[] = [
-  { title: "Frete grátis", description: "Para todo o Brasil", icon: Truck },
+  { title: FULL_SHIPPING_LABEL, description: "Para todo o Brasil", icon: Truck, href: DELIVERY_PATH },
   { title: "Rastreio no site", description: "Acompanhe seu pedido", icon: PackageSearch, href: "/rastrear" },
-  { title: "Troca por avaria", description: "Se chegar quebrado", icon: ShieldCheck, href: "/trocas-e-devolucoes" },
+  { title: "Desconto no Pix", description: "Valor menor que no cartão", icon: BadgePercent },
 ];
 
 export function HeroTrustBadges() {

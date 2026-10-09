@@ -202,7 +202,9 @@ export const DEFAULTS: SettingsMap = {
   "push.vapid.privateKey": "",
 
   "checkout.mode": "zedy",
-  "checkout.prices": { unit: { pix: 15990, card: 17990 }, kit: { pix: 24990, card: 27990 } },
+  // Literais de proposito (scripts/verify-checkout-ux.cjs le estes valores pela AST e confere que a reserva
+  // do site, FALLBACK_PRICE_CENTS em lib/site/prices.ts, e igual).
+  "checkout.prices": { unit: { pix: 14990, card: 17990 }, kit: { pix: 23990, card: 26990 } },
   "checkout.maxInstallments": 12,
   "checkout.bumpEnabled": true,
   "checkout.pixTtlSeconds": 600,

@@ -57,8 +57,17 @@ export const PLACEHOLDERS = [
 // Tudo em tabela e estilo inline: é o que Gmail, Outlook e os apps de celular respeitam. Sem imagem (muitos
 // clientes bloqueiam imagem por padrão), sem fonte externa. Cores: azul-marinho do site (#063760) no cabeçalho,
 // laranja (#f97316) só no botão principal.
+// Outlook desktop (2026-10-07): ele desenha com o motor do Word, que ignora max-width, padding em <a>, largura e
+// altura de <div> e nem sempre herda a fonte da tabela de fora. Por isso: tabela "fantasma" de largura fixa dentro
+// de <!--[if mso]>, mso-padding-alt no botão, fonte repetida em cada célula e nada de <div> com tamanho.
+// Cantos arredondados o Outlook não desenha (fica quadrado); é o esperado.
 
-const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+export const EMAIL_FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+const FONT = EMAIL_FONT;
+
+/** Abre/fecha a tabela de largura fixa que só o Outlook desktop lê (ele ignora max-width). */
+const msoOpen = (width: number) => `<!--[if mso]><table role="presentation" width="${width}" align="center" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->`;
+const MSO_CLOSE = "<!--[if mso]></td></tr></table><![endif]-->";
 const INK = "#12303f";
 const MUTED = "#55707e";
 const LINE = "#dbe7ee";
@@ -69,24 +78,26 @@ const LINE = "#dbe7ee";
  * o contato só mostra WhatsApp quando o número do painel é válido.
  */
 const wrap = (preheader: string, inner: string) => `
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;font-size:1px;line-height:1px;color:#eef4f8;">${preheader}</div>
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;font-size:1px;line-height:1px;color:#eef4f8;mso-hide:all;">${preheader}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#eef4f8" style="background:#eef4f8;margin:0;"><tr><td align="center" style="padding:28px 12px;">
+  ${msoOpen(600)}
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;font-family:${FONT};color:${INK};">
-    <tr><td bgcolor="#063760" style="background:#063760;border-radius:16px 16px 0 0;padding:26px 32px 22px;">
+    <tr><td align="left" bgcolor="#063760" style="background:#063760;border-radius:16px 16px 0 0;padding:26px 32px 22px;font-family:${FONT};">
       <div style="font-size:24px;line-height:1.2;font-weight:800;color:#ffffff;">{{loja}}</div>
       <div style="font-size:13px;line-height:1.4;color:#bfe3f5;margin-top:4px;">{{frase}}</div>
     </td></tr>
-    <tr><td bgcolor="#22d3ee" style="background:#22d3ee;height:4px;line-height:4px;font-size:0;">&nbsp;</td></tr>
-    <tr><td bgcolor="#ffffff" style="background:#ffffff;border-left:1px solid ${LINE};border-right:1px solid ${LINE};padding:32px 32px 28px;font-size:16px;line-height:1.6;color:${INK};">
+    <tr><td height="4" bgcolor="#22d3ee" style="background:#22d3ee;height:4px;line-height:4px;mso-line-height-rule:exactly;font-size:1px;">&nbsp;</td></tr>
+    <tr><td align="left" bgcolor="#ffffff" style="background:#ffffff;border-left:1px solid ${LINE};border-right:1px solid ${LINE};padding:32px 32px 28px;font-family:${FONT};font-size:16px;line-height:1.6;color:${INK};">
       ${inner}
     </td></tr>
-    <tr><td bgcolor="#f6fafc" style="background:#f6fafc;border:1px solid ${LINE};border-radius:0 0 16px 16px;padding:20px 32px;font-size:14px;line-height:1.6;color:${MUTED};">
+    <tr><td align="left" bgcolor="#f6fafc" style="background:#f6fafc;border:1px solid ${LINE};border-radius:0 0 16px 16px;padding:20px 32px;font-family:${FONT};font-size:14px;line-height:1.6;color:${MUTED};">
       <strong style="color:${INK};">Precisa de ajuda?</strong><br>Fale com a gente {{contato}}.
     </td></tr>
-    <tr><td align="center" style="padding:18px 16px 0;font-size:12px;line-height:1.5;color:#7b919d;">
+    <tr><td align="center" style="padding:18px 16px 0;font-family:${FONT};font-size:12px;line-height:1.5;color:#7b919d;">
       Você recebeu este e-mail porque fez ou iniciou um pedido na {{loja}}.
     </td></tr>
   </table>
+  ${MSO_CLOSE}
 </td></tr></table>`;
 
 const h1 = (text: string) => `<h1 style="margin:0 0 14px;font-size:24px;line-height:1.3;font-weight:800;color:#063760;">${text}</h1>`;
@@ -95,26 +106,43 @@ const p = (text: string) => `<p style="margin:0 0 14px;">${text}</p>`;
 
 const small = (text: string) => `<p style="margin:0 0 10px;font-size:14px;line-height:1.55;color:${MUTED};">${text}</p>`;
 
-/** Botão principal. Em tabela com bgcolor para o Outlook não desenhar um link solto. */
+/**
+ * Botão principal. Em tabela com bgcolor para o Outlook não desenhar um link solto; mso-padding-alt devolve no
+ * Outlook o respiro que ele tira do <a> (os outros clientes ignoram essa propriedade e usam o padding do link).
+ */
 const btn = (href: string, label: string) =>
-  `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;"><tr><td align="center" bgcolor="#f97316" style="background:#f97316;border-radius:10px;"><a href="${href}" style="display:inline-block;padding:14px 30px;font-size:16px;line-height:1.2;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;">${label}</a></td></tr></table>`;
+  `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;"><tr><td align="center" bgcolor="#f97316" style="background:#f97316;border-radius:10px;mso-padding-alt:14px 30px;"><a href="${href}" style="display:inline-block;padding:14px 30px;font-family:${FONT};font-size:16px;line-height:1.2;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;">${label}</a></td></tr></table>`;
+
+/**
+ * Cartão branco dos e-mails internos (aviso de prazo, avisos do checkout, redefinição de senha). Em tabela, e não
+ * em <div>, pelo mesmo motivo da moldura do cliente: o Outlook desktop ignora max-width e padding de <div>.
+ * `textStyle` entra no estilo da célula (tamanho e altura de linha de cada e-mail).
+ */
+export const internalFrame = (inner: string, textStyle = "font-size:16px;") => `
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#eaf6fb" style="background:#eaf6fb;margin:0;"><tr><td align="center" style="padding:24px 12px;">
+  ${msoOpen(560)}
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;"><tr><td align="left" bgcolor="#ffffff" style="background:#ffffff;border-radius:20px;padding:24px 28px;font-family:Arial,Helvetica,sans-serif;color:#0f2c3a;${textStyle}">
+    ${inner}
+  </td></tr></table>
+  ${MSO_CLOSE}
+</td></tr></table>`;
 
 /** Moldura dos e-mails internos (para a equipe): sem a frase da campanha nem o rodapé de suporte ao cliente. */
-const wrapInternal = (inner: string) => `
-<div style="margin:0;padding:24px 12px;background:#eaf6fb;font-family:Arial,Helvetica,sans-serif;color:#0f2c3a;">
-  <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:20px;padding:24px 28px;font-size:15px;line-height:1.55;">
-    <p style="margin:0 0 14px;font-size:13px;font-weight:700;color:#4b6675;">Painel {{loja}} · aviso interno</p>
-    ${inner}
-  </div>
-</div>`;
+const wrapInternal = (inner: string) =>
+  internalFrame(
+    `<p style="margin:0 0 14px;font-size:13px;font-weight:700;color:#4b6675;">Painel {{loja}} · aviso interno</p>
+    ${inner}`,
+    "font-size:15px;line-height:1.55;",
+  );
 
-/** Botão do e-mail interno (visual antigo, mantido para o modelo interno não mudar). */
-const btnInternal = (href: string, label: string) =>
-  `<p style="margin:22px 0;"><a href="${href}" style="display:inline-block;background:#f97316;color:#fff;text-decoration:none;font-weight:900;padding:14px 26px;border-radius:999px;font-size:16px;">${label}</a></p>`;
+/** Botão dos e-mails internos (laranja em pílula). Mesma técnica do `btn` para o Outlook. `href` já escapado. */
+export const internalButton = (href: string, label: string) =>
+  `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0;"><tr><td align="center" bgcolor="#f97316" style="background:#f97316;border-radius:999px;mso-padding-alt:14px 26px;"><a href="${href}" style="display:inline-block;padding:14px 26px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.2;font-weight:900;color:#ffffff;text-decoration:none;border-radius:999px;">${label}</a></td></tr></table>`;
+const btnInternal = internalButton;
 
 /** Caixa com um código para copiar (código de rastreio, Pix copia e cola). */
 const code = (label: string, v: string) =>
-  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;border-collapse:separate;"><tr><td style="padding:14px 16px;background:#f3f8fb;border:1px solid ${LINE};border-radius:10px;">
+  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;border-collapse:separate;"><tr><td bgcolor="#f3f8fb" style="padding:14px 16px;background:#f3f8fb;border:1px solid ${LINE};border-radius:10px;font-family:${FONT};">
         <div style="font-size:12px;font-weight:700;color:${MUTED};text-transform:uppercase;letter-spacing:.5px;">${label}</div>
         <div style="margin-top:6px;font-family:Consolas,'Courier New',monospace;font-size:15px;line-height:1.45;font-weight:700;color:${INK};word-break:break-all;">${v}</div>
       </td></tr></table>`;
@@ -135,12 +163,12 @@ const STATUS_BLOCKS = `
 /** Resumo do pedido: itens e, quando faz sentido, o total. */
 const summary = (withTotal: boolean) =>
   `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0 6px;border-top:1px solid ${LINE};">
-        <tr><td style="padding:14px 0 0;font-size:12px;font-weight:700;color:${MUTED};text-transform:uppercase;letter-spacing:.5px;">Itens do pedido</td></tr>
-        <tr><td style="padding:4px 0 0;font-size:15px;line-height:1.5;color:${INK};">{{itens}}</td></tr>${
+        <tr><td style="padding:14px 0 0;font-family:${FONT};font-size:12px;font-weight:700;color:${MUTED};text-transform:uppercase;letter-spacing:.5px;">Itens do pedido</td></tr>
+        <tr><td style="padding:4px 0 0;font-family:${FONT};font-size:15px;line-height:1.5;color:${INK};">{{itens}}</td></tr>${
           withTotal
             ? `
-        <tr><td style="padding:12px 0 0;font-size:12px;font-weight:700;color:${MUTED};text-transform:uppercase;letter-spacing:.5px;">Total</td></tr>
-        <tr><td style="padding:2px 0 0;font-size:18px;font-weight:800;color:${INK};">{{valor}}</td></tr>`
+        <tr><td style="padding:12px 0 0;font-family:${FONT};font-size:12px;font-weight:700;color:${MUTED};text-transform:uppercase;letter-spacing:.5px;">Total</td></tr>
+        <tr><td style="padding:2px 0 0;font-family:${FONT};font-size:18px;font-weight:800;color:${INK};">{{valor}}</td></tr>`
             : ""
         }
       </table>`;
@@ -399,26 +427,27 @@ export const DEFAULT_TEMPLATES: Record<TemplateKey, { name: string; description:
 };
 
 /**
- * md5 dos corpos padrão anteriores de cada modelo (todas as versões até 2026-10-02). Quando o padrão muda, a
+ * md5 dos corpos padrão anteriores de cada modelo (todas as versões até 2026-10-07, ajuste para o Outlook desktop). Quando o padrão muda, a
  * linha do banco que ainda está com um corpo antigo (ninguém editou) recebe o novo; se o dono editou o modelo,
  * a versão dele fica intacta. Guardar o md5 evita carregar no código o HTML inteiro de cada versão antiga.
  * Ao mudar um corpo padrão de novo: acrescente aqui o md5 do corpo que está saindo.
  */
 const LEGACY_BODY_MD5: Partial<Record<TemplateKey, string[]>> = {
-  order_confirmed: ["0bdd6d29c6eab3b05ec55eb753a2d985", "1848547bb8a53fd86698c8df88fb8d77"],
-  pix_pending: ["4b3038f1e1b0c77854b8e45ec84d4f1f"],
-  pix_reminder: ["bb9b27e596d69e4e63e46b58da07031f"],
-  shipped: ["538372bfd8e203132534593482b76098", "5ce9ae83020a8d7875e01e171e5da126", "214bda98475a0979119fc6f1fcc3de1d"],
-  in_transit: ["374c4dc3bea9f848922e92b729f03cd5"],
-  out_for_delivery: ["3a31e54f307806e221b1f3459be072c0", "acad352622514414448ce0ea2969b39f"],
-  delivered: ["8b24ebe04a08c4fb7cb1538a10caa2d5", "7144e3bc62e08e61bf4a137ee74199b7"],
-  exception: ["5ef65eef2c5042e3e0571bd916de9a80"],
-  access_code: ["0d21364bdd8a1f1964b162b36e67db86", "1127c08521c1c6666fe8ffa32086aedd"],
-  cart_abandoned_1: ["470c33cec62a7012b9a9a164736a0c93"],
-  cart_abandoned_2: ["b2b3f78c8e5ab5a90a626341bed39b93"],
-  cart_abandoned_3: ["273e61e090d52f17d60e3d1f7957fcd3"],
-  payment_refused: ["53b1ae53d3d6ec4be384f14f194f2f55"],
-  pix_expired: ["48e11455f7a1baacc77acca51d43296d"],
+  order_confirmed: ["0bdd6d29c6eab3b05ec55eb753a2d985", "1848547bb8a53fd86698c8df88fb8d77", "cd7d8ae611911d7512a27a981365c805"],
+  pix_pending: ["4b3038f1e1b0c77854b8e45ec84d4f1f", "5a8081ca9af2c3342dd9b6e7cc93dd05"],
+  pix_reminder: ["bb9b27e596d69e4e63e46b58da07031f", "877af0b157ef99d9b69fb3db9fb9851e"],
+  shipped: ["538372bfd8e203132534593482b76098", "5ce9ae83020a8d7875e01e171e5da126", "214bda98475a0979119fc6f1fcc3de1d", "ffdc4dce8f2f030cda12371bf68d4186"],
+  in_transit: ["374c4dc3bea9f848922e92b729f03cd5", "20bf281973be49b4790445faf9779d18"],
+  out_for_delivery: ["3a31e54f307806e221b1f3459be072c0", "acad352622514414448ce0ea2969b39f", "73afa4796e11e2f09dc64c0ce6029bb7"],
+  delivered: ["8b24ebe04a08c4fb7cb1538a10caa2d5", "7144e3bc62e08e61bf4a137ee74199b7", "066654870ca128edaf74aefe73f9e227"],
+  exception: ["5ef65eef2c5042e3e0571bd916de9a80", "638391b3f94c9635b04e28907da6d66b"],
+  access_code: ["0d21364bdd8a1f1964b162b36e67db86", "1127c08521c1c6666fe8ffa32086aedd", "f1a638900e3e66546220b9fddece0062"],
+  cart_abandoned_1: ["470c33cec62a7012b9a9a164736a0c93", "239c24c306f3c8334b73925939ab5d91"],
+  cart_abandoned_2: ["b2b3f78c8e5ab5a90a626341bed39b93", "56f8fe77a947d8c290918e3006daff75"],
+  cart_abandoned_3: ["273e61e090d52f17d60e3d1f7957fcd3", "f7be8e7d0d87b2e27adfa0c336e23c61"],
+  payment_refused: ["53b1ae53d3d6ec4be384f14f194f2f55", "5491644629ae513b32852756d1342eeb"],
+  admin_sla_atrasado: ["f6325e1d5c9a27f4c75c0818b3f75adc"],
+  pix_expired: ["48e11455f7a1baacc77acca51d43296d", "8414b68c5f34c2f018aa44fd2f206ff1"],
 };
 
 export async function ensureDefaultTemplates(): Promise<void> {

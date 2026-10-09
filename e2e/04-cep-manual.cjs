@@ -19,7 +19,8 @@ async function run(variant) {
     await L.field(page, "number").fill("50");
     await L.field(page, "district").fill("Centro Histórico");
     await L.field(page, "city").fill("Porto Alegre");
-    await L.waitText(page.locator(".delivery-recipient-summary"), L.cliente.name);
+    // Antes o nome aparecia em ".delivery-recipient-summary"; agora o campo Destinatário fica na tela, já com o nome do cliente.
+    assert.equal(await (await L.revealEntregaField(page, "recipient")).inputValue(), L.cliente.name, "destinatário deveria vir dos dados do cliente");
     await L.submitCurrentForm(page);
     await L.waitText(page.locator("p.error"), "Selecione o estado.");
     // Popup explicito (2026-10-02): o foco fica no popup; "CORRIGIR AGORA" fecha e leva o foco ao estado.
@@ -29,7 +30,7 @@ async function run(variant) {
     assert.match(await L.field(page, "state").getAttribute("aria-describedby"), /ck-state-error/, "erro deveria estar associado ao estado");
     await L.shot(page, `c4-${variant.tag}-cep-manual-erro-estado`);
     await page.locator(".state-select").selectOption("RS");
-    await L.waitText(page.locator(".ship-opt"), /Frete grátis.*Entrega com rastreamento/);
+    await L.waitText(page.locator(".ship-opt"), /Frete FULL.*Entrega com rastreamento/);
     await L.submitEntrega(page);
     await L.waitText(page.locator(".ck-step[aria-current=step]"), "Pagamento");
     const done1 = page.locator(".ck-done").nth(1);

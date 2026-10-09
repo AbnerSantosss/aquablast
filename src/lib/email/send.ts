@@ -8,7 +8,7 @@ import { STATUS_LABEL } from "@/lib/orders/status";
 import { PUBLIC_CARRIER_LABEL } from "@/lib/tracking/public";
 import { brandVars } from "./brand-vars";
 import { accessBlockHtml, messageBlockHtml, progressHtml } from "./status-blocks";
-import { escapeHtml, getTemplate, htmlToText, renderTemplate, type TemplateKey } from "./templates";
+import { escapeHtml, getTemplate, htmlToText, internalButton, internalFrame, renderTemplate, type TemplateKey } from "./templates";
 
 function formatBRL(v: string | number | null | undefined): string {
   const n = typeof v === "string" ? Number(v) : v;
@@ -122,17 +122,14 @@ export async function sendAdminPasswordResetEmail(to: string, resetUrl: string):
   const subject = `Redefinição de senha do painel - ${store}`;
   const minutes = PASSWORD_RESET_TTL_MINUTES;
   const href = escapeHtml(resetUrl);
-  const html = `<div style="margin:0;padding:24px 12px;background:#eaf6fb;font-family:Arial,Helvetica,sans-serif;color:#0f2c3a;">
-  <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:20px;padding:24px 28px;">
+  const html = internalFrame(`
     <p style="margin:0 0 14px;font-size:18px;font-weight:700;">Redefinição de senha do painel</p>
     <p style="margin:0 0 14px;">Recebemos um pedido para criar uma nova senha de acesso ao painel <strong>${escapeHtml(store)}</strong>.</p>
-    <p style="margin:22px 0;"><a href="${href}" style="display:inline-block;background:#f97316;color:#fff;text-decoration:none;font-weight:900;padding:14px 26px;border-radius:999px;font-size:16px;">Criar nova senha</a></p>
+    ${internalButton(href, "Criar nova senha")}
     <p style="margin:0 0 8px;">Se o botão não funcionar, copie e cole este endereço no navegador:</p>
     <p style="margin:0 0 14px;font-family:Consolas,monospace;font-size:13px;word-break:break-all;">${href}</p>
     <p style="margin:0 0 14px;">O link vale por ${minutes} minutos e só pode ser usado uma vez.</p>
-    <p style="margin:0;">Se você não pediu, ignore este e-mail; sua senha continua a mesma.</p>
-  </div>
-</div>`;
+    <p style="margin:0;">Se você não pediu, ignore este e-mail; sua senha continua a mesma.</p>`);
   const text = [
     "Redefinição de senha do painel",
     "",

@@ -164,17 +164,25 @@ async function restoreSettingRow(key, row) {
       assert.ok(r1.sla && !r1.sla.error, `cron sem resultado sla: ${JSON.stringify(r1.sla)}`);
       assert.ok(r1.sla.sent >= 1, `cron nao enviou alerta: ${JSON.stringify(r1.sla)}`);
       await sleep(1500);
+      // O cron avisa TODO pedido pago sem rastreio que passou do prazo, um e-mail por pedido. O banco de dev acumula
+      // pedidos pagos de execucoes anteriores da bateria; quando eles vencem (orders.slaDays = 3 aqui), o admin de
+      // teste recebe tambem os alertas deles. Por isso a contagem e por pedido: exatamente 1 alerta DESTE pedido,
+      // e o total tem de bater com o que o cron disse que enviou (nenhum e-mail a mais, nenhum a menos).
       const adminMails = mailsTo(ADMIN_EMAIL);
-      assert.equal(adminMails.length, 1, `e-mails ao admin apos 1a chamada: ${adminMails.length}`);
+      assert.equal(adminMails.length, r1.sla.sent, `e-mails ao admin apos 1a chamada: ${adminMails.length}, cron disse ${r1.sla.sent}`);
       const mine = adminMails.filter((t) => t.includes(ORDER_NUMBER));
-      assert.equal(mine.length, 1, "alerta do admin sem o numero do pedido");
+      assert.equal(mine.length, 1, `alertas deste pedido apos a 1a chamada: ${mine.length}`);
+      if (adminMails.length > 1) notes.push(`cron avisou tambem ${adminMails.length - 1} pedido(s) antigo(s) do banco de dev`);
       assert.match(mine[0], new RegExp(`href="https?://[^"]+/admin/pedidos/${orderId}"`), "alerta sem link absoluto para /admin/pedidos/<id>");
       assert.match(mine[0], /Cliente Prazo E2E/, "alerta sem o cliente");
       const alerted = await one("select sla_alerted_at from orders where id = $1", [orderId]);
       assert.ok(alerted.sla_alerted_at, "sla_alerted_at nao gravado");
-      await cronReminders();
+      const r2 = await cronReminders();
       await sleep(1500);
-      assert.equal(mailsTo(ADMIN_EMAIL).length, 1, "alerta ao admin repetido na 2a chamada do cron");
+      const after2 = mailsTo(ADMIN_EMAIL);
+      assert.equal(after2.filter((t) => t.includes(ORDER_NUMBER)).length, 1, "alerta deste pedido repetido na 2a chamada do cron");
+      // Sem repeticao para ninguem: a 2a chamada so pode somar o que ela mesma declarou (pedido que venceu entre as duas).
+      assert.equal(after2.length, adminMails.length + ((r2.sla && r2.sla.sent) || 0), "2a chamada do cron mandou e-mail ao admin sem declarar");
 
       // 3. Salvar codigo pela aba -> e-mail shipped com link absoluto; pedido sai de Pendentes.
       const b = await L.open({ width: 1366, height: 768, consent: null });

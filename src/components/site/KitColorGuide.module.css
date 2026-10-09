@@ -62,3 +62,52 @@
 @media (prefers-reduced-motion: reduce) {
   .choices button { transition: none; }
 }
+
+/* A etapa atual é iluminada; a segunda só fica disponível após escolher a primeira. */
+.bubble { position: relative; margin: 0 0 10px; padding: 6px 9px; border-radius: 8px; background: var(--pale); color: var(--blue); font-size: 11px; line-height: 1.4; text-align: left; animation: guide-hint-pulse 3.6s ease-in-out infinite; }
+.bubble::after { content: ""; position: absolute; bottom: -4px; left: 24px; width: 8px; height: 8px; background: var(--pale); transform: rotate(45deg); }
+.bubble[data-step="1"]::after { left: calc(50% + 24px); }
+.bubble[data-step="2"]::after { display: none; }
+.unit[data-current] { border-color: var(--blue); background: var(--pale); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 14%, transparent), 0 0 15px color-mix(in srgb, var(--cyan) 22%, transparent); }
+.unit[data-current] > img { opacity: 1; }
+.unit:disabled { opacity: .5; cursor: not-allowed; border-color: var(--line); box-shadow: none; background: white; }
+.unit[data-confirmed]:not([data-current]) { border-color: var(--green); }
+
+/* A fotografia cria contexto; as cores permanecem sobre cards claros. */
+.dialog { background: linear-gradient(color-mix(in srgb, var(--navy) 78%, transparent), color-mix(in srgb, var(--deep) 86%, transparent)), url('/thumbs/offer-water-stage-720.webp') center / cover; border: 1px solid var(--cyan); color: white; }
+.dialog .eyebrow { color: var(--cyan); }
+.dialog .title { color: white; }
+.dialog .description { color: var(--pale); margin-bottom: 16px; }
+.dialog .close { background: var(--pale); color: var(--navy); }
+.steps { margin: 12px 0 18px; }
+.steps button { flex: 1; text-align: left; font-size: 12px; line-height: 1.25; }
+.steps button[aria-disabled="true"] { opacity: .6; }
+.steps button[aria-current="step"] { position: relative; isolation: isolate; }
+.steps button[aria-current="step"]::after { content: ""; position: absolute; inset: -3px; z-index: -1; border: 2px solid var(--cyan); border-radius: 11px; pointer-events: none; animation: guide-hint-pulse 3.6s ease-in-out infinite; }
+.dialog .choices { background: color-mix(in srgb, var(--pale) 12%, transparent); border: 1px solid color-mix(in srgb, var(--cyan) 40%, transparent); padding: 9px; }
+.dialog .choices button { border: 2px solid var(--line); background: white; box-shadow: var(--shadow); }
+.dialog .choices button[aria-pressed="true"] { border-color: var(--cyan); background: var(--pale); box-shadow: 0 0 0 2px var(--blue); }
+.dialog .choices:focus { outline: none; }
+.dialog .choices[data-attention] { outline: 2px solid var(--cyan); outline-offset: 3px; }
+.choiceAlert { display: flex; align-items: center; justify-content: space-between; gap: 8px; position: relative; margin: 0 0 12px; padding: 8px 10px; border-radius: 8px; color: var(--navy); background: var(--pale); font-size: 12px; line-height: 1.4; font-weight: 600; text-align: left; }
+.choiceAlert::after { content: ""; position: absolute; bottom: -5px; left: 28px; width: 10px; height: 10px; background: var(--pale); transform: rotate(45deg); }
+.choiceAlert svg { flex: none; animation: guide-arrow 1.5s ease-in-out 3; }
+.dialog .footer { margin-top: 18px; }
+.next[data-awaiting] { background: var(--pale); color: var(--navy); border-color: var(--line); }
+.reviewUnit { color: var(--navy); }
+.bubble[data-step="2"] { animation: none; }
+@keyframes guide-hint-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .7; } }
+@keyframes guide-arrow { 0%, 100% { transform: translateY(-2px); } 50% { transform: translateY(3px); } }
+@media (max-width: 380px), (max-height: 600px) {
+  .dialog { padding: 14px; }
+  .dialog .title { font-size: 20px; }
+  .dialog .description { font-size: 12px; margin-bottom: 12px; }
+  .steps { margin: 8px 0 12px; }
+  .steps button { font-size: 11px; padding-inline: 7px; }
+  .choices button { min-height: 96px; padding: 8px 3px; }
+  .choices button > img { height: 58px; }
+  .dialog .footer { margin-top: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bubble, .steps button[aria-current="step"]::after, .choiceAlert svg { animation: none; }
+}

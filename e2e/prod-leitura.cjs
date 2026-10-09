@@ -85,17 +85,21 @@ function assert(cond, msg) {
     await check("checkout proprio abre com Pix em destaque, parcela, selos e rodape", async () => {
       const r = await page.goto(`${BASE}/checkout?pack=unit&cor=azul`, { waitUntil: "load", timeout: 45000 });
       assert(r && r.status() === 200, `status ${r ? r.status() : "sem resposta"} em ${page.url()}`);
-      const total = await page.locator(".total").innerText();
+      // Desde 2026-10-07 (checkout de referencia) o resumo usa CSS Modules: as classes .total e .total-alt sairam
+      // de cena antes do pagamento. Le pelo id do bloco e pelo texto, que nao mudam com o hash das classes.
+      const details = page.locator("aside.order-summary #checkout-summary-details");
+      await details.waitFor({ state: "attached", timeout: 15000 });
+      const resumo = ((await details.textContent()) || "").replace(/\s+/g, " ");
       // Desde 2026-09-29 o Pix e o destaque antes da etapa 3; com cartao ligado ou "aguardando gateway" a parcela vem logo abaixo.
-      assert(/159,90/.test(total) && /Pix/i.test(total), `total sem o valor do Pix: ${total}`);
+      const total = /Total no Pix\s?R\$\s?159,90/.exec(resumo);
+      assert(total, `resumo sem "Total no Pix R$ 159,90": ${resumo.slice(0, 300)}`);
       const cfg = await (await ctx.request.get(`${BASE}/api/checkout/config`)).json();
       if (cfg.card && (cfg.card.available || cfg.card.comingSoon)) {
-        const alt = await page.locator(".total-alt").innerText();
-        assert(/12x de R\$\s?14,99/.test(alt), `resumo sem a parcela: ${alt}`);
+        assert(/12x de R\$\s?14,99/.test(resumo), `resumo sem a parcela: ${resumo.slice(0, 300)}`);
       }
       assert((await page.locator(".trust-seals li").count()) >= 3, "selos ausentes");
       assert((await page.locator("footer.ck-footer").count()) === 1, "rodape ausente");
-      return total.replace(/\s+/g, " ");
+      return total[0];
     });
   }
 

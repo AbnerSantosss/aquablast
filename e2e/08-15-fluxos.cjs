@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 // Cenarios 8 a 15 da fase 14.4 (checkout proprio + banco de desenvolvimento local):
 //  8  kit com 2 cores diferentes -> resumo e SKU AQB-KIT-VERMELHO-PRETO no pedido;
-//  9  preco muda entre Pix (159,90) e cartao (179,90) e volta;
+//  9  preco muda entre Pix (159,89) e cartao (189,89, com frete 9,99) e volta;
 //  10 POST /api/checkout/pay com campo extra ("amount") -> 400 (paySchema estrito; valor so do servidor);
 //  11 pedido pago via Pix simulado -> payment_status paid, checkout_provider proprio, carrinho convertido,
 //     e InitiateCheckout/AddPaymentInfo/Purchase em conversion_events sem nenhuma chamada a Meta;
@@ -31,7 +31,7 @@ async function waitDb(fn, what, timeout = 15000) {
 async function payPixSimulado(page) {
   await L.choosePix(page); // cartao abre selecionado por padrao desde 2026-09-28
   await page.locator(".pix-payment-start .pix-primary").click(); // "Gerar código Pix" (tela redesenhada no a446b8c)
-  await L.field(page, "pix-code").waitFor({ timeout: 15000 });
+  await L.field(page, "pix-code").waitFor({ state: "attached", timeout: 15000 }); // campo fica dentro do <details> fechado (PixPaymentCode): existe, mas nao e visivel
   await L.btn(page, "Simular pagamento aprovado").click();
   await page.waitForURL(/\/checkout\/pedido\//, { timeout: 15000 });
   await L.waitText(page.locator(".oc-hero"), /Obrigado pela sua compra, \S+!/);
@@ -45,8 +45,10 @@ async function c08() {
   const { browser, page, requests, pageErrors } = await L.open({ width: 1440, height: 900 });
   try {
     await L.goCheckout(page, "pack=kit&cor1=vermelho&cor2=preto");
-    await L.waitText(page.locator(".selected-product"), /Kit com 2 AquaBlast.*1 vermelho \+ 1 preto/i);
-    assert.equal(await page.locator(".ck-kit-thumbs img").count(), 2, "duas fotos no kit");
+    // Resumo novo (49f7d26): em vez de "Kit com 2 AquaBlast · 1 vermelho + 1 preto", um produto por unidade com a cor e a foto.
+    await L.expectSummaryUnit(page, 1, "vermelho", { kit: true });
+    await L.expectSummaryUnit(page, 2, "preto", { kit: true });
+    assert.equal(await L.summary(page).locator("[data-summary-unit] img").count(), 2, "duas fotos no kit");
     await L.fillDados(page);
     await L.submitDados(page);
     await L.fillEntrega(page);
@@ -56,7 +58,7 @@ async function c08() {
     const o = await one("select items, amount_total, checkout_provider from orders where public_token = $1", [pub]);
     assert.ok(o, "pedido nao encontrado");
     assert.deepEqual(o.items.map((i) => i.sku), ["AQB-KIT-VERMELHO-PRETO"]);
-    assert.equal(Number(o.amount_total), 249.9);
+    assert.equal(Number(o.amount_total), 239.9); // kit no Pix: 239,90 (frete 0) desde o trabalho local de 08/10
     L.checkNetwork(requests);
     assert.deepEqual(pageErrors, []);
     return `SKU ${o.items[0].sku}, total ${o.amount_total}`;
@@ -70,15 +72,20 @@ async function c09() {
   try {
     await L.toPayment(page);
     // Desde o 7d1aafa o Pix abre selecionado (destaque = total a vista); escolhendo o cartao, a parcela vira o destaque.
-    const total = page.locator(".order-summary .total");
-    const alt = page.locator(".order-summary .total-alt");
-    await L.waitText(total, /^(?=[\s\S]*À vista\s*no Pix)(?=[\s\S]*R\$ 159,90)/);
-    await L.waitText(alt, /ou 12x de R\$ 14,99 sem juros no cartão/);
+    // Resumo novo (49f7d26): recolhido no celular; os totais são as linhas "Total no Pix" / "Total no cartão".
+    const toggleTotal = page.locator(".ck-summary-toggle");
+    await L.waitText(toggleTotal, "R$ 159,89");
+    await L.revealSummary(page);
+    await L.waitText(L.summaryTotal(page, "pix"), /^R\$ 159,89$/);
+    await L.waitText(L.summaryNote(page, /sem juros no cartão/), /^ou 12x de R\$ 15,82 sem juros no cartão$/);
     await L.payHead(page, "card").click();
-    await L.waitText(total, /Total no cartão\s*12x de R\$ 14,99\s*sem juros no cartão/);
-    await L.waitText(page.locator(".order-summary .total-alt.is-pix"), /ou R\$ 159,90 à vista no Pix/);
+    await L.waitText(L.summaryTotal(page, "card"), /^R\$ 189,89$/);
+    await L.waitText(L.summaryNote(page, /12x de/), /^12x de R\$ 15,82 sem juros$/);
+    await L.waitText(L.summaryNote(page, /à vista no Pix/), /^ou R\$ 159,89 à vista no Pix/);
+    await L.waitText(toggleTotal, "R$ 189,89");
     await L.choosePix(page);
-    await L.waitText(total.locator("b"), "R$ 159,90");
+    await L.waitText(L.summaryTotal(page, "pix"), /^R\$ 159,89$/);
+    await L.waitText(toggleTotal, "R$ 159,89");
     assert.deepEqual(pageErrors, []);
   } finally {
     await browser.close();
@@ -173,7 +180,7 @@ async function c13() {
     await L.waitText(page.locator(".ck-done").nth(0), abandoned.email);
     const html = await page.content();
     assert.ok(!html.includes("52998224725") && !html.includes("529.982.247-25"), "CPF inteiro no HTML");
-    await page.getByRole("button", { name: "Editar seus dados" }).click();
+    await L.editStep(page, "Editar seus dados").click(); // o da etapa; a barra de progresso tem outro com o mesmo nome
     assert.equal(await L.field(page, "cpf").inputValue(), "");
     assert.equal(await L.field(page, "cpf").getAttribute("placeholder"), "***.***.247-25");
     await L.shot(page, "c13-retomar-carrinho");
@@ -262,7 +269,7 @@ if (require.main === module) {
   (async () => {
     const list = [
       ["08", "Kit 2 cores (vermelho+preto) -> SKU no pedido", c08],
-      ["09", "Preco Pix 159,90 <-> cartao 179,90", c09],
+      ["09", "Preco Pix 159,89 <-> cartao 189,89", c09],
       ["10", "POST /pay com campo extra amount -> 400", c10],
       ["11", "Pedido pago via Pix simulado + eventos de conversao", c11],
       ["12", "Carrinho abandonado na entrega (banco)", c12],

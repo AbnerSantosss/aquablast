@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { Play, Pause } from "lucide-react";
+import { SelectOfferLink } from "./SelectOfferLink";
 
 export function Accessories() {
   const [showLed, setShowLed] = useState(false);
@@ -38,6 +39,7 @@ export function Accessories() {
             <div><span className="summer-detail-kicker">EFEITO LUMINOSO</span><h3>A luz entra na brincadeira.</h3><p>O LED amarelo na ponta acompanha os disparos. Toque em “Ver luz em ação” para assistir à demonstração.</p></div>
           </article>
         </div>
+        <div className="summer-details-cta"><SelectOfferLink className="button button-green">Quero meu AquaBlast</SelectOfferLink></div>
       </div>
     </section>
   );

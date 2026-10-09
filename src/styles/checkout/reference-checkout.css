@@ -57,7 +57,7 @@
 .ck.ck-reference .ck-done { margin-top: 12px; padding: 0; gap: 12px; background: transparent; }
 .ck.ck-reference .ck-done-title { font-size: 13px; }
 .ck.ck-reference .ck-done-info { min-width: 0; overflow-wrap: anywhere; }
-.ck.ck-reference .ck-edit { min-height: 40px; padding: 8px; font-size: 11px; }
+.ck.ck-reference .ck-edit { min-height: 44px; padding: 8px; font-size: 11px; }
 .ck.ck-reference .ck-number-toggle { min-height: 43px; min-width: 105px; border-radius: 5px; font-size: 12px; align-self: end; }
 .ck.ck-reference .delivery-number-district { display: grid; grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr); gap: 12px; align-items: start; }
 .ck.ck-reference .delivery-address-fields > .ck-number-toggle { justify-self: start; min-height: 44px; margin-top: -6px; padding: 8px 12px; font-size: 12px; }

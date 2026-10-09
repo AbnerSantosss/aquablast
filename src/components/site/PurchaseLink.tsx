@@ -51,7 +51,7 @@ function adParamsFromLocation(): string {
  * Registra o clique no Comprar (POST /api/track/click → painel /admin/cliques, pedido do dono em 2026-10-02).
  * `keepalive`: o pedido sobrevive à troca de página para o checkout. Nunca bloqueia nem atrasa o link.
  */
-function trackBuyClick(link: HTMLAnchorElement, click: { pack: Pack; colors: string[]; complete: boolean; warned: boolean }) {
+function trackBuyClick(link: HTMLElement, click: { pack: Pack; colors: string[]; complete: boolean; warned: boolean }) {
   try {
     let utm: string | undefined;
     try {
@@ -73,12 +73,11 @@ function trackBuyClick(link: HTMLAnchorElement, click: { pack: Pack; colors: str
 }
 
 /**
- * Comprar nunca trava (pedido do dono, 26/09): sempre tem link para o checkout. Com a escolha incompleta
- * (cor da unidade ou as duas cores do kit) o botao fica verde sem pulsar e o PRIMEIRO clique so avisa e
- * leva a cor que falta; o segundo segue com as cores que estao na tela. Escolha completa: pulsa e vira "Quero...".
+ * As ofertas exigem a escolha das cores antes do checkout.
+ * A unidade abre o guia do topo e o kit abre o guia do próprio card.
  *
  * `direct` (compra direta do primeiro bloco do celular, pedido do dono 04/10): o primeiro toque ja vai para o
- * checkout com o pacote escolhido e as cores que estao valendo (padrao: azul / azul + preto), sem aviso nem dica.
+ * checkout com a cor ja escolhida, sem aviso nem dica.
  */
 export function PurchaseLink({
   pack,
@@ -124,10 +123,41 @@ export function PurchaseLink({
     if (target) revealFocus(target);
   };
 
+  // utm/fbclid/gclid vao sempre que o destino e /checkout, inclusive enquanto o modo ainda nao chegou (clique
+  // rapido antes do fetch de config). Ate 2026-10-09 so iam com mode === "proprio": quem clicava antes da
+  // resposta chegava ao checkout sem atribuicao e o Purchase saia sem utm. Se o modo for "zedy", /checkout
+  // redireciona no servidor e os parametros extras sao ignorados, sem prejuizo.
   const href =
     mode === "zedy"
       ? checkoutUrl(pack, color, kitColors)
-      : `${ownCheckoutPath(pack, color, kitColors)}${mode === "proprio" ? adParamsFromLocation() : ""}`;
+      : `${ownCheckoutPath(pack, color, kitColors)}${adParamsFromLocation()}`;
+
+  if (pack === "unit" && incomplete) {
+    return (
+      <button
+        type="button"
+        className={className}
+        data-purchase="unit"
+        data-incomplete
+        aria-haspopup="dialog"
+        onClick={(event) => {
+          trackBuyClick(event.currentTarget, { pack, colors: [color], complete: false, warned: true });
+          document.getElementById("hero-unit-guide-trigger")?.click();
+        }}
+      >
+        {children}
+      </button>
+    );
+  }
+
+  if (pack === "kit" && incomplete) {
+    return <button type="button" className={className} data-purchase="kit" data-incomplete aria-haspopup="dialog" onClick={(event) => {
+      trackBuyClick(event.currentTarget, { pack, colors: [...kitColors], complete: false, warned: true });
+      const card = event.currentTarget.closest(".price-card");
+      const nextChoice = card?.querySelector<HTMLButtonElement>("[data-kit-guide] button[data-current]") ?? card?.querySelector<HTMLButtonElement>("[data-kit-guide] button:not(:disabled)");
+      nextChoice?.click();
+    }}>{children}</button>;
+  }
 
   if (direct) {
     return (

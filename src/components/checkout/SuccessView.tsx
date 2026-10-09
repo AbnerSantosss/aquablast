@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Check } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { TestModeNote } from "./PaySeals";
+import { money } from "@/lib/checkout/own/masks";
 
 /**
  * Confirmação (origem app/simulated-payment.tsx, `SuccessView`), mesmas classes e textos, dentro do `.ck-flow`
@@ -20,6 +21,7 @@ export function SuccessView({
   email,
   testMode,
   restartHref,
+  shippingCents,
 }: {
   orderNumber: string;
   payment: string;
@@ -29,6 +31,7 @@ export function SuccessView({
   email: string;
   testMode: boolean;
   restartHref: string;
+  shippingCents?: number | null;
 }) {
   const title = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
@@ -69,7 +72,7 @@ export function SuccessView({
           <dt>Entrega</dt>
           <dd>
             <span>{address}</span>
-            <small>Frete grátis · Com código de rastreamento</small>
+            <small>{shippingCents != null ? `${shippingCents === 0 ? "Frete grátis" : `Frete: ${money(shippingCents)}`} · ` : ""}Com código de rastreamento</small>
           </dd>
         </div>
         <div>

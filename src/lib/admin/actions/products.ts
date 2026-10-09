@@ -14,6 +14,12 @@ import { setSetting, type SettingsMap } from "@/lib/settings";
  * Não inventa números: quem decide os valores é o dono, aqui só valida (Pix < cartão, mínimos/máximos razoáveis).
  */
 
+/** A página de vendas e o /llms.txt mostram estes mesmos valores (lib/site/prices-server.ts): refaz os dois ao salvar. */
+function revalidateSitePrices() {
+  revalidatePath("/");
+  revalidatePath("/llms.txt");
+}
+
 async function begin() {
   const session = await requireAdmin();
   await ensureBootstrap();
@@ -52,6 +58,7 @@ export async function savePricesSettings(_prev: ActionResult, fd: FormData): Pro
   await setSetting("checkout.prices", prices, actor);
   await audit(actor, "settings.update", { type: "settings", id: "checkout.prices" }, { keys: ["checkout.prices"] });
   revalidatePath("/admin/produtos");
+  revalidateSitePrices();
   return ok("Preços salvos.");
 }
 
@@ -61,6 +68,7 @@ export async function saveInstallmentsSettings(_prev: ActionResult, fd: FormData
   await setSetting("checkout.maxInstallments", max, actor);
   await audit(actor, "settings.update", { type: "settings", id: "checkout.maxInstallments" }, { keys: ["checkout.maxInstallments"] });
   revalidatePath("/admin/produtos");
+  revalidateSitePrices();
   return ok("Parcelamento máximo salvo.");
 }
 

@@ -1,7 +1,7 @@
 import Image from "next/image";
 
 import Link from "next/link";
-import { CONTACT_EMAIL, RETURNS_PATH } from "@/lib/site/constants";
+import { CONTACT_EMAIL, DELIVERY_PATH, RETURNS_PATH } from "@/lib/site/constants";
 import type { SupportWhatsapp } from "@/lib/site/support-contact";
 import { Brand } from "./Brand";
 
@@ -27,7 +27,7 @@ export function Footer({ whatsapp = null }: { whatsapp?: SupportWhatsapp | null 
         <div>
           <h3>Podemos ajudar?</h3>
           <a href="#duvidas">Perguntas frequentes</a>
-          <a href="#duvidas">Entrega e uso do produto</a>
+          <Link href={DELIVERY_PATH}>Entrega e frete</Link>
           <Link href="/rastrear">Rastrear pedido</Link>
           <Link href={RETURNS_PATH}>Trocas e devoluções</Link>
           {/* <wbr> depois do @: na coluna estreita do celular o endereço quebra ali, não no meio do domínio. */}

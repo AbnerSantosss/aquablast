@@ -34,6 +34,8 @@ export interface OrderSummary {
   items: string[];
   payment: string;
   total: string;
+  /** Frete nominal salvo na compra; ausente nos pedidos antigos sem snapshot. */
+  shipping?: string | null;
   address: string;
   email: string | null;
 }
@@ -154,6 +156,7 @@ export function OrderConfirmed({
               <dt>Pagamento</dt>
               <dd>{summary.payment}</dd>
             </div>
+            {summary.shipping ? <div><dt>Frete FULL</dt><dd>{summary.shipping}</dd></div> : null}
             <div>
               <dt>Total</dt>
               <dd>

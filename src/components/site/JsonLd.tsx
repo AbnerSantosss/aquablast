@@ -1,18 +1,19 @@
-import { faq } from "@/data/faq";
+import { buildFaq } from "@/data/faq";
 import { reviews } from "@/data/reviews";
-import { BRAND_NAME, CONTACT_EMAIL, PRICES } from "@/lib/site/constants";
+import { FULL_SHIPPING_CENTS } from "@/lib/checkout/own/shipping";
+import { BRAND_NAME, CONTACT_EMAIL } from "@/lib/site/constants";
+import { FALLBACK_SITE_PRICES, type SitePrices } from "@/lib/site/prices";
 import { reviewSummary } from "@/lib/site/reviews-summary";
 import {
   absoluteUrl,
   CONTENT_UPDATED_AT,
-  FREE_SHIPPING_BR,
   HOME_URL,
   OG_IMAGE,
   ORG_LOGO,
   RETURN_POLICY_DAYS,
   RETURNS_URL,
-  SEO_DESCRIPTION,
   SEO_TITLE,
+  seoDescription,
   SHOW_AGGREGATE_RATING,
   SITE_URL,
 } from "@/lib/site/seo";
@@ -75,7 +76,7 @@ const organizationNode = (telephone: string | null) => ({
 // Mesma política da página /trocas-e-devolucoes. returnFees: FreeReturn porque
 // o dono confirmou em 2026-09-26 que a loja paga o frete de devolução na
 // desistência. Ainda sem returnPolicyCountry (endereço de devolução não
-// confirmado) nem returnShippingFeesAmount (não se aplica: o frete é grátis).
+// confirmado) nem returnShippingFeesAmount (não se aplica: a devolução não tem custo).
 const merchantReturnPolicy = {
   "@type": "MerchantReturnPolicy",
   "@id": ID.returnPolicy,
@@ -97,12 +98,12 @@ const webSite = {
   publisher: ref(ID.organization),
 };
 
-const webPage = {
+const webPage = (prices: SitePrices) => ({
   "@type": "WebPage",
   "@id": ID.webpage,
   url: HOME_URL,
   name: SEO_TITLE,
-  description: SEO_DESCRIPTION,
+  description: seoDescription(prices),
   isPartOf: ref(ID.website),
   about: ref(ID.product),
   mainEntity: ref(ID.product),
@@ -116,12 +117,12 @@ const webPage = {
   },
   inLanguage: "pt-BR",
   dateModified: CONTENT_UPDATED_AT,
-};
+});
 
-// Frete grátis para o Brasil (opção do checkout). Sem deliveryTime/handlingTime: prazo não confirmado.
+// Frete FULL da oferta de uma unidade. Sem deliveryTime/handlingTime: prazo não confirmado.
 const shippingDetails = {
   "@type": "OfferShippingDetails",
-  shippingRate: { "@type": "MonetaryAmount", value: 0, currency: "BRL" },
+  shippingRate: { "@type": "MonetaryAmount", value: FULL_SHIPPING_CENTS / 100, currency: "BRL" },
   shippingDestination: { "@type": "DefinedRegion", addressCountry: "BR" },
 };
 
@@ -133,7 +134,7 @@ const offerCommon = {
   // A página canônica, não o checkout: é a URL que o Google pode rastrear e indexar.
   url: HOME_URL,
   seller: ref(ID.organization),
-  ...(FREE_SHIPPING_BR ? { shippingDetails } : {}),
+  shippingDetails,
   hasMerchantReturnPolicy: ref(ID.returnPolicy),
 };
 
@@ -147,7 +148,7 @@ const aggregateRating = {
   reviewCount: summary.count,
 };
 
-const product = {
+const product = (prices: SitePrices) => ({
   "@type": "Product",
   "@id": ID.product,
   name: "AquaBlast — Lançador de Água Elétrico Automático USB Recarregável com LED Brinquedo Infantil",
@@ -159,41 +160,35 @@ const product = {
     absoluteUrl("/produto-preto.webp"),
   ],
   description:
-    "Brinquedo de água elétrico (lançador de água) com efeito luminoso, bateria recarregável por USB e reservatório em tambor. Para brincar no quintal e na piscina, disponível em 1 unidade (azul, vermelho ou preto) ou kit com 2 unidades.",
+    "Brinquedo de água elétrico (lançador de água) com efeito luminoso, bateria recarregável por USB e reservatório em tambor. Para brincar no quintal e na piscina. A oferta inclui 1 unidade na cor azul, vermelho ou preto.",
   brand: { "@type": "Brand", name: BRAND_NAME },
   color: ["Azul", "Vermelho", "Preto"],
   offers: [
     {
       ...offerCommon,
       name: "1 unidade AquaBlast",
-      price: PRICES.unit.amount.toFixed(2),
+      price: prices.unit.amount.toFixed(2),
       eligibleQuantity: { "@type": "QuantitativeValue", value: 1, unitText: "unidade" },
-    },
-    {
-      ...offerCommon,
-      name: "Kit com 2 AquaBlast",
-      price: PRICES.kit.amount.toFixed(2),
-      eligibleQuantity: { "@type": "QuantitativeValue", value: 2, unitText: "unidades" },
     },
   ],
   ...(SHOW_AGGREGATE_RATING ? { aggregateRating } : {}),
-};
+});
 
-const faqPage = {
+const faqPage = (prices: SitePrices) => ({
   "@type": "FAQPage",
   "@id": ID.faq,
   isPartOf: ref(ID.webpage),
   inLanguage: "pt-BR",
-  mainEntity: faq.map((item) => ({
+  mainEntity: buildFaq(prices).map((item) => ({
     "@type": "Question",
     name: item.question,
     acceptedAnswer: { "@type": "Answer", text: item.answer },
   })),
-};
+});
 
-const buildGraph = (telephone: string | null) => ({
+const buildGraph = (telephone: string | null, prices: SitePrices) => ({
   "@context": "https://schema.org",
-  "@graph": [organizationNode(telephone), webSite, webPage, product, faqPage, merchantReturnPolicy],
+  "@graph": [organizationNode(telephone), webSite, webPage(prices), product(prices), faqPage(prices), merchantReturnPolicy],
 });
 
 // `<` vira < para o conteúdo nunca fechar a tag <script> (guia JSON-LD do Next).
@@ -204,7 +199,7 @@ export function JsonLdScript({ data }: { data: object }) {
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serialize(data) }} />;
 }
 
-/** JSON-LD da home. `whatsapp` vem do painel (getSupportWhatsapp); null = sem telefone. */
-export function JsonLd({ whatsapp = null }: { whatsapp?: SupportWhatsapp | null }) {
-  return <JsonLdScript data={buildGraph(whatsapp ? whatsapp.telephone : null)} />;
+/** JSON-LD da home. `whatsapp` vem do painel (getSupportWhatsapp); null = sem telefone. `prices`: getSitePrices. */
+export function JsonLd({ whatsapp = null, prices = FALLBACK_SITE_PRICES }: { whatsapp?: SupportWhatsapp | null; prices?: SitePrices }) {
+  return <JsonLdScript data={buildGraph(whatsapp ? whatsapp.telephone : null, prices)} />;
 }

@@ -77,24 +77,7 @@ export const COLOR_LABELS: Record<Color, string> = {
 
 export const COLOR_KEYS = Object.keys(COLOR_LABELS) as Color[];
 
-/**
- * Precos decididos pelo dono em 27/09 (wiki: pedidos/2026-09-27-preco-parcela-destaque): a parcela do cartao
- * em destaque e o Pix a vista embaixo, R$ 10 mais barato. O desconto so existe no checkout proprio do dono;
- * nao publicar enquanto o checkout cobrar o mesmo valor no Pix e no cartao.
- * `amount` e o preco no Pix (o menor), usado no JSON-LD.
- * 03/10 (dono: "nosso foco e pagamento no Pix"): o Pix nao mudou; o cartao subiu R$ 10 na unidade e R$ 20 no
- * kit, entao o desconto do Pix passou a R$ 20 / R$ 30. Tem de bater com `checkout.prices` em /admin/produtos.
- */
-export const PRICES: Record<
-  Pack,
-  { installment: string; card: string; pix: string; pixDiscount: string; amount: number }
-> = {
-  unit: { installment: "R$ 14,99", card: "R$ 179,90", pix: "R$ 159,90", pixDiscount: "R$ 20", amount: 159.9 },
-  kit: { installment: "R$ 23,33", card: "R$ 279,90", pix: "R$ 249,90", pixDiscount: "R$ 30", amount: 249.9 },
-};
-
-/** Economia do kit contra 2 unidades, no Pix (319,80 - 249,90); no cartao e maior (R$ 79,90). */
-export const KIT_SAVING = "R$ 69,90";
+// Precos: desde 07/10/2026 saem do painel (/admin/produtos), via lib/site/prices.ts e prices-server.ts.
 
 export type HeroPhotoKind = "photo" | "art" | "campaign" | "scene";
 

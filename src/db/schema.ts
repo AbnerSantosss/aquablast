@@ -145,6 +145,12 @@ export type OrderItem = {
   variant?: string | null;
   quantity: number;
   unitPrice?: number | null;
+  /** Snapshot do checkout próprio, gravado no JSON existente; ausente em pedidos antigos/externos. */
+  checkoutPricing?: {
+    productSubtotalCents: number;
+    shippingCents: number;
+    couponDiscountCents: number;
+  };
 };
 
 export const orderEvents = pgTable(

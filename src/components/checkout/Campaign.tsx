@@ -3,6 +3,7 @@ import { Truck } from "lucide-react";
 import type { Theme } from "@/lib/checkout/own/theme";
 import type { Selection } from "@/lib/checkout/own/catalog";
 import type { Color } from "@/lib/site/types";
+import { money } from "@/lib/checkout/own/masks";
 import { colorName, effectiveSelectionClient, thumbOf } from "./OrderSummary";
 import styles from "./Campaign.module.css";
 
@@ -29,7 +30,7 @@ function titleCase(text: string): string {
  * A campanha padrão destaca os produtos da seleção, incluindo a segunda unidade.
  * Textos e fundos personalizados continuam vindo do tema; as imagens do produto acompanham as cores.
  */
-export function Campaign({ theme, selection, bump = false, bumpColor = null }: { theme: Theme; selection: Selection; bump?: boolean; bumpColor?: Color | null }) {
+export function Campaign({ theme, selection, shippingCents, bump = false, bumpColor = null }: { theme: Theme; selection: Selection; shippingCents: number; bump?: boolean; bumpColor?: Color | null }) {
   const selected = effectiveSelectionClient(selection, bump, bumpColor);
   const isKit = selected.pack === "kit";
   const defaultBanner = theme.bannerImage === "/checkout/banner-immersive.webp";
@@ -75,8 +76,8 @@ export function Campaign({ theme, selection, bump = false, bumpColor = null }: {
       </div>
       <div className={styles.benefit}>
         <Truck size={25} strokeWidth={1.6} aria-hidden="true" />
-        <span>FRETE</span>
-        <strong>GRÁTIS</strong>
+        <span>FRETE FULL</span>
+        <strong>{shippingCents === 0 ? "GRÁTIS" : money(shippingCents)}</strong>
         <small>para todo o Brasil</small>
       </div>
     </section>

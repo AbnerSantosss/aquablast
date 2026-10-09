@@ -71,6 +71,8 @@ export interface PaidInfo {
   orderNumber: string;
   method: PayMethodUi;
   amountCents: number;
+  /** Frete registrado no pedido pago. Ausente em pedidos antigos: nunca inferir da oferta atual. */
+  shippingCents?: number | null;
   installments: number;
   cardBrand: string | null;
   cardLast4: string | null;

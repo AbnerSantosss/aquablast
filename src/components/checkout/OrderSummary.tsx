@@ -94,6 +94,7 @@ export function OrderSummary({
   const isKit = selected.pack === "kit";
   const hasBump = selection.pack !== "kit" && bump;
   const total = paid ? paid.amountCents : q.amountCents;
+  const shippingCents = paid ? paid.shippingCents : q.shippingCents;
   const couponOff = paid ? 0 : q.couponDiscountCents;
   const pixSaving = card.amountCents - pix.amountCents;
   const [c1] = selected.colors;
@@ -103,9 +104,8 @@ export function OrderSummary({
 
   if (!paid) {
     // The breakdown uses only server quotes, separating the Pix and coupon reductions.
-    const beforeCoupon = q.amountCents + couponOff;
-    const productsTotal = view === "pix" && showCard ? Math.max(beforeCoupon, card.amountCents) : beforeCoupon;
-    const pixDiscount = view === "pix" ? productsTotal - beforeCoupon : 0;
+    const productsTotal = view === "pix" && showCard ? Math.max(q.productSubtotalCents, card.productSubtotalCents) : q.productSubtotalCents;
+    const pixDiscount = view === "pix" ? productsTotal - q.productSubtotalCents : 0;
 
     return (
       <aside className={`${styles.summary} ck-card order-summary`} aria-label="Resumo do pedido" data-expanded={expanded}>
@@ -119,7 +119,7 @@ export function OrderSummary({
             <div><dt>Produtos</dt><dd>{money(productsTotal)}</dd></div>
             {pixDiscount > 0 ? <div><dt>Desconto no Pix</dt><dd className={styles.saving}>− {money(pixDiscount)}</dd></div> : null}
             {couponOff > 0 ? <div><dt>Desconto do cupom no Pix</dt><dd className={styles.saving}>− {money(couponOff)}</dd></div> : null}
-            <div><dt>Entrega</dt><dd className={styles.saving}>Grátis</dd></div>
+            <div><dt>Frete FULL</dt><dd className={q.shippingCents === 0 ? styles.saving : undefined}>{q.shippingCents === 0 ? "Grátis" : money(q.shippingCents)}</dd></div>
             <div className={styles.finalTotal}><dt>{view === "card" ? "Total no cartão" : "Total no Pix"}</dt><dd>{money(total)}</dd></div>
           </dl>
           {view === "card" ? (
@@ -149,7 +149,7 @@ export function OrderSummary({
           {deliveryPromise ? <p className="ck-delivery-promise">{deliveryPromise}</p> : null}
         </div>
         <div className={styles.benefit} data-summary-benefit="shipping" role="note" aria-label="Benefício do pedido">
-          <span><Truck size={17} aria-hidden="true" /><span>Seu pedido tem <strong>frete grátis</strong></span><Check size={15} aria-hidden="true" /></span>
+          <span><Truck size={17} aria-hidden="true" /><span>{q.shippingCents === 0 ? <>Seu pedido tem <strong>frete FULL grátis</strong></> : <>Frete FULL por <strong>{money(q.shippingCents)}</strong></>}</span><Check size={15} aria-hidden="true" /></span>
           <i aria-hidden="true" />
         </div>
       </aside>
@@ -229,14 +229,6 @@ export function OrderSummary({
       {!paid && showPix && onCouponApply ? (
         <CouponField coupon={coupon} applied={!!coupon && pix.couponDiscountCents > 0} busy={couponBusy} onApply={onCouponApply} />
       ) : null}
-      {hasBump ? (
-        <div className="bump-summary">
-          <span>
-            <Check size={15} aria-hidden="true" /> {bumpColor ? "2ª unidade com desconto" : "+ 1 AquaBlast · cor a escolher"}
-          </span>
-          <b>{money(q.bumpDeltaCents)}</b>
-        </div>
-      ) : null}
       <dl className="price-details">
         {couponOff > 0 ? (
           <div>
@@ -244,10 +236,10 @@ export function OrderSummary({
             <dd className="green">− {money(couponOff)}</dd>
           </div>
         ) : null}
-        <div>
+        {shippingCents != null ? <div>
           <dt>Entrega</dt>
-          <dd className="green">Grátis</dd>
-        </div>
+          <dd className={shippingCents === 0 ? "green" : undefined}>{shippingCents === 0 ? "Grátis" : money(shippingCents)}</dd>
+        </div> : null}
         <div className="ck-final-total">
           <dt>{paid ? "Total pago" : view === "card" ? "Total no cartão" : "Total no Pix"}</dt>
           <dd>{money(total)}</dd>

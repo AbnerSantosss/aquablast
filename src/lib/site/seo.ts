@@ -1,10 +1,13 @@
+import { money } from "@/lib/checkout/own/masks";
+import { FULL_SHIPPING_CENTS, FULL_SHIPPING_LABEL } from "@/lib/checkout/own/shipping";
 import { BASE_URL } from "@/lib/site/base-url";
-import { PRICES, RETURNS_PATH } from "@/lib/site/constants";
+import { RETURNS_PATH } from "@/lib/site/constants";
+import type { SitePrices } from "@/lib/site/prices";
 
 /**
  * Constantes de SEO do site público (title, description, Open Graph, schema,
- * sitemap). Tudo que é fato comercial vem de `constants.ts` (preços) para não
- * divergir do que a página mostra.
+ * sitemap). Tudo que é fato comercial (preços) vem do painel, via `getSitePrices()`,
+ * para não divergir do que a página mostra nem do que o checkout cobra.
  */
 
 /** Origem sem barra final. */
@@ -25,12 +28,12 @@ export const CAMPAIGN = "Brinquedo de água para o verão";
 export const SEO_TITLE = "Brinquedo de água elétrico para o verão | AquaBlast";
 export const OG_TITLE = "AquaBlast: seu verão mais divertido, no quintal ou na piscina";
 
-const OFFER_LINE = `1 unidade por ${PRICES.unit.pix} ou kit com 2 por ${PRICES.kit.pix} no Pix.`;
-export const SEO_DESCRIPTION = `Brinquedo de água elétrico com LED e recarga USB para brincar no quintal e na piscina. ${OFFER_LINE} Frete grátis.`;
+export const seoDescription = (prices: SitePrices): string =>
+  `Brinquedo de água elétrico com LED e recarga USB. 1 unidade por ${prices.unit.pix} no Pix, mais ${FULL_SHIPPING_LABEL} de ${money(FULL_SHIPPING_CENTS)}.`;
 
 // Data da última mudança de conteúdo da home (AAAA-MM-DD). Vai para o <lastmod>
 // do sitemap e o dateModified do schema. Atualize quando mudar texto, preço ou oferta.
-export const CONTENT_UPDATED_AT = "2026-10-05";
+export const CONTENT_UPDATED_AT = "2026-10-08";
 
 // aggregateRating no Product: o dono confirmou em 2026-09-26 que as avaliações de
 // src/data/reviews.ts são de clientes reais. Nota e total saem de reviewSummary(),
@@ -38,18 +41,13 @@ export const CONTENT_UPDATED_AT = "2026-10-05";
 // desligar. Ver wiki/conteudo/honestidade-e-confirmar.md.
 export const SHOW_AGGREGATE_RATING: boolean = true;
 
-// Opção "Frete grátis" configurada na Zedy em 2026-09-23 e banner do checkout
-// "Frete grátis para todo o Brasil". Ver wiki/operacao/aquablast-checkout-zedy.md.
-// Se o frete mudar, desligar. Prazo de entrega NÃO entra no schema (não confirmado).
-export const FREE_SHIPPING_BR: boolean = true;
-
 /** Composição de verão 1200x630 com as fotos oficiais do produto. */
 export const OG_IMAGE = {
   url: "/og-verao.png",
   width: 1200,
   height: 630,
   type: "image/png",
-  alt: "Oferta de Verão AquaBlast: brinquedos de água elétricos azul e preto para brincar junto",
+  alt: "AquaBlast nas cores azul e preto: brinquedo de água elétrico para o verão",
 };
 
 /** Logo da Organization no schema (PNG 512x512 rastreável; o Google não usa data: URI nem SVG aqui). */

@@ -11,9 +11,9 @@ function currentCampaign(theme: Theme): Theme {
   }
   if (oldCampaign && theme.bannerTitle === "O presente para brincar junto.") next.bannerTitle = themeDefaults.bannerTitle;
   if (oldCampaign && theme.bannerSubtitle === "Mais água. Mais risadas. Mais momentos em família.") next.bannerSubtitle = themeDefaults.bannerSubtitle;
-  // Temas já salvos também deixam de usar a antiga denominação de frete.
+  // A oferta atual cobra FULL na unidade; temas antigos não podem prometer gratuidade irrestrita.
   for (const field of ["shipBarText", "shipBarNote", "badgeText"] as const) {
-    next[field] = next[field].replace(/\b(frete)\s+full\b/gi, "$1");
+    if (/frete(?:\s+full)?\s+gr[aá]tis/i.test(next[field]) || /^frete$/i.test(next[field].trim())) next[field] = themeDefaults[field];
   }
   return next;
 }

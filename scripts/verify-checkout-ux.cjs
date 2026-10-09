@@ -23,9 +23,12 @@ const root = path.resolve(__dirname, "..");
 const sourceRoot = path.join(root, "src");
 const allowedSources = new Set([
   "lib/site/constants.ts",
+  "lib/site/prices.ts",
   "lib/checkout/own/catalog.ts",
   "lib/checkout/own/schemas.ts",
   "lib/checkout/own/pricing.ts",
+  "lib/checkout/own/shipping.ts",
+  "lib/checkout/own/order-pricing.ts",
   "lib/checkout/own/address-form.ts",
   "lib/checkout/own/masks.ts",
   "lib/crypto.ts",
@@ -139,9 +142,12 @@ function sourceModule(filename) {
 
 const fromSource = (relative) => sourceModule(path.join(sourceRoot, relative));
 const constants = fromSource("lib/site/constants.ts");
+const sitePrices = fromSource("lib/site/prices.ts");
 const catalog = fromSource("lib/checkout/own/catalog.ts");
 const schemas = fromSource("lib/checkout/own/schemas.ts");
 const pricing = fromSource("lib/checkout/own/pricing.ts");
+const shipping = fromSource("lib/checkout/own/shipping.ts");
+const orderPricing = fromSource("lib/checkout/own/order-pricing.ts");
 const address = fromSource("lib/checkout/own/address-form.ts");
 const { OrderSummary, effectiveSelectionClient, summaryIsExpanded } = fromSource("components/checkout/OrderSummary.tsx");
 const { money } = fromSource("lib/checkout/own/masks.ts");
@@ -179,18 +185,18 @@ function amountRow(html, label) {
   const pairs = [...html.matchAll(/<dt>([\s\S]*?)<\/dt>\s*<dd[^>]*>([\s\S]*?)<\/dd>/g)];
   const row = pairs.find((pair) => text(pair[1]) === label);
   assert.ok(row, `summary must contain the ${label} row`);
-  return text(row[2]);
+  return text(row[2]).replace(/^− /, "- ");
 }
 
 function productRows(html) {
   return [...html.matchAll(/<li\b([^>]*data-summary-unit="\d+"[^>]*)>([\s\S]*?)<\/li>/g)].map((match) => ({ attrs: attributes(match[1]), html: match[2] }));
 }
 
-function checkDelivery(html) {
+function checkDelivery(html, cents = 0) {
   const pairs = [...html.matchAll(/<dt>([\s\S]*?)<\/dt>\s*<dd[^>]*>([\s\S]*?)<\/dd>/g)];
-  const delivery = pairs.find((pair) => text(pair[1]) === "Entrega");
+  const delivery = pairs.find((pair) => /^(Entrega|Frete FULL)$/.test(text(pair[1])));
   assert.ok(delivery, "delivery cost must be part of the summary");
-  assert.equal(text(delivery[2]), "Grátis");
+  assert.equal(text(delivery[2]), cents > 0 ? cleanMoney(money(cents)) : "Grátis");
 }
 
 for (const color of colors) {
@@ -203,7 +209,7 @@ for (const color of colors) {
     assert.equal(catalog.variantOf(selection), constants.COLOR_LABELS[color]);
   });
   for (const second of colors) {
-    test(`LP URL → checkout: kit ${color} + ${second}`, () => {
+    test(`legacy catalog retains kit ${color} + ${second}`, () => {
       const url = new URL(constants.ownCheckoutPath("kit", color, [color, second]), "https://local.invalid");
       const selection = catalog.selectionFromParams(Object.fromEntries(url.searchParams));
       assert.deepEqual(plain(selection), { pack: "kit", colors: [color, second] });
@@ -211,7 +217,7 @@ for (const color of colors) {
       assert.equal(catalog.variantOf(selection), `${constants.COLOR_LABELS[color]} + ${constants.COLOR_LABELS[second]}`);
       const item = catalog.orderItemOf(selection, prices.kit.pix);
       assert.equal(item.quantity, 1, "kit is one bundled order item");
-      assert.equal(item.unitPrice, 249.9);
+      assert.equal(item.unitPrice, 239.9);
     });
   }
 }
@@ -220,6 +226,98 @@ test("URL fallback and repeated parameters are deterministic", () => {
   assert.deepEqual(plain(catalog.selectionFromParams({ cor: "invalid" })), { pack: "unit", colors: ["azul"] });
   assert.deepEqual(plain(catalog.selectionFromParams({ pack: "kit", cor1: "invalid" })), { pack: "kit", colors: ["azul", "preto"] });
   assert.deepEqual(plain(catalog.selectionFromParams({ pack: ["kit", "unit"], cor1: ["vermelho", "azul"], cor2: "preto" })), { pack: "kit", colors: ["vermelho", "preto"] });
+});
+
+async function newCheckoutPage(params) {
+  const filename = path.join(sourceRoot, "app/(checkout)/checkout/page.tsx");
+  const record = { exports: {} };
+  const calls = [];
+  const mocks = {
+    "next/navigation": { redirect: () => { throw new Error("unexpected external checkout redirect"); } },
+    "@/components/checkout/Checkout": { Checkout: function CheckoutFixture() {} },
+    "@/lib/checkout/own/catalog": catalog,
+    "@/lib/checkout/own/checkout-props": {
+      loadCheckoutProps: async (...args) => {
+        calls.push(args);
+        return { mode: "proprio", props: {} };
+      },
+    },
+    "@/lib/bootstrap": { ensureBootstrap: async () => {} },
+    "@/lib/site/constants": constants,
+    "@/lib/site/delivery-promise": { deliveryPromiseText: () => null },
+    "react/jsx-runtime": require("react/jsx-runtime"),
+  };
+  const context = vm.createContext({
+    module: record, exports: record.exports,
+    require(request) {
+      assert.ok(Object.hasOwn(mocks, request), `checkout entry import blocked: ${request}`);
+      return mocks[request];
+    },
+  });
+  new vm.Script(compile(fs.readFileSync(filename, "utf8"), filename), { filename }).runInContext(context, { timeout: 1000 });
+  const result = await record.exports.default({ searchParams: Promise.resolve(params) });
+  return { selection: plain(result.props.selection), calls: plain(calls) };
+}
+
+test("new checkout entry preserves the selected offer and never adds a bump", async () => {
+  for (const params of [
+    { pack: "kit", cor1: "vermelho", cor2: "preto" },
+    { product: "kit", cor1: "vermelho", cor2: "azul" },
+    { pack: ["kit", "unit"], cor1: ["vermelho", "azul"], cor2: "preto" },
+  ]) {
+    const entry = await newCheckoutPage({ ...params, cupom: ["TESTE", "IGNORAR"] });
+    assert.deepEqual(entry.selection, { pack: "kit", colors: ["vermelho", params.cor2] });
+    assert.deepEqual(entry.calls, [["kit", false, "TESTE"]], "a new entry must never opt into the bump");
+  }
+  assert.deepEqual((await newCheckoutPage({ pack: "unit", cor: "preto" })).selection, { pack: "unit", colors: ["preto"] });
+  assert.deepEqual(plain(catalog.selectionFromCart({ pack: "kit", colors: ["vermelho", "preto"] })), { pack: "kit", colors: ["vermelho", "preto"] });
+});
+
+async function isolatedCartSave(initial) {
+  const filename = path.join(sourceRoot, "components/checkout/Checkout.tsx");
+  const source = ts.createSourceFile(filename, fs.readFileSync(filename, "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const names = new Set(["readTokenFromStorage", "writeTokenToStorage", "saveCartNow"]);
+  const declarations = new Map();
+  let tokenKey;
+  function visit(node) {
+    if (ts.isFunctionDeclaration(node) && node.name && names.has(node.name.text)) declarations.set(node.name.text, node.getText(source));
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === "TOKEN_KEY") tokenKey = node.getText(source);
+    ts.forEachChild(node, visit);
+  }
+  visit(source);
+  assert.equal(declarations.size, names.size, "real checkout storage/save functions must be available");
+  assert.ok(tokenKey);
+  const storage = new Map([["ck-cart-token", "legacy-cart-token"]]);
+  const sent = [];
+  const context = vm.createContext({
+    initial,
+    window: { localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) } },
+    selection: { pack: "unit", colors: ["azul"] },
+    tokenRef: { current: initial?.cartToken }, cartToken: initial?.cartToken,
+    quoteVersion: { current: 0 }, visitId: { current: "" }, bumpColor: null, coupon: "", data: {}, cpfMasked: null,
+    buildTracking: () => ({ consent: false }),
+    postCart: async (payload) => {
+      sent.push(plain(payload));
+      return { ok: true, token: initial?.cartToken ?? "new-offer-cart-token", quotes: {} };
+    },
+    isApiFail: (value) => value.ok === false,
+    setCartToken: () => {}, setQuotes: () => {},
+  });
+  const code = `const ${tokenKey};\n${[...declarations.values()].join("\n")}\nglobalThis.saveActualCart = saveCartNow;`;
+  new vm.Script(compile(code, filename), { filename }).runInContext(context, { timeout: 1000 });
+  await context.saveActualCart("dados", false, { lead: { email: "checkout@example.invalid" } });
+  return { storage, sent };
+}
+
+test("new checkout storage cannot reuse an old cart or inherit a recovered cart", async () => {
+  const fresh = await isolatedCartSave(undefined);
+  assert.equal(fresh.sent[0].token, undefined, "new entry must not send a legacy cart token");
+  assert.equal(fresh.storage.get("ck-cart-token"), "legacy-cart-token");
+  assert.equal(fresh.storage.get("ck-cart-token-unit-149"), "new-offer-cart-token");
+  const recovered = await isolatedCartSave({ cartToken: "recovered-old-cart-token" });
+  assert.equal(recovered.sent[0].token, "recovered-old-cart-token", "explicit recovery must keep its own token");
+  assert.equal(recovered.storage.get("ck-cart-token"), "legacy-cart-token");
+  assert.equal(recovered.storage.has("ck-cart-token-unit-149"), false, "recovery must not seed the new offer's token");
 });
 
 test("selection schema enforces quantity and permits two equal colors", () => {
@@ -236,7 +334,7 @@ test("cart and payment schemas refuse client-controlled money", () => {
   const payment = { cartToken: "isolated-test-token", method: "pix" };
   assert.equal(schemas.cartSchema.safeParse(cart).success, true);
   assert.equal(schemas.paySchema.safeParse(payment).success, true);
-  for (const key of ["amount", "amountCents", "total", "price"]) {
+  for (const key of ["amount", "amountCents", "total", "price", "shippingCents", "productSubtotalCents"]) {
     assert.equal(schemas.cartSchema.safeParse({ ...cart, [key]: 1 }).success, false, `cart must reject ${key}`);
     assert.equal(schemas.paySchema.safeParse({ ...payment, [key]: 1 }).success, false, `payment must reject ${key}`);
   }
@@ -246,12 +344,20 @@ test("cart and payment schemas refuse client-controlled money", () => {
 });
 
 test("LP prices agree with the actual checkout defaults", () => {
-  assert.deepEqual(plain(prices), { unit: { pix: 15990, card: 17990 }, kit: { pix: 24990, card: 27990 } });
+  assert.deepEqual(plain(prices), { unit: { pix: 14990, card: 17990 }, kit: { pix: 23990, card: 26990 } });
+  // The LP reads the panel; its build-time fallback must be the same numbers as the settings defaults.
+  assert.deepEqual(plain(sitePrices.FALLBACK_PRICE_CENTS), plain(prices));
+  assert.equal(sitePrices.FALLBACK_MAX_INSTALLMENTS, defaults["checkout.maxInstallments"]);
+  const lp = sitePrices.buildSitePrices(prices, defaults["checkout.maxInstallments"]);
   for (const pack of ["unit", "kit"]) {
-    assert.equal(Math.round(constants.PRICES[pack].amount * 100), prices[pack].pix);
-    assert.equal(cleanMoney(constants.PRICES[pack].pix), cleanMoney(money(prices[pack].pix)));
-    assert.equal(cleanMoney(constants.PRICES[pack].card), cleanMoney(money(prices[pack].card)));
+    assert.equal(Math.round(lp[pack].amount * 100), prices[pack].pix);
+    assert.equal(cleanMoney(lp[pack].pix), cleanMoney(money(prices[pack].pix)));
+    assert.equal(cleanMoney(lp[pack].card), cleanMoney(money(prices[pack].card)));
   }
+  assert.deepEqual(
+    [lp.unit.installment, lp.kit.installment, lp.unit.pixDiscount, lp.kit.pixDiscount, lp.kitSaving, lp.installments],
+    ["R$ 14,99", "R$ 22,49", "R$ 30", "R$ 30", "R$ 59,90", 12],
+  );
 });
 
 for (const method of ["pix", "card"]) {
@@ -259,21 +365,59 @@ for (const method of ["pix", "card"]) {
     const unit = await pricing.quote("unit", method, false, 12);
     const kit = await pricing.quote("kit", method, false, 12);
     const bumped = await pricing.quote("unit", method, true, 12);
-    assert.equal(unit.amountCents, method === "pix" ? 15990 : 17990);
-    assert.equal(kit.amountCents, method === "pix" ? 24990 : 27990);
+    assert.equal(unit.productSubtotalCents, method === "pix" ? 14990 : 17990);
+    assert.equal(unit.shippingCents, 999);
+    assert.equal(unit.amountCents, method === "pix" ? 15989 : 18989);
+    assert.equal(kit.productSubtotalCents, method === "pix" ? 23990 : 26990);
+    assert.equal(kit.shippingCents, 0);
+    assert.equal(kit.amountCents, method === "pix" ? 23990 : 26990);
     assert.deepEqual(plain(bumped), plain(kit));
-    assert.equal(unit.bumpDeltaCents, method === "pix" ? 9000 : 10000);
-    assert.equal(unit.bumpSavingCents, method === "pix" ? 6990 : 7990);
+    assert.equal(unit.bumpDeltaCents, 9000);
+    assert.equal(bumped.amountCents - unit.amountCents, 8001, "adding the second unit also removes the 999 shipping charge");
+    assert.equal(unit.bumpSavingCents, method === "pix" ? 5990 : 8990);
     assert.equal(kit.installments, method === "pix" ? 1 : 12);
-    assert.equal(kit.installmentCents, method === "pix" ? 24990 : 2333);
+    assert.equal(kit.installmentCents, method === "pix" ? 23990 : 2249);
   });
 }
+
+test("FULL shipping depends on the effective pack and returns when the bump is removed", async () => {
+  assert.equal(shipping.FULL_SHIPPING_CENTS, 999);
+  assert.equal(shipping.FULL_SHIPPING_LABEL, "Frete FULL");
+  assert.equal(shipping.shippingCentsForPack("unit"), 999);
+  assert.equal(shipping.shippingCentsForPack("kit"), 0);
+  const added = await pricing.quoteBoth("unit", true, 12);
+  const removed = await pricing.quoteBoth("unit", false, 12);
+  for (const method of ["pix", "card"]) {
+    assert.equal(added[method].shippingCents, 0);
+    assert.equal(removed[method].shippingCents, 999);
+    assert.equal(removed[method].amountCents, removed[method].productSubtotalCents + 999);
+  }
+});
+
+test("new orders snapshot product and shipping prices while old orders remain unknown", async () => {
+  const q = await pricing.quote("unit", "pix", false);
+  const item = orderPricing.orderItemFromQuote({ pack: "unit", colors: ["azul"] }, q);
+  assert.equal(item.unitPrice, 149.9, "the physical product must not include shipping");
+  assert.equal(q.amountCents, 15989);
+  assert.deepEqual(plain(orderPricing.checkoutPricingOfOrder([item], q.amountCents)), {
+    productSubtotalCents: 14990, shippingCents: 999, couponDiscountCents: 0,
+  });
+  assert.equal(orderPricing.checkoutPricingOfOrder([catalog.orderItemOf({ pack: "unit", colors: ["azul"] }, 15990)], 15990), null);
+  assert.equal(orderPricing.checkoutPricingOfOrder([item], 500), null, "a snapshot for a different payment total is not used");
+  settingsOverrides.set("checkout.prices", { unit: { pix: 10000, card: 20000 }, kit: { pix: 25000, card: 30000 } });
+  try {
+    const changed = await pricing.quote("unit", "pix", false);
+    assert.notEqual(changed.amountCents, q.amountCents);
+    assert.equal(orderPricing.checkoutPricingOfOrder([item], q.amountCents).shippingCents, 999);
+    assert.equal(item.unitPrice, 149.9);
+  } finally { settingsOverrides.clear(); }
+});
 
 test("server installment limits and rounding", async () => {
   for (const [requested, expected] of [[-3, 1], [99, 12], [8.9, 8]]) {
     assert.equal((await pricing.quote("kit", "card", false, requested)).installments, expected);
   }
-  assert.equal((await pricing.quote("unit", "card", false, 12)).installmentCents, 1499);
+  assert.equal((await pricing.quote("unit", "card", false, 12)).installmentCents, 1582);
   settingsOverrides.set("checkout.maxInstallments", 3);
   try {
     assert.equal((await pricing.quote("kit", "card", false, 12)).installments, 3);
@@ -291,13 +435,30 @@ test("coupon is normalized, server controlled and only discounts Pix", async () 
   try {
     const quoted = await pricing.quoteBoth("unit", true, 12, "  teste  ");
     assert.equal(quoted.pix.amountCents, 500);
-    assert.equal(quoted.pix.couponDiscountCents, 24490);
-    assert.equal(quoted.card.amountCents, 27990);
+    assert.equal(quoted.pix.couponDiscountCents, 23490);
+    assert.equal(quoted.card.amountCents, 26990);
     assert.equal(quoted.card.couponDiscountCents, 0);
-    assert.equal((await pricing.quote("unit", "pix", false, 1, "OTHER")).amountCents, 15990);
-    assert.equal((await pricing.quote("unit", "card", false, 12, "TESTE")).amountCents, 17990);
+    assert.equal((await pricing.quote("unit", "pix", false, 1, "OTHER")).amountCents, 15989);
+    assert.equal((await pricing.quote("unit", "card", false, 12, "TESTE")).amountCents, 18989);
     settingsOverrides.set("checkout.testCoupon", { enabled: true, code: "TESTE", pixCents: 99999 });
-    assert.equal((await pricing.quote("unit", "pix", false, 1, "TESTE")).amountCents, 15990, "a coupon cannot increase the total");
+    assert.equal((await pricing.quote("unit", "pix", false, 1, "TESTE")).amountCents, 15989, "a coupon cannot increase the total");
+  } finally { settingsOverrides.clear(); }
+});
+
+test("test coupon remains an exact total below FULL shipping without negative product prices", async () => {
+  settingsOverrides.set("checkout.testCoupon", { enabled: true, code: "TESTE", pixCents: 500 });
+  try {
+    const q = await pricing.quote("unit", "pix", false, 12, "TESTE");
+    assert.equal(q.productSubtotalCents, 14990);
+    assert.equal(q.shippingCents, 999);
+    assert.equal(q.amountCents, 500);
+    assert.equal(q.installmentCents, 500);
+    assert.equal(q.couponDiscountCents, 15489);
+    assert.equal(q.productSubtotalCents + q.shippingCents - q.couponDiscountCents, q.amountCents);
+    const item = orderPricing.orderItemFromQuote({ pack: "unit", colors: ["azul"] }, q);
+    assert.equal(item.unitPrice, 0);
+    assert.equal(orderPricing.checkoutPricingOfOrder([item], 500).couponDiscountCents, 15489);
+    assert.equal((await pricing.quote("unit", "card", false, 12, "TESTE")).amountCents, 18989);
   } finally { settingsOverrides.clear(); }
 });
 
@@ -345,7 +506,7 @@ test("mobile summary starts compact with a semantic non-submit button and valid 
   assert.match(html, /<div\b[^>]*id="checkout-summary-details"[^>]*hidden=""/);
   assert.ok(text(html).includes(cleanMoney(money(quotes.pix.amountCents))));
   assert.ok(finalTotal(html).includes(cleanMoney(money(quotes.pix.amountCents))));
-  checkDelivery(html);
+  checkDelivery(html, 999);
 });
 
 test("summary disclosure follows the viewport only until the customer chooses", () => {
@@ -379,7 +540,7 @@ test("inline coupon and totals precede products, with delivery benefit outside t
   assert.ok(detailsEnd > openStart);
   const benefitPosition = html.indexOf('data-summary-benefit="shipping"');
   assert.ok(benefitPosition > detailsEnd, "delivery benefit remains outside the hidden disclosure");
-  assert.match(html, /Seu pedido tem <strong>frete grátis<\/strong>/);
+  assert.match(html, /Seu pedido tem <strong>frete (?:FULL )?grátis<\/strong>/);
   assert.ok(!/cashback|brinde/i.test(text(html)), "no fictional reference promotion is copied");
 });
 
@@ -406,8 +567,8 @@ for (const selectedColors of [["azul", "preto"], ["vermelho", "vermelho"]]) {
 test("card summary displays the exact total as well as rounded installments", async () => {
   const quotes = await pricing.quoteBoth("kit", false, 12);
   const html = summary({ selection: { pack: "kit", colors: ["azul", "preto"] }, quotes, payView: "card" });
-  assert.ok(finalTotal(html).includes(cleanMoney(money(27990))), "card total must not be inferred by multiplying rounded installments");
-  assert.ok(text(html).includes(`12x de ${cleanMoney(money(2333))}`));
+  assert.ok(finalTotal(html).includes(cleanMoney(money(26990))), "card total must not be inferred by multiplying rounded installments");
+  assert.ok(text(html).includes(`12x de ${cleanMoney(money(2249))}`));
   checkDelivery(html);
 });
 
@@ -445,9 +606,9 @@ test("summary separates the server Pix discount from the coupon without double c
   try {
     const quotes = await pricing.quoteBoth("kit", false, 12, "TESTE");
     const html = summary({ selection: { pack: "kit", colors: ["azul", "preto"] }, quotes, coupon: "TESTE", onCouponApply: async () => null });
-    assert.equal(amountRow(html, "Produtos"), cleanMoney(money(27990)));
-    assert.equal(amountRow(html, "Desconto no Pix"), `− ${cleanMoney(money(3000))}`);
-    assert.equal(amountRow(html, "Desconto do cupom no Pix"), `− ${cleanMoney(money(24490))}`);
+    assert.equal(amountRow(html, "Produtos"), cleanMoney(money(26990)));
+    assert.equal(amountRow(html, "Desconto no Pix"), `- ${cleanMoney(money(3000))}`);
+    assert.equal(amountRow(html, "Desconto do cupom no Pix"), `- ${cleanMoney(money(23490))}`);
     assert.equal(finalTotal(html), `Total no Pix ${cleanMoney(money(500))}`);
     assert.match(html, /Cupom aplicado ao pagamento no Pix/);
     checkDelivery(html);
@@ -457,10 +618,35 @@ test("summary separates the server Pix discount from the coupon without double c
 test("Pix-only summary uses its quote without inventing a card discount", async () => {
   const quotes = await pricing.quoteBoth("unit", false, 12);
   const html = summary({ selection: { pack: "unit", colors: ["azul"] }, quotes, cardEnabled: false });
-  assert.equal(amountRow(html, "Produtos"), cleanMoney(money(quotes.pix.amountCents)));
+  assert.equal(amountRow(html, "Produtos"), cleanMoney(money(quotes.pix.productSubtotalCents)));
   assert.equal(finalTotal(html), `Total no Pix ${cleanMoney(money(quotes.pix.amountCents))}`);
   assert.ok(!text(html).includes("Desconto no Pix"));
   assert.ok(!text(html).includes("sem juros no cartão"));
+  checkDelivery(html, 999);
+});
+
+test("single-unit summary separates FULL shipping from products in both payment methods", async () => {
+  const quotes = await pricing.quoteBoth("unit", false, 12);
+  for (const method of ["pix", "card"]) {
+    const html = summary({ selection: { pack: "unit", colors: ["preto"] }, quotes, payView: method });
+    assert.equal(amountRow(html, "Produtos"), cleanMoney(money(17990)));
+    checkDelivery(html, 999);
+    assert.ok(finalTotal(html).includes(cleanMoney(money(quotes[method].amountCents))));
+    assert.ok(!/Seu pedido tem frete (?:FULL )?grátis/i.test(text(html)), "one unit must not advertise free shipping");
+  }
+});
+
+test("single-unit summary accounts for a test coupon including shipping exactly once", async () => {
+  settingsOverrides.set("checkout.testCoupon", { enabled: true, code: "TESTE", pixCents: 500 });
+  try {
+    const quotes = await pricing.quoteBoth("unit", false, 12, "TESTE");
+    const html = summary({ selection: { pack: "unit", colors: ["azul"] }, quotes, coupon: "TESTE", onCouponApply: async () => null });
+    assert.equal(amountRow(html, "Produtos"), cleanMoney(money(17990)));
+    assert.equal(amountRow(html, "Desconto no Pix"), `- ${cleanMoney(money(3000))}`);
+    assert.equal(amountRow(html, "Desconto do cupom no Pix"), `- ${cleanMoney(money(15489))}`);
+    checkDelivery(html, 999);
+    assert.equal(finalTotal(html), `Total no Pix ${cleanMoney(money(500))}`);
+  } finally { settingsOverrides.clear(); }
 });
 
 test("paid summary uses the paid amount, not the current quote", async () => {
@@ -472,6 +658,17 @@ test("paid summary uses the paid amount, not the current quote", async () => {
   });
   assert.ok(finalTotal(html).includes(cleanMoney(money(27000))));
   assert.ok(text(html).includes(`6x de ${cleanMoney(money(4500))}`));
+});
+
+test("old paid unit summary does not invent shipping from the new offer", async () => {
+  const html = summary({
+    selection: { pack: "unit", colors: ["azul"] },
+    quotes: await pricing.quoteBoth("unit", false, 12),
+    paid: { orderNumber: "OLD-PAID", method: "pix", amountCents: 15990, installments: 1, cardBrand: null, cardLast4: null, testMode: true },
+  });
+  assert.ok(finalTotal(html).includes(cleanMoney(money(15990))));
+  assert.ok(!/<dt>(?:Entrega|Frete FULL)<\/dt>/.test(html), "old orders without a shipping snapshot have no inferred delivery line");
+  assert.ok(!text(html).includes(cleanMoney(money(999))));
 });
 
 async function main() {

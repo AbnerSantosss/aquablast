@@ -7,6 +7,7 @@ import { PixLogo } from "./PixLogo";
 import { useRef, useState, type ReactNode } from "react";
 import { money } from "@/lib/checkout/own/masks";
 import type { Quote } from "@/lib/checkout/own/pricing";
+import { FULL_SHIPPING_CENTS } from "@/lib/checkout/own/shipping";
 import { COLOR_KEYS, COLOR_LABELS } from "@/lib/site/constants";
 import type { Color } from "@/lib/site/types";
 import { CardPay } from "./CardPay";
@@ -152,6 +153,8 @@ export function StepPagamento({
           <em className={`${styles.bumpTag} bump-tag`}>Oferta opcional para seu pedido</em>
           <h4>Leve a segunda unidade com desconto</h4>
           <strong className={`${styles.bumpPrice} bump-price`}>+ {money(q.bumpDeltaCents)}</strong>
+          <small>Frete FULL grátis levando as duas unidades.</small>
+          {q.couponDiscountCents === 0 ? <small>Acréscimo de {money(Math.max(0, q.bumpDeltaCents - FULL_SHIPPING_CENTS))} no total, já com a economia do frete.</small> : null}
           {q.bumpSavingCents > 0 ? <small>Economize {money(q.bumpSavingCents)} em relação à unidade avulsa</small> : null}
         </div>
       </div>
