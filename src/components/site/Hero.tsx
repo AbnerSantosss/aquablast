@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { preload } from "react-dom";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { galleryImageSrcSet, galleryVideoPhotography, includedPhotography, overviewPhotography, productGalleryScenes } from "@/lib/site/product-photography";
@@ -16,8 +16,16 @@ export function Hero() {
   const [photo, setPhoto] = useState(0);
   const [galleryReady, setGalleryReady] = useState(false);
   const touchX = useRef<number | null>(null);
+  const userTouched = useRef(false);
   const totalPhotos = productGalleryScenes.length + 3;
-  const move = (direction: number) => setPhoto((current) => (current + direction + totalPhotos) % totalPhotos);
+  const choose = (index: number) => { userTouched.current = true; setPhoto(index); };
+  const move = (direction: number) => { userTouched.current = true; setPhoto((current) => (current + direction + totalPhotos) % totalPhotos); };
+  // 2 s depois de entrar, a galeria vai sozinha para o card do video (indice 1) e fica nele; se o visitante ja
+  // mexeu na galeria antes disso, nao muda nada (pedido do dono, 2026-10-10).
+  useEffect(() => {
+    const timer = window.setTimeout(() => { if (!userTouched.current) setPhoto(1); }, 2000);
+    return () => window.clearTimeout(timer);
+  }, []);
   const packPhoto = includedPhotography(color);
   const photos = [overviewPhotography, galleryVideoPhotography, { ...packPhoto, label: "O que vem", caption: "Lançador · Tambor · Visor · Bateria · Cabo USB" }, ...productGalleryScenes];
   const currentPhoto = photos[photo] ?? photos[0];
@@ -50,7 +58,7 @@ export function Hero() {
             <span className="summer-photo-count" aria-live="polite">{photo + 1}/{totalPhotos}</span>
           </div>
           <div className="summer-thumbs" role="group" aria-label="Fotos do produto">
-            {photos.map((item, index) => <button type="button" key={item.src} aria-label={index === 2 ? "Ver produto e acessórios" : "Ver " + item.label} aria-pressed={photo === index} onClick={() => setPhoto(index)}>
+            {photos.map((item, index) => <button type="button" key={item.src} aria-label={index === 2 ? "Ver produto e acessórios" : "Ver " + item.label} aria-pressed={photo === index} onClick={() => choose(index)}>
               {"videoSrc" in item ? <div className="summer-video-thumb">
                 <Image src="/media/premium-v2/video-moldura-praia.webp" alt="" fill sizes="100px" />
                 <Image className="summer-video-thumb-poster" src={item.thumbSrc} alt="" fill sizes="50px" unoptimized />
