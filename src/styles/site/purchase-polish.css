@@ -177,6 +177,51 @@
   #compra-segura .summer-confidence-grid a:hover,
   #compra-segura .section-heading > .text-link:hover { background: var(--deep); }
 }
+/* Polimento de responsividade 10/10: alinhamento, escala de títulos e ritmo vertical.
+   Só tamanho, espaçamento e alinhamento; nenhum texto, imagem ou cor muda. */
+
+/* A regra genérica .summer-offer-head > span (10px) vencia o tamanho definido acima. */
+#ofertas .summer-offer-head > .summer-offer-saving { font-size: 12px; }
+
+/* Cartões: kicker e corpo alinhados à esquerda, o título seguia centralizado. */
+#diferenciais .summer-details-grid h3 { text-align: left; }
+/* Selo e título centralizados; o corpo acompanha. */
+#compra-segura .summer-confidence-grid p { text-align: center; }
+
+@media (max-width: 42.5rem) {
+  /* Botões de 146px quebravam deixando a seta sozinha na segunda linha. */
+  #compra-segura .summer-confidence-grid a { padding-inline: 6px; text-wrap: balance; }
+  /* Coluna única: intro e link seguem o eyebrow e o título, que já são centralizados. */
+  #familia .summer-gifting-grid > div:first-child { text-align: center; }
+  #familia .summer-gifting-grid > div:first-child p { margin-inline: auto; }
+}
+
+@media (max-width: 56.25rem) {
+  #duvidas .faq-grid > div:first-child { text-align: center; }
+  /* A legenda não define mais a largura do cartão: ela quebra dentro da largura do vídeo. */
+  #diversao .video-card > h3 { width: 0; min-width: 100%; overflow-wrap: anywhere; }
+}
+
+@media (min-width: 42.5625rem) {
+  /* Coluna de texto ao lado da foto: tudo alinhado à esquerda, como o parágrafo e o link. */
+  #familia .summer-gifting-grid > div > .eyebrow,
+  #familia .summer-gifting-grid h2 { text-align: left; }
+}
+
+@media (min-width: 56.3125rem) {
+  #duvidas .faq-grid > div > .eyebrow,
+  #duvidas .faq-grid > div > h2 { text-align: left; }
+  /* Mesma escala de h2 das demais seções (desktop-product.css). */
+  #familia .summer-gifting-grid h2,
+  #avaliacoes h2 { font-size: clamp(1.625rem, 3.7svh, 2.25rem); }
+  /* Seções curtas ganham respiro; #diversao e #ofertas ficam no ajuste de caber na tela. */
+  main > #diferenciais,
+  main > #familia,
+  main > #compra-segura,
+  main > #duvidas,
+  main > #verao { padding-block: clamp(1.5rem, 5svh, 3rem); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   #inicio .summer-buy-button,
   #ofertas .summer-offer-footer .button,

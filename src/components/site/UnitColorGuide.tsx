@@ -87,13 +87,14 @@ export function UnitColorGuide({ openRequest, onSelectionChange }: UnitColorGuid
       <h2 ref={titleRef} id={titleId} className={styles.title} tabIndex={-1}>Escolha a cor do seu AquaBlast</h2>
       <p id={descriptionId} className={styles.description}>Toque na cor que você quer e continue para o pagamento.</p>
 
-      {needsChoice && <p className={styles.choiceAlert} id={`${descriptionId}-error`} role="alert">Escolha uma das cores abaixo para continuar.<ArrowDown size={18} aria-hidden="true" /></p>}
+      {needsChoice && <p className={styles.choiceAlert} id={`${descriptionId}-error`} role="alert">Nenhuma cor escolhida: seguimos com {COLOR_LABELS[color]}. Toque de novo para continuar ou escolha outra cor.<ArrowDown size={18} aria-hidden="true" /></p>}
       <div ref={choicesRef} tabIndex={-1} className={styles.choices} data-attention={needsChoice || undefined} role="group" aria-describedby={needsChoice ? `${descriptionId}-error` : undefined} aria-label="Cor do seu AquaBlast">
         {COLOR_KEYS.map((option) => (
           <button
             key={option}
             type="button"
-            aria-pressed={colorTouched && color === option}
+            // Depois do aviso "seguimos com Azul", o cartao da cor padrao aparece marcado para bater com o texto.
+            aria-pressed={(colorTouched || needsChoice) && color === option}
             onClick={() => {
               chooseColor(option);
               setNeedsChoice(false);
@@ -108,7 +109,8 @@ export function UnitColorGuide({ openRequest, onSelectionChange }: UnitColorGuid
       </div>
 
       <div className={styles.footer}>
-        {colorTouched ? (
+        {/* Sem cor escolhida o primeiro toque so avisa (cor padrao); o segundo segue para o checkout. O botao nunca trava (pedido do dono, 2026-10-10). */}
+        {colorTouched || needsChoice ? (
           <PurchaseLink pack="unit" direct className={`${styles.next} ${unitStyles.continue}`}>
             Continuar para pagamento <ArrowRight size={18} aria-hidden="true" />
           </PurchaseLink>

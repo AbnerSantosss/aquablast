@@ -61,8 +61,8 @@ export function kitGalleryPhotography(colors: readonly [Color, Color]) {
 
 export const galleryVideoPhotography = {
   src: heroVideo.poster,
-  thumbSrc: "/thumbs/video-jato-reservatorio-amplo-poster-108.webp",
-  blurDataURL: "data:image/webp;base64,UklGRoAAAABXRUJQVlA4IHQAAADwAwCdASoMABUAPxFwsFAsJiSisAgBgCIJagCdACHPMM0MXedbWa8AAPzQlWD9x7zxjusp0X5pTsUrc1pQDwKN8EjmAaR/8J/DPAzcT0Y9xhGdOJbjQYgOp/7Q1ZtzOVDWXyScuLcMKZxqqmPDMm0OBkAAAA==",
+  thumbSrc: "/thumbs/video-card-dublado-pt-poster-108.webp",
+  blurDataURL: "data:image/webp;base64,UklGRpIAAABXRUJQVlA4IIYAAADQAwCdASoMABYAPu1iqU2ppaOiMAgBMB2JbAC+SBunK0GHOm0MfKAA/kNlMsE6hvBp6NBWXM9KaFZZkNx04rAPh6b5uCiS+jREbp7uZip3aFVOFL2sa8+bFt2uzU7Y/FCM5FDrgJLD5WlG2BbAk5iuNgnRG66KYcdnoVdVH9j1UfsQzgAAAA==",
   width: 960,
   height: 960,
   videoSrc: heroVideo.src,

@@ -166,7 +166,7 @@
 .led-detail.is-playing img { object-fit: cover; }
 .led-detail button { position: absolute; left: 14px; bottom: 14px; display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--navy); background: white; font-size: 12px; font-weight: 800; }
 .led-detail button:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
-.summer-detail-kicker { display: block; margin-bottom: 8px; color: var(--blue); letter-spacing: .06em; font-size: 10px; font-weight: 800; }
+.summer-detail-kicker { display: block; margin-bottom: 8px; color: var(--blue); letter-spacing: .06em; font-size: 11px; font-weight: 800; }
 .summer-details-grid p { margin: 0; }
 @media(max-width:900px) { .summer-detail-art { height: 190px; } }
 @media(max-width:680px) {

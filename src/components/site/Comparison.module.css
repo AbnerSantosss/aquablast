@@ -83,7 +83,23 @@
   flex-shrink: 0;
 }
 
+/* Mesma escala de h2 das outras seções no desktop (desktop-product.css, regra de caber na tela). */
+@media (min-width: 56.3125rem) {
+  .section h2 {
+    font-size: clamp(1.625rem, 3.7svh, 2.25rem);
+  }
+}
+
 @media (max-width: 42.5rem) {
+  /* Mesmo respiro vertical e h2 das demais seções no celular (style.css: 2.875rem e 1.875rem). */
+  .section {
+    padding: 2.875rem 0;
+  }
+
+  .section h2 {
+    font-size: 1.875rem;
+  }
+
   .container {
     width: calc(100% - 2.25rem);
   }

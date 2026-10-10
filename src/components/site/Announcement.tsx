@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { money } from "@/lib/checkout/own/masks";
-import { FULL_SHIPPING_CENTS, FULL_SHIPPING_LABEL } from "@/lib/checkout/own/shipping";
+import { FULL_SHIPPING_LABEL } from "@/lib/checkout/own/shipping";
 import { DELIVERY_PATH } from "@/lib/site/constants";
 
-const shippingText = `${FULL_SHIPPING_LABEL} ${money(FULL_SHIPPING_CENTS)}`;
+// So o rotulo, sem o valor (pedido do dono, 2026-10-10): o preco do frete segue nas ofertas e no checkout.
+const shippingText = FULL_SHIPPING_LABEL;
 
 export function SkipLink() {
   return <a className="skip" href="#conteudo">Pular para o conteúdo</a>;

@@ -77,7 +77,8 @@ function trackBuyClick(link: HTMLElement, click: { pack: Pack; colors: string[];
  * A unidade abre o guia do topo e o kit abre o guia do próprio card.
  *
  * `direct` (compra direta do primeiro bloco do celular, pedido do dono 04/10): o primeiro toque ja vai para o
- * checkout com a cor ja escolhida, sem aviso nem dica.
+ * checkout com a cor ja escolhida, sem aviso nem dica. Desde 2026-10-10 tambem serve ao guia da unidade sem cor
+ * escolhida: o guia avisa uma vez e o link segue com a cor padrao (o Comprar nunca trava).
  */
 export function PurchaseLink({
   pack,
@@ -132,7 +133,8 @@ export function PurchaseLink({
       ? checkoutUrl(pack, color, kitColors)
       : `${ownCheckoutPath(pack, color, kitColors)}${adParamsFromLocation()}`;
 
-  if (pack === "unit" && incomplete) {
+  // `direct` dentro do guia da unidade: o guia ja avisou, o link segue com a cor padrao em vez de reabrir o dialogo.
+  if (pack === "unit" && incomplete && !direct) {
     return (
       <button
         type="button"

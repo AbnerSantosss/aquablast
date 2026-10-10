@@ -80,7 +80,7 @@
 
   #inicio .summer-eyebrow {
     display: block;
-    font-size: 10px;
+    font-size: 11px;
     line-height: 1.2;
     letter-spacing: .1em;
   }
@@ -207,10 +207,12 @@
   #inicio .summer-packs button:hover,
   #inicio .summer-color-row button:hover { border-color: var(--blue); }
 
+  /* Largura total: a coluna de rótulos (--hero-label-width) saiu do painel e o recuo
+     deixava o botão desalinhado da caixa de preço. */
   #inicio .summer-buy-button {
-    width: calc(100% - var(--hero-label-width) - 8px);
+    width: 100%;
     min-height: 48px;
-    align-self: flex-end;
+    align-self: stretch;
     margin-top: 4px;
     padding: 10px 14px;
     border-radius: 7px;

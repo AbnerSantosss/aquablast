@@ -61,10 +61,14 @@ function assert(cond, msg) {
     } else {
       await page.waitForTimeout(3000);
     }
+    // Desde o 8d547ff (cor sob demanda) o Comprar sem cor escolhida e um <button data-purchase> que abre o guia de
+    // cor; so vira <a> depois da escolha. Conta os dois e confere o destino nos links que existirem.
+    const botoes = await page.locator("[data-purchase]").count();
+    assert(botoes > 0, "nenhum botao de compra ([data-purchase])");
     const hrefs = await page.$$eval("a[data-purchase]", (as) => as.map((a) => a.href));
     const zedy = hrefs.filter((h) => h.includes("seguro.aquablastbrasil.com.br"));
     const proprio = hrefs.filter((h) => new URL(h).host === new URL(BASE).host && new URL(h).pathname === "/checkout");
-    assert(hrefs.length > 0, "nenhum botao de compra (a[data-purchase])");
+    if (hrefs.length === 0) return `${botoes} botao(oes) que abrem o guia de cor; nenhum link direto para conferir`;
     if (MODE === "zedy") {
       assert(zedy.length > 0 && proprio.length === 0, `${zedy.length} Zedy, ${proprio.length} proprio`);
       return `${zedy.length} link(s) Zedy`;
@@ -73,12 +77,16 @@ function assert(cond, msg) {
     return `${proprio.length} link(s) para /checkout`;
   });
 
-  await check("preco na LP (Pix 159,90 / cartao 179,90)", async () => {
-    // O valor do cartao so fica visivel com "cartao" escolhido: confere no HTML, nao no texto visivel.
+  await check("preco na LP (Pix 149,90 / cartao 179,90) e faixa do topo sem valor de frete", async () => {
+    // Desde o 466d2d4 a unidade e 149,90 no Pix com Frete FULL 9,99 (deploy 2026-10-10). O valor do cartao so
+    // fica visivel com "cartao" escolhido: confere no HTML, nao no texto visivel.
     const text = await page.evaluate(() => document.body.innerText);
     const html = await page.content();
-    assert(text.includes("159,90"), "159,90 nao aparece");
+    assert(text.includes("149,90"), "149,90 nao aparece");
     assert(html.includes("179,90"), "179,90 nao esta no HTML");
+    // Faixa do topo: "Frete FULL" sem o preco (pedido do dono, 2026-10-10).
+    const faixa = ((await page.locator(".delivery-ticker").first().textContent()) || "").replace(/\s+/g, " ");
+    assert(/Frete FULL/.test(faixa) && !/R\$/.test(faixa), `faixa do topo inesperada: "${faixa}"`);
   });
 
   if (MODE === "proprio") {
@@ -91,11 +99,12 @@ function assert(cond, msg) {
       await details.waitFor({ state: "attached", timeout: 15000 });
       const resumo = ((await details.textContent()) || "").replace(/\s+/g, " ");
       // Desde 2026-09-29 o Pix e o destaque antes da etapa 3; com cartao ligado ou "aguardando gateway" a parcela vem logo abaixo.
-      const total = /Total no Pix\s?R\$\s?159,90/.exec(resumo);
-      assert(total, `resumo sem "Total no Pix R$ 159,90": ${resumo.slice(0, 300)}`);
+      // 149,90 + Frete FULL 9,99 = 159,89 no Pix; cartao 179,90 + 9,99 = 189,89 em 12x de 15,82 (e2e 01).
+      const total = /Total no Pix\s?R\$\s?159,89/.exec(resumo);
+      assert(total, `resumo sem "Total no Pix R$ 159,89": ${resumo.slice(0, 300)}`);
       const cfg = await (await ctx.request.get(`${BASE}/api/checkout/config`)).json();
       if (cfg.card && (cfg.card.available || cfg.card.comingSoon)) {
-        assert(/12x de R\$\s?14,99/.test(resumo), `resumo sem a parcela: ${resumo.slice(0, 300)}`);
+        assert(/12x de R\$\s?15,82/.test(resumo), `resumo sem a parcela: ${resumo.slice(0, 300)}`);
       }
       assert((await page.locator(".trust-seals li").count()) >= 3, "selos ausentes");
       assert((await page.locator("footer.ck-footer").count()) === 1, "rodape ausente");

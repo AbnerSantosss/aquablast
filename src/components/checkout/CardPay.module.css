@@ -55,7 +55,8 @@
   transition: border-color 150ms, box-shadow 150ms;
 }
 :global(.ck) .form .field input::placeholder { color: #7e8f9e; font-weight: 400; }
-:global(.ck) .form .field select { appearance: auto; cursor: pointer; padding-right: 8px; font-size: 14px; }
+/* 16px como os outros campos: abaixo disso o Safari do iPhone da zoom ao focar o select de parcelas (achado Playwright 2026-10-10). */
+:global(.ck) .form .field select { appearance: auto; cursor: pointer; padding-right: 8px; font-size: 16px; }
 :global(.ck) .form .field input:focus,
 :global(.ck) .form .field select:focus-visible { border-color: var(--c-primary); outline: 2px solid color-mix(in srgb, var(--c-accent) 25%, transparent); outline-offset: 2px; box-shadow: none; }
 :global(.ck) .form .field input[aria-invalid="true"] { border-color: var(--c-timer); }
