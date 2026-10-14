@@ -11,10 +11,10 @@ const CAPITAIS: Record<string, string> = {
 
 const semAcento = (v: string) => v.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
 
-/** Prazo em dias por tipo de frete. Vem do dono (2026-10-14): grátis 4-7 e 7-10; FULL 2-3 e 8-9. */
+/** Prazo em dias úteis por tipo de frete. Vem do dono (2026-10-14): grátis 4-7 e 7-10; FULL 2-3 e 8-9. */
 const PRAZO: Record<ShippingMethod, { capital: string; demais: string }> = {
-  free: { capital: "4 a 7 dias", demais: "7 a 10 dias" },
-  full: { capital: "2 a 3 dias", demais: "8 a 9 dias" },
+  free: { capital: "4 a 7 dias úteis", demais: "7 a 10 dias úteis" },
+  full: { capital: "2 a 3 dias úteis", demais: "8 a 9 dias úteis" },
 };
 
 /** true se a cidade é a capital da UF, false se não é, null sem cidade e UF válidos (CEP ainda não consultado). */

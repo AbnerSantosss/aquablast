@@ -1099,13 +1099,11 @@
  * Checkout.tsx coloca .ck-one-page na raiz quando ONE_PAGE está ligado e o pedido ainda não foi pago. Nesse
  * modo as três seções (Seus dados, Entrega, Pagamento) ficam abertas ao mesmo tempo, todas com .is-current,
  * e quem rola é a PÁGINA: nada de casca de 100dvh nem de rolagem por seção.
- * Vale SÓ no celular/tablet (abaixo de 1100 px, o corte da casca acima): Checkout.tsx decide por
- * matchMedia("(max-width: 1099.98px)"). No computador (>= 1100 px) a raiz não recebe a classe e segue o fluxo
- * de 3 etapas com a casca 100dvh e o CheckoutProgress, como antes. Por isso aqui não há regra de >= 1100 px.
- * Abaixo de 1100 px vale o empilhado de reference-checkout.css (resumo, três seções, fatos da compra), com a
- * rolagem normal da página.
- * Os :not(.ck-one-page) das regras acima ficam inofensivos no desktop (a classe não existe lá); servem de
- * guarda para a janela que cruza 1100 px com o pedido aberto. Com ONE_PAGE desligado nada deste bloco vale.
+ * Vale em TODOS os tamanhos desde 2026-10-14 (pedido do dono: "o checkout todo em um só, sem travas"); a
+ * detecção de celular por matchMedia saiu do Checkout.tsx. Abaixo de 1100 px vale o empilhado de
+ * reference-checkout.css (resumo, três seções, fatos da compra); a partir de 1100 px, o bloco no fim deste
+ * arquivo desliga a casca 100dvh e a rolagem interna das colunas, e quem rola é a página.
+ * Os :not(.ck-one-page) das regras acima só valem com ONE_PAGE desligado (fluxo antigo de 3 etapas).
  * ---------------------------------------------------------------------------------------------------------
  */
 
@@ -1115,4 +1113,28 @@
 }
 .ck-root.ck.ck-reference.ck-one-page .ck-step-head .ck-dot {
   animation: none;
+}
+
+/*
+ * Página única também no computador (2026-10-14, pedido do dono: "o checkout todo em um só, sem travas").
+ * Com .ck-one-page a casca de 100dvh deixa de valer: a PÁGINA rola e nenhuma seção, resumo ou coluna lateral
+ * rola por dentro. As três seções ficam abertas, uma abaixo da outra, na coluna da esquerda; o resumo fica
+ * colado (sticky) na da direita.
+ */
+@media (min-width: 1100px) {
+  .ck-root.ck.ck-reference.ck-one-page {
+    height: auto;
+    min-height: 100dvh;
+  }
+  .ck-root.ck.ck-reference.ck-one-page .ck-main {
+    flex: none;
+  }
+  .ck-root.ck.ck-reference.ck-one-page .ck-grid .ck-step.is-current,
+  .ck-root.ck.ck-reference.ck-one-page .ck-grid .order-summary,
+  .ck-root.ck.ck-reference.ck-one-page .ck-grid > .ck-side {
+    flex: none;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
 }

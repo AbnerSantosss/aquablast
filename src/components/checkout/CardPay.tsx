@@ -73,7 +73,7 @@ export function CardPay({
 }) {
   const max = Math.max(1, maxInstallments);
   const [f, setF] = useState(EMPTY);
-  const [inst, setInst] = useState(String(max));
+  const [inst, setInst] = useState(String(Math.min(5, max)));
   const [error, setError] = useState("");
   const [errorField, setErrorField] = useState<CardKey | null>(null);
   const [busy, setBusy] = useState(false);

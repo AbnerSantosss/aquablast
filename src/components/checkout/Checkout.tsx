@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, CreditCard, LockKeyhole, Mail, MapPin, Phone } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Selection } from "@/lib/checkout/own/catalog";
 import type { BannerMap } from "@/lib/checkout/own/banners";
@@ -40,19 +40,6 @@ import type { CepState, CheckoutInitial, FieldKey, FormData, PaidInfo, PayMethod
 
 /** Checkout em uma página (2026-10-14, referência Luna Checkout). false volta ao fluxo por etapas. */
 const ONE_PAGE = true;
-/**
- * A página única vale só no celular/tablet (abaixo de 1100 px, o mesmo corte da casca de app do desktop-shell.css,
- * que começa em `min-width: 1100px`). No desktop segue o fluxo de 3 etapas com a casca 100dvh.
- * O servidor e a hidratação assumem celular (a maior parte do tráfego): o celular não pisca; o desktop troca para as etapas logo após hidratar.
- */
-const MOBILE_QUERY = "(max-width: 1099.98px)";
-function subscribeMobile(onChange: () => void): () => void {
-  const mq = window.matchMedia(MOBILE_QUERY);
-  mq.addEventListener("change", onChange);
-  return () => mq.removeEventListener("change", onChange);
-}
-const getMobile = () => window.matchMedia(MOBILE_QUERY).matches;
-const getMobileServer = () => true;
 const TOKEN_KEY = "ck-cart-token-unit-149";
 const STEP_NAMES = ["Seus dados", "Entrega", "Pagamento"] as const;
 const STEP_OF: Record<StepName, number> = { dados: 1, entrega: 2, pagamento: 3 };
@@ -203,21 +190,7 @@ export function Checkout({
   const canBump = !itemsMode && bumpEnabled && selection.pack === "unit";
   const hasBump = canBump && bump;
   /** Checkout em uma página ativo: não vale na tela de pedido pago, que segue igual. */
-  const isMobile = useSyncExternalStore(subscribeMobile, getMobile, getMobileServer);
-  const one = ONE_PAGE && !paid && isMobile;
-  // Da página única para as etapas (janela alargada, tablet girado): os dados são o mesmo estado, só muda a tela.
-  // Abre no passo mais alto já cumprido (dados válidos → entrega; endereço já confirmado e salvo → pagamento), nunca abaixo do atual.
-  const [wasOne, setWasOne] = useState(one);
-  if (wasOne !== one) {
-    setWasOne(one);
-    if (wasOne && !paid) {
-      let top = 1;
-      if (!dadosProblem(data, !!cpfMasked)) top = 2;
-      if (top === 2 && addrOk && cartToken && !addressProblem(data)) top = 3;
-      setStep((s) => Math.max(s, top));
-      setError("");
-    }
-  }
+  const one = ONE_PAGE && !paid;
 
   // Leva o cliente ao primeiro campo da etapa; no celular só a partir da etapa 2, para não abrir o teclado ao carregar. Na etapa 3 o foco vai para o título.
   // Uma página: sem autofoco ao carregar (o cliente vê as três seções e começa por onde quiser).
@@ -508,6 +481,35 @@ export function Checkout({
     if (!UFS.includes(d.state)) return { message: "Selecione o estado.", sel: "[name=state]", title };
     if (!fullName(d.recipient)) return { message: "Informe o nome de quem vai receber (nome e sobrenome).", sel: "[name=recipient]", title };
     return null;
+  }
+
+  // Página única: ao completar a última informação de uma seção, a tela rola sozinha até a próxima (pedido do dono, 2026-10-14).
+  // Só dispara quando o foco SAI da seção com ela completa: o "Próximo" do teclado leva à seção seguinte, ou o "OK" fecha o teclado.
+  // Não há gatilho por pausa de digitação: a validação aceita entradas parciais ("1" no número, "Maria S" no nome) e a rolagem pulava
+  // campos com o cliente ainda digitando (critique do impeccable, P0). O foco nunca é movido por aqui; se o cliente sai da seção para
+  // outro lugar (resumo, pagamento), não rola. Uma vez por ciclo: volta a valer quando a seção fica incompleta de novo. Só rola quando
+  // a próxima seção não está bem à vista (no computador, muitas vezes não precisa).
+  const advanced = useRef<Record<number, boolean>>({});
+  const sectionDone = (n: number) => (n === 1 ? !dadosProblem(data, !!cpfMasked) : cepState !== "loading" && !addressProblem({ ...data, recipient: data.recipient || data.name }));
+  const done1 = sectionDone(1);
+  const done2 = sectionDone(2);
+  useEffect(() => {
+    if (!done1) advanced.current[1] = false;
+    if (!done2) advanced.current[2] = false;
+  }, [done1, done2]);
+  function handleSectionBlur(e: React.FocusEvent<HTMLOListElement>) {
+    const li = (e.target as HTMLElement).closest<HTMLElement>(".ck-step");
+    const n = Number(li?.dataset.step);
+    const to = e.relatedTarget as HTMLElement | null;
+    if ((n !== 1 && n !== 2) || li?.contains(to)) return;
+    const target = flow.current?.querySelector<HTMLElement>(`.ck-step[data-step="${n + 1}"]`);
+    if (!target || (to && !target.contains(to))) return;
+    if (advanced.current[n] || !sectionDone(n)) return;
+    advanced.current[n] = true;
+    const top = target.getBoundingClientRect().top;
+    if (top > 0 && top < window.innerHeight * 0.45) return;
+    const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: Math.max(0, top + window.scrollY - 12), behavior: calm ? "auto" : "smooth" });
   }
 
   /** O destinatário acompanha o nome enquanto estiver vazio ou igual ao último preenchimento automático. */
@@ -876,7 +878,7 @@ export function Checkout({
                 shippingCents={paid.shippingCents}
               />
             ) : null}
-            <ol className={`ck-steps${paid ? " is-complete" : ""}`} aria-label="Etapas da compra">
+            <ol className={`ck-steps${paid ? " is-complete" : ""}`} aria-label="Etapas da compra" onBlur={one ? handleSectionBlur : undefined}>
               {STEP_NAMES.map((name, i) => {
                 const n = i + 1;
                 // Página única: as três seções ficam abertas ao mesmo tempo (sem EDITAR, sem cadeado, sem "etapa atual").
