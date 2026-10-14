@@ -40,7 +40,7 @@ export function HeroBuyPanel({ onSelectionChange }: HeroBuyPanelProps) {
         <small>{prices.installments > 1 ? `ou ${prices.installments}x de ${price.installment} sem juros` : `ou ${price.card} no cartão`}</small>
       </div>
       <UnitColorGuide openRequest={unitGuideRequest} onSelectionChange={onSelectionChange} />
-      <button id="hero-unit-guide-trigger" type="button" className="button button-green summer-buy-button" aria-haspopup="dialog" onClick={openUnitGuide}>
+      <button id="hero-unit-guide-trigger" type="button" className="button button-green button-pulse summer-buy-button" aria-haspopup="dialog" onClick={openUnitGuide}>
         Quero meu AquaBlast
       </button>
       <ul className="summer-bullets" aria-label="O que seu AquaBlast oferece">

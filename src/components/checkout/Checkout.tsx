@@ -444,7 +444,7 @@ export function Checkout({
     if (busy || sending.current || couponBusy) return;
     if (itemsMode && !items.length) return fail("Adicione pelo menos um produto ao pedido.", undefined, "Pedido vazio");
     if (step === 1) {
-      const problem = dadosProblem(data, !!cpfMasked);
+      const problem = dadosProblem(data);
       if (problem) return fail(problem.message, `[name=${problem.field}]`, problem.title);
       // Destinatário começa com o nome da etapa 1 (e acompanha o nome enquanto o cliente não o trocar).
       const name = data.name.trim().replace(/\s+/g, " ");
@@ -490,7 +490,7 @@ export function Checkout({
   // outro lugar (resumo, pagamento), não rola. Uma vez por ciclo: volta a valer quando a seção fica incompleta de novo. Só rola quando
   // a próxima seção não está bem à vista (no computador, muitas vezes não precisa).
   const advanced = useRef<Record<number, boolean>>({});
-  const sectionDone = (n: number) => (n === 1 ? !dadosProblem(data, !!cpfMasked) : cepState !== "loading" && !addressProblem({ ...data, recipient: data.recipient || data.name }));
+  const sectionDone = (n: number) => (n === 1 ? !dadosProblem(data) : cepState !== "loading" && !addressProblem({ ...data, recipient: data.recipient || data.name }));
   const done1 = sectionDone(1);
   const done2 = sectionDone(2);
   useEffect(() => {
@@ -534,7 +534,7 @@ export function Checkout({
    */
   function quietSave(): { step: CartStep; opts: { customer?: boolean; address?: boolean; data: FormData } } {
     const d = withAutoRecipient(data);
-    const customerOk = !dadosProblem(d, !!cpfMasked);
+    const customerOk = !dadosProblem(d);
     const addressOk = !addressProblem(d);
     return { step: customerOk ? "entrega" : "dados", opts: { ...(customerOk ? { customer: true } : {}), ...(addressOk ? { address: true } : {}), data: d } };
   }
@@ -545,20 +545,21 @@ export function Checkout({
    * "pagamento" (é essa gravação que dispara o AddPaymentInfo e o aviso de pagamento) e devolve o token dele. null = faltou
    * algo (o aviso já foi mostrado) ou o servidor recusou; quem chamou não cobra.
    */
-  async function prepare(): Promise<string | null> {
+  async function prepare(cpf: string): Promise<string | null> {
     if (busy || sending.current || couponBusy) return null;
     if (itemsMode && !items.length) {
       fail("Adicione pelo menos um produto ao pedido.", undefined, "Pedido vazio");
       return null;
     }
-    const problem = dadosProblem(data, !!cpfMasked);
+    const problem = dadosProblem(data);
     if (problem) {
       fail(problem.message, `[name=${problem.field}]`, problem.title);
       return null;
     }
     // O destinatário nasce com o nome (e acompanha o nome enquanto o cliente não o trocar); o estado só reflete isso no próximo
     // desenho, então a validação e a gravação usam a cópia `d`.
-    const d = withAutoRecipient(data);
+    // O CPF vem de quem cobra (Pix ou cartão): não existe mais na etapa de dados.
+    const d = { ...withAutoRecipient(data), cpf };
     if (recipientIsAuto(data)) {
       autoRecipient.current = d.recipient;
       setData((p) => ({ ...p, recipient: d.recipient }));
@@ -584,7 +585,7 @@ export function Checkout({
   function handleAddressBlur() {
     if (!one || consent === null || couponBusy || busy || sending.current) return;
     const d = withAutoRecipient(data);
-    if (dadosProblem(d, !!cpfMasked) || addressProblem(d)) return;
+    if (dadosProblem(d) || addressProblem(d)) return;
     const key = savedKey(d);
     if (savedAddrKey.current === key) return;
     savedAddrKey.current = key;
@@ -776,7 +777,7 @@ export function Checkout({
 
   const body = (n: number) =>
     n === 1 ? (
-      <StepDados data={data} onChange={change} onContactBlur={handleContactBlur} onSubmit={onSubmit} cpfMasked={cpfMasked} busy={busy} buttonLabel={theme.buttonLabel} error={sectionError(1)} hideSubmit={one} />
+      <StepDados data={data} onChange={change} onContactBlur={handleContactBlur} onSubmit={onSubmit} busy={busy} buttonLabel={theme.buttonLabel} error={sectionError(1)} hideSubmit={one} />
     ) : n === 2 ? (
       <StepEntrega data={data} onChange={change} onSubmit={onSubmit} cepState={cepState} addrOk={addrOk} busy={busy} buttonLabel={theme.buttonLabel} shipping={shipping} onShippingChange={handleShippingChange} error={sectionError(2)}
         hideSubmit={one} onAddressBlur={one ? handleAddressBlur : undefined}
@@ -790,6 +791,7 @@ export function Checkout({
         onRetrySync={() => void syncPaymentCart(bump, bumpColor)}
         cartToken={cartToken}
         prepare={one ? prepare : undefined}
+        cpfMasked={cpfMasked}
         color={c1}
         canBump={canBump}
         bump={bump}

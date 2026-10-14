@@ -2,8 +2,10 @@
 
 import { CircleAlert, Landmark, LoaderCircle, RefreshCw, Timer, Smartphone, ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { money } from "@/lib/checkout/own/masks";
+import { maskCPF, money } from "@/lib/checkout/own/masks";
 import { getStatus, isApiFail, postPay, postSimulatePaid } from "./api";
+import { cpfProblem } from "./explain";
+import { Field } from "./Field";
 import { PixPaymentCode } from "./PixPaymentCode";
 import type { PixResult } from "./types";
 import { ttlLabel, useClock } from "./useClock";
@@ -30,6 +32,7 @@ export function PixPay({
   beforeSubmit,
   afterSubmit,
   prepare,
+  cpfMasked = null,
 }: {
   /** Ausente no checkout em uma página enquanto o carrinho ainda não foi gravado: `prepare` valida, grava e devolve o token. */
   cartToken?: string;
@@ -54,8 +57,11 @@ export function PixPay({
    * Checkout em uma página (2026-10-14): roda antes da cobrança, valida dados e entrega, grava o carrinho e devolve o token
    * dele (ou null se algo faltou: o Checkout já mostrou o aviso). Sem ela, usa o `cartToken` recebido (fluxo por etapas).
    */
-  prepare?: () => Promise<string | null>;
+  prepare?: (cpf: string) => Promise<string | null>;
+  /** CPF já gravado (carrinho retomado): aparece só mascarado e pode ficar vazio. */
+  cpfMasked?: string | null;
 }) {
+  const [cpf, setCpf] = useState("");
   const [phase, setPhase] = useState<"idle" | "loading" | "ready">("idle");
   const [pix, setPix] = useState<(PixResult & { publicToken: string; localExpiresMs: number }) | null>(null);
   const [error, setError] = useState("");
@@ -128,6 +134,12 @@ export function PixPay({
       onBlocked?.();
       return;
     }
+    // CPF pedido aqui (não na etapa de dados). Carrinho retomado com o CPF já gravado pode deixar vazio.
+    const cpfIssue = cpfMasked && !cpf ? null : cpfProblem(cpf);
+    if (cpfIssue) {
+      setError(cpfIssue);
+      return;
+    }
     setPhase("loading");
     setError("");
     setStatusMessage("");
@@ -135,7 +147,7 @@ export function PixPay({
     // Uma página: valida os dados e a entrega, grava o carrinho e só então cobra. Faltou algo: o Checkout já avisou, nada é cobrado.
     let token = cartToken;
     if (prepare) {
-      const prepared = await prepare();
+      const prepared = await prepare(cpf);
       if (!prepared) {
         setPhase(pix ? "ready" : "idle");
         return;
@@ -221,6 +233,16 @@ export function PixPay({
         </div>
         {errorBox}
         {beforeSubmit}
+        {prepare ? (
+          <Field
+            name="cpf"
+            label="CPF"
+            placeholder={cpfMasked ?? "000.000.000-00"}
+            value={cpf}
+            onChange={(_, v) => setCpf(maskCPF(v))}
+            opts={{ inputMode: "numeric", maxLength: 14, autoComplete: "off", optional: !!cpfMasked, hint: cpfMasked ? "CPF já informado. Preencha apenas se quiser alterar." : undefined }}
+          />
+        ) : null}
         <button type="button" className={`${styles.primary} pix-primary`} onClick={() => void generate()} disabled={phase === "loading"} aria-disabled={blocked || undefined}>
           {phase === "loading" ? <><LoaderCircle className="spin" size={18} aria-hidden="true" />Gerando código…</> : <>Gerar Pix de {money(amountCents)}<ArrowRight size={18} aria-hidden="true" /></>}
         </button>

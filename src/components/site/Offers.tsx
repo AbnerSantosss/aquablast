@@ -19,7 +19,7 @@ function OfferFooter({ pack }: { pack: Pack }) {
       <div className="summer-offer-total"><strong>{price.pix}</strong><span><Image src="/icons/pix.svg" alt="" width={18} height={18} />à vista no Pix</span></div>
       <p className="summer-offer-installments">{prices.installments > 1 ? <>ou {prices.installments}x de <strong>{price.installment}</strong> no cartão</> : <>ou <strong>{price.card}</strong> no cartão</>}</p>
       <p className="summer-offer-delivery"><Image src="/icons/truck.svg" alt="" width={18} height={18} />{FREE_SHIPPING_LABEL} para todo o Brasil</p>
-      <PurchaseLink className="button button-green full-width" pack={pack}>{pack === "kit" ? "Quero o kit com 2" : "Quero meu AquaBlast"}</PurchaseLink>
+      <PurchaseLink className="button button-green button-pulse full-width" pack={pack}>{pack === "kit" ? "Quero o kit com 2" : "Quero meu AquaBlast"}</PurchaseLink>
       <WarrantyNote />
     </div>
   );

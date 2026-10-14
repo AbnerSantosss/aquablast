@@ -60,16 +60,14 @@ export function nameProblem(raw: string): string | null {
   return null;
 }
 
-/** Primeiro problema da etapa 1, na ordem dos campos na tela. `keepCpf`: carrinho retomado com o CPF já gravado. */
-export function dadosProblem(data: FormData, keepCpf: boolean): Problem | null {
+/** Primeiro problema da etapa 1, na ordem dos campos na tela. O CPF não é mais pedido aqui: vai no Pix ou no cartão. */
+export function dadosProblem(data: FormData): Problem | null {
   const name = nameProblem(data.name);
   if (name) return { field: "name", title: "Confira o seu nome", message: name };
   const email = emailProblem(data.email);
   if (email) return { field: "email", title: "Confira o seu e-mail", message: email };
   const phone = phoneProblem(data.phone);
   if (phone) return { field: "phone", title: "Confira o seu celular", message: phone };
-  const cpf = keepCpf && !data.cpf ? null : cpfProblem(data.cpf);
-  if (cpf) return { field: "cpf", title: "Confira o seu CPF", message: cpf };
   return null;
 }
 

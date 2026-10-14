@@ -57,6 +57,7 @@ export function StepPagamento({
   onPaid,
   onPending,
   prepare,
+  cpfMasked = null,
 }: {
   paymentSync?: "idle" | "saving" | "error";
   onRetrySync?: () => void;
@@ -87,7 +88,9 @@ export function StepPagamento({
   onPaid: (publicToken: string) => void;
   onPending: (publicToken: string) => void;
   /** Checkout em uma página (2026-10-14): o botão de pagar valida dados e entrega, grava o carrinho e devolve o token (null = faltou algo). */
-  prepare?: () => Promise<string | null>;
+  prepare?: (cpf: string) => Promise<string | null>;
+  /** CPF já gravado (carrinho retomado): o Pix e o cartão mostram o mascarado e aceitam deixar o gravado. */
+  cpfMasked?: string | null;
 }) {
   const pointerPick = useRef(false);
   const q = quotes[method];
@@ -302,6 +305,7 @@ export function StepPagamento({
                     receiverName={theme.pixReceiverName}
                     onPaid={onPaid}
                     prepare={prepare}
+                    cpfMasked={cpfMasked}
                   />
                 )}
               </div>

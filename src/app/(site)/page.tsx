@@ -88,10 +88,10 @@ export default async function HomePage() {
               <main id="conteudo">
                 <Hero />
                 <Reviews />
+                <Moments />
                 <Offers />
                 <Accessories />
                 <Comparison />
-                <Moments />
                 <Gifting />
                 <PurchaseBenefits />
                 <Faq prices={prices} />

@@ -169,3 +169,8 @@ main section .section-heading .eyebrow,.benefits-copy>.eyebrow,.gifting-grid>div
 a.delivery-ticker{text-decoration:none;cursor:pointer}
 /* Desktop: o card do video do topo leva as ofertas ao clicar (HeroFeaturedVideo.tsx). */
 @media(min-width:56.3125rem){.hero-featured-video:not(:fullscreen){cursor:pointer}}
+
+/* Botão de compra principal: pulso leve com brilho verde (cor já usada no botão, #087e3a). Some com prefers-reduced-motion (regra acima). */
+@keyframes button-pulse{0%,100%{box-shadow:0 0 0 0 #087e3a33,0 0.4375rem 1.125rem #087e3a23}50%{box-shadow:0 0 0 0.5rem #087e3a1a,0 0.4375rem 1.5rem #087e3a59}}
+.button-pulse{animation:button-pulse 2.4s ease-in-out infinite}
+.button-pulse:hover,.button-pulse:focus-visible{animation-play-state:paused}

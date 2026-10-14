@@ -69,7 +69,7 @@ export function CardPay({
    * Checkout em uma página (2026-10-14): roda antes de olhar o cartão, valida dados e entrega, grava o carrinho e devolve o
    * token dele (ou null se algo faltou: o Checkout já mostrou o aviso e nada é cobrado). Sem ela, usa o `cartToken` recebido.
    */
-  prepare?: () => Promise<string | null>;
+  prepare?: (cpf: string) => Promise<string | null>;
 }) {
   const max = Math.max(1, maxInstallments);
   const [f, setF] = useState(EMPTY);
@@ -122,12 +122,14 @@ export function CardPay({
       onBlocked?.();
       return;
     }
+    // O CPF do titular é pedido aqui, antes de gravar o carrinho (que passa a levar o CPF do cliente).
+    if (!validCPF(f.cpf)) return fail("Confira o CPF do titular do cartão.", "cpf");
     // Uma página: dados e entrega são conferidos (e o carrinho gravado) antes do cartão, na ordem em que aparecem na tela.
     // O `busy` volta a false no mesmo tick das validações abaixo (o React junta as duas mudanças), então não pisca.
     let token = cartToken;
     if (prepare) {
       setBusy(true);
-      const prepared = await prepare().catch(() => null);
+      const prepared = await prepare(f.cpf).catch(() => null);
       setBusy(false);
       if (!prepared) return;
       token = prepared;
@@ -142,7 +144,6 @@ export function CardPay({
     if (!exp || !validCardExpiry(exp.month, exp.year)) return fail("Validade inválida ou vencida. Use o formato MM/AA.", "exp");
     if (!/^\d{3,4}$/.test(f.cvv)) return fail("Informe o CVV com 3 ou 4 dígitos.", "cvv");
     if (f.name.trim().split(/\s+/).length < 2) return fail("Informe o nome impresso no cartão (nome e sobrenome).", "name");
-    if (!validCPF(f.cpf)) return fail("Confira o CPF do titular do cartão.", "cpf");
     setError("");
     setErrorField(null);
     setBusy(true);
