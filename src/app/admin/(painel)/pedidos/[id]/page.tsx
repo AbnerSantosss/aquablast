@@ -27,6 +27,7 @@ import { CPF_TOKEN, firstParam, formatBRL, formatCep, formatDateTime, formatPhon
 import { listOrderEmails, listOrderWebhooks } from "@/lib/admin/queries";
 import { SUPPLIER_LINKS } from "@/lib/admin/suppliers";
 import { photosOfSku } from "@/lib/checkout/own/catalog";
+import { FULL_SHIPPING_LABEL } from "@/lib/checkout/own/shipping";
 
 type ToneName = "gray" | "blue" | "cyan" | "orange" | "green" | "red";
 const ATTEMPT_STATUS_TONE: Record<string, ToneName> = { paid: "green", pending: "orange", refused: "red", canceled: "gray", refunded: "blue", error: "red" };
@@ -234,6 +235,14 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                   )}
                 </tbody>
                 <tfoot>
+                  {order.items[0]?.checkoutPricing ? (
+                    <tr>
+                      <th colSpan={2} className="right">
+                        {order.items[0].checkoutPricing.shippingCents > 0 ? FULL_SHIPPING_LABEL : "Frete grátis"}
+                      </th>
+                      <td className="num">{formatBRL(order.items[0].checkoutPricing.shippingCents / 100)}</td>
+                    </tr>
+                  ) : null}
                   <tr>
                     <th colSpan={2} className="right">
                       Total

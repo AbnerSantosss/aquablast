@@ -79,6 +79,37 @@
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
+/* Bloco de confiança junto do botão de pagar (`PayTrust`, em PaySeals.tsx): quem vende, quem processa, desistência,
+   ajuda e segurança. Fatos em linha no computador (no máximo cerca de três linhas) e empilhados na tela de toque. */
+.ck .ck-paytrust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 12px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--c-line);
+  list-style: none;
+  text-align: left;
+}
+.ck .ck-paytrust > li { display: flex; align-items: flex-start; gap: 6px; min-width: 0; margin: 0; padding: 0; }
+.ck .ck-paytrust > li > svg { flex: 0 0 15px; width: 15px; height: 15px; margin-top: 1.5px; color: var(--c-primary); }
+.ck .ck-paytrust > li > p { min-width: 0; margin: 0; color: var(--c-muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+/* Links dos fatos ("Como funciona", "Fale com nossa equipe"): usados aqui e em TrustSeals. */
+.ck .ck-fact-link { color: var(--c-primary); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.ck .ck-fact-link:focus-visible { outline: 3px solid var(--c-accent); outline-offset: 2px; border-radius: 3px; }
+/* Recebedor do Pix (`theme.pixReceiverName`, preenchido pelo dono no painel): só aparece quando há nome. */
+.ck .ck-pix-receiver {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 10px 0 0;
+  color: var(--c-muted);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: left;
+}
+.ck .ck-pix-receiver > svg { flex: 0 0 15px; margin-top: 2px; color: var(--c-primary); }
+.ck .ck-pix-receiver strong { color: var(--c-text); font-weight: 700; overflow-wrap: anywhere; }
 .ck .ck-pix-watch.has-real-qr { grid-template-columns: minmax(0, 1fr) 240px; }
 .ck .ck-pix-watch.no-qr { grid-template-columns: minmax(0, 1fr); }
 .ck .ck-pix-watch .ck-copy-row input { font-size: 16px; }
@@ -105,6 +136,17 @@
   .ck .pix-payment-total > strong { font-size: 30px; }
   .ck .pix-bank-guide { padding: 14px 0; }
   .ck .pix-primary { min-height: 52px; font-size: 16px; }
+}
+/* Tela de toque: um fato por linha. O link ganha área de toque de 44 px com padding compensado por margem negativa,
+   para a altura da linha de texto não mudar; a linha que tem link ocupa 44 px, então as áreas não se sobrepõem. */
+@media (max-width: 760px), (pointer: coarse) {
+  .ck .ck-paytrust { flex-direction: column; flex-wrap: nowrap; gap: 3px; padding-top: 8px; }
+  .ck .ck-paytrust > li { align-items: center; min-height: 30px; }
+  .ck .ck-paytrust > li.has-link { min-height: 44px; }
+  .ck .ck-paytrust > li > svg { margin-top: 0; }
+  .ck .ck-paytrust > li > p { font-size: 13px; }
+  .ck .ck-fact-link { display: inline-block; margin: -13px 0; padding: 13px 0; }
+  .ck .ck-fact-link-tail { margin: -24px 0 -2px; padding: 24px 0 2px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ck .pix-status-check .spin { animation: none; }

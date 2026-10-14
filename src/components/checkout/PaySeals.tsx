@@ -1,33 +1,115 @@
-import { Droplets, FlaskConical, LockKeyhole, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import { FlaskConical, Landmark, LockKeyhole, MessageCircle, Store, Undo2 } from "lucide-react";
+import type { Theme } from "@/lib/checkout/own/theme";
+import type { GatewayName } from "@/lib/gateways/types";
+import { RETURNS_PATH } from "@/lib/site/constants";
+
+/** Contato do rodapé: WhatsApp do painel ou, sem ele, o e-mail do site (`loadCheckoutProps`). */
+export type SupportLink = { href: string; external: boolean };
 
 /**
- * Peças pequenas repetidas no pagamento, portadas de ORIGEM/app/simulated-payment.tsx sem mudar texto nem classe
- * (fase 14.3, comparação visual): linha de selos abaixo do FINALIZAR COMPRA e o aviso de modo de teste.
- * O aviso só aparece quando o gateway do método é `simulado` (plano 8.6) — quem decide é quem chama.
+ * Nome público de cada processador real, igual ao de `GATEWAY_LABELS` (`src/lib/gateways/index.ts`, módulo de
+ * servidor). O tipo obriga a decidir o nome quando entrar um gateway novo. O `simulado` fica de fora de propósito:
+ * não processa pagamento nenhum.
  */
-export function PaySeals({ storeName }: { storeName: string }) {
+const PROCESSOR_NAMES: Record<Exclude<GatewayName, "simulado">, string> = {
+  ironpay: "IronPay",
+  mercadopago: "Mercado Pago",
+  fastpay: "FastPay",
+};
+
+/** Nome do processador para mostrar ao cliente, ou `null` quando não há nome confiável (simulado, vazio, desconhecido). */
+export function processorName(gateway: string | null): string | null {
+  if (!gateway || !Object.prototype.hasOwnProperty.call(PROCESSOR_NAMES, gateway)) return null;
+  return PROCESSOR_NAMES[gateway as keyof typeof PROCESSOR_NAMES];
+}
+
+/** Quem vende: razão social do tema ou, sem ela, o nome da loja, com o CNPJ quando cadastrado (mesma fonte do rodapé). */
+export function sellerLine(theme: Pick<Theme, "storeName" | "companyName" | "companyCnpj">): string {
+  const name = theme.companyName || theme.storeName;
+  return theme.companyCnpj ? `${name} · CNPJ ${theme.companyCnpj}` : name;
+}
+
+/**
+ * Desistência em 7 dias (`RETURN_POLICY_DAYS` em `src/lib/site/seo.ts`, módulo de servidor) com a política em nova aba.
+ * Frase curta de propósito: com o link, cabe em uma linha na coluna de pagamento do computador.
+ * `ck-fact-link` (payment-ux.css) dá a cor e, na tela de toque, a área de 44 px; `-tail` é o link que pode cair no
+ * fim de uma frase quebrada em duas linhas: a área de toque cresce para cima, para não invadir o link da linha de baixo.
+ */
+export function WithdrawalFact() {
   return (
-    <ul className="ck-payseals" aria-label="Segurança do pagamento">
+    <>
+      Você pode desistir em até 7 dias após o recebimento.{" "}
+      <Link className="ck-fact-link ck-fact-link-tail" href={RETURNS_PATH} target="_blank" rel="noopener noreferrer">
+        Como funciona<span className="ck-u-sr-only"> (abre em nova aba)</span>
+      </Link>
+    </>
+  );
+}
+
+/** Ajuda: mesmo destino do "Fale com a gente" do rodapé. */
+export function HelpFact({ support }: { support: SupportLink }) {
+  // Empresa sem canal de atendimento próprio (multiempresa): sem link, em vez de cair no do AquaBlast.
+  if (!support.href) return null;
+  return (
+    <>
+      Precisa de ajuda?{" "}
+      <a className="ck-fact-link" href={support.href} {...(support.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+        Fale com nossa equipe
+      </a>
+    </>
+  );
+}
+
+/**
+ * Fatos verificáveis junto do botão de pagar (auditoria de 2026-10-11): quem vende, quem processa o pagamento,
+ * desistência em 7 dias e ajuda. Substitui a antiga linha de selos `ck-payseals`. O processador só aparece com
+ * gateway real de nome conhecido. "Dados do cartão não armazenados" não se repete aqui: já está no aviso do topo do
+ * formulário do cartão (CardPay), e sem ele o bloco cabe em três linhas na coluna do computador.
+ */
+export function PayTrust({
+  theme,
+  gateway,
+  support,
+}: {
+  theme: Pick<Theme, "storeName" | "companyName" | "companyCnpj">;
+  gateway: string | null;
+  support: SupportLink;
+}) {
+  const processor = processorName(gateway);
+  return (
+    <ul className="ck-paytrust" aria-label="Informações da compra">
       <li>
-        <ShieldCheck aria-hidden="true" />
-        <span>
-          <b>Conexão</b> <span>criptografada</span>
-        </span>
+        <Store aria-hidden="true" />
+        <p>Vendido por {sellerLine(theme)}</p>
       </li>
-      <li className="ck-payseals-brand">
-        <Droplets aria-hidden="true" />
-        <span>{storeName}</span>
+      {processor ? (
+        <li>
+          <Landmark aria-hidden="true" />
+          <p>Pagamento processado por {processor}</p>
+        </li>
+      ) : null}
+      <li className="has-link">
+        <Undo2 aria-hidden="true" />
+        <p>
+          <WithdrawalFact />
+        </p>
+      </li>
+      <li className="has-link">
+        <MessageCircle aria-hidden="true" />
+        <p>
+          <HelpFact support={support} />
+        </p>
       </li>
       <li>
         <LockKeyhole aria-hidden="true" />
-        <span>
-          <b>Dados do cartão</b> <span>não armazenados</span>
-        </span>
+        <p>Conexão criptografada</p>
       </li>
     </ul>
   );
 }
 
+/** Aviso de modo de teste: só aparece quando o gateway do método é `simulado` (plano 8.6); quem decide é quem chama. */
 export function TestModeNote() {
   return (
     <p className="ck-testmode">

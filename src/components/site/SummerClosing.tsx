@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { Headphones } from "lucide-react";
 import Image from "next/image";
-import { money } from "@/lib/checkout/own/masks";
-import { FULL_SHIPPING_CENTS, FULL_SHIPPING_LABEL } from "@/lib/checkout/own/shipping";
+import { FREE_SHIPPING_LABEL } from "@/lib/checkout/own/shipping";
 import { DELIVERY_PATH, RETURNS_PATH } from "@/lib/site/constants";
 import { SelectOfferLink } from "./SelectOfferLink";
 
 const benefits = [
-  { image: "/checkout/selos/selo-envio.webp", title: FULL_SHIPPING_LABEL, text: `1 unidade: ${money(FULL_SHIPPING_CENTS)} de frete. Kit com 2: frete grátis para todo o Brasil.`, href: DELIVERY_PATH, link: "Sobre a entrega" },
+  { image: "/checkout/selos/selo-envio.webp", title: FREE_SHIPPING_LABEL, text: "Para todo o Brasil, na unidade e no kit.", href: DELIVERY_PATH, link: "Sobre a entrega" },
   { image: "/checkout/selos/selo-garantia.webp", title: "Rastreio no site", text: "Acompanhe sua compra por aqui.", href: "/rastrear", link: "Rastrear pedido" },
   { image: "/checkout/selos/selo-seguro.webp", title: "Troca se chegar quebrado", text: "E 7 dias de arrependimento após receber.", href: RETURNS_PATH, link: "Trocas e devoluções" },
   { image: "/icons/pix.svg", title: "Desconto no Pix", text: "Valor menor que no cartão, informado antes de pagar.", href: "#ofertas", link: "Ver a oferta" },
@@ -43,6 +42,7 @@ export function SummerClosing() {
         <h2 id="summer-closing-title">Seu verão <em>começa aqui.</em></h2>
         <p>Escolha sua cor e prepare a próxima brincadeira em família.</p>
         <SelectOfferLink className="button button-green">Ver a oferta de verão</SelectOfferLink>
+        <p className="summer-ps"><strong>P.S.</strong> {FREE_SHIPPING_LABEL} para todo o Brasil, rastreio no site e devolução em 7 dias com o frete de volta por nossa conta.</p>
       </div>
     </section>
   );

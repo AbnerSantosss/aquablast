@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { FULL_SHIPPING_LABEL } from "@/lib/checkout/own/shipping";
+import { FREE_SHIPPING_LABEL } from "@/lib/checkout/own/shipping";
 import { DELIVERY_PATH } from "@/lib/site/constants";
 
-// So o rotulo, sem o valor (pedido do dono, 2026-10-10): o preco do frete segue nas ofertas e no checkout.
-const shippingText = FULL_SHIPPING_LABEL;
+// Frete gratis e o padrao (pedido do dono, 2026-10-11): o Frete FULL e o preco dele so aparecem na escolha da entrega, no checkout.
+const shippingText = FREE_SHIPPING_LABEL;
 
 export function SkipLink() {
   return <a className="skip" href="#conteudo">Pular para o conteúdo</a>;

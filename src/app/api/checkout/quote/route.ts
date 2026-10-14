@@ -9,6 +9,7 @@ const inputSchema = z.object({
   pack: z.enum(["unit", "kit"]),
   bump: z.boolean(),
   coupon: z.string().trim().max(40),
+  shipping: z.enum(["free", "full"]).default("free"),
 });
 
 /** Cotação sem criar carrinho, iniciar pagamento ou disparar rastreamento. */
@@ -22,10 +23,10 @@ export async function POST(request: Request): Promise<Response> {
     if (!body.ok) return body.response;
     const parsed = inputSchema.safeParse(body.data);
     if (!parsed.success) return fail(400, "Confira o código do cupom e tente novamente.");
-    const { pack, bump, coupon } = parsed.data;
+    const { pack, bump, coupon, shipping } = parsed.data;
     const settings = await getSettings(["checkout.maxInstallments", "checkout.bumpEnabled"] as const);
     const code = normalizeCoupon(coupon);
-    const quotes = await quoteBoth(pack, bump && settings["checkout.bumpEnabled"], Math.max(1, settings["checkout.maxInstallments"]), code);
+    const quotes = await quoteBoth(pack, bump && settings["checkout.bumpEnabled"], Math.max(1, settings["checkout.maxInstallments"]), code, shipping);
     if (code && quotes.pix.couponDiscountCents <= 0) return fail(422, "Este cupom não está disponível para esta compra.");
     return json({ ok: true, quotes });
   } catch {

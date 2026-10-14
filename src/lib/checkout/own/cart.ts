@@ -1,12 +1,14 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { checkoutCarts, type CheckoutCart } from "@/db/schema";
+import { checkoutCarts, type CartItem, type CheckoutCart } from "@/db/schema";
 import { randomToken } from "@/lib/crypto";
 import { encryptDocument } from "@/lib/orders/service";
 import { clientIp } from "@/lib/rate-limit";
 import { getSetting } from "@/lib/settings";
+import { activeCompanyOrThrow, isItemsCart, ITEMS_PACK, quoteItems, resolveCartItems } from "./items-cart";
 import { onlyDigits } from "./masks";
 import { quote } from "./pricing";
+import { shippingMethodOf } from "./shipping";
 import type { CartInput, TrackingInput } from "./schemas";
 
 /**
@@ -72,33 +74,60 @@ export async function getCartById(id: string): Promise<CheckoutCart | null> {
  * Bump marcado ainda sem cor fica só com a 1ª: o pagamento recusa até o cliente escolher.
  */
 export function cartColorsOf(input: Pick<CartInput, "selection" | "bump" | "bumpColor">): string[] {
+  if (!input.selection) return [];
   if (input.selection.pack !== "unit") return input.selection.colors;
   const first = input.selection.colors[0];
   return input.bump && input.bumpColor ? [first, input.bumpColor] : [first];
 }
 
+/** Modo do carrinho gravado: só reaproveita um carrinho do mesmo modo (e, no modo itens, da mesma empresa). */
+function sameMode(cart: CheckoutCart, itemsCompanyId: string | null): boolean {
+  return itemsCompanyId ? isItemsCart(cart) && cart.companyId === itemsCompanyId : !isItemsCart(cart);
+}
+
 /**
  * Cria ou atualiza o carrinho. `created === true` quando nasceu um carrinho novo (é aí que a rota dispara InitiateCheckout).
  * O CPF entra cifrado (encryptDocument); telefone e CEP só dígitos; e-mail minúsculo.
+ * Modo itens (multiempresa, 2026-10-13): `input.company` + `input.items` em vez de `selection`. Os itens são
+ * validados contra os produtos ativos da empresa (ItemsCartError se algo não bate) e o carrinho grava
+ * `pack = "items"`, `colors = []`, sem bump. Token de outro modo ou de outra empresa gera carrinho novo.
  */
 export async function upsertCart(input: CartInput, headers: Headers): Promise<{ cart: CheckoutCart; created: boolean }> {
+  const company = input.items && input.company ? await activeCompanyOrThrow({ slug: input.company }) : null;
   const found = input.token ? await getCartByToken(input.token) : null;
-  const existing = found && (found.status === "converted" || found.status === "recovered") ? null : found;
+  const reusable = found && (found.status === "converted" || found.status === "recovered") ? null : found;
+  const existing = reusable && sameMode(reusable, company?.id ?? null) ? reusable : null;
 
   const consentRequired = await getSetting("ads.consentRequired");
   const consent = input.tracking ? input.tracking.consent === true || !consentRequired : (existing?.consent ?? !consentRequired);
 
-  const q = await quote(input.selection.pack, "pix", input.bump, 1);
+  const shippingMethod = input.shipping ?? shippingMethodOf(existing?.shippingMethod);
+  let items: CartItem[] | null = null;
+  let amountCents: number;
+  let pack: string;
+  if (company && input.items) {
+    items = await resolveCartItems(company.id, input.items);
+    amountCents = (await quoteItems(company.id, items, "pix", 1, shippingMethod)).amountCents;
+    pack = ITEMS_PACK;
+  } else if (input.selection) {
+    amountCents = (await quote(input.selection.pack, "pix", input.bump, 1, undefined, shippingMethod)).amountCents;
+    pack = input.selection.pack;
+  } else {
+    throw new Error("upsertCart: carrinho sem seleção nem itens");
+  }
   const now = new Date();
   const colors = cartColorsOf(input);
+  const bump = items ? false : input.bump;
 
   const patch: Partial<typeof checkoutCarts.$inferInsert> = {
     status: "open",
     step: input.step,
-    pack: input.selection.pack,
+    pack,
     colors,
-    bumpAccepted: input.bump,
-    amountCents: q.amountCents,
+    ...(items ? { items, companyId: company?.id } : {}),
+    bumpAccepted: bump,
+    shippingMethod,
+    amountCents,
     clientIp: clientIp(headers).slice(0, 80) || null,
     userAgent: headers.get("user-agent")?.slice(0, 300) ?? null,
     lastActivityAt: now,
@@ -140,9 +169,9 @@ export async function upsertCart(input: CartInput, headers: Headers): Promise<{ 
     .values({
       ...patch,
       token: randomToken(24),
-      pack: input.selection.pack,
+      pack,
       colors,
-      amountCents: q.amountCents,
+      amountCents,
       consent,
     })
     .returning();

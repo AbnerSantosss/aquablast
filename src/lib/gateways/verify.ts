@@ -1,5 +1,5 @@
 import { errorMessage } from "@/lib/log";
-import { getSettings } from "@/lib/settings";
+import { getCompanySettings } from "@/lib/settings";
 
 /**
  * "Verificar" das credenciais de gateway no painel (pedido 2026-09-30, etapa D). SÓ SERVIDOR.
@@ -41,8 +41,9 @@ export function scrub(text: string, secret: string): string {
 
 const text = (v: unknown) => (typeof v === "string" ? v : typeof v === "number" ? String(v) : "");
 
-export async function verifyMercadopago(): Promise<VerifyResult> {
-  const s = await getSettings(["gateway.mercadopago.accessToken"] as const);
+/** `companyId` ausente = AquaBlast (credenciais globais). */
+export async function verifyMercadopago(companyId?: string | null): Promise<VerifyResult> {
+  const s = await getCompanySettings(companyId, ["gateway.mercadopago.accessToken"] as const);
   const token = s["gateway.mercadopago.accessToken"].trim();
   if (!token) return { ok: false, message: "Access Token não configurado" };
   try {
@@ -59,8 +60,8 @@ export async function verifyMercadopago(): Promise<VerifyResult> {
   }
 }
 
-export async function verifyFastpay(): Promise<VerifyResult> {
-  const s = await getSettings(["gateway.fastpay.apiKey"] as const);
+export async function verifyFastpay(companyId?: string | null): Promise<VerifyResult> {
+  const s = await getCompanySettings(companyId, ["gateway.fastpay.apiKey"] as const);
   const key = s["gateway.fastpay.apiKey"].trim();
   if (!key) return { ok: false, message: "chave não configurada" };
   try {

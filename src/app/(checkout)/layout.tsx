@@ -9,6 +9,7 @@ import "@/styles/checkout/mobile-ux.css";
 import "@/styles/checkout/forms-ux.css";
 import "@/styles/checkout/payment-ux.css";
 import "@/styles/checkout/reference-checkout.css";
+import "@/styles/checkout/desktop-shell.css";
 
 /**
  * Layout do grupo de rotas (checkout) — fase 8.4 do plano. Vale para /checkout, /checkout/pedido/[token]

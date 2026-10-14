@@ -1,12 +1,14 @@
 "use client";
 
 import { Check, CreditCard, LockKeyhole, Mail, MapPin, Phone } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import type { Selection } from "@/lib/checkout/own/catalog";
+import type { BannerMap } from "@/lib/checkout/own/banners";
 import { changeAddressCep, fillAddressFromCep } from "@/lib/checkout/own/address-form";
 import { maskCEP, maskCPF, maskPhone, money, validMobile } from "@/lib/checkout/own/masks";
 import type { Quote } from "@/lib/checkout/own/pricing";
+import { shippingLabelOf, type ShippingMethod } from "@/lib/checkout/own/shipping";
 import type { Theme } from "@/lib/checkout/own/theme";
 import { themeVars } from "@/lib/checkout/own/theme";
 import { internoAtivo } from "@/lib/site/interno";
@@ -22,6 +24,8 @@ import { BadFieldContext, ErrorBox, fullName, UFS } from "./Field";
 import { ErrorDialog } from "./ErrorDialog";
 import { dadosProblem, emailOk, serverProblem } from "./explain";
 import { Footer } from "./Footer";
+import { ItemsSummary } from "./ItemsSummary";
+import { previewItemsQuotes, type ItemsLine, type ItemsModeProps } from "./items-types";
 import { colorName, OrderSummary, type PayView } from "./OrderSummary";
 import { PixLogo } from "./PixLogo";
 import { ShipBar } from "./ShipBar";
@@ -34,6 +38,21 @@ import { TrustSeals } from "./TrustSeals";
 import type { Color } from "@/lib/site/types";
 import type { CepState, CheckoutInitial, FieldKey, FormData, PaidInfo, PayMethodUi, StepName } from "./types";
 
+/** Checkout em uma página (2026-10-14, referência Luna Checkout). false volta ao fluxo por etapas. */
+const ONE_PAGE = true;
+/**
+ * A página única vale só no celular/tablet (abaixo de 1100 px, o mesmo corte da casca de app do desktop-shell.css,
+ * que começa em `min-width: 1100px`). No desktop segue o fluxo de 3 etapas com a casca 100dvh.
+ * O servidor e a hidratação assumem celular (a maior parte do tráfego): o celular não pisca; o desktop troca para as etapas logo após hidratar.
+ */
+const MOBILE_QUERY = "(max-width: 1099.98px)";
+function subscribeMobile(onChange: () => void): () => void {
+  const mq = window.matchMedia(MOBILE_QUERY);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+}
+const getMobile = () => window.matchMedia(MOBILE_QUERY).matches;
+const getMobileServer = () => true;
 const TOKEN_KEY = "ck-cart-token-unit-149";
 const STEP_NAMES = ["Seus dados", "Entrega", "Pagamento"] as const;
 const STEP_OF: Record<StepName, number> = { dados: 1, entrega: 2, pagamento: 3 };
@@ -41,7 +60,9 @@ const EMPTY: FormData = { name: "", email: "", phone: "", cpf: "", cep: "", stre
 const ADDRESS_KEYS: FieldKey[] = ["cep", "street", "number", "extra", "district", "city", "state", "recipient"];
 
 type ViaCep = { erro?: unknown; logradouro?: unknown; bairro?: unknown; localidade?: unknown; uf?: unknown };
-const clean = (v: unknown, max = 120) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+/** Primeiro problema achado na validação de um bloco do formulário: texto do aviso, seletor do campo (foco ao fechar o popup) e título do popup. */
+type Problem = { message: string; sel?: string; title: string };
+const clean =(v: unknown, max = 120) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
 /** Única chamada externa do checkout: só o CEP vai para o ViaCEP (sem cookies nem referer). Qualquer falha vira preenchimento manual. */
 async function fetchCep(cep: string, signal: AbortSignal): Promise<ViaCep | null> {
@@ -51,17 +72,17 @@ async function fetchCep(cep: string, signal: AbortSignal): Promise<ViaCep | null
   return j && typeof j === "object" && !j.erro ? j : null;
 }
 
-function readTokenFromStorage(): string | undefined {
+function readTokenFromStorage(key = TOKEN_KEY): string | undefined {
   try {
-    return window.localStorage.getItem(TOKEN_KEY) ?? undefined;
+    return window.localStorage.getItem(key) ?? undefined;
   } catch {
     return undefined;
   }
 }
 
-function writeTokenToStorage(token: string): void {
+function writeTokenToStorage(token: string, key = TOKEN_KEY): void {
   try {
-    window.localStorage.setItem(TOKEN_KEY, token);
+    window.localStorage.setItem(key, token);
   } catch {
     // localStorage indisponível (navegador privado, bloqueio de site): o carrinho segue só em memória.
   }
@@ -79,6 +100,9 @@ function writeTokenToStorage(token: string): void {
  *   rastreamento do checkout é todo pelo servidor (CAPI + GA4 MP), sem GTM/dataLayer/pixel no navegador;
  * - `initial` (plano 8.8): carrinho retomado. O CPF chega só mascarado e não é reenviado se ficar vazio.
  * `cartToken` mora só no `localStorage` deste navegador.
+ * `itemsMode` (multiempresa, 2026-10-13, rota `/c/[slug]`): vários produtos da empresa com quantidade, sem cor, bump,
+ * cupom nem banner da campanha; o carrinho vai como `{ company, items }` e o resumo é o `<ItemsSummary />`.
+ * Sem `itemsMode` o comportamento do `/checkout` legado é o mesmo de antes.
  */
 export function Checkout({
   theme,
@@ -99,6 +123,8 @@ export function Checkout({
   paid,
   deliveryPromise = null,
   checkoutReviews = [],
+  checkoutBanners = {},
+  itemsMode,
 }: {
   theme: Theme;
   selection: Selection;
@@ -122,14 +148,22 @@ export function Checkout({
   /** Aviso de entrega com data limite, decidido no servidor (lib/site/delivery-promise.ts); null depois da data. */
   deliveryPromise?: string | null;
   checkoutReviews?: CheckoutReview[];
+  /** Artes de banner do painel, por produto e dispositivo (lib/checkout/own/banners.ts). Vazio: banner de texto. */
+  checkoutBanners?: BannerMap;
+  /** Checkout por itens da empresa (`/c/[slug]`). `selection` vira só um marcador sem uso nesse modo. */
+  itemsMode?: ItemsModeProps;
 }) {
   const router = useRouter();
   // A cor pode ser trocada aqui (ColorPick); a seleção da URL/carrinho é só o ponto de partida.
   const [selection, setSelection] = useState<Selection>(initialSelection);
+  const [items, setItems] = useState<ItemsLine[]>(itemsMode?.initialItems ?? []);
+  const tokenKey = itemsMode ? `ck-cart-token-c-${itemsMode.companySlug}` : TOKEN_KEY;
   const [cartToken, setCartToken] = useState<string | undefined>(initial?.cartToken);
   const [step, setStep] = useState(initial ? STEP_OF[initial.step] : 1);
   const [data, setData] = useState<FormData>(initial ? { ...initial.customer, ...initial.address } : EMPTY);
   const [bump, setBump] = useState(initial?.bump ?? false);
+  // Frete da etapa de entrega: grátis por padrão; o FULL é escolha do cliente e o servidor grava no carrinho.
+  const [shipping, setShipping] = useState<ShippingMethod>(initial?.shipping ?? "free");
   // Cor da 2ª unidade do bump: nunca pré-escolhida; desmarcar o bump limpa. Sem ela o pagamento fica bloqueado.
   const [bumpColor, setBumpColor] = useState<Color | null>(initial?.bump ? (initial.bumpColor ?? null) : null);
   // Prioriza o Pix disponível; a alternativa do cartão continua acessível no acordeão.
@@ -158,16 +192,37 @@ export function Checkout({
   const cpfMasked = initial?.cpfMasked ?? null;
 
   const panel = useRef<HTMLDivElement>(null);
+  // Uma página: as três seções ficam abertas juntas, então os focos por ação procuram o campo em todo o cartão do fluxo.
+  const flow = useRef<HTMLElement>(null);
   const cepReq = useRef<AbortController | null>(null);
   const focusNext = useRef("");
   const autoRecipient = useRef("");
+  // Versão do endereço (e dos dados) já gravada pelo blur silencioso do endereço: evita repetir o mesmo POST.
+  const savedAddrKey = useRef("");
 
-  const canBump = bumpEnabled && selection.pack === "unit";
+  const canBump = !itemsMode && bumpEnabled && selection.pack === "unit";
   const hasBump = canBump && bump;
+  /** Checkout em uma página ativo: não vale na tela de pedido pago, que segue igual. */
+  const isMobile = useSyncExternalStore(subscribeMobile, getMobile, getMobileServer);
+  const one = ONE_PAGE && !paid && isMobile;
+  // Da página única para as etapas (janela alargada, tablet girado): os dados são o mesmo estado, só muda a tela.
+  // Abre no passo mais alto já cumprido (dados válidos → entrega; endereço já confirmado e salvo → pagamento), nunca abaixo do atual.
+  const [wasOne, setWasOne] = useState(one);
+  if (wasOne !== one) {
+    setWasOne(one);
+    if (wasOne && !paid) {
+      let top = 1;
+      if (!dadosProblem(data, !!cpfMasked)) top = 2;
+      if (top === 2 && addrOk && cartToken && !addressProblem(data)) top = 3;
+      setStep((s) => Math.max(s, top));
+      setError("");
+    }
+  }
 
   // Leva o cliente ao primeiro campo da etapa; no celular só a partir da etapa 2, para não abrir o teclado ao carregar. Na etapa 3 o foco vai para o título.
+  // Uma página: sem autofoco ao carregar (o cliente vê as três seções e começa por onde quiser).
   useEffect(() => {
-    if (paid) return;
+    if (paid || one) return;
     const el = panel.current;
     if (!el) return;
     if (step === 3) {
@@ -176,14 +231,14 @@ export function Checkout({
     }
     if (step === 1 && !window.matchMedia("(min-width: 1001px)").matches) return;
     el.querySelector<HTMLInputElement>("input")?.focus({ preventScroll: step === 1 });
-  }, [step, paid]);
+  }, [step, paid, one]);
   // Foco pedido por uma ação (CEP encontrado → Número; endereço confirmado → frete; cartão aberto com o mouse → número do cartão).
   useEffect(() => {
     const sel = focusNext.current;
     if (!sel) return;
     focusNext.current = "";
-    panel.current?.querySelector<HTMLElement>(sel)?.focus();
-  }, [cepState, addrOk, method]);
+    (one ? flow.current : panel.current)?.querySelector<HTMLElement>(sel)?.focus();
+  }, [cepState, addrOk, method, one]);
   useEffect(() => () => cepReq.current?.abort(), []);
   // Aviso "checkout aberto" para a equipe (2026-09-30). Uma vez por aba (id de visita no sessionStorage); o
   // servidor ainda limita por visita e por IP. Não roda na tela de pedido já pago nem no modo interno
@@ -193,7 +248,8 @@ export function Checkout({
   useEffect(() => {
     if (paid || openedSent.current) return;
     openedSent.current = true;
-    if (internoAtivo()) return;
+    // Modo itens: o aviso "checkout aberto" e o InitiateCheckout são do funil do AquaBlast (pack/cor); fora por ora.
+    if (itemsMode || internoAtivo()) return;
     let visit = "";
     try {
       visit = sessionStorage.getItem("aqb-ck-visit") ?? "";
@@ -219,7 +275,7 @@ export function Checkout({
       ...(campaign ? { campaign } : {}),
       ...(stored ? { consent: stored === "accepted" } : {}),
     });
-  }, [paid, selection.pack, selection.colors, initialCoupon]);
+  }, [paid, selection.pack, selection.colors, initialCoupon, itemsMode]);
 
   // Clarity (mapas de calor) só com consentimento; com `ads.consentRequired` desligado o banner já decide "sim".
   useEffect(() => {
@@ -242,35 +298,49 @@ export function Checkout({
     return run;
   }
 
-  async function saveCartNow(targetStep: CartStep, bumpValue: boolean, opts: { customer?: boolean; address?: boolean; lead?: CartPayload["lead"]; selection?: Selection } = {}, bumpColorValue: Color | null = bumpColor) {
+  async function saveCartNow(targetStep: CartStep, bumpValue: boolean, opts: { customer?: boolean; address?: boolean; lead?: CartPayload["lead"]; selection?: Selection; shipping?: ShippingMethod; items?: ItemsLine[]; data?: FormData } = {}, bumpColorValue: Color | null = bumpColor) {
     const sel = opts.selection ?? selection;
+    // `opts.data`: dados já corrigidos neste mesmo instante (ex.: destinatário preenchido pelo `prepare`), que o estado do React ainda não refletiu.
+    const d = opts.data ?? data;
     const version = ++quoteVersion.current;
-    const payload: CartPayload = {
-      token: tokenRef.current ?? cartToken ?? readTokenFromStorage(),
-      selection: { pack: sel.pack, colors: sel.colors },
-      step: targetStep,
-      bump: bumpValue,
-      ...(bumpValue && bumpColorValue ? { bumpColor: bumpColorValue } : {}),
-      tracking: buildTracking(),
-      ...(coupon ? { coupon } : {}),
-      ...(visitId.current ? { visit: visitId.current } : {}),
-    };
+    const token = tokenRef.current ?? cartToken ?? readTokenFromStorage(tokenKey);
+    const payload: CartPayload = itemsMode
+      ? {
+          token,
+          company: itemsMode.companySlug,
+          items: (opts.items ?? items).map((i) => ({ productSlug: i.productSlug, quantity: i.quantity })),
+          step: targetStep,
+          bump: false,
+          shipping: opts.shipping ?? shipping,
+          tracking: buildTracking(),
+        }
+      : {
+          token,
+          selection: { pack: sel.pack, colors: sel.colors },
+          step: targetStep,
+          bump: bumpValue,
+          shipping: opts.shipping ?? shipping,
+          ...(bumpValue && bumpColorValue ? { bumpColor: bumpColorValue } : {}),
+          tracking: buildTracking(),
+          ...(coupon ? { coupon } : {}),
+          ...(visitId.current ? { visit: visitId.current } : {}),
+        };
     if (opts.lead) payload.lead = opts.lead;
-    if (opts.customer && (data.name || data.email || data.phone || data.cpf)) {
+    if (opts.customer && (d.name || d.email || d.phone || d.cpf)) {
       // Carrinho retomado com CPF vazio: não reenvia o campo — o servidor mantém o CPF cifrado gravado.
-      const base = { name: data.name.trim(), email: data.email.trim(), phone: data.phone };
-      payload.customer = cpfMasked && data.cpf === "" ? base : { ...base, cpf: data.cpf };
+      const base = { name: d.name.trim(), email: d.email.trim(), phone: d.phone };
+      payload.customer = cpfMasked && d.cpf === "" ? base : { ...base, cpf: d.cpf };
     }
-    if (opts.address && (data.street || data.cep)) {
+    if (opts.address && (d.street || d.cep)) {
       payload.address = {
-        cep: data.cep,
-        street: data.street.trim(),
-        number: data.number.trim(),
-        extra: data.extra.trim() || undefined,
-        district: data.district.trim(),
-        city: data.city.trim(),
-        state: data.state,
-        recipient: data.recipient.trim(),
+        cep: d.cep,
+        street: d.street.trim(),
+        number: d.number.trim(),
+        extra: d.extra.trim() || undefined,
+        district: d.district.trim(),
+        city: d.city.trim(),
+        state: d.state,
+        recipient: d.recipient.trim(),
       };
     }
     const result = await postCart(payload);
@@ -278,7 +348,7 @@ export function Checkout({
     tokenRef.current = result.token;
     setCartToken(result.token);
     // Recuperações explícitas não substituem o carrinho da oferta atual no navegador.
-    if (!initial) writeTokenToStorage(result.token);
+    if (!initial) writeTokenToStorage(result.token, tokenKey);
     if (version === quoteVersion.current) setQuotes(result.quotes);
     return result;
   }
@@ -290,7 +360,7 @@ export function Checkout({
       const response = await fetch("/api/checkout/quote", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ pack: selection.pack, bump: hasBump, coupon: code }),
+        body: JSON.stringify({ pack: selection.pack, bump: hasBump, coupon: code, shipping }),
       });
       const result = await response.json();
       if (!response.ok || !result.ok) return result.error || "Não foi possível aplicar o cupom.";
@@ -374,7 +444,7 @@ export function Checkout({
   function closePopup() {
     const sel = popup?.sel;
     setPopup(null);
-    if (sel) panel.current?.querySelector<HTMLElement>(sel)?.focus();
+    if (sel) (one ? flow.current : panel.current)?.querySelector<HTMLElement>(sel)?.focus();
   }
 
   /** Recusa do servidor: o campo vem como caminho (`customer.phone`), que não é seletor; vira `[name=phone]` e texto claro. */
@@ -399,6 +469,7 @@ export function Checkout({
     e.preventDefault();
     // `sending` fecha a porta na hora (um toque = um envio), sem esperar o React redesenhar com `busy`.
     if (busy || sending.current || couponBusy) return;
+    if (itemsMode && !items.length) return fail("Adicione pelo menos um produto ao pedido.", undefined, "Pedido vazio");
     if (step === 1) {
       const problem = dadosProblem(data, !!cpfMasked);
       if (problem) return fail(problem.message, `[name=${problem.field}]`, problem.title);
@@ -415,20 +486,109 @@ export function Checkout({
       return;
     }
     if (step === 2) {
-      if (!/^\d{8}$/.test(data.cep.replace(/\D/g, ""))) return fail("Informe um CEP com 8 dígitos.", "[name=cep]", "Confira o endereço");
-      if (cepState === "loading") return fail("Aguarde um instante: estamos buscando o seu CEP.", undefined, "Só um instante");
-      if (!data.street.trim()) return fail("Informe o endereço (rua ou avenida).", "[name=street]", "Confira o endereço");
-      if (!data.number.trim()) return fail("Informe o número. Se não houver, escreva S/N.", "[name=number]", "Confira o endereço");
-      if (!data.district.trim()) return fail("Informe o bairro.", "[name=district]", "Confira o endereço");
-      if (!data.city.trim()) return fail("Informe a cidade.", "[name=city]", "Confira o endereço");
-      if (!UFS.includes(data.state)) return fail("Selecione o estado.", "[name=state]", "Confira o endereço");
-      if (!fullName(data.recipient)) return fail("Informe o nome de quem vai receber (nome e sobrenome).", "[name=recipient]", "Confira o endereço");
+      const problem = addressProblem(data);
+      if (problem) return fail(problem.message, problem.sel, problem.title);
       setAddrOk(true);
       setError("");
       const result = await send(() => saveCart("pagamento", bump, { customer: true, address: true }));
       if (isApiFail(result)) return failServer(result);
       setStep(3);
     }
+  }
+
+  /** Validação da entrega (etapa 2 do fluxo por etapas e `prepare` da página única): mesma ordem e mesmas mensagens. null = endereço completo. */
+  function addressProblem(d: FormData): Problem | null {
+    const title = "Confira o endereço";
+    if (!/^\d{8}$/.test(d.cep.replace(/\D/g, ""))) return { message: "Informe um CEP com 8 dígitos.", sel: "[name=cep]", title };
+    if (cepState === "loading") return { message: "Aguarde um instante: estamos buscando o seu CEP.", title: "Só um instante" };
+    if (!d.street.trim()) return { message: "Informe o endereço (rua ou avenida).", sel: "[name=street]", title };
+    if (!d.number.trim()) return { message: "Informe o número. Se não houver, escreva S/N.", sel: "[name=number]", title };
+    if (!d.district.trim()) return { message: "Informe o bairro.", sel: "[name=district]", title };
+    if (!d.city.trim()) return { message: "Informe a cidade.", sel: "[name=city]", title };
+    if (!UFS.includes(d.state)) return { message: "Selecione o estado.", sel: "[name=state]", title };
+    if (!fullName(d.recipient)) return { message: "Informe o nome de quem vai receber (nome e sobrenome).", sel: "[name=recipient]", title };
+    return null;
+  }
+
+  /** O destinatário acompanha o nome enquanto estiver vazio ou igual ao último preenchimento automático. */
+  function recipientIsAuto(d: FormData): boolean {
+    return !d.recipient || d.recipient === autoRecipient.current;
+  }
+
+  /** Cópia dos dados com o destinatário automático já aplicado (só para validar e gravar; não mexe no estado nem no `autoRecipient`). */
+  function withAutoRecipient(d: FormData): FormData {
+    return recipientIsAuto(d) ? { ...d, recipient: d.name.trim().replace(/\s+/g, " ") } : d;
+  }
+
+  /** Dados do cliente e endereço que valem uma gravação: muda quando qualquer um deles muda. */
+  function savedKey(d: FormData): string {
+    return [d.name, d.email, d.phone, d.cpf, ...ADDRESS_KEYS.map((k) => d[k])].join("|");
+  }
+
+  /**
+   * Página única, gravações em silêncio (bump, cor, frete, itens, saída do endereço): a etapa gravada é "dados" enquanto
+   * os dados não estão válidos e "entrega" depois; nunca "pagamento" (só o `prepare`, que é quando a pessoa clica em pagar).
+   * Cliente e endereço só vão quando válidos, para o servidor não recusar uma gravação parcial.
+   */
+  function quietSave(): { step: CartStep; opts: { customer?: boolean; address?: boolean; data: FormData } } {
+    const d = withAutoRecipient(data);
+    const customerOk = !dadosProblem(d, !!cpfMasked);
+    const addressOk = !addressProblem(d);
+    return { step: customerOk ? "entrega" : "dados", opts: { ...(customerOk ? { customer: true } : {}), ...(addressOk ? { address: true } : {}), data: d } };
+  }
+
+  /**
+   * Página única (2026-10-14): chamado pelo botão de pagar (Pix ou cartão) antes de cobrar. Faz o que "Ir para entrega" e
+   * "Ir para pagamento" faziam, na mesma ordem e com os mesmos avisos: valida dados e entrega, grava o carrinho como
+   * "pagamento" (é essa gravação que dispara o AddPaymentInfo e o aviso de pagamento) e devolve o token dele. null = faltou
+   * algo (o aviso já foi mostrado) ou o servidor recusou; quem chamou não cobra.
+   */
+  async function prepare(): Promise<string | null> {
+    if (busy || sending.current || couponBusy) return null;
+    if (itemsMode && !items.length) {
+      fail("Adicione pelo menos um produto ao pedido.", undefined, "Pedido vazio");
+      return null;
+    }
+    const problem = dadosProblem(data, !!cpfMasked);
+    if (problem) {
+      fail(problem.message, `[name=${problem.field}]`, problem.title);
+      return null;
+    }
+    // O destinatário nasce com o nome (e acompanha o nome enquanto o cliente não o trocar); o estado só reflete isso no próximo
+    // desenho, então a validação e a gravação usam a cópia `d`.
+    const d = withAutoRecipient(data);
+    if (recipientIsAuto(data)) {
+      autoRecipient.current = d.recipient;
+      setData((p) => ({ ...p, recipient: d.recipient }));
+    }
+    const addressIssue = addressProblem(d);
+    if (addressIssue) {
+      fail(addressIssue.message, addressIssue.sel, addressIssue.title);
+      return null;
+    }
+    setAddrOk(true);
+    setError("");
+    const result = await send(() => saveCart("pagamento", bump, { customer: true, address: true, data: d }));
+    if (isApiFail(result)) {
+      failServer(result);
+      return null;
+    }
+    savedAddrKey.current = savedKey(d);
+    return result.token;
+  }
+
+  // Página única: sair do número ou do destinatário (último campo do endereço) grava o carrinho em silêncio, uma vez por versão
+  // dos dados, se cliente e endereço já estão completos. Mesma regra do salvamento parcial do contato: só depois do consentimento.
+  function handleAddressBlur() {
+    if (!one || consent === null || couponBusy || busy || sending.current) return;
+    const d = withAutoRecipient(data);
+    if (dadosProblem(d, !!cpfMasked) || addressProblem(d)) return;
+    const key = savedKey(d);
+    if (savedAddrKey.current === key) return;
+    savedAddrKey.current = key;
+    void saveCart("entrega", bump, { customer: true, address: true, data: d }).then((result) => {
+      if (isApiFail(result)) savedAddrKey.current = "";
+    });
   }
 
   // Salvamento parcial ao sair do e-mail ou do celular: só os campos já válidos. Com e-mail OU celular o servidor grava
@@ -459,8 +619,24 @@ export function Checkout({
       window.history.replaceState(null, "", `?${q.toString()}`);
     }
     if (!tokenRef.current) return;
-    void saveCart(step === 2 ? "entrega" : "dados", bump, { selection: next, ...(step === 2 ? { customer: true } : {}) }).then((result) => {
+    const quiet = one ? quietSave() : null;
+    void saveCart(quiet ? quiet.step : step === 2 ? "entrega" : "dados", bump, { selection: next, ...(quiet ? quiet.opts : step === 2 ? { customer: true } : {}) }).then((result) => {
       if (isApiFail(result)) setNotice("Não foi possível salvar a cor agora. Ela vai junto quando você continuar.");
+    });
+  }
+
+  // Modo itens: soma/tira/adiciona produto (etapas 1 e 2). A tela mostra a prévia com os preços do catálogo na hora;
+  // com carrinho já criado, grava e o servidor devolve os valores oficiais.
+  function handleItemsChange(next: ItemsLine[]) {
+    if (!itemsMode || !next.length) return;
+    setItems(next);
+    setError("");
+    ++quoteVersion.current;
+    setQuotes((current) => previewItemsQuotes(itemsMode.products, next, current));
+    if (!tokenRef.current) return;
+    const quiet = one ? quietSave() : null;
+    void saveCart(quiet ? quiet.step : step === 2 ? "entrega" : "dados", false, { items: next, ...(quiet ? quiet.opts : step === 2 ? { customer: true } : {}) }).then((result) => {
+      if (isApiFail(result)) setNotice("Não foi possível salvar o pedido agora. Ele vai junto quando você continuar.");
     });
   }
 
@@ -468,7 +644,9 @@ export function Checkout({
     const version = ++paymentSyncVersion.current;
     setPaymentSync("saving");
     try {
-      const result = await saveCart("pagamento", value, { customer: true, address: true }, color);
+      // Página única: segue a regra das gravações em silêncio e cria o carrinho se ainda não existe (o total do bump vem do servidor).
+      const quiet = one ? quietSave() : null;
+      const result = await saveCart(quiet ? quiet.step : "pagamento", value, quiet ? quiet.opts : { customer: true, address: true }, color);
       if (version !== paymentSyncVersion.current) return;
       setPaymentSync(isApiFail(result) ? "error" : "idle");
     } catch {
@@ -491,6 +669,18 @@ export function Checkout({
     void syncPaymentCart(true, color);
   }
 
+  function handleShippingChange(value: ShippingMethod) {
+    if (value === shipping) return;
+    setShipping(value);
+    setError("");
+    // Página única: grava sempre (cria o carrinho se preciso), para o total mostrado ser o cobrado mesmo sem carrinho ainda.
+    if (!one && !tokenRef.current) return;
+    const quiet = one ? quietSave() : null;
+    void saveCart(quiet ? quiet.step : "entrega", bump, quiet ? { ...quiet.opts, shipping: value } : { customer: true, shipping: value }).then((result) => {
+      if (isApiFail(result)) setNotice("Não foi possível salvar o frete agora. Ele vai junto quando você continuar.");
+    });
+  }
+
   function handleMethodChange(m: PayMethodUi, byPointer: boolean) {
     if (byPointer && m === "card" && !cardPending) focusNext.current = "input[name=cc-number]";
     setMethod(m);
@@ -502,8 +692,10 @@ export function Checkout({
   // Valores da confirmação (pedido pago), no formato da origem.
   const [c1, c2] = selection.colors;
   const paidKit = selection.pack === "kit" || (paid ? bump : hasBump);
-  const items =
-    selection.pack === "kit"
+  const bySlug = new Map((itemsMode?.products ?? []).map((p) => [p.slug, p.name]));
+  const paidItems = itemsMode
+    ? items.map((i) => `${i.quantity > 1 ? `${i.quantity}x ` : ""}${bySlug.get(i.productSlug) ?? i.productSlug}`)
+    : selection.pack === "kit"
       ? [`Kit com 2 AquaBlast (1 ${colorName(c1)} + 1 ${colorName(c2 ?? c1)})`]
       : paidKit
         ? [`1 AquaBlast ${colorName(c1)}`, `+ 1 AquaBlast ${colorName(bumpColor ?? c1)} (oferta do kit)`]
@@ -515,12 +707,19 @@ export function Checkout({
       ? `Cartão ${paid.cardBrand ?? ""} final ${paid.cardLast4 ?? ""} em ${paid.installments}x de ${money(paidPer)} sem juros`.replace(/\s+/g, " ")
       : "Pix"
     : "";
-  const restartHref = selection.pack === "kit" ? `/checkout?pack=kit&cor1=${c1}&cor2=${c2 ?? c1}` : `/checkout?pack=unit&cor=${c1}`;
-  const payView: PayView = paid ? paid.method : step === 3 && methods.length > 0 ? method : "preview";
+  const restartHref = itemsMode ? `/c/${itemsMode.companySlug}` : selection.pack === "kit" ? `/checkout?pack=kit&cor1=${c1}&cor2=${c2 ?? c1}` : `/checkout?pack=unit&cor=${c1}`;
+  // Página única: a forma de pagamento está sempre à vista; o frete conta como escolhido quando há CEP completo e cidade (o resumo
+  // então mostra o frete e o total, em vez de "calculado na entrega").
+  const payStep = one || (!paid && step === 3);
+  const shippingChosen = one ? /^\d{8}$/.test(data.cep.replace(/\D/g, "")) && !!data.city.trim() : step === 3;
+  const editable = !paid && (one || step < 3);
+  const payView: PayView = paid ? paid.method : payStep && methods.length > 0 ? method : "preview";
   const shippingCents = paid ? (paid.shippingCents ?? null) : quotes[method].shippingCents;
   const shippingText = shippingCents === null
     ? "Entrega com rastreamento"
-    : `${paid ? "Frete" : "Frete FULL"} · ${shippingCents === 0 ? "Grátis" : money(shippingCents)}`;
+    : paid
+      ? `Frete · ${shippingCents === 0 ? "Grátis" : money(shippingCents)}`
+      : shipping === "full" ? `${shippingLabelOf("full")} · ${money(shippingCents)}` : shippingLabelOf("free");
 
   const doneCard = (i: number) =>
     i === 0 ? (
@@ -567,19 +766,28 @@ export function Checkout({
     );
 
   const errorBox = error ? <ErrorBox>{error}</ErrorBox> : null;
+  // Página única: o aviso fica só na seção do campo com problema; sem campo, na seção do pagamento (onde está o botão que cobra),
+  // exceto "aguarde o CEP", que é da entrega. Assim a mesma frase não aparece em três lugares.
+  const errorSection = badField ? (ADDRESS_KEYS.includes(badField) ? 2 : 1) : cepState === "loading" ? 2 : 3;
+  const sectionError = (n: number) => (one && errorSection !== n ? null : errorBox);
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => void next(e);
 
   const body = (n: number) =>
     n === 1 ? (
-      <StepDados data={data} onChange={change} onContactBlur={handleContactBlur} onSubmit={onSubmit} cpfMasked={cpfMasked} busy={busy} buttonLabel={theme.buttonLabel} error={errorBox} />
+      <StepDados data={data} onChange={change} onContactBlur={handleContactBlur} onSubmit={onSubmit} cpfMasked={cpfMasked} busy={busy} buttonLabel={theme.buttonLabel} error={sectionError(1)} hideSubmit={one} />
     ) : n === 2 ? (
-      <StepEntrega data={data} onChange={change} onSubmit={onSubmit} cepState={cepState} addrOk={addrOk} busy={busy} buttonLabel={theme.buttonLabel} shippingCents={quotes[method].shippingCents} error={errorBox}
+      <StepEntrega data={data} onChange={change} onSubmit={onSubmit} cepState={cepState} addrOk={addrOk} busy={busy} buttonLabel={theme.buttonLabel} shipping={shipping} onShippingChange={handleShippingChange} error={sectionError(2)}
+        hideSubmit={one} onAddressBlur={one ? handleAddressBlur : undefined}
         onRetryCep={() => { const digits = data.cep.replace(/\D/g, ""); if (digits.length === 8) void lookupCep(digits); }} />
-    ) : cartToken ? (
+    ) : itemsMode && methods.length === 0 ? (
+      // Empresa sem gateway próprio configurado: credencial nunca é herdada do AquaBlast, então a loja não cobra.
+      <ErrorBox>Esta loja ainda não configurou uma forma de pagamento. Fale com a loja para concluir a compra.</ErrorBox>
+    ) : cartToken || one ? (
       <StepPagamento
         paymentSync={paymentSync}
         onRetrySync={() => void syncPaymentCart(bump, bumpColor)}
         cartToken={cartToken}
+        prepare={one ? prepare : undefined}
         color={c1}
         canBump={canBump}
         bump={bump}
@@ -598,6 +806,8 @@ export function Checkout({
         cardPublicConfig={cardPublicConfig}
         cardPending={cardPending}
         storeName={theme.storeName}
+        theme={theme}
+        support={support}
         onPaid={goToOrder}
         onPending={goToOrder}
       />
@@ -606,12 +816,12 @@ export function Checkout({
     );
 
   return (
-    <div className={`ck ck-root ck-conversion${paid ? " ck-conversion-paid" : " ck-reference"}`} style={themeVars(theme)}>
+    <div className={`ck ck-root ck-conversion${paid ? " ck-conversion-paid" : " ck-reference"}${one ? " ck-one-page" : ""}`} style={themeVars(theme)}>
       {paid ? <ShipBar theme={theme} shippingCents={shippingCents} paid /> : null}
       <TopBar theme={theme} />
-      {!paid ? <ShipBar theme={theme} shippingCents={shippingCents} /> : null}
+      {!paid ? <ShipBar theme={theme} /> : null}
       <main className="container ck-main">
-        {!paid && step === 1 ? <Campaign theme={theme} selection={selection} shippingCents={quotes[method].shippingCents} bump={hasBump} bumpColor={bumpColor} /> : null}
+        {!paid && (one || step === 1) && !itemsMode ? <Campaign theme={theme} selection={selection} bump={hasBump} bumpColor={bumpColor} banners={checkoutBanners} /> : null}
         {notice ? (
           <div className="notice" role="alert">
             {notice}{" "}
@@ -620,13 +830,28 @@ export function Checkout({
             </button>
           </div>
         ) : null}
-        {!paid ? <CheckoutProgress step={step} busy={busy || couponBusy} onEdit={goTo} /> : null}
-        <div className="ck-grid">
-          <OrderSummary
+        {!paid && !one ? <CheckoutProgress step={step} busy={busy || couponBusy} onEdit={goTo} /> : null}
+        {/* Sem a barra de etapas o título da página continua existindo para leitores de tela (era o h1 escondido do CheckoutProgress). */}
+        {one ? <h1 className="ck-u-sr-only">Finalize seu pedido</h1> : null}
+        <div className="ck-grid" data-shell-step={paid || one ? undefined : step} data-one-page={one || undefined}>
+          {itemsMode ? (
+            <ItemsSummary
+              products={itemsMode.products}
+              items={items}
+              onItemsChange={editable ? handleItemsChange : null}
+              quotes={quotes}
+              shippingChosen={shippingChosen}
+              payView={payView}
+              cardEnabled={methods.includes("card")}
+              pixEnabled={methods.includes("pix")}
+              deliveryPromise={deliveryPromise}
+            />
+          ) : <OrderSummary
             selection={selection}
             bump={paid ? bump : hasBump}
             bumpColor={bumpColor}
             quotes={quotes}
+            shippingChosen={shippingChosen}
             payView={payView}
             cardEnabled={methods.includes("card")}
             pixEnabled={methods.includes("pix")}
@@ -635,14 +860,14 @@ export function Checkout({
             couponBusy={couponBusy || busy}
             onCouponApply={applyCoupon}
             deliveryPromise={deliveryPromise}
-            selectionEditor={!paid && step < 3 ? <ColorPick selection={selection} onChange={handleColorChange} /> : null}
-          />
-          <section className="ck-card ck-flow" aria-label="Finalize seu pedido">
+            selectionEditor={editable ? <ColorPick selection={selection} onChange={handleColorChange} /> : null}
+          />}
+          <section className="ck-card ck-flow" aria-label="Finalize seu pedido" ref={flow}>
             {paid ? (
               <SuccessView
                 orderNumber={paid.orderNumber}
                 payment={payment}
-                items={items}
+                items={paidItems}
                 total={money(paid.amountCents)}
                 address={address}
                 email={data.email}
@@ -654,27 +879,24 @@ export function Checkout({
             <ol className={`ck-steps${paid ? " is-complete" : ""}`} aria-label="Etapas da compra">
               {STEP_NAMES.map((name, i) => {
                 const n = i + 1;
-                const state = paid || n < step ? "done" : n === step ? "current" : "todo";
+                // Página única: as três seções ficam abertas ao mesmo tempo (sem EDITAR, sem cadeado, sem "etapa atual").
+                const state = one ? "current" : paid || n < step ? "done" : n === step ? "current" : "todo";
+                const stepCurrent = state === "current" && !one;
                 return (
-                  <li key={name} className={`ck-step is-${state}`} data-step={n} aria-current={state === "current" ? "step" : undefined}>
+                  <li key={name} className={`ck-step is-${state}`} data-step={n} aria-current={stepCurrent ? "step" : undefined}>
                     <div className="ck-step-head">
                       <span className="ck-dot" aria-hidden="true">
                         {state === "done" ? <Check size={16} strokeWidth={3} /> : n}
                       </span>
-                      <h3 tabIndex={state === "current" ? -1 : undefined}>
+                      <h3 tabIndex={stepCurrent ? -1 : undefined}>
                         {name}
                         {state === "done" ? <span className="ck-u-sr-only"> (concluída)</span> : null}
                       </h3>
                     </div>
+                    {/* Etapa futura: só o cabeçalho e o cadeado (auditoria de 2026-10-11). A prévia das formas de pagamento
+                        saiu: mostrava Pix e cartão antes de o cliente informar a entrega. */}
                     {!paid && state === "todo" ? (
-                      <div className="ck-stage-preview">
-                        <p>{n === 2 ? "Informe seus dados para adicionar o endereço de entrega." : "Após informar a entrega, escolha como deseja pagar."}</p>
-                        {n === 3 ? <div className="ck-payment-preview" aria-label="Formas de pagamento disponíveis">
-                          {methods.includes("pix") ? <span><PixLogo size={21} /><span><strong>Pix</strong><small>{money(quotes.pix.amountCents)} à vista</small></span></span> : null}
-                          {methods.includes("card") ? <span><CreditCard size={21} aria-hidden="true" /><span><strong>Cartão de crédito</strong><small>{quotes.card.installments > 1 ? `${quotes.card.installments}x de ${money(quotes.card.installmentCents)} sem juros` : `${money(quotes.card.amountCents)} à vista`}</small></span></span> : null}
-                        </div> : null}
-                        <small className="ck-stage-lock"><LockKeyhole size={13} aria-hidden="true" />{n === 2 ? "Disponível após seus dados" : "Disponível após a entrega"}</small>
-                      </div>
+                      <small className="ck-stage-lock"><LockKeyhole size={13} aria-hidden="true" />{n === 2 ? "Disponível após seus dados" : "Disponível após a entrega"}</small>
                     ) : null}
                     {state === "done" ? (
                       <div className="ck-done">
@@ -687,20 +909,27 @@ export function Checkout({
                       </div>
                     ) : null}
                     {state === "current" ? (
-                      <div className="ck-step-body" ref={panel}>
-                        <p className="ck-stage-intro">{n === 1 ? "Preencha seus dados para receber a confirmação e acompanhar seu pedido." : n === 2 ? "Cadastre o endereço onde você quer receber seu AquaBlast." : "Escolha a forma de pagamento para finalizar seu pedido."}</p>
+                      <div className="ck-step-body" ref={one ? undefined : panel}>
+                        <p className="ck-stage-intro">{n === 1 ? "Preencha seus dados para receber a confirmação e acompanhar seu pedido." : n === 2 ? (itemsMode ? "Cadastre o endereço onde você quer receber seu pedido." : "Cadastre o endereço onde você quer receber seu AquaBlast.") : "Escolha a forma de pagamento para finalizar seu pedido."}</p>
                         <fieldset className="ck-step-fields" disabled={couponBusy}>
-                          <BadFieldContext.Provider value={{ field: badField, message: error }}>{body(n)}</BadFieldContext.Provider>
+                          <BadFieldContext.Provider value={{ field: badField, message: error }}>
+                            {body(n)}
+                            {one && n === 3 ? sectionError(3) : null}
+                          </BadFieldContext.Provider>
                         </fieldset>
                       </div>
                     ) : null}
-                    {!paid && n === 3 && state === "todo" ? <CheckoutReviews reviews={checkoutReviews} /> : null}
                   </li>
                 );
               })}
             </ol>
           </section>
-          <TrustSeals methods={methods} maxInstallments={maxInstallments} />
+          {/* Coluna lateral do computador (desktop-shell.css): fatos da compra e avaliações, abaixo do resumo. Abaixo de
+              1100 px o contêiner não gera caixa (display: contents) e as avaliações ficam ocultas (reference-checkout.css). */}
+          <div className="ck-side">
+            <TrustSeals methods={methods} maxInstallments={maxInstallments} theme={theme} support={support} payStep={payStep} />
+            {!paid ? <CheckoutReviews reviews={checkoutReviews} /> : null}
+          </div>
         </div>
       </main>
       <Footer theme={theme} year={year} methods={methods} maxInstallments={maxInstallments} support={support} />

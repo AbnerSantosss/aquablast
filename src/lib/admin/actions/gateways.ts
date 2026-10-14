@@ -219,7 +219,7 @@ export async function refundOrderPayment(_prev: ActionResult, fd: FormData): Pro
   if (!isGatewayName(attempt.provider)) return fail("Gateway da tentativa de pagamento não é reconhecido.");
 
   const gw = getGateway(attempt.provider);
-  const res = await gw.refund(attempt.providerTransactionId, attempt.amountCents);
+  const res = await gw.refund(attempt.providerTransactionId, attempt.amountCents, { companyId: attempt.companyId });
   if (!res.ok) return fail(res.message ?? "O gateway recusou o estorno.");
 
   await db.update(paymentAttempts).set({ status: "refunded", statusReason: "estornado pelo painel", updatedAt: new Date() }).where(eq(paymentAttempts.id, attempt.id));

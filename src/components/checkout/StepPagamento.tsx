@@ -7,13 +7,13 @@ import { PixLogo } from "./PixLogo";
 import { useRef, useState, type ReactNode } from "react";
 import { money } from "@/lib/checkout/own/masks";
 import type { Quote } from "@/lib/checkout/own/pricing";
-import { FULL_SHIPPING_CENTS } from "@/lib/checkout/own/shipping";
+import type { Theme } from "@/lib/checkout/own/theme";
 import { COLOR_KEYS, COLOR_LABELS } from "@/lib/site/constants";
 import type { Color } from "@/lib/site/types";
 import { CardPay } from "./CardPay";
 import { CardPending } from "./CardPending";
 import { colorName, thumbOf } from "./OrderSummary";
-import { TestModeNote } from "./PaySeals";
+import { PayTrust, TestModeNote, type SupportLink } from "./PaySeals";
 import { PixPay } from "./PixPay";
 import type { PayMethodUi } from "./types";
 import styles from "./StepPagamento.module.css";
@@ -52,12 +52,16 @@ export function StepPagamento({
   cardPublicConfig,
   cardPending = false,
   storeName,
+  theme,
+  support,
   onPaid,
   onPending,
+  prepare,
 }: {
   paymentSync?: "idle" | "saving" | "error";
   onRetrySync?: () => void;
-  cartToken: string;
+  /** Ausente no checkout em uma página enquanto o carrinho não foi gravado: quem cobra chama `prepare` e usa o token dele. */
+  cartToken?: string;
   color: Color;
   canBump: boolean;
   bump: boolean;
@@ -76,8 +80,14 @@ export function StepPagamento({
   cardPublicConfig: Record<string, string>;
   cardPending?: boolean;
   storeName: string;
+  /** Vendedor (razão social, CNPJ) e nome do recebedor do Pix: os mesmos dados do rodapé e do painel. */
+  theme: Pick<Theme, "storeName" | "companyName" | "companyCnpj" | "pixReceiverName">;
+  /** Contato do rodapé (WhatsApp do painel ou e-mail do site). */
+  support: SupportLink;
   onPaid: (publicToken: string) => void;
   onPending: (publicToken: string) => void;
+  /** Checkout em uma página (2026-10-14): o botão de pagar valida dados e entrega, grava o carrinho e devolve o token (null = faltou algo). */
+  prepare?: () => Promise<string | null>;
 }) {
   const pointerPick = useRef(false);
   const q = quotes[method];
@@ -153,8 +163,6 @@ export function StepPagamento({
           <em className={`${styles.bumpTag} bump-tag`}>Oferta opcional para seu pedido</em>
           <h4>Leve a segunda unidade com desconto</h4>
           <strong className={`${styles.bumpPrice} bump-price`}>+ {money(q.bumpDeltaCents)}</strong>
-          <small>Frete FULL grátis levando as duas unidades.</small>
-          {q.couponDiscountCents === 0 ? <small>Acréscimo de {money(Math.max(0, q.bumpDeltaCents - FULL_SHIPPING_CENTS))} no total, já com a economia do frete.</small> : null}
           {q.bumpSavingCents > 0 ? <small>Economize {money(q.bumpSavingCents)} em relação à unidade avulsa</small> : null}
         </div>
       </div>
@@ -189,15 +197,16 @@ export function StepPagamento({
     </section>
   ) : null;
 
+  // Pix sempre primeiro (pedido do dono, 2026-10-14): é a forma prioritária.
   const options = (
     [
+      ["pix", PixLogo, pixSavingCents > 0 ? "Pix com desconto" : "Pix", `${money(quotes.pix.amountCents)} à vista`],
       [
         "card",
         CreditCard,
         "Cartão de crédito",
         quotes.card.installments > 1 ? `${quotes.card.installments}x de ${money(quotes.card.installmentCents)} sem juros` : `${money(quotes.card.amountCents)} à vista no cartão`,
       ],
-      ["pix", PixLogo, pixSavingCents > 0 ? "Pix com desconto" : "Pix", `${money(quotes.pix.amountCents)} à vista`],
     ] as const
   ).filter(([id]) => methods.includes(id));
 
@@ -270,9 +279,10 @@ export function StepPagamento({
                     gateway={cardGateway}
                     publicConfig={cardPublicConfig}
                     testMode={cardGateway === "simulado"}
-                    storeName={storeName}
+                    afterSubmit={<PayTrust theme={theme} gateway={cardGateway} support={support} />}
                     onPending={onPending}
                     onPaid={onPaid}
+                    prepare={prepare}
                   />
                 ) : (
                   <PixPay
@@ -283,12 +293,15 @@ export function StepPagamento({
                     blocked={selectionPending}
                     onBlocked={requireColor}
                     beforeSubmit={bumpOffer}
+                    afterSubmit={<PayTrust theme={theme} gateway={pixGateway} support={support} />}
                     coupon={coupon}
                     amountCents={quotes.pix.amountCents}
                     ttlSeconds={pixTtlSeconds}
                     testMode={pixGateway === "simulado"}
                     storeName={storeName}
+                    receiverName={theme.pixReceiverName}
                     onPaid={onPaid}
+                    prepare={prepare}
                   />
                 )}
               </div>

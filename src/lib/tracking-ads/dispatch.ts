@@ -3,11 +3,12 @@ import { db } from "@/db";
 import { conversionEvents, orders, type CheckoutCart, type Order } from "@/db/schema";
 import { selectionFromCart, skuOf, titleOf, variantOf, type Selection } from "@/lib/checkout/own/catalog";
 import { getCartById } from "@/lib/checkout/own/cart";
+import { shippingLabelOf, shippingMethodOf } from "@/lib/checkout/own/shipping";
 import { errorMessage, log } from "@/lib/log";
 import { getSettings } from "@/lib/settings";
 import { sendGa4Event, type Ga4EventInput } from "./ga4-mp";
 import { defaultSourceUrl, hashMetaUserData, sendMetaEvent, type MetaEventInput } from "./meta-capi";
-import type { TrackDestination, TrackResult, TrackServerEventArgs } from "./types";
+import type { TrackDestination, TrackEventName, TrackResult, TrackServerEventArgs } from "./types";
 
 /**
  * Disparo dos eventos de anúncio pelo SERVIDOR (plano 9.6, revisado 2026-09-27 03h16). SÓ SERVIDOR.
@@ -27,9 +28,18 @@ import type { TrackDestination, TrackResult, TrackServerEventArgs } from "./type
  * Ids (determinísticos, ver types.ts): ic-<visit> (ou ic-<cart.token>), api-<cart.token>, pur-<order.orderNumber>.
  * InitiateCheckout sai na ABERTURA do checkout (args.visit, sem carrinho) e o carrinho repete o mesmo ic-<visit>:
  * a reserva em conversion_events deixa passar só o primeiro.
+ *
+ * AddShippingInfo (2026-10-11) é um quarto evento, SÓ do GA4 (`add_shipping_info`, id asi-<cart.token>): a Meta não
+ * tem evento padrão equivalente, então ela nem entra na lista de destinos e nenhuma linha "meta" é gravada para ele.
+ * Usa a mesma reserva/dedupe; os três eventos acima não mudaram de condição, id nem corpo.
  */
 
 const STALE_SENDING_MS = 5 * 60_000;
+
+/** Falso só para o evento que é exclusivo do GA4 (AddShippingInfo): esse nunca vai para a Meta. */
+function isMetaEvent(args: TrackServerEventArgs): args is TrackServerEventArgs & { name: TrackEventName } {
+  return args.name !== "AddShippingInfo";
+}
 
 /**
  * Purchase para pedidos que ainda chegam pela Zedy (ingest.ts). DESLIGADO por padrão (plano 9.6):
@@ -78,6 +88,8 @@ interface EventContext {
   sourceUrl?: string;
   /** Só utm_* (sem gclid), só no Purchase. */
   utm?: Record<string, string>;
+  /** Só no AddShippingInfo: nome do frete gravado no carrinho ("Frete grátis" | "Frete FULL"). */
+  shippingTier?: string;
 }
 
 /** Só as chaves utm_* (o gclid, guardado junto em `utm`, é do Google e não vai para a Meta). */
@@ -161,6 +173,7 @@ async function buildContext(args: TrackServerEventArgs): Promise<EventContext | 
     clientIp: pick(order?.clientIp, cart?.clientIp),
     userAgent: pick(order?.userAgent, cart?.userAgent),
     utm: args.name === "Purchase" ? utmOnly(order?.utm ?? cart?.utm) : undefined,
+    shippingTier: args.name === "AddShippingInfo" && cart ? shippingLabelOf(shippingMethodOf(cart.shippingMethod)) : undefined,
   };
 }
 
@@ -234,7 +247,7 @@ async function skip(dest: TrackDestination, args: TrackServerEventArgs, ctx: Eve
 
 /* ------------------------------------------------------------------ destinos */
 
-function metaInput(args: TrackServerEventArgs, ctx: EventContext): MetaEventInput {
+function metaInput(args: TrackServerEventArgs & { name: TrackEventName }, ctx: EventContext): MetaEventInput {
   const numItems = ctx.items.reduce((n, i) => n + i.quantity, 0);
   return {
     eventName: args.name,
@@ -265,10 +278,15 @@ function ga4Input(args: TrackServerEventArgs, ctx: EventContext): Ga4EventInput 
     valueCents: ctx.valueCents,
     eventTime: ctx.eventTime,
     items: ctx.items.map((i) => ({ itemId: i.id, itemName: i.name, itemVariant: i.variant, quantity: i.quantity, priceCents: i.priceCents })),
+    // Indefinido nos três eventos antigos: o corpo deles sai igual (buildGa4Body só inclui shipping_tier quando há valor).
+    shippingTier: ctx.shippingTier,
   };
 }
 
 async function runDestination(dest: TrackDestination, args: TrackServerEventArgs, ctx: EventContext, consentRequired: boolean, eventAllowed = true): Promise<TrackResult> {
+  // Evento exclusivo do GA4 nunca chega à Meta: sai antes de qualquer reserva, sem gravar linha "meta".
+  const metaArgs = isMetaEvent(args) ? args : null;
+  if (dest === "meta" && !metaArgs) return { destination: dest, status: "skipped", detail: "evento só do GA4" };
   try {
     // Evento desmarcado em Pixels (ads.meta.events): ex. o gateway já manda o Purchase direto para a Meta.
     if (!eventAllowed) return await skip(dest, args, ctx, "evento desmarcado no painel (Pixels)");
@@ -280,12 +298,15 @@ async function runDestination(dest: TrackDestination, args: TrackServerEventArgs
 
     let result: { ok: boolean; detail?: string; payload?: Record<string, unknown> };
     try {
-      result = dest === "meta" ? await sendMetaEvent(metaInput(args, ctx)) : await sendGa4Event(ga4Input(args, ctx));
+      result = dest === "meta" && metaArgs ? await sendMetaEvent(metaInput(metaArgs, ctx)) : await sendGa4Event(ga4Input(args, ctx));
     } catch (err) {
       result = { ok: false, detail: `${dest}: ${errorMessage(err)}` };
     }
     const detail = (result.detail ?? (result.ok ? "enviado" : "falhou")).slice(0, 500);
-    await finish(dest, args, result.ok ? "sent" : "error", detail, result.payload);
+    // Corpo gravado: o da Meta (como sempre) e o do GA4 só no evento novo. As linhas GA4 dos três eventos antigos
+    // seguem sem payload, exatamente como eram antes de 2026-10-11.
+    const payload = dest === "meta" || !metaArgs ? result.payload : undefined;
+    await finish(dest, args, result.ok ? "sent" : "error", detail, payload);
     if (!result.ok) log.warn("tracking-ads: envio falhou", { destination: dest, event: args.name, eventId: args.eventId, detail });
     return { destination: dest, status: result.ok ? "sent" : "error", detail };
   } catch (err) {
@@ -308,7 +329,8 @@ export async function trackServerEventDetailed(args: TrackServerEventArgs): Prom
     if (!args.eventId?.trim()) return [];
     const s = await getSettings(["ads.meta.enabled", "ads.ga4.enabled", "ads.consentRequired", "ads.meta.events"] as const);
     const destinations: TrackDestination[] = [];
-    if (s["ads.meta.enabled"] === true) destinations.push("meta");
+    // AddShippingInfo é só do GA4: com a Meta ligada e o GA4 desligado a lista fica vazia e nada é gravado.
+    if (s["ads.meta.enabled"] === true && isMetaEvent(args)) destinations.push("meta");
     if (s["ads.ga4.enabled"] === true) destinations.push("ga4");
     if (!destinations.length) return [];
 
@@ -363,7 +385,7 @@ export async function retryFailedConversions(limit = 20): Promise<{ retried: num
       and(
         eq(conversionEvents.status, "error"),
         gt(conversionEvents.sentAt, since),
-        inArray(conversionEvents.eventName, ["Purchase", "InitiateCheckout", "AddPaymentInfo"]),
+        inArray(conversionEvents.eventName, ["Purchase", "InitiateCheckout", "AddPaymentInfo", "AddShippingInfo"]),
         or(isNotNull(conversionEvents.orderId), isNotNull(conversionEvents.cartId)),
         // Filtro no SQL (não depois do limit): erros permanentes antigos não podem esconder os passageiros.
         sql`${conversionEvents.detail} ~* ${TRANSIENT_DETAIL}`,
@@ -376,7 +398,8 @@ export async function retryFailedConversions(limit = 20): Promise<{ retried: num
   for (const row of rows) {
     if (out.retried >= limit) break;
     const name = row.eventName;
-    if (name !== "Purchase" && name !== "InitiateCheckout" && name !== "AddPaymentInfo") continue;
+    // AddShippingInfo (só GA4) entra na mesma regra de idade dos eventos de carrinho.
+    if (name !== "Purchase" && name !== "InitiateCheckout" && name !== "AddPaymentInfo" && name !== "AddShippingInfo") continue;
     const key = `${name}:${row.eventId}`;
     if (seen.has(key)) continue; // meta e ga4 do mesmo evento: uma chamada cobre os dois
     seen.add(key);

@@ -1,0 +1,117 @@
+/*
+ * Fotos dos comentários do checkout. O bloco em si (título, estrelas, texto, autor) continua estilizado
+ * em src/styles/checkout/reference-checkout.css; aqui ficam só as miniaturas e a foto ampliada.
+ * Cores só pelas variáveis --c-* do tema do checkout. Nada com altura fixa no bloco: ele acompanha a
+ * largura da coluna e funciona dentro de uma caixa que rola por dentro (o <dialog> abre na camada de cima).
+ */
+
+.photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 11px;
+}
+
+.thumb {
+  flex: 0 1 56px;
+  width: 56px;
+  max-width: 56px;
+  aspect-ratio: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  background: var(--c-bg);
+  overflow: hidden;
+  cursor: zoom-in;
+  appearance: none;
+}
+
+.thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumb:hover {
+  border-color: var(--c-primary);
+}
+
+.thumb:focus-visible,
+.close:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+}
+
+.viewer {
+  /* O reset do checkout zera a margem de tudo: sem isto o <dialog> gruda no canto em vez de centralizar. */
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: var(--c-bg);
+  color: var(--c-text);
+  max-width: min(92vw, 860px);
+  max-height: 92dvh;
+  overflow: hidden;
+}
+
+.viewer::backdrop {
+  background: color-mix(in srgb, var(--c-text) 72%, transparent);
+}
+
+.viewerBox {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 12px;
+  max-height: 92dvh;
+  box-sizing: border-box;
+}
+
+.viewerImage {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: calc(92dvh - 80px);
+  min-height: 0;
+  margin: 0 auto;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.close {
+  align-self: center;
+  flex: none;
+  min-width: 120px;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  background: var(--c-bg);
+  color: var(--c-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.close:hover {
+  border-color: var(--c-primary);
+}
+
+/* Coluna lateral do computador (painel .ck-side das duas colunas, em desktop-shell.css): miniatura um pouco
+   menor e sem margem própria; o espaçamento vem da grade de cada avaliação. Continua quadrada e abaixo de 56 px. */
+:global(.ck-side) .photos {
+  margin: 0;
+}
+
+:global(.ck-side) .thumb {
+  flex-basis: 48px;
+  width: 48px;
+  max-width: 48px;
+}

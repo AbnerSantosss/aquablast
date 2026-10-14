@@ -1,6 +1,7 @@
 import { errorMessage, log } from "@/lib/log";
-import { getSetting, getSettings } from "@/lib/settings";
-import type { ChargeInput, ChargeResult, Gateway, GatewayStatus, StatusResult } from "./types";
+import { getCompanySetting, getCompanySettings, getSetting } from "@/lib/settings";
+import { companyOf, itemsForGateway } from "./items";
+import type { ChargeInput, ChargeResult, Gateway, GatewayContext, GatewayStatus, StatusResult } from "./types";
 
 /**
  * IronPay (Fase 5.2) — contrato da seção 1.5 do plano (documentação pública da IronPay).
@@ -22,8 +23,9 @@ const STATUS: Record<string, GatewayStatus> = {
 
 const digits = (v: string | undefined) => (v ?? "").replace(/\D/g, "");
 
-async function creds() {
-  return getSettings(["gateway.ironpay.apiToken", "gateway.ironpay.offerHashUnit", "gateway.ironpay.offerHashKit", "gateway.ironpay.productHashUnit", "gateway.ironpay.productHashKit"] as const);
+/** Credenciais da empresa (multiempresa): outra empresa sem credencial própria fica sem token, nunca usa a do AquaBlast. */
+async function creds(ctx?: GatewayContext) {
+  return getCompanySettings(companyOf(ctx), ["gateway.ironpay.apiToken", "gateway.ironpay.offerHashUnit", "gateway.ironpay.offerHashKit", "gateway.ironpay.productHashUnit", "gateway.ironpay.productHashKit"] as const);
 }
 
 type IronResponse = { status: number; ok: boolean; body: Record<string, unknown> | null; timedOut: boolean };
@@ -122,8 +124,8 @@ export const ironpayGateway: Gateway = {
   supports: { pix: true, card: true },
   tokenizesCard: false,
 
-  async configured() {
-    const c = await creds();
+  async configured(ctx) {
+    const c = await creds(ctx);
     return !!(c["gateway.ironpay.apiToken"] && c["gateway.ironpay.offerHashUnit"] && c["gateway.ironpay.offerHashKit"] && c["gateway.ironpay.productHashUnit"] && c["gateway.ironpay.productHashKit"]);
   },
 
@@ -132,7 +134,7 @@ export const ironpayGateway: Gateway = {
   },
 
   async charge(input: ChargeInput): Promise<ChargeResult> {
-    const c = await creds();
+    const c = await creds({ companyId: input.companyId });
     const token = c["gateway.ironpay.apiToken"];
     if (!token) return { ok: false, status: "error", transactionId: null, message: "Pagamento indisponível no momento.", reason: "ironpay sem api token" };
     if (input.method === "card" && !input.card) return { ok: false, status: "error", transactionId: null, message: "Dados do cartão não informados.", reason: "card ausente" };
@@ -154,7 +156,9 @@ export const ironpayGateway: Gateway = {
           ? { street_name: a.street, number: a.number, complement: a.extra ?? "", neighborhood: a.neighborhood, city: a.city, state: a.state, zip_code: digits(a.zip) }
           : {}),
       },
-      cart: [{ product_hash: product, title: input.title, price: input.amountCents, quantity: 1, operation_type: 1, tangible: true }],
+      // Legado: um item só (title, amountCents), igual ao de sempre. Multiempresa: uma linha por item, todas com o
+      // product_hash do pack (a IronPay exige um produto cadastrado; hash por produto do catálogo ainda não existe).
+      cart: itemsForGateway(input).map((i) => ({ product_hash: product, title: i.title, price: i.unitCents, quantity: i.quantity, operation_type: 1, tangible: true })),
       installments: input.method === "card" ? input.installments : 1,
       expire_in_days: 1,
       transaction_origin: "api",
@@ -206,16 +210,16 @@ export const ironpayGateway: Gateway = {
     };
   },
 
-  async fetchStatus(transactionId): Promise<StatusResult> {
-    const token = await getSetting("gateway.ironpay.apiToken");
+  async fetchStatus(transactionId, ctx): Promise<StatusResult> {
+    const token = await getCompanySetting(companyOf(ctx), "gateway.ironpay.apiToken");
     if (!token) return { status: "error", reason: "ironpay sem api token" };
     const res = await call(`/transactions/${encodeURIComponent(transactionId)}`, { method: "GET" }, token);
     if (!res.ok || !res.body) return { status: "error", reason: res.timedOut ? "timeout" : `http ${res.status || "rede"}` };
     return { status: parseStatus(res.body), paidAt: parsePaidAt(res.body) };
   },
 
-  async refund(transactionId, amountCents) {
-    const token = await getSetting("gateway.ironpay.apiToken");
+  async refund(transactionId, amountCents, ctx) {
+    const token = await getCompanySetting(companyOf(ctx), "gateway.ironpay.apiToken");
     if (!token) return { ok: false, message: "IronPay sem token configurado." };
     const res = await call(`/transactions/${encodeURIComponent(transactionId)}/refund`, { method: "POST", body: { amount: amountCents } }, token);
     if (res.ok) return { ok: true };

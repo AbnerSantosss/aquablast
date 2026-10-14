@@ -1,7 +1,7 @@
 import { safeEqual } from "@/lib/crypto";
 import { getSetting } from "@/lib/settings";
 import type { CheckoutPack } from "./catalog";
-import { shippingCentsForPack } from "./shipping";
+import { DEFAULT_SHIPPING_METHOD, shippingCentsFor, type ShippingMethod } from "./shipping";
 
 /**
  * Preço do checkout próprio (Fase 4.2). O preço é SEMPRE calculado aqui, no servidor.
@@ -15,7 +15,9 @@ export interface Quote {
   method: PayMethod;
   /** Produtos antes do cupom, sem frete. O adicional de 2ª unidade altera apenas este subtotal. */
   productSubtotalCents: number;
-  /** Frete FULL da oferta, antes do cupom de teste: 999 na unidade e zero com duas unidades. */
+  /** Frete escolhido na etapa de entrega: grátis (padrão) ou FULL. */
+  shippingMethod: ShippingMethod;
+  /** Frete antes do cupom de teste: zero no frete grátis, 999 no FULL. */
   shippingCents: number;
   /** Total cobrado, incluindo frete e eventual desconto de teste. */
   amountCents: number;
@@ -51,13 +53,14 @@ async function testCouponPixCents(coupon: string | undefined, method: PayMethod)
 /**
  * `bump = true` numa compra de unidade vira kit. `installments` só conta no cartão e é limitado por `checkout.maxInstallments`.
  * `coupon`: cupom de teste; válido no Pix, troca o total pelo valor do painel (nunca aumenta o preço).
+ * `shipping`: frete escolhido pelo cliente; sem escolha vale o grátis.
  */
-export async function quote(pack: CheckoutPack, method: PayMethod, bump: boolean, installments = 1, coupon?: string): Promise<Quote> {
+export async function quote(pack: CheckoutPack, method: PayMethod, bump: boolean, installments = 1, coupon?: string, shipping: ShippingMethod = DEFAULT_SHIPPING_METHOD): Promise<Quote> {
   const prices = await getSetting("checkout.prices");
   const max = await getSetting("checkout.maxInstallments");
   const finalPack: CheckoutPack = pack === "unit" && bump ? "kit" : pack;
   const productSubtotalCents = prices[finalPack][method];
-  const shippingCents = shippingCentsForPack(finalPack);
+  const shippingCents = shippingCentsFor(shipping);
   const listCents = productSubtotalCents + shippingCents;
   const couponCents = await testCouponPixCents(coupon, method);
   const amountCents = couponCents !== null && couponCents < listCents ? couponCents : listCents;
@@ -66,6 +69,7 @@ export async function quote(pack: CheckoutPack, method: PayMethod, bump: boolean
     pack: finalPack,
     method,
     productSubtotalCents,
+    shippingMethod: shipping,
     shippingCents,
     amountCents,
     bumpDeltaCents: prices.kit[method] - prices.unit[method],
@@ -77,6 +81,6 @@ export async function quote(pack: CheckoutPack, method: PayMethod, bump: boolean
 }
 
 /** Cotação dos dois métodos de uma vez (resposta de POST /api/checkout/cart). */
-export async function quoteBoth(pack: CheckoutPack, bump: boolean, installments = 1, coupon?: string): Promise<{ pix: Quote; card: Quote }> {
-  return { pix: await quote(pack, "pix", bump, 1, coupon), card: await quote(pack, "card", bump, installments) };
+export async function quoteBoth(pack: CheckoutPack, bump: boolean, installments = 1, coupon?: string, shipping: ShippingMethod = DEFAULT_SHIPPING_METHOD): Promise<{ pix: Quote; card: Quote }> {
+  return { pix: await quote(pack, "pix", bump, 1, coupon, shipping), card: await quote(pack, "card", bump, installments, undefined, shipping) };
 }

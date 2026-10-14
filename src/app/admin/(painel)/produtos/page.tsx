@@ -137,11 +137,11 @@ export default async function ProdutosPage() {
             </p>
           </section>
           <section className="card">
-            <div className="card-head"><h2>{FULL_SHIPPING_LABEL}</h2></div>
-            <p>Uma unidade: {cents(FULL_SHIPPING_CENTS)}. Com a segunda unidade, frete grátis.</p>
+            <div className="card-head"><h2>Frete</h2></div>
+            <p>Frete grátis em todo pedido. {FULL_SHIPPING_LABEL} opcional: {cents(FULL_SHIPPING_CENTS)}, escolhido pelo cliente na etapa de entrega.</p>
             <p className="small muted">
-              Total de uma unidade com frete: {cents(prices.unit.pix + FULL_SHIPPING_CENTS)} no Pix ou {cents(prices.unit.card + FULL_SHIPPING_CENTS)} no cartão.
-              Com a segunda unidade: {cents(prices.kit.pix)} no Pix ou {cents(prices.kit.card)} no cartão, já com frete grátis.
+              Uma unidade com {FULL_SHIPPING_LABEL}: {cents(prices.unit.pix + FULL_SHIPPING_CENTS)} no Pix ou {cents(prices.unit.card + FULL_SHIPPING_CENTS)} no cartão.
+              O preço do {FULL_SHIPPING_LABEL} só aparece para o cliente na escolha da entrega.
             </p>
           </section>
         </div>

@@ -1,5 +1,6 @@
 import { errorMessage, log } from "@/lib/log";
-import { getSetting } from "@/lib/settings";
+import { getCompanySetting } from "@/lib/settings";
+import { companyOf, itemsForGateway } from "./items";
 import type { ChargeInput, ChargeResult, Gateway, GatewayStatus, StatusResult } from "./types";
 
 /**
@@ -111,7 +112,8 @@ function buildBody(input: ChargeInput, attempt: string): Record<string, unknown>
       address: { country: "BRA" },
       ...(input.clientIp ? { ipAddress: input.clientIp } : {}),
     },
-    items: [{ title: input.title, type: "physical", description: `${input.title} (${input.sku})`, unit_price: amount, quantity: 1 }],
+    // Legado: um item (title, sku, total), igual ao de sempre. Multiempresa: um por item + linha de frete.
+    items: itemsForGateway(input).map((i) => ({ title: i.title, type: "physical", description: `${i.title} (${i.sku})`, unit_price: toReais(i.unitCents), quantity: i.quantity })),
     metadata: { order_id: input.orderNumber, attempt },
     ...(/^https:\/\//i.test(input.postbackUrl) ? { postbackUrl: input.postbackUrl } : {}),
   };
@@ -135,8 +137,8 @@ export const fastpayGateway: Gateway = {
   supports: { pix: true, card: true },
   tokenizesCard: false,
 
-  async configured() {
-    return !!(await getSetting("gateway.fastpay.apiKey"));
+  async configured(ctx) {
+    return !!(await getCompanySetting(companyOf(ctx), "gateway.fastpay.apiKey"));
   },
 
   async publicConfig() {
@@ -144,7 +146,7 @@ export const fastpayGateway: Gateway = {
   },
 
   async charge(input: ChargeInput): Promise<ChargeResult> {
-    const apiKey = await getSetting("gateway.fastpay.apiKey");
+    const apiKey = await getCompanySetting(input.companyId, "gateway.fastpay.apiKey");
     if (!apiKey) return { ok: false, status: "error", transactionId: null, message: "Pagamento indisponível no momento.", reason: "fastpay sem api key" };
 
     // A API não documenta idempotência: a chave vai em metadata só para rastrear a tentativa no painel da FastPay.
@@ -204,8 +206,8 @@ export const fastpayGateway: Gateway = {
     };
   },
 
-  async fetchStatus(transactionId): Promise<StatusResult> {
-    const apiKey = await getSetting("gateway.fastpay.apiKey");
+  async fetchStatus(transactionId, ctx): Promise<StatusResult> {
+    const apiKey = await getCompanySetting(companyOf(ctx), "gateway.fastpay.apiKey");
     if (!apiKey) return { status: "error", reason: "fastpay sem api key" };
     for (let page = 1; page <= LIST_PAGES; page++) {
       const res = await call(`/v1/charges?page=${page}&size=${LIST_SIZE}&orderBy=-createdAt`, { method: "GET" }, apiKey);

@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { checkoutCarts, orders, paymentAttempts, type CheckoutCart, type Order } from "@/db/schema";
+import { checkoutCarts, orders, paymentAttempts, type CheckoutCart, type Order, type OrderItem } from "@/db/schema";
 import { randomToken } from "@/lib/crypto";
 import { addOrderEvent, generateOrderNumber, getOrderById, updateOrderFields } from "@/lib/orders/service";
 import { selectionFromCart, type Selection } from "./catalog";
@@ -50,10 +50,10 @@ export function orderContactFromCart(cart: CheckoutCart) {
  * - orders não tem coluna de número nem de destinatário: número vai em addressLine1 ("Rua, 123") e o
  *   destinatário em addressLine2 ("A/C Nome") quando for diferente do comprador.
  * O carrinho fica ligado ao pedido (checkout_carts.orderId) mas continua `open` até pagar.
+ * `itemsOverride`: carrinho de vários itens (multiempresa) — os itens já montados por orderItemsFromItemsQuote.
  */
-export async function createOrderFromCart(cart: CheckoutCart, q: Quote): Promise<{ order: Order; created: boolean }> {
-  const sel = effectiveSelection(cart, q);
-  const items = [orderItemFromQuote(sel, q)];
+export async function createOrderFromCart(cart: CheckoutCart, q: Quote, itemsOverride?: OrderItem[]): Promise<{ order: Order; created: boolean }> {
+  const items = itemsOverride?.length ? itemsOverride : [orderItemFromQuote(effectiveSelection(cart, q), q)];
   const amountTotal = (q.amountCents / 100).toFixed(2);
 
   const previous = cart.orderId ? await getOrderById(cart.orderId) : null;
@@ -66,6 +66,8 @@ export async function createOrderFromCart(cart: CheckoutCart, q: Quote): Promise
     orderNumber: generateOrderNumber(),
     externalId: previous ? `${cart.id}:${Date.now().toString(36)}` : cart.id,
     checkoutProvider: OWN_PROVIDER,
+    // Multiempresa: o pedido herda a empresa do carrinho (AquaBlast pelo default da coluna).
+    companyId: cart.companyId,
     status: "created",
     paymentStatus: "pending",
     paymentMethod: q.method,

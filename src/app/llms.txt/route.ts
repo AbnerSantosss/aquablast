@@ -1,6 +1,5 @@
 import { buildFaq } from "@/data/faq";
-import { money } from "@/lib/checkout/own/masks";
-import { FULL_SHIPPING_CENTS, FULL_SHIPPING_LABEL } from "@/lib/checkout/own/shipping";
+import { FREE_SHIPPING_LABEL } from "@/lib/checkout/own/shipping";
 import { BRAND_NAME, CONTACT_EMAIL } from "@/lib/site/constants";
 import type { SitePrices } from "@/lib/site/prices";
 import { getSitePrices } from "@/lib/site/prices-server";
@@ -30,8 +29,8 @@ function buildLlmsTxt(prices: SitePrices): string {
     "- Bateria recarregável por USB.",
     "- Reservatório em tambor.",
     "- Cores: azul, vermelho e preto.",
-    `- Ofertas: 1 unidade por ${prices.unit.pix} no Pix ou kit com duas por ${prices.kit.pix} no Pix, com frete grátis no kit.`,
-    `- Entrega: ${FULL_SHIPPING_LABEL} de ${money(FULL_SHIPPING_CENTS)} para uma unidade, para todo o Brasil. O frete é somado ao preço do produto no checkout.`,
+    `- Ofertas: 1 unidade por ${prices.unit.pix} no Pix ou kit com duas por ${prices.kit.pix} no Pix.`,
+    `- Entrega: ${FREE_SHIPPING_LABEL.toLowerCase()} para todo o Brasil.`,
     n > 1
       ? `- Pagamento: cartão de crédito em até ${n}x sem juros (${n}x de ${prices.unit.installment}, total ${prices.unit.card}) ou Pix à vista${discount}.`
       : `- Pagamento: cartão de crédito (${prices.unit.card}) ou Pix à vista${discount}.`,

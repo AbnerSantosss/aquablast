@@ -792,6 +792,16 @@
   min-width: 260px;
   margin: 0;
 }
+/* Botão principal da etapa: verde da paleta pulsando para chamar a atenção. */
+.ck .ck-actions .primary-button:not(:disabled) { animation: ck-cta-pulse 1.8s ease-out infinite; }
+@keyframes ck-cta-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c-button) 45%, transparent); }
+  70% { box-shadow: 0 0 0 12px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ck .ck-actions .primary-button { animation: none; }
+}
 /* Pagamento */
 .ck-testmode {
   display: flex;

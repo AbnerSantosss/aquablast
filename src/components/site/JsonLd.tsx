@@ -1,6 +1,5 @@
 import { buildFaq } from "@/data/faq";
 import { reviews } from "@/data/reviews";
-import { FULL_SHIPPING_CENTS } from "@/lib/checkout/own/shipping";
 import { BRAND_NAME, CONTACT_EMAIL } from "@/lib/site/constants";
 import { FALLBACK_SITE_PRICES, type SitePrices } from "@/lib/site/prices";
 import { reviewSummary } from "@/lib/site/reviews-summary";
@@ -119,10 +118,10 @@ const webPage = (prices: SitePrices) => ({
   dateModified: CONTENT_UPDATED_AT,
 });
 
-// Frete FULL da oferta de uma unidade. Sem deliveryTime/handlingTime: prazo não confirmado.
+// Frete grátis é o padrão de todo pedido (o Frete FULL é opção paga do checkout). Sem deliveryTime/handlingTime: prazo varia por capital e tipo de frete (ver prazo.ts).
 const shippingDetails = {
   "@type": "OfferShippingDetails",
-  shippingRate: { "@type": "MonetaryAmount", value: FULL_SHIPPING_CENTS / 100, currency: "BRL" },
+  shippingRate: { "@type": "MonetaryAmount", value: 0, currency: "BRL" },
   shippingDestination: { "@type": "DefinedRegion", addressCountry: "BR" },
 };
 

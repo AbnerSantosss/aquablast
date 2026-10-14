@@ -10,8 +10,12 @@ import { isColor, selectionFromCart } from "@/lib/checkout/own/catalog";
 import { loadCheckoutProps } from "@/lib/checkout/own/checkout-props";
 import { deliveryPromiseText } from "@/lib/site/delivery-promise";
 import { maskCEP, maskPhone, money } from "@/lib/checkout/own/masks";
+import { FULL_SHIPPING_LABEL, shippingMethodOf } from "@/lib/checkout/own/shipping";
 import { getLastPaidAttempt, getOrderByPublicToken } from "@/lib/checkout/own/order";
 import { getTheme } from "@/lib/checkout/own/theme-server";
+import { isItemsCart } from "@/lib/checkout/own/items-cart";
+import { supportForCompany } from "@/lib/checkout/own/items-checkout";
+import { getCompanyById, isDefaultCompany } from "@/lib/companies";
 import { getOrderById, maskedDocument } from "@/lib/orders/service";
 import { pixQrForScreen } from "@/lib/pix/qr";
 import { getSupportWhatsapp } from "@/lib/site/support-contact";
@@ -79,6 +83,7 @@ function initialFromCart(cart: CheckoutCart, bumpEnabled: boolean): CheckoutInit
       recipient: cart.recipient ?? cart.customerName ?? "",
     },
     bump: bumpEnabled && cart.bumpAccepted,
+    shipping: shippingMethodOf(cart.shippingMethod),
     // Cor da 2ª unidade escolhida antes (colors[1]); sem ela o bump reabre marcado e pede a cor de novo.
     bumpColor: bumpEnabled && cart.bumpAccepted && cart.pack === "unit" && isColor(cart.colors[1]) ? cart.colors[1] : null,
   };
@@ -114,8 +119,15 @@ export default async function PedidoPage({ params }: { params: Promise<{ token: 
     }
     if (cart.status === "converted" || cart.status === "recovered") notFound();
 
+    // Carrinho de itens (multiempresa): retoma no checkout da empresa, que sabe montar a lista de produtos.
+    if (isItemsCart(cart)) {
+      const company = await getCompanyById(cart.companyId);
+      if (!company || !company.active) notFound();
+      redirect(`/c/${encodeURIComponent(company.slug)}?carrinho=${encodeURIComponent(cart.token)}`);
+    }
+
     const selection = selectionFromCart(cart);
-    const { mode, props } = await loadCheckoutProps(selection.pack, cart.bumpAccepted);
+    const { mode, props } = await loadCheckoutProps(selection.pack, cart.bumpAccepted, undefined, shippingMethodOf(cart.shippingMethod));
     if (mode === "zedy") redirect(zedyUrlFromSelection(selection));
 
     return (
@@ -130,7 +142,14 @@ export default async function PedidoPage({ params }: { params: Promise<{ token: 
 
   if (order.paymentStatus === "paid") {
     // Pedido pago: tela de compra confirmada (layout do dono, 2026-09-28). As etapas seguem o status real do pedido.
-    const [theme, attempt, whatsapp] = await Promise.all([getTheme(), getLastPaidAttempt(order.id), getSupportWhatsapp()]);
+    // Pedido de outra empresa: tema e atendimento dela (nunca a identidade do AquaBlast). AquaBlast: como antes.
+    const otherCompany = isDefaultCompany(order.companyId) ? null : await getCompanyById(order.companyId);
+    const [theme, attempt, whatsapp, otherSupport] = await Promise.all([
+      otherCompany ? getTheme(otherCompany.id, otherCompany.name) : getTheme(),
+      getLastPaidAttempt(order.id),
+      otherCompany ? Promise.resolve(null) : getSupportWhatsapp(),
+      otherCompany ? supportForCompany(otherCompany.id) : Promise.resolve(null),
+    ]);
     const amountCents = attempt?.amountCents ?? Math.round(Number(order.amountTotal ?? "0") * 100);
     const savedPricing = checkoutPricingOfOrder(order.items, amountCents);
     return (
@@ -141,14 +160,15 @@ export default async function PedidoPage({ params }: { params: Promise<{ token: 
         testMode={attempt?.provider === "simulado"}
         firstName={order.customerName?.trim().split(/\s+/)[0] || null}
         summary={{
-          items: order.items.length > 0 ? order.items.map(itemLabel) : ["Pedido AquaBlast"],
+          items: order.items.length > 0 ? order.items.map(itemLabel) : [otherCompany ? `Pedido ${otherCompany.name}` : "Pedido AquaBlast"],
           payment: paymentLabel(attempt?.method ?? order.paymentMethod, attempt?.installments ?? order.installments),
           total: money(amountCents),
           shipping: savedPricing ? (savedPricing.shippingCents === 0 ? "Grátis" : money(Math.min(savedPricing.shippingCents, amountCents))) : null,
+          shippingLabel: savedPricing && savedPricing.shippingCents > 0 ? FULL_SHIPPING_LABEL : null,
           address: addressLine(order),
           email: order.customerEmail,
         }}
-        support={whatsapp ? { href: whatsapp.href, external: true } : { href: `mailto:${CONTACT_EMAIL}`, external: false }}
+        support={otherSupport ?? (whatsapp ? { href: whatsapp.href, external: true } : { href: `mailto:${CONTACT_EMAIL}`, external: false })}
         year={currentYear()}
       />
     );

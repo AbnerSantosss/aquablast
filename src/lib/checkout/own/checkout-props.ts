@@ -3,16 +3,15 @@ import { getSettings } from "@/lib/settings";
 import { CONTACT_EMAIL } from "@/lib/site/constants";
 import { getSupportWhatsapp } from "@/lib/site/support-contact";
 import type { CheckoutPack } from "./catalog";
+import type { ShippingMethod } from "./shipping";
 import { normalizeCoupon, quoteBoth, type Quote } from "./pricing";
 import { getTheme } from "./theme-server";
 import type { Theme } from "./theme";
-import { reviews } from "@/data/reviews";
+import { errorMessage, log } from "@/lib/log";
+import { listActiveCheckoutReviews } from "./reviews";
 import type { CheckoutReview } from "@/components/checkout/CheckoutReviews";
-
-const checkoutReviews: CheckoutReview[] = ["review-carlos", "review-elcio"]
-  .map((id) => reviews.find((review) => review.id === id))
-  .filter((review) => review !== undefined)
-  .map(({ id, score, author, avatar, comment }) => ({ id, score, author, avatar, comment }));
+import type { BannerMap } from "./banners";
+import { getCheckoutBanners } from "./banners-server";
 
 /**
  * Props do `<Checkout />` montadas no servidor (plano 8.8). Usado por `/checkout` (carrinho novo) e por
@@ -39,10 +38,33 @@ export interface CheckoutServerProps {
   support: { href: string; external: boolean };
   /** `ads.consentRequired`: desligado, o banner de cookies não aparece e os identificadores de anúncio vão sempre. */
   consentRequired: boolean;
+  /** Comentários ativos cadastrados no painel (no máximo 6), com as fotos. Vazio: o bloco some. */
   checkoutReviews: CheckoutReview[];
+  /** Artes de banner enviadas no painel, por produto e dispositivo. Vazio: o checkout mostra o banner de texto. */
+  checkoutBanners: BannerMap;
 }
 
-export async function loadCheckoutProps(pack: CheckoutPack, bump: boolean, couponRaw?: string): Promise<{ mode: "proprio" | "zedy"; props: CheckoutServerProps }> {
+/** Comentários do checkout. Banco fora do ar ou consulta com erro: lista vazia (o bloco some) e o checkout segue vendendo. */
+async function loadCheckoutReviews(): Promise<CheckoutReview[]> {
+  try {
+    return await listActiveCheckoutReviews();
+  } catch (err) {
+    log.error("checkout: leitura dos comentários falhou", { error: errorMessage(err) });
+    return [];
+  }
+}
+
+/** Artes de banner. Banco fora do ar ou consulta com erro: nenhuma arte (volta o banner de texto) e o checkout segue vendendo. */
+async function loadCheckoutBanners(): Promise<BannerMap> {
+  try {
+    return await getCheckoutBanners();
+  } catch (err) {
+    log.error("checkout: leitura das artes de banner falhou", { error: errorMessage(err) });
+    return {};
+  }
+}
+
+export async function loadCheckoutProps(pack: CheckoutPack, bump: boolean, couponRaw?: string, shipping: ShippingMethod = "free"): Promise<{ mode: "proprio" | "zedy"; props: CheckoutServerProps }> {
   const s = await getSettings(["checkout.mode", "checkout.maxInstallments", "checkout.pixTtlSeconds", "checkout.bumpEnabled", "checkout.cardComingSoon", "ads.consentRequired"] as const);
   const mode = s["checkout.mode"] === "zedy" ? "zedy" : "proprio";
   const maxInstallments = Math.max(1, Math.min(12, Math.trunc(s["checkout.maxInstallments"])));
@@ -51,7 +73,7 @@ export async function loadCheckoutProps(pack: CheckoutPack, bump: boolean, coupo
   const coupon = normalizeCoupon(couponRaw).slice(0, 40);
 
   const [pixGw, cardGw] = await Promise.all([gatewayFor("pix"), gatewayFor("card")]);
-  const [quotesInitial, theme, whatsapp] = await Promise.all([quoteBoth(pack, bumpEnabled && bump, maxInstallments, coupon), getTheme(), getSupportWhatsapp()]);
+  const [quotesInitial, theme, whatsapp, checkoutReviews, checkoutBanners] = await Promise.all([quoteBoth(pack, bumpEnabled && bump, maxInstallments, coupon, shipping), getTheme(), getSupportWhatsapp(), loadCheckoutReviews(), loadCheckoutBanners()]);
   const support = whatsapp ? { href: whatsapp.href, external: true } : { href: `mailto:${CONTACT_EMAIL}`, external: false };
   const cardPublicConfig = cardGw ? await cardGw.publicConfig() : {};
 
@@ -62,6 +84,6 @@ export async function loadCheckoutProps(pack: CheckoutPack, bump: boolean, coupo
 
   return {
     mode,
-    props: { theme, methods, maxInstallments, pixTtlSeconds, bumpEnabled, pixGateway: pixGw?.name ?? null, cardGateway: cardGw?.name ?? null, cardPublicConfig, cardPending, quotesInitial, coupon, support, consentRequired: s["ads.consentRequired"] !== false, checkoutReviews },
+    props: { theme, methods, maxInstallments, pixTtlSeconds, bumpEnabled, pixGateway: pixGw?.name ?? null, cardGateway: cardGw?.name ?? null, cardPublicConfig, cardPending, quotesInitial, coupon, support, consentRequired: s["ads.consentRequired"] !== false, checkoutReviews, checkoutBanners },
   };
 }

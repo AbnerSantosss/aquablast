@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/session";
 import { ensureBootstrap } from "@/lib/bootstrap";
 import { sendOrderEmail } from "@/lib/email/send";
+import { notifyCompanyWebhook } from "@/lib/companies/webhooks";
 import { addOrderEvent, ensureAccessCode, getOrderById, transitionOrder, updateOrderFields } from "@/lib/orders/service";
 import { canTransition, rank } from "@/lib/orders/status";
 import { getSetting } from "@/lib/settings";
@@ -77,6 +78,8 @@ export async function saveTracking(_prev: ActionResult, formData: FormData): Pro
       notes.push('Status alterado para "Enviado".');
     }
   }
+
+  if (current.trackingCode !== order.trackingCode) void notifyCompanyWebhook(order.id, "order.shipped");
 
   // Feedback do e-mail ao cliente vem primeiro na mensagem: é o que o operador precisa saber na hora
   // (usado igual no detalhe do pedido e na aba Pendentes de /admin/envios).

@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleAlert, LoaderCircle, RefreshCw, Timer, Smartphone, ArrowRight } from "lucide-react";
+import { CircleAlert, Landmark, LoaderCircle, RefreshCw, Timer, Smartphone, ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { money } from "@/lib/checkout/own/masks";
 import { getStatus, isApiFail, postPay, postSimulatePaid } from "./api";
@@ -25,10 +25,14 @@ export function PixPay({
   ttlSeconds,
   testMode,
   storeName,
+  receiverName = "",
   onPaid,
   beforeSubmit,
+  afterSubmit,
+  prepare,
 }: {
-  cartToken: string;
+  /** Ausente no checkout em uma página enquanto o carrinho ainda não foi gravado: `prepare` valida, grava e devolve o token. */
+  cartToken?: string;
   bump: boolean;
   /** Cor da 2ª unidade; vai junto no POST quando há bump. */
   bumpColor?: string | null;
@@ -40,8 +44,17 @@ export function PixPay({
   ttlSeconds: number;
   testMode: boolean;
   storeName: string;
+  /** `theme.pixReceiverName`: nome que o app do banco mostra como recebedor. Vazio (padrão): a frase não aparece. */
+  receiverName?: string;
   onPaid: (publicToken: string) => void;
   beforeSubmit?: ReactNode;
+  /** Bloco de confiança (`PayTrust`), logo abaixo do botão de gerar o Pix. */
+  afterSubmit?: ReactNode;
+  /**
+   * Checkout em uma página (2026-10-14): roda antes da cobrança, valida dados e entrega, grava o carrinho e devolve o token
+   * dele (ou null se algo faltou: o Checkout já mostrou o aviso). Sem ela, usa o `cartToken` recebido (fluxo por etapas).
+   */
+  prepare?: () => Promise<string | null>;
 }) {
   const [phase, setPhase] = useState<"idle" | "loading" | "ready">("idle");
   const [pix, setPix] = useState<(PixResult & { publicToken: string; localExpiresMs: number }) | null>(null);
@@ -119,7 +132,22 @@ export function PixPay({
     setError("");
     setStatusMessage("");
     paidReportedRef.current = false;
-    const result = await postPay({ cartToken, method: "pix", installments: 1, bump, ...(bump && bumpColor ? { bumpColor } : {}), ...(coupon ? { coupon } : {}) });
+    // Uma página: valida os dados e a entrega, grava o carrinho e só então cobra. Faltou algo: o Checkout já avisou, nada é cobrado.
+    let token = cartToken;
+    if (prepare) {
+      const prepared = await prepare();
+      if (!prepared) {
+        setPhase(pix ? "ready" : "idle");
+        return;
+      }
+      token = prepared;
+    }
+    if (!token) {
+      setError("Não foi possível preparar o pedido. Tente de novo.");
+      setPhase(pix ? "ready" : "idle");
+      return;
+    }
+    const result = await postPay({ cartToken: token, method: "pix", installments: 1, bump, ...(bump && bumpColor ? { bumpColor } : {}), ...(coupon ? { coupon } : {}) });
     if (isApiFail(result)) {
       setError(result.message ?? result.error);
       setPhase(pix ? "ready" : "idle");
@@ -158,6 +186,7 @@ export function PixPay({
   }
 
   const ttl = ttlLabel(ttlSeconds);
+  const receiver = receiverName.trim();
   const errorBox = error ? (
     <p className="error" role="alert">
       <CircleAlert size={16} aria-hidden="true" />
@@ -196,6 +225,7 @@ export function PixPay({
           {phase === "loading" ? <><LoaderCircle className="spin" size={18} aria-hidden="true" />Gerando código…</> : <>Gerar Pix de {money(amountCents)}<ArrowRight size={18} aria-hidden="true" /></>}
         </button>
         <p className="pix-footnote"><Timer size={15} aria-hidden="true" />Válido por {ttl} após a geração.</p>
+        {afterSubmit}
       </div>
     );
   }
@@ -229,6 +259,12 @@ export function PixPay({
 
   return (
     <PixPaymentCode key={pix.code} code={pix.code} qrUrl={pix.qrUrl} seconds={left} amountCents={amountCents} testMode={testMode} storeName={storeName}>
+      {receiver ? (
+        <p className="ck-pix-receiver" data-pix-receiver>
+          <Landmark size={15} aria-hidden="true" />
+          <span>No app do seu banco, o recebedor aparece como <strong>{receiver}</strong>.</span>
+        </p>
+      ) : null}
       {verifyPayment}
       {errorBox}
       {testMode ? <button type="button" className="pix-test-action" onClick={() => void simulatePaid()} disabled={simulating}>{simulating ? "Simulando…" : "Simular pagamento aprovado"}</button> : null}

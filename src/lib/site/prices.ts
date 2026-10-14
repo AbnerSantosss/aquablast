@@ -17,7 +17,7 @@ export type PriceCents = Record<Pack, { pix: number; card: number }>;
  * Reserva usada quando o painel nao responde (o `next build` do CI nao tem banco). Tem de ser igual ao
  * valor inicial de `checkout.prices` em `settings.ts`; `scripts/verify-checkout-ux.cjs` confere.
  */
-export const FALLBACK_PRICE_CENTS: PriceCents = { unit: { pix: 14990, card: 17990 }, kit: { pix: 23990, card: 26990 } };
+export const FALLBACK_PRICE_CENTS: PriceCents = { unit: { pix: 14971, card: 17971 }, kit: { pix: 23990, card: 26990 } };
 export const FALLBACK_MAX_INSTALLMENTS = 12;
 
 export interface PackPrice {

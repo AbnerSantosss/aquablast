@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { money } from "@/lib/checkout/own/masks";
-import { FULL_SHIPPING_CENTS, FULL_SHIPPING_LABEL } from "@/lib/checkout/own/shipping";
+import { FREE_SHIPPING_LABEL } from "@/lib/checkout/own/shipping";
 import { BRAND_NAME, DELIVERY_PATH, RETURNS_PATH } from "@/lib/site/constants";
 import "@/styles/site/trocas.css";
 
@@ -9,7 +8,7 @@ import "@/styles/site/trocas.css";
 export const revalidate = 300;
 
 const TITLE = `Entrega e frete | ${BRAND_NAME}`;
-const DESCRIPTION = `${FULL_SHIPPING_LABEL} de ${money(FULL_SHIPPING_CENTS)} para uma unidade, para todo o Brasil. Veja como funciona a entrega do AquaBlast e como acompanhar o pedido.`;
+const DESCRIPTION = `${FREE_SHIPPING_LABEL} para todo o Brasil. Veja como funciona a entrega do AquaBlast e como acompanhar o pedido.`;
 
 // Página de suporte para quem consulta as condições de entrega.
 export const metadata: Metadata = {
@@ -83,7 +82,7 @@ export default function EntregaPage() {
             </nav>
             <h1>Entrega e frete</h1>
             <p className="tr-lead">
-              {FULL_SHIPPING_LABEL} de {money(FULL_SHIPPING_CENTS)} para uma unidade, para todo o Brasil. A entrega varia conforme a região. Acompanhe seu pedido pelo site.
+              {FREE_SHIPPING_LABEL} para todo o Brasil. A entrega varia conforme a região. Acompanhe seu pedido pelo site.
             </p>
             <div className="tr-actions">
               <Link className="tr-btn tr-btn-green" href="/#ofertas">
@@ -98,13 +97,10 @@ export default function EntregaPage() {
             <p className="tr-summary-title">Em resumo</p>
             <ul>
               <li>
-                <strong>{FULL_SHIPPING_LABEL} de {money(FULL_SHIPPING_CENTS)}</strong> para uma unidade, para todo o Brasil.
+                <strong>{FREE_SHIPPING_LABEL}</strong> para todo o Brasil.
               </li>
               <li>
                 <strong>Entrega acompanhada:</strong> consulte as atualizações em Rastrear pedido.
-              </li>
-              <li>
-                <strong>Frete somado ao preço do produto antes do pagamento.</strong>
               </li>
             </ul>
           </div>
@@ -112,9 +108,12 @@ export default function EntregaPage() {
           <section className="tr-section" aria-labelledby="prazo">
             <h2 id="prazo">Qual é o prazo para o meu endereço</h2>
             <p>
-              A entrega varia conforme o endereço. O {FULL_SHIPPING_LABEL} de {money(FULL_SHIPPING_CENTS)} para uma unidade
-              atende todo o Brasil, e os dados de entrega ficam disponíveis no seu pedido.
+              O {FREE_SHIPPING_LABEL.toLowerCase()} atende todo o Brasil. O prazo depende de o endereço ser capital ou não e do tipo de frete escolhido na etapa de entrega do checkout.
             </p>
+            <ul>
+              <li><strong>Frete grátis:</strong> de 4 a 7 dias em capitais e de 7 a 10 dias nas demais cidades.</li>
+              <li><strong>Frete FULL (pago):</strong> de 2 a 3 dias em capitais e de 8 a 9 dias nas demais.</li>
+            </ul>
             <p>Se precisar receber para uma ocasião específica, fale com a loja antes de comprar para consultar a previsão.</p>
           </section>
 

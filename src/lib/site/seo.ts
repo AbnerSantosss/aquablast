@@ -1,5 +1,4 @@
-import { money } from "@/lib/checkout/own/masks";
-import { FULL_SHIPPING_CENTS, FULL_SHIPPING_LABEL } from "@/lib/checkout/own/shipping";
+import { FREE_SHIPPING_LABEL } from "@/lib/checkout/own/shipping";
 import { BASE_URL } from "@/lib/site/base-url";
 import { RETURNS_PATH } from "@/lib/site/constants";
 import type { SitePrices } from "@/lib/site/prices";
@@ -29,7 +28,7 @@ export const SEO_TITLE = "Brinquedo de água elétrico para o verão | AquaBlast
 export const OG_TITLE = "AquaBlast: seu verão mais divertido, no quintal ou na piscina";
 
 export const seoDescription = (prices: SitePrices): string =>
-  `Brinquedo de água elétrico com LED e recarga USB. 1 unidade por ${prices.unit.pix} no Pix, mais ${FULL_SHIPPING_LABEL} de ${money(FULL_SHIPPING_CENTS)}.`;
+  `Brinquedo de água elétrico com LED e recarga USB. 1 unidade por ${prices.unit.pix} no Pix, com ${FREE_SHIPPING_LABEL.toLowerCase()}.`;
 
 // Data da última mudança de conteúdo da home (AAAA-MM-DD). Vai para o <lastmod>
 // do sitemap e o dateModified do schema. Atualize quando mudar texto, preço ou oferta.

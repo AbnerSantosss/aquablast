@@ -115,7 +115,7 @@ async function c19a() {
     assert.equal(await page.locator('input[name="bump-color"]:checked').count(), 0, "nenhuma cor pre-escolhida");
     assert.equal(await page.locator(".bump-color-alert").getAttribute("aria-live"), "polite");
     // Resumo novo (49f7d26): a linha do bump é [data-summary-bump]; sem cor fica "pending" (antes ".bump-summary" com "cor a escolher").
-    await L.waitText(L.summaryBump(page), /2ª unidade: falta escolher a cor\s*\+ R\$ 90,00/);
+    await L.waitText(L.summaryBump(page), /2ª unidade: falta escolher a cor\s*\+ R\$ 90,19/);
     assert.equal(await L.summaryBump(page).getAttribute("data-summary-bump"), "pending");
     assert.equal(await L.summaryUnit(page, 2).count(), 0, "sem cor, a 2ª unidade ainda não entra na lista de produtos");
     // Alvo minimo das cores. Mede no DOM de uma vez (page.evaluate): o bloco re-renderiza enquanto a cotacao chega e handles
@@ -144,7 +144,7 @@ async function c19a() {
 
     // Escolhe Vermelho: resumo, miniatura e Pix.
     await page.locator('input[name="bump-color"][value="vermelho"]').check();
-    await L.waitText(L.summaryBump(page), /2ª unidade adicionada\s*\+ R\$ 90,00/);
+    await L.waitText(L.summaryBump(page), /2ª unidade adicionada\s*\+ R\$ 90,19/);
     assert.equal(await L.summaryBump(page).getAttribute("data-summary-bump"), "confirmed");
     assert.equal(await L.summary(page).locator("[data-summary-unit]").count(), 2, "resumo com as duas unidades");
     await L.expectSummaryUnit(page, 1, "azul", { kit: true });
@@ -180,7 +180,12 @@ async function c19a() {
     await page.locator("[data-pix-qr]").waitFor({ state: "visible" });
     const copyBox = await L.pixCopy(page).boundingBox(); // antes ".pix-code-area .pix-primary"
     const readyQrBox = await page.locator("[data-pix-qr]").boundingBox();
-    assert.ok(copyBox && readyQrBox && readyQrBox.y >= 0 && readyQrBox.y + readyQrBox.height <= copyBox.y && copyBox.y + copyBox.height <= page.viewportSize().height, "QR e copiar Pix cabem na altura da tela");
+    // Computador em duas colunas (auditoria de 2026-10-11, desktop-shell.css): o QR fica à esquerda e o botão de
+    // copiar à direita, lado a lado. Antes o QR ficava acima do botão; a exigência de os dois caberem inteiros
+    // na altura da tela continua a mesma, e a de ordem virou "QR à esquerda, sem sobrepor".
+    const viewportHeight = page.viewportSize().height;
+    assert.ok(copyBox && readyQrBox && readyQrBox.y >= 0 && readyQrBox.y + readyQrBox.height <= viewportHeight && copyBox.y >= 0 && copyBox.y + copyBox.height <= viewportHeight, "QR e copiar Pix cabem na altura da tela");
+    assert.ok(readyQrBox.x + readyQrBox.width <= copyBox.x, "QR à esquerda do botão de copiar Pix, sem sobrepor");
 
     // Banco: carrinho com as duas cores, pedido com o kit azul + vermelho.
     const token = await L.cartTokenOf(page);
@@ -261,7 +266,7 @@ async function c19b(publicTokenHint) {
     assert.equal(await page.locator(".bump-colors").count(), 0, "cores somem ao retirar a segunda unidade");
     assert.equal(await page.locator(".order-bump.added").count(), 0, "oferta retirada");
     assert.equal(await page.locator(".pix-payment-start .pix-primary").getAttribute("aria-disabled"), null, "Pix avulso liberado");
-    await L.waitText(page.locator(".pix-payment-total strong"), "R$ 159,89");
+    await L.waitText(page.locator(".pix-payment-total strong"), "R$ 149,71");
     assert.equal((await payCalls(requests)).length, beforeSkip, "retirar bump não gera cobrança");
 
     // Pagina do pedido no celular: QR visivel sem abrir acordeão, QR e copia juntos na primeira tela.

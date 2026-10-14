@@ -41,16 +41,43 @@ export interface CardData {
   holderCpf: string;
 }
 
+/**
+ * Linha de item enviada ao gateway (multiempresa, 2026-10-12). `unitCents` em centavos.
+ * No modo legado do AquaBlast é um item só: { title, sku, quantity: 1, unitCents: amountCents }.
+ */
+export interface ChargeItem {
+  title: string;
+  sku: string;
+  quantity: number;
+  unitCents: number;
+  /** Id do produto (products.id) quando o item veio do catálogo multiempresa. Só para rastro. */
+  productId?: string;
+}
+
+/** Empresa dona da cobrança: define de quem são as credenciais lidas (getCompanySetting). */
+export interface GatewayContext {
+  companyId: string;
+}
+
 export interface ChargeInput {
+  /** Empresa da cobrança (orders.company_id). AquaBlast = DEFAULT_COMPANY_ID. */
+  companyId: string;
   orderId: string;
   orderNumber: string;
   amountCents: number;
   method: GatewayMethod;
   installments: number;
   pack: "unit" | "kit";
-  /** Título e SKU do item (titleOf/skuOf do catálogo). */
+  /** Título e SKU consolidados (titleOf/skuOf no legado). Usados quando `items` não fecha com o total. */
   title: string;
   sku: string;
+  /**
+   * Itens da cobrança. A soma (unitCents * quantity) + shippingCents deve dar amountCents; se não der
+   * (cupom, desconto), o gateway manda um item consolidado (itemsForGateway em gateways/items.ts).
+   */
+  items: ChargeItem[];
+  /** Frete em centavos, quando cobrado à parte dos itens. */
+  shippingCents?: number;
   customer: ChargeCustomer;
   /** Chave única por tentativa (id de payment_attempts). Gateways com idempotência usam como X-Idempotency-Key. */
   idempotencyKey: string;
@@ -103,18 +130,23 @@ export interface Gateway {
   supports: { pix: boolean; card: boolean };
   /** true = o número do cartão nunca passa pelo nosso servidor (tokenizeCard no navegador). */
   tokenizesCard: boolean;
+  /*
+   * `ctx` (multiempresa): de qual empresa são as credenciais. Ausente = empresa padrão (AquaBlast),
+   * o que mantém todo chamador antigo funcionando igual.
+   */
   /** Tem as credenciais necessárias no painel. */
-  configured(): Promise<boolean>;
+  configured(ctx?: GatewayContext): Promise<boolean>;
   /** Chaves públicas que o navegador precisa para tokenizar (ex.: publicKey do MP). Nunca segredos. */
-  publicConfig(): Promise<Record<string, string>>;
+  publicConfig(ctx?: GatewayContext): Promise<Record<string, string>>;
+  /** As credenciais saem de `input.companyId`. */
   charge(input: ChargeInput): Promise<ChargeResult>;
   /** Consulta o status na fonte. Postback nunca é confiado sem isto. */
-  fetchStatus(transactionId: string): Promise<StatusResult>;
-  refund(transactionId: string, amountCents: number): Promise<{ ok: boolean; message?: string }>;
+  fetchStatus(transactionId: string, ctx?: GatewayContext): Promise<StatusResult>;
+  refund(transactionId: string, amountCents: number, ctx?: GatewayContext): Promise<{ ok: boolean; message?: string }>;
   /** Tira o id da transação do postback/webhook (corpo + URL). Não valida nada além disso. */
   extractWebhook(payload: unknown, url: URL): { transactionId: string | null };
   /** Valida assinatura do webhook quando o gateway tem uma (MP: x-signature). Ausente = sem assinatura. */
-  verifyWebhook?(args: { headers: Headers; rawBody: string; url: URL }): Promise<boolean>;
+  verifyWebhook?(args: { headers: Headers; rawBody: string; url: URL }, ctx?: GatewayContext): Promise<boolean>;
 }
 
 /** Tradução do status do gateway para orders.paymentStatus. `error` não muda o pedido (continua pendente). */

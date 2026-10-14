@@ -1,5 +1,6 @@
 import {
   boolean,
+  customType,
   index,
   integer,
   jsonb,
@@ -47,10 +48,100 @@ export const webhookStatusEnum = pgEnum("webhook_status", [
   "unauthorized",
 ]);
 
+/**
+ * Empresa padrão (AquaBlast). Fixa e semeada pela migration 0013: toda linha antiga cai nela pelo default das
+ * colunas company_id, e o AquaBlast continua lendo os settings globais sem prefixo.
+ */
+export const DEFAULT_COMPANY_ID = "00000000-0000-4000-8000-000000000001";
+
+/**
+ * Empresas que usam o gateway (multiempresa, 2026-10-12). A chave de API é guardada só como SHA-256
+ * (api_key_hash) e o começo dela (api_key_prefix) para o painel reconhecer. webhook_secret é cifrado
+ * (lib/crypto encryptText), nunca em claro.
+ */
+export const companies = pgTable(
+  "companies",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    active: boolean("active").default(true).notNull(),
+    apiKeyHash: text("api_key_hash"),
+    apiKeyPrefix: text("api_key_prefix"),
+    webhookUrl: text("webhook_url"),
+    /** Cifrado em repouso. */
+    webhookSecret: text("webhook_secret"),
+    /** Origens liberadas para chamar a API pelo navegador (CORS). */
+    allowedOrigins: jsonb("allowed_origins").$type<string[]>().default([]).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("companies_slug_idx").on(t.slug), uniqueIndex("companies_api_key_hash_idx").on(t.apiKeyHash)],
+);
+
+/**
+ * Catálogo por empresa. Preço em centavos, separado por Pix e cartão. Para o AquaBlast as linhas
+ * unit-azul/unit-vermelho/unit-preto/kit espelham checkout.prices (savePricesSettings mantém em dia).
+ */
+export const products = pgTable(
+  "products",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .references(() => companies.id, { onDelete: "cascade" })
+      .notNull(),
+    slug: text("slug").notNull(),
+    sku: text("sku"),
+    name: text("name").notNull(),
+    description: text("description").default("").notNull(),
+    imageUrl: text("image_url"),
+    pricePixCents: integer("price_pix_cents").notNull(),
+    priceCardCents: integer("price_card_cents").notNull(),
+    active: boolean("active").default(true).notNull(),
+    position: integer("position").default(0).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("products_company_slug_idx").on(t.companyId, t.slug), index("products_company_position_idx").on(t.companyId, t.position)],
+);
+
+/**
+ * Log das entregas de webhook de saída da empresa (eventos order.paid e order.shipped). Uma linha por evento,
+ * com o resultado da última tentativa. O corpo enviado fica em `payload` (sem segredos).
+ */
+export const companyWebhookDeliveries = pgTable(
+  "company_webhook_deliveries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .references(() => companies.id, { onDelete: "cascade" })
+      .notNull(),
+    orderId: uuid("order_id"),
+    event: text("event").notNull(),
+    /** pending | delivered | failed */
+    status: text("status").default("pending").notNull(),
+    attempts: integer("attempts").default(0).notNull(),
+    responseStatus: integer("response_status"),
+    error: text("error"),
+    payload: jsonb("payload"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+  },
+  (t) => [index("company_webhook_deliveries_company_idx").on(t.companyId, t.createdAt), index("company_webhook_deliveries_order_idx").on(t.orderId)],
+);
+
+/** Coluna company_id padrão das tabelas por empresa: NOT NULL, default na empresa AquaBlast. */
+const companyIdColumn = () =>
+  uuid("company_id")
+    .default(DEFAULT_COMPANY_ID)
+    .references(() => companies.id, { onDelete: "restrict" })
+    .notNull();
+
 export const orders = pgTable(
   "orders",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    companyId: companyIdColumn(),
     /** Número visível para o cliente e para o admin (do checkout quando existir). */
     orderNumber: text("order_number").notNull(),
     /** Identificador interno do checkout (id da transação/pedido). */
@@ -136,6 +227,7 @@ export const orders = pgTable(
     index("orders_email_idx").on(t.customerEmail),
     index("orders_tracking_code_idx").on(t.trackingCode),
     index("orders_created_at_idx").on(t.createdAt),
+    index("orders_company_created_idx").on(t.companyId, t.createdAt),
   ],
 );
 
@@ -149,6 +241,8 @@ export type OrderItem = {
   checkoutPricing?: {
     productSubtotalCents: number;
     shippingCents: number;
+    /** Frete escolhido (2026-10-11). Ausente em pedidos anteriores à escolha de frete. */
+    shippingMethod?: "free" | "full";
     couponDiscountCents: number;
   };
 };
@@ -334,13 +428,21 @@ export const checkoutCarts = pgTable(
   "checkout_carts",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    companyId: companyIdColumn(),
     /** Token público do link de retomada. Nunca usar o id na URL. */
     token: text("token").notNull().unique(),
     status: cartStatusEnum("status").default("open").notNull(),
     step: cartStepEnum("step").default("dados").notNull(),
     pack: text("pack").notNull(), // unit | kit
     colors: jsonb("colors").$type<string[]>().notNull(), // ["azul"] ou ["azul","preto"]
+    /**
+     * Itens do carrinho multiempresa (API v1 / checkout por slug). NULL no modo legado do AquaBlast,
+     * que continua usando pack + colors.
+     */
+    items: jsonb("items").$type<CartItem[]>(),
     bumpAccepted: boolean("bump_accepted").default(false).notNull(),
+    /** Frete escolhido na etapa de entrega: free | full. O valor cobrado sai de quote() com este campo. */
+    shippingMethod: text("shipping_method").default("free").notNull(),
     amountCents: integer("amount_cents").notNull(),
     customerName: text("customer_name"),
     customerEmail: text("customer_email"),
@@ -375,6 +477,7 @@ export const checkoutCarts = pgTable(
   (t) => [
     index("checkout_carts_status_idx").on(t.status, t.lastActivityAt),
     index("checkout_carts_email_idx").on(t.customerEmail),
+    index("checkout_carts_company_idx").on(t.companyId, t.createdAt),
   ],
 );
 
@@ -384,6 +487,7 @@ export const paymentAttempts = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     orderId: uuid("order_id").references(() => orders.id, { onDelete: "cascade" }).notNull(),
+    companyId: companyIdColumn(),
     cartId: uuid("cart_id").references(() => checkoutCarts.id, { onDelete: "set null" }),
     provider: text("provider").notNull(), // ironpay | mercadopago | fastpay | simulado
     method: text("method").notNull(), // pix | card
@@ -470,6 +574,20 @@ export const buyClicks = pgTable(
   (t) => [uniqueIndex("buy_clicks_event_idx").on(t.eventId), index("buy_clicks_created_idx").on(t.createdAt)],
 );
 
+/**
+ * Item do carrinho multiempresa. productId aponta para products.id; o snapshot (nome, sku, preços) é gravado
+ * no momento em que o carrinho é montado, para o pedido não mudar se o catálogo mudar depois.
+ */
+export type CartItem = {
+  productId: string;
+  quantity: number;
+  slug?: string;
+  name?: string;
+  sku?: string | null;
+  unitPixCents?: number;
+  unitCardCents?: number;
+};
+
 export type CheckoutCart = typeof checkoutCarts.$inferSelect;
 export type PaymentAttempt = typeof paymentAttempts.$inferSelect;
 export type ConversionEvent = typeof conversionEvents.$inferSelect;
@@ -513,4 +631,78 @@ export const pushAlerts = pgTable(
   (t) => [uniqueIndex("push_alerts_dedupe_idx").on(t.dedupeKey)],
 );
 
+/** Coluna bytea (o Drizzle não traz pronta): o driver pg já devolve e aceita Buffer. */
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType() {
+    return "bytea";
+  },
+});
+
+/**
+ * Comentários de clientes exibidos no checkout, cadastrados pelo painel (/admin/checkout/comentarios).
+ * Só os ativos aparecem, na ordem de `position`. Sem fallback no código: sem nenhum ativo, o bloco some.
+ */
+export const checkoutReviews = pgTable(
+  "checkout_reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: companyIdColumn(),
+    author: text("author").notNull(),
+    score: integer("score").notNull(),
+    comment: text("comment").notNull(),
+    position: integer("position").default(0).notNull(),
+    active: boolean("active").default(true).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("checkout_reviews_position_idx").on(t.position), index("checkout_reviews_company_idx").on(t.companyId, t.position)],
+);
+
+/**
+ * Fotos dos comentários do checkout (até 3 por comentário). O arquivo fica no banco porque a produção
+ * roda em Docker sem volume: disco local some a cada deploy. Servidas por /api/checkout/review-image/[id].
+ */
+export const checkoutReviewImages = pgTable(
+  "checkout_review_images",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    reviewId: uuid("review_id")
+      .references(() => checkoutReviews.id, { onDelete: "cascade" })
+      .notNull(),
+    position: integer("position").default(0).notNull(),
+    mime: text("mime").notNull(),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    bytes: bytea("bytes").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("checkout_review_images_review_idx").on(t.reviewId, t.position)],
+);
+
+/**
+ * Arte do banner do checkout por produto e por dispositivo, enviada pelo painel (/admin/checkout).
+ * `product` é "unit-<cor>" ou "kit" e `device` é "desktop" ou "mobile" (listas em lib/checkout/own/banners.ts).
+ * No máximo uma linha por par. Trocar a arte apaga a linha e insere outra, com id novo: a URL muda e o
+ * cache longo da imagem não segura a arte antiga. Servida por /api/checkout/banner-image/[id].
+ */
+export const checkoutBanners = pgTable(
+  "checkout_banners",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: companyIdColumn(),
+    product: text("product").notNull(),
+    device: text("device").notNull(),
+    alt: text("alt").default("").notNull(),
+    mime: text("mime").notNull(),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    bytes: bytea("bytes").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("checkout_banners_company_product_device_idx").on(t.companyId, t.product, t.device)],
+);
+
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+export type Company = typeof companies.$inferSelect;
+export type Product = typeof products.$inferSelect;
+export type CompanyWebhookDelivery = typeof companyWebhookDeliveries.$inferSelect;

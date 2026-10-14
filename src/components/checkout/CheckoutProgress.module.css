@@ -74,6 +74,29 @@
   :global(.ck-reference) .wrap :global(.ck-progress) button { min-height: 54px; font-size: 10px; }
 }
 
+/* Celular (2026-10-11, auditoria de conversão): círculo e nome lado a lado, numa linha só, para o formulário subir.
+   O conector deixa de passar por trás dos círculos e vira um traço entre as etapas. */
+@media (max-width: 767px) {
+  :global(.ck-reference) .wrap { margin-top: 0; }
+  :global(.ck-reference) .wrap :global(.ck-progress) { max-width: none; }
+  :global(.ck-reference) .wrap :global(.ck-progress) ol { display: flex; align-items: center; gap: 6px; }
+  :global(.ck-reference) .wrap :global(.ck-progress) li { display: flex; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; }
+  :global(.ck-reference) .wrap :global(.ck-progress) li:last-child { flex: 0 0 auto; }
+  :global(.ck-reference) .wrap :global(.ck-progress) li::before { content: none; }
+  :global(.ck-reference) .wrap :global(.ck-progress) li:not(:last-child)::after { content: ""; flex: 1 1 8px; min-width: 6px; height: 2px; border-radius: 1px; background: #dbe6eb; }
+  :global(.ck-reference) .wrap :global(.ck-progress) :global(.is-done):not(:last-child)::after { background: #00a0cc; }
+  :global(.ck-reference) .wrap :global(.ck-progress) button { flex: 0 0 auto; flex-direction: row; justify-content: flex-start; gap: 6px; width: auto; min-height: 44px; padding: 0; font-size: 12px; white-space: nowrap; }
+  :global(.ck-reference) .wrap :global(.ck-progress) button > span { flex: 0 0 24px; width: 24px; height: 24px; border-width: 2px; font-size: 12px; }
+}
+
+@media (max-width: 359px) {
+  :global(.ck-reference) .wrap :global(.ck-progress) ol,
+  :global(.ck-reference) .wrap :global(.ck-progress) li,
+  :global(.ck-reference) .wrap :global(.ck-progress) button { gap: 4px; }
+  :global(.ck-reference) .wrap :global(.ck-progress) li:not(:last-child)::after { min-width: 4px; }
+  :global(.ck-reference) .wrap :global(.ck-progress) button > span { flex-basis: 22px; width: 22px; height: 22px; }
+}
+
 .current::after {
   content: "";
   position: absolute;

@@ -245,3 +245,81 @@
   :global(.ck-reference) .banner.banner .copy p { font-size: 8px; }
   :global(.ck-reference) .benefit strong { font-size: 15px; }
 }
+
+/* Celular (2026-10-11, auditoria de conversão): o banner sai da primeira dobra para o campo "Nome completo"
+   aparecer sem rolar. O frete grátis continua na faixa do topo (ShipBar) e o produto escolhido, na barra do resumo.
+   As regras de 760 px acima ficam inertes de propósito: apagar este bloco devolve o banner como era. */
+@media (max-width: 767px) {
+  :global(.ck-reference) .banner.banner:global(.campaign-selected) { display: none; }
+}
+
+/* ---------- Arte pronta do painel (banner por produto, 2026-10-12) ----------
+   Campaign.tsx põe no HTML a arte de computador e a de celular do produto escolhido, cada uma na sua caixa
+   (.art), e marca o banner com data-art-desktop / data-art-mobile. Este bloco decide, só por largura da janela,
+   qual aparece:
+     1100 px ou mais ... arte de computador; sem ela, o banner de texto das regras acima;
+     768 a 1099 px ..... arte de celular; sem ela, o banner de texto;
+     até 767 px ........ arte de celular; sem ela, nada (a regra logo acima).
+   Com arte, o banner é só a imagem: sem borda, fundo nem canto arredondado (canto arredondado cortaria a arte)
+   e com tudo o mais escondido. A caixa tem a proporção do tamanho recomendado no painel (variáveis
+   --campaign-art-*, vindas de BANNER_RECOMMENDED) e a imagem entra com object-fit: contain: arte de outra
+   proporção aparece inteira e centralizada, nunca cortada.
+   A caixa da arte que não é a da faixa fica com display: none. É isso que impede o navegador de baixá-la
+   (imagem com loading="lazy" que não é desenhada não é pedida): não troque por visibility, opacity ou altura 0.
+   Os seletores têm um atributo a mais que as regras acima e por isso vencem sem !important, inclusive a regra
+   que esconde o banner no celular. */
+.banner.banner > .art {
+  display: none;
+  position: absolute;
+  inset: 0;
+}
+
+.banner.banner > .art img {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  object-fit: contain;
+}
+
+@media (min-width: 1100px) {
+  /* Na casca do computador a altura é a de desktop-shell.css (--sh-banner): a mesma caixa com e sem arte, sem
+     pulo ao trocar de produto. Fora da casca (janela baixa) a altura sai da proporção. */
+  :global(.ck-reference) .banner.banner:global(.campaign-selected)[data-art-desktop] {
+    display: block;
+    min-height: 0;
+    aspect-ratio: var(--campaign-art-desktop);
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+  :global(.ck-reference) .banner.banner:global(.campaign-selected)[data-art-desktop] > :not(.artDesktop) { display: none; }
+  :global(.ck-reference) .banner.banner:global(.campaign-selected)[data-art-desktop] > .artDesktop { display: block; }
+  /* Sem arte de computador e sem banner de texto no HTML (textos do tema vazios): nada a mostrar nesta faixa. */
+  :global(.ck-reference) .banner.banner:global(.campaign-selected):not([data-art-desktop]):not([data-banner-text]) { display: none; }
+}
+
+@media (max-width: 1099px) {
+  /* 162 px é a altura do banner de texto nesta faixa: a arte nunca fica mais alta que ele. */
+  :global(.ck-reference) .banner.banner:global(.campaign-selected)[data-art-mobile] {
+    display: block;
+    height: auto;
+    min-height: 0;
+    max-height: 162px;
+    aspect-ratio: var(--campaign-art-mobile);
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+  :global(.ck-reference) .banner.banner:global(.campaign-selected)[data-art-mobile] > :not(.artMobile) { display: none; }
+  :global(.ck-reference) .banner.banner:global(.campaign-selected)[data-art-mobile] > .artMobile { display: block; }
+  :global(.ck-reference) .banner.banner:global(.campaign-selected):not([data-art-mobile]):not([data-banner-text]) { display: none; }
+}
+
+@media (max-width: 767px) {
+  /* Celular: de ponta a ponta, sem as margens laterais do banner de texto. */
+  :global(.ck-reference) .banner.banner:global(.campaign-selected)[data-art-mobile] {
+    width: 100%;
+    margin-inline: 0;
+  }
+}

@@ -51,7 +51,11 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/(.*)", headers: securityHeaders },
-      { source: "/api/(.*)", headers: [{ key: "Cache-Control", value: "private, no-store" }] },
+      // Fotos dos comentários do checkout ficam de fora das duas regras de `no-store` de /api (esta e a de /api/checkout):
+      // a regra daqui vence o cabeçalho que a rota devolve, e a foto precisa de cache longo (id nunca é reaproveitado).
+      // Sem regra aqui, vale o Cache-Control da própria rota: imutável por 1 ano no 200 e `no-store` no 404.
+      // As artes de banner do checkout (/api/checkout/banner-image/) seguem a mesma lógica: arte trocada = id novo.
+      { source: "/api/((?!checkout/(?:review-image|banner-image)/).*)", headers: [{ key: "Cache-Control", value: "private, no-store" }] },
       // Mídia da LP (PageSpeed 2026-10-02: TTL de 4 h pedia ~20 MB de re-download). 7 dias, sem `immutable`: os nomes não têm hash
       // e o dono vai regravar vídeos, então um prazo longo demais prenderia a versão velha no navegador.
       { source: "/videos/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }] },
@@ -76,7 +80,7 @@ const nextConfig: NextConfig = {
       { source: "/.well-known/assetlinks.json", headers: [{ key: "Content-Type", value: "application/json" }, { key: "Cache-Control", value: "no-cache" }] },
       // `:path*` também casa com "/checkout" sem nada depois.
       { source: "/checkout/:path*", headers: [...checkoutHeaders, { key: "Content-Security-Policy", value: checkoutCsp }] },
-      { source: "/api/checkout/:path*", headers: checkoutHeaders },
+      { source: "/api/checkout/:path((?!review-image/|banner-image/).*)", headers: checkoutHeaders },
       { source: "/checkout/pedido/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
     ];
   },

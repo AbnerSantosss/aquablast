@@ -43,10 +43,23 @@
 :global(.ck-reference) .summary .details { padding: 0 16px 4px; border-top: 0; }
 :global(.ck-reference) .toggle:focus-visible { outline: 3px solid var(--c-accent); outline-offset: 3px; }
 
+/* Barra recolhida (celular e tablet, 2026-10-11): miniatura, produto + quantidade, cor, total a pagar e a ação de abrir.
+   O total fica sempre à vista, então o resumo pode nascer recolhido nas 3 etapas sem esconder o valor antes de pagar. */
+:global(.ck-reference) .summary[data-compact="true"] .toggle { justify-content: flex-start; min-height: 60px; padding: 9px 14px; border-radius: 4px; }
+:global(.ck-reference) .barText { display: grid; gap: 3px; min-width: 0; flex: 1 1 0; }
+:global(.ck-reference) .barRow { display: flex; align-items: baseline; justify-content: space-between; gap: 2px 10px; min-width: 0; }
+:global(.ck-reference) .barRow + .barRow { flex-wrap: wrap; }
+:global(.ck-reference) .barProduct { display: flex; align-items: baseline; gap: 7px; min-width: 0; font-size: 13px; line-height: 1.35; }
+:global(.ck-reference) .barProduct strong { font-weight: 800; }
+:global(.ck-reference) .barProduct span, :global(.ck-reference) .barColor { color: var(--c-muted); font-size: 12px; font-weight: 400; line-height: 1.4; white-space: nowrap; }
+:global(.ck-reference) .barRow .headingTotal { line-height: 1.2; }
+:global(.ck-reference) .barAction { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; color: var(--c-primary); font-size: 12px; line-height: 1.4; font-weight: 650; white-space: nowrap; text-decoration: underline; text-underline-offset: 3px; }
+:global(.ck-reference) .barAction svg { flex-shrink: 0; }
+
 :global(.ck-reference) .products { list-style: none; padding: 7px 0 2px; margin: 12px 0 0; border-top: 1px solid #dce8ef; }
 :global(.ck-reference) .product { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 7px 0; }
 :global(.ck-reference) .product + .product { border-top: 1px solid #edf2f5; }
-:global(.ck-reference) .product > img { width: 40px; height: 40px; flex: 0 0 40px; padding: 2px; object-fit: contain; background: #f4f8fa; border: 1px solid #e2ecf2; border-radius: 7px; }
+:global(.ck-reference) .product > img, :global(.ck-reference) .toggle > .barThumb { width: 40px; height: 40px; flex: 0 0 40px; padding: 2px; object-fit: contain; background: #f4f8fa; border: 1px solid #e2ecf2; border-radius: 7px; }
 :global(.ck-reference) .productInfo { min-width: 0; flex: 1; }
 :global(.ck-reference) .productInfo strong { display: block; color: var(--c-primary); font-size: 13px; font-weight: 700; line-height: 1.4; }
 :global(.ck-reference) .productInfo small { display: block; margin-top: 1px; color: var(--c-muted); font-size: 11px; line-height: 1.4; }
@@ -79,10 +92,20 @@
 
 @media (max-width: 1099px) {
   :global(.ck-reference) .summary.summary { position: static; }
+  /* Recolhido, a faixa do benefício sai da frente dos campos: o frete já está na faixa do topo (ShipBar) e a faixa
+     volta ao abrir o resumo. O texto continua no HTML. */
+  :global(.ck-reference) .summary[data-expanded="false"] .benefit { display: none; }
+  /* Nada abaixo de 12 px no resumo do celular e do tablet. No computador os 11 px ficam, para não mexer no encaixe
+     de 100vh (desktop-shell.css). */
+  :global(.ck-reference) .heading small,
+  :global(.ck-reference) .productInfo small,
+  :global(.ck-reference) .quantity,
+  :global(.ck-reference) .bump,
+  :global(.ck-reference) .paymentNote { font-size: 12px; }
 }
 
 @media (max-width: 359px) {
   :global(.ck-reference) .heading { font-size: 12px; gap: 7px; }
   :global(.ck-reference) .headingTotal { font-size: 15px; gap: 3px; }
-  :global(.ck-reference) .heading small { font-size: 10px; }
+  :global(.ck-reference) .summary[data-compact="true"] .toggle { padding-left: 10px; padding-right: 10px; gap: 8px; }
 }

@@ -64,9 +64,11 @@ export function Footer({
           <h2>Atendimento</h2>
           <Link href="/rastrear">Rastrear pedido</Link>
           <Link href="/#duvidas" target="_blank" rel="noopener noreferrer">Perguntas frequentes</Link>
-          <a href={support.href} {...(support.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
-            Fale com a gente
-          </a>
+          {support.href ? (
+            <a href={support.href} {...(support.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+              Fale com a gente
+            </a>
+          ) : null}
         </nav>
         <nav className="ck-footer-nav" aria-label="Políticas da loja">
           <h2>Políticas da loja</h2>

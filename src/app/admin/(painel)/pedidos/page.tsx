@@ -7,6 +7,7 @@ import { requireAdmin } from "@/lib/auth/session";
 import { PAYMENT_LABEL, STATUS_LABEL } from "@/lib/orders/status";
 import { firstParam, formatBRL, formatDateTime, formatPhone, qs, toInputDate } from "@/lib/admin/format";
 import { getKpis, listOrders } from "@/lib/admin/queries";
+import { listCompanies } from "@/lib/companies";
 
 export const metadata: Metadata = { title: "Pedidos" };
 
@@ -45,15 +46,17 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const filters = {
     status: firstParam(sp.status),
     paymentStatus: firstParam(sp.paymentStatus),
+    companyId: firstParam(sp.companyId),
     q: firstParam(sp.q),
     from: explicitFrom || periodRange.from || "",
     to: explicitTo || periodRange.to || "",
   };
   const page = Math.max(1, Number(firstParam(sp.page)) || 1);
-  const [kpis, list] = await Promise.all([getKpis(), listOrders({ ...filters, page })]);
+  const [kpis, list, companyList] = await Promise.all([getKpis(), listOrders({ ...filters, page }), listCompanies()]);
   const params = {
     status: filters.status || undefined,
     paymentStatus: filters.paymentStatus || undefined,
+    companyId: filters.companyId || undefined,
     q: filters.q || undefined,
     from: explicitFrom || undefined,
     to: explicitTo || undefined,
@@ -143,6 +146,19 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
               ))}
             </select>
           </label>
+          {companyList.length > 1 ? (
+            <label className="field">
+              <span>Empresa</span>
+              <select name="companyId" defaultValue={filters.companyId}>
+                <option value="">Todas</option>
+                {companyList.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <label className="field">
             <span>De</span>
             <input type="date" name="from" defaultValue={explicitFrom} />

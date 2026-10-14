@@ -1,6 +1,12 @@
-:global(.ck-reference) .coupon { min-width: 0; padding: 14px 0 16px; }
+/* Cupom recolhido: o botão "Tenho um cupom" é a única coisa visível até o cliente abrir (2026-10-11). */
+:global(.ck-reference) .coupon { min-width: 0; padding: 2px 0 4px; border-bottom: 1px solid var(--c-line); }
+:global(.ck-reference) .coupon .toggle { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; margin: 0; padding: 0; border: 0; background: transparent; color: var(--c-primary); font-size: 13px; line-height: 1.4; font-weight: 650; text-align: left; }
+:global(.ck-reference) .coupon .toggle > svg { flex-shrink: 0; }
+:global(.ck-reference) .coupon .toggle > svg:last-child { margin-left: auto; color: var(--c-muted); }
+:global(.ck-reference) .coupon[data-open="true"] .toggle > svg:last-child { transform: rotate(180deg); }
+:global(.ck-reference) .coupon .panel { padding: 2px 0 12px; }
+:global(.ck-reference) .coupon .panel[hidden] { display: none; }
 :global(.ck-reference) .coupon form { margin: 0; }
-:global(.ck-reference) .coupon label { display: block; margin: 0 0 7px; color: var(--c-muted); font-size: 12px; line-height: 1.4; font-weight: 400; letter-spacing: 0; text-transform: none; }
 :global(.ck-reference) .coupon .entry { display: flex; align-items: stretch; min-width: 0; min-height: 44px; border: 1px solid #c6dce8; border-radius: 4px; background: #f9fcfe; }
 :global(.ck-reference) .coupon .entry input { display: block; width: 100%; min-width: 0; min-height: 44px; flex: 1 1 0; margin: 0; padding: 9px 10px; border: 0; border-radius: 4px 0 0 4px; color: var(--c-primary); background: transparent; font-size: 16px; line-height: 1.4; box-shadow: none; text-transform: uppercase; }
 :global(.ck-reference) .coupon .entry input::placeholder { color: #728995; text-transform: none; font-size: 13px; }
@@ -10,12 +16,12 @@
 :global(.ck-reference) .coupon .entry:focus-within { outline: 2px solid var(--c-accent); outline-offset: 2px; }
 :global(.ck-reference) .coupon .entry input:focus-visible { outline: 0; }
 :global(.ck-reference) .coupon button:focus-visible { outline: 2px solid var(--c-primary); outline-offset: 2px; }
-:global(.ck-reference) .applied { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; margin-top: 5px; font-size: 11px; }
+:global(.ck-reference) .applied { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; margin-top: 5px; font-size: 12px; }
 :global(.ck-reference) .applied > span { display: flex; align-items: center; gap: 5px; min-width: 0; color: var(--c-ok); }
 :global(.ck-reference) .applied b { overflow-wrap: anywhere; }
 :global(.ck-reference) .applied svg { flex-shrink: 0; }
-:global(.ck-reference) .applied button { flex-shrink: 0; min-height: 44px; padding: 4px 0; border: 0; background: none; color: var(--c-primary); font-size: 11px; text-decoration: underline; text-underline-offset: 3px; }
-:global(.ck-reference) .feedback, :global(.ck-reference) .error { margin: 6px 0 0; font-size: 11px; line-height: 1.45; }
+:global(.ck-reference) .applied button { flex-shrink: 0; min-height: 44px; padding: 4px 0; border: 0; background: none; color: var(--c-primary); font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
+:global(.ck-reference) .feedback, :global(.ck-reference) .error { margin: 6px 0 0; font-size: 12px; line-height: 1.45; }
 :global(.ck-reference) .feedback { color: var(--c-ok); }
 :global(.ck-reference) .error { color: #b33232; }
 :global(.ck-reference) .feedback:empty { display: none; }

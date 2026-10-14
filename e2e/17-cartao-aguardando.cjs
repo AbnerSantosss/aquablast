@@ -26,7 +26,7 @@ async function withPage(fn, query = "pack=unit&cor=azul") {
         await L.goCheckout(page, query);
         // Resumo novo (49f7d26): a parcela fica na frase abaixo dos valores (antes ".total-alt").
         await L.revealSummary(page);
-        await L.waitText(L.summaryNote(page, /12x de/), /^ou 12x de R\$ 15,82 sem juros no cartão$/);
+        await L.waitText(L.summaryNote(page, /12x de/), /^ou 12x de R\$ 14,98 sem juros no cartão$/);
         assert.equal(await page.locator(".trust-seals .ck-trust-payments span", { hasText: "Cartão em até 12x" }).count(), 1, "selo do cartao");
         await L.waitText(page.locator("footer.ck-footer .pay-methods"), /Cartão em até 12x/);
         await L.fillDados(page);
@@ -35,14 +35,14 @@ async function withPage(fn, query = "pack=unit&cor=azul") {
         await L.submitEntrega(page);
         // Etapa 3 abre no Pix (unica forma que cobra); o cartao aparece com a parcela no cabecalho.
         await page.locator('.pay-item.is-open input[value="pix"]').waitFor({ timeout: 10000 });
-        await L.waitText(L.payHead(page, "card"), /12x de R\$ 15,82 sem juros/);
+        await L.waitText(L.payHead(page, "card"), /12x de R\$ 14,98 sem juros/);
         await L.payHead(page, "card").click();
         await L.waitText(page.locator(".ck-card-pending"), /em ativação/);
         assert.equal(await page.locator("input[name=cc-number]").count(), 0, "nao pode pedir numero de cartao sem gateway");
         await L.shot(page, "c17-cartao-aguardando");
         await page.locator(".ck-card-pending button").click();
         await page.locator('.pay-item.is-open input[value="pix"]').waitFor({ timeout: 10000 });
-        await L.waitText(L.summaryTotal(page, "pix"), /^R\$ 159,89$/);
+        await L.waitText(L.summaryTotal(page, "pix"), /^R\$ 149,71$/);
         return "cartao visivel com 12x; pagamento levado ao Pix";
       }),
     );

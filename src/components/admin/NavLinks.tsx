@@ -5,9 +5,11 @@ import {
   CreditCard,
   Home,
   LayoutDashboard,
+  Building2,
   Mail,
   MousePointerClick,
   Package,
+  MessageSquareText,
   Palette,
   Receipt,
   Settings,
@@ -57,8 +59,12 @@ const NAV: NavEntry[] = [
   {
     kind: "group",
     label: "Checkout",
-    items: [{ href: "/admin/checkout", label: "Personalizar", icon: Palette, match: (p) => p.startsWith("/admin/checkout") }],
+    items: [
+      { href: "/admin/checkout", label: "Personalizar", icon: Palette, match: (p) => p.startsWith("/admin/checkout") && !p.startsWith("/admin/checkout/comentarios") },
+      { href: "/admin/checkout/comentarios", label: "Comentários", icon: MessageSquareText, match: (p) => p.startsWith("/admin/checkout/comentarios") },
+    ],
   },
+  { kind: "item", item: { href: "/admin/empresas", label: "Empresas", icon: Building2, match: (p) => p.startsWith("/admin/empresas") } },
   { kind: "item", item: { href: "/admin/webhooks", label: "Webhooks", icon: Webhook, match: (p) => p.startsWith("/admin/webhooks") } },
   { kind: "item", item: { href: "/admin/configuracoes", label: "Configurações", icon: Settings, match: (p) => p.startsWith("/admin/configuracoes") } },
   // App instalável + avisos no celular (PWA, pedido do dono em 2026-09-30).

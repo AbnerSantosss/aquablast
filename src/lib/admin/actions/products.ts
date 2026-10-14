@@ -6,6 +6,7 @@ import { ensureBootstrap } from "@/lib/bootstrap";
 import { actorOf, audit } from "@/lib/admin/audit";
 import { bool, int } from "@/lib/admin/form";
 import { fail, ok, type ActionResult } from "@/lib/admin/types";
+import { mirrorDefaultCompanyPrices } from "@/lib/companies";
 import { setSetting, type SettingsMap } from "@/lib/settings";
 
 /**
@@ -56,6 +57,9 @@ export async function savePricesSettings(_prev: ActionResult, fd: FormData): Pro
     kit: { pix: kitPix, card: kitCard },
   };
   await setSetting("checkout.prices", prices, actor);
+  // Multiempresa (0013): os produtos unit-* e kit do AquaBlast espelham checkout.prices. A fonte de verdade
+  // do checkout legado continua sendo o setting; o espelho serve à API v1 e ao /c/aquablast.
+  await mirrorDefaultCompanyPrices(prices);
   await audit(actor, "settings.update", { type: "settings", id: "checkout.prices" }, { keys: ["checkout.prices"] });
   revalidatePath("/admin/produtos");
   revalidateSitePrices();

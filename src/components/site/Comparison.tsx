@@ -4,7 +4,7 @@ import styles from "./Comparison.module.css";
 const features = [
   { label: "Dispara sem bombear", manual: "Não" },
   { label: "Disparos em sequência ao apertar", manual: "Não" },
-  { label: "Recarrega por USB", manual: "Não usa bateria" },
+  { label: "Sem cansar o braço da criança", manual: "Não" },
   { label: "Luz LED", manual: "Não" },
   { label: "Visor incluso", manual: "Não" },
 ];
@@ -13,7 +13,8 @@ export function Comparison() {
   return (
     <section id="comparativo" className={styles.section} aria-labelledby="comparison-title">
       <div className={styles.container}>
-        <h2 id="comparison-title">Por que elétrico muda a brincadeira.</h2>
+        <h2 id="comparison-title">Por que o elétrico muda a brincadeira?</h2>
+        <p className={styles.lead}><strong>Você conhece a cena.</strong> O brinquedo de água chega, a criança bombeia, o braço cansa e logo ele fica esquecido no canto do quintal. O AquaBlast é elétrico: aperta e dispara, sem parar para bombear.</p>
         <div className={styles.tableFrame}>
           <table className={styles.table}>
             <caption className="visually-hidden">AquaBlast x brinquedo de bombear</caption>
@@ -26,7 +27,7 @@ export function Comparison() {
               <tr>
                 <th scope="col"><span className="visually-hidden">Característica</span></th>
                 <th scope="col" className={styles.product}>AquaBlast</th>
-                <th scope="col">Concorrente<br />Brinquedo de bombear</th>
+                <th scope="col">Brinquedo<br />de bombear</th>
               </tr>
             </thead>
             <tbody>

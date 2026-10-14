@@ -1,4 +1,5 @@
 import { type Order, type PaymentStatus } from "@/db/schema";
+import { notifyCompanyWebhook } from "@/lib/companies/webhooks";
 import { sendOrderEmail } from "@/lib/email/send";
 import { ensureAccessCode, getOrderById, transitionOrder, updateOrderFields } from "@/lib/orders/service";
 import { statusFromPayment } from "@/lib/orders/status";
@@ -53,6 +54,7 @@ export async function applyPaymentStatus(args: ApplyPaymentArgs): Promise<ApplyP
       detail.push(`status → ${target}`);
       if (target === "approved") {
         becamePaid = true;
+        void notifyCompanyWebhook(order.id, "order.paid");
         const { code } = await ensureAccessCode(order.id, args.source);
         const mail = await sendOrderEmail(order, "order_confirmed", { accessCode: code, automatic: true });
         detail.push(mail.ok ? "e-mail de confirmação enviado" : `e-mail: ${mail.error ?? mail.skipped}`);

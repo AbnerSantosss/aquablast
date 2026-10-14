@@ -48,7 +48,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const ok = await simulatePixPaid(attempt.providerTransactionId);
     if (!ok) return notFound();
-    const st = await simuladoGateway.fetchStatus(attempt.providerTransactionId);
+    const st = await simuladoGateway.fetchStatus(attempt.providerTransactionId, { companyId: attempt.companyId });
     const out = await syncAttempt(attempt, st, "system");
     const final = out.order ?? order;
     return json({ ok: true, status: publicPaymentState(final, null), orderNumber: final.orderNumber });

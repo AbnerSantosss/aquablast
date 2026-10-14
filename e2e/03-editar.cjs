@@ -24,7 +24,7 @@ async function run(variant) {
     assert.equal(await L.field(page, "number").inputValue(), L.endereco.number);
     // O resumo ".delivery-recipient-summary" saiu: o destinatário fica sempre no campo, preenchido com o nome do cliente.
     assert.equal(await (await L.revealEntregaField(page, "recipient")).inputValue(), L.cliente.name);
-    await page.locator(".ship-opt").waitFor({ timeout: 5000 });
+    await page.locator(".ship-opt.is-selected").waitFor({ timeout: 5000 });
     // Mesmo sem segundo toque de confirmação, um endereço incompleto continua bloqueando a próxima etapa.
     await L.field(page, "number").fill("");
     await L.submitCurrentForm(page);
@@ -33,7 +33,7 @@ async function run(variant) {
     assert.ok(await L.field(page, "number").evaluate((e) => e === document.activeElement), "foco deveria ir ao número");
     await L.waitText(atual, "Entrega");
     await L.field(page, "number").fill("1001");
-    await L.waitText(page.locator(".ship-opt"), /Frete FULL.*Entrega com rastreamento/);
+    await L.waitText(page.locator(".ship-opt.is-selected"), /Frete grátis.*Entrega com rastreamento/);
     assert.ok(await L.btn(page, "Ir para pagamento").isVisible(), "deveria haver uma ação direta de avanço");
     await L.shot(page, `c3-${variant.tag}-editar-entrega`);
     await L.submitEntrega(page);

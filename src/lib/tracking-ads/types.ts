@@ -54,6 +54,13 @@ export const isAdEventName =(v: unknown): v is AdEventName => typeof v === "stri
 export type TrackDestination = "meta" | "ga4";
 
 /**
+ * Evento que SÓ o GA4 recebe (2026-10-11): `add_shipping_info`, quando a etapa de entrega fica completa.
+ * A Meta não tem evento padrão equivalente, por isso ele fica de fora de TrackEventName / AdEventName / AD_EVENT_FUNNEL
+ * (lista de eventos da Meta no painel e envio de teste) e nunca gera linha "meta" em conversion_events.
+ */
+export type Ga4OnlyEventName = "AddShippingInfo";
+
+/**
  * Checkout aberto, antes de existir carrinho (POST /api/checkout/opened, 2026-09-30). Sem dado pessoal: só a
  * seleção, o preço no Pix e o que a própria requisição traz (IP, navegador, cookies de anúncio).
  */
@@ -74,12 +81,12 @@ export interface TrackVisit {
 }
 
 export interface TrackServerEventArgs {
-  name: TrackEventName;
+  name: TrackEventName | Ga4OnlyEventName;
   /**
    * Id determinístico para deduplicação (unique em conversion_events: destination + eventName + eventId):
    * InitiateCheckout → `ic-<visit>` (id da visita ao checkout, sessionStorage; o mesmo na abertura e no carrinho)
    * ou `ic-<cart.token>` quando o navegador não mandou a visita; AddPaymentInfo → `api-<cart.token>`;
-   * Purchase → `pur-<order.orderNumber>`.
+   * Purchase → `pur-<order.orderNumber>`; AddShippingInfo (só GA4) → `asi-<cart.token>`.
    */
   eventId: string;
   cart?: CheckoutCart;

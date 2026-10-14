@@ -7,7 +7,7 @@ import { safeEqual, sha256Hex } from "@/lib/crypto";
 import { getGateway, type Gateway, type GatewayName } from "@/lib/gateways";
 import { errorMessage, log } from "@/lib/log";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
-import { getSettings } from "@/lib/settings";
+import { getCompanySetting, getSetting } from "@/lib/settings";
 import { syncAttempt } from "@/app/api/checkout/_lib/sync";
 
 /**
@@ -25,6 +25,9 @@ import { syncAttempt } from "@/app/api/checkout/_lib/sync";
  * 5. grava em webhook_deliveries (source "gateway"); entrega repetida é reprocessada (é idempotente);
  * 6. **ignora o status do corpo**: tira só o id (`gw.extractWebhook`) e consulta `gw.fetchStatus(id)`;
  * 7. acha a tentativa por (provider, providerTransactionId); não achou → `unmapped`, 200;
+ *    Multiempresa (2026-10-12): a tentativa é achada ANTES da assinatura; o segredo do MP e as credenciais
+ *    do fetchStatus são os da empresa da tentativa (payment_attempts.company_id). Sem tentativa = AquaBlast.
+ *    O token da URL continua um só (global) para todas as empresas;
  * 8. aplica com syncAttempt (pago → pedido pago + carrinho convertido + Purchase; estorno; cancelamento
  *    só sem outra tentativa em aberto; recusa não cancela).
  * Erro interno → 200 { ok:false } de propósito: 5xx faz o gateway reenviar sem parar.
@@ -44,14 +47,23 @@ function isProvider(v: string): v is GatewayName {
   return (PROVIDERS as readonly string[]).includes(v);
 }
 
-async function authorizedPath(ctx: Ctx): Promise<{ provider: GatewayName; secrets: { mpSecret: string } } | null> {
+async function authorizedPath(ctx: Ctx): Promise<{ provider: GatewayName } | null> {
   const { provider, token } = await ctx.params;
   if (!isProvider(provider)) return null;
   await ensureBootstrap();
-  const s = await getSettings(["gateway.postbackToken", "gateway.mercadopago.webhookSecret"] as const);
-  const expected = s["gateway.postbackToken"];
+  const expected = await getSetting("gateway.postbackToken");
   if (!expected || !safeEqual(token, expected)) return null;
-  return { provider, secrets: { mpSecret: s["gateway.mercadopago.webhookSecret"] } };
+  return { provider };
+}
+
+/** Tentativa do postback por (provider, transactionId). Usada para saber a empresa antes de validar a assinatura. */
+async function findAttempt(provider: GatewayName, transactionId: string | null) {
+  if (!transactionId) return null;
+  return (
+    (await db.query.paymentAttempts.findFirst({
+      where: and(eq(paymentAttempts.provider, provider), eq(paymentAttempts.providerTransactionId, transactionId)),
+    })) ?? null
+  );
 }
 
 /** Alguns gateways fazem GET/ping na URL antes de salvar. */
@@ -82,7 +94,18 @@ export async function POST(request: Request, ctx: Ctx): Promise<Response> {
   // Query entra no hash: o Mercado Pago manda o id também em ?data.id= (o token fica no caminho, não aqui).
   const bodyHash = sha256Hex(`${SOURCE}:${provider}:${url.search}:${raw}`);
 
-  const verified = await verify(gw, auth.secrets.mpSecret, request.headers, raw, url);
+  // Id e tentativa antes da assinatura: o segredo do webhook é o da empresa dona da tentativa.
+  let transactionId: string | null = null;
+  try {
+    transactionId = gw.extractWebhook(payload, url).transactionId;
+  } catch {
+    transactionId = null;
+  }
+  const attempt = await findAttempt(provider, transactionId);
+  const companyId = attempt?.companyId ?? null;
+  const mpSecret = provider === "mercadopago" ? await getCompanySetting(companyId, "gateway.mercadopago.webhookSecret") : "";
+
+  const verified = await verify(gw, mpSecret, request.headers, raw, url, companyId);
   if (!verified.ok) {
     await recordDelivery({ provider, bodyHash, headers, payload, status: "unauthorized", detail: verified.reason, orderId: null });
     log.warn("webhook gateway recusado", { ip, provider, reason: verified.reason });
@@ -96,22 +119,18 @@ export async function POST(request: Request, ctx: Ctx): Promise<Response> {
   }
 
   try {
-    const { transactionId } = gw.extractWebhook(payload, url);
     if (!transactionId) {
       await finish(delivery.id, "ignored", "sem id de transação no postback", null);
       return Response.json({ ok: true, status: "ignored" });
     }
 
-    const attempt = await db.query.paymentAttempts.findFirst({
-      where: and(eq(paymentAttempts.provider, provider), eq(paymentAttempts.providerTransactionId, transactionId)),
-    });
     if (!attempt) {
       await finish(delivery.id, "unmapped", `transação ${transactionId.slice(0, 80)} sem tentativa de pagamento conhecida`, null);
       return Response.json({ ok: true, status: "unmapped" });
     }
 
     // O status do corpo é ignorado: a fonte da verdade é a consulta ao gateway.
-    const st = await gw.fetchStatus(transactionId);
+    const st = await gw.fetchStatus(transactionId, { companyId: attempt.companyId });
     if (st.status === "error") {
       await finish(delivery.id, "error", `consulta ao gateway falhou${st.reason ? `: ${st.reason.slice(0, 200)}` : ""}`, attempt.orderId);
       return Response.json({ ok: false, deliveryId: delivery.id }, { status: 200 });
@@ -134,7 +153,7 @@ const tooLarge = () => Response.json({ ok: false, error: "Corpo acima de 256 KB"
 
 type Verified = { ok: true; mode: "none" | "x-signature" | "gateway" } | { ok: false; reason: string };
 
-async function verify(gw: Gateway, mpSecret: string, h: Headers, rawBody: string, url: URL): Promise<Verified> {
+async function verify(gw: Gateway, mpSecret: string, h: Headers, rawBody: string, url: URL, companyId: string | null): Promise<Verified> {
   if (gw.name === "mercadopago") {
     // Validação local do x-signature. Sem segredo no painel, vale só o token da URL.
     if (!mpSecret) return { ok: true, mode: "none" };
@@ -142,7 +161,7 @@ async function verify(gw: Gateway, mpSecret: string, h: Headers, rawBody: string
   }
   if (!gw.verifyWebhook) return { ok: true, mode: "none" };
   try {
-    return (await gw.verifyWebhook({ headers: h, rawBody, url })) ? { ok: true, mode: "gateway" } : { ok: false, reason: "assinatura do gateway não confere" };
+    return (await gw.verifyWebhook({ headers: h, rawBody, url }, companyId ? { companyId } : undefined)) ? { ok: true, mode: "gateway" } : { ok: false, reason: "assinatura do gateway não confere" };
   } catch (err) {
     return { ok: false, reason: `falha ao verificar assinatura: ${errorMessage(err).slice(0, 200)}` };
   }

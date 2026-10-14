@@ -24,6 +24,7 @@ export function StepDados({
   busy,
   buttonLabel,
   error,
+  hideSubmit = false,
 }: {
   data: FormData;
   onChange: (key: FieldKey, value: string) => void;
@@ -33,18 +34,20 @@ export function StepDados({
   busy: boolean;
   buttonLabel: string;
   error: ReactNode;
+  /** Checkout em uma página (2026-10-14): sem o botão "Ir para entrega"; o Enter não envia nada (quem cobra é o botão de pagar). */
+  hideSubmit?: boolean;
 }) {
   const keepCpf = !!cpfMasked && data.cpf === "";
   const ready = fullName(data.name) && emailOk(data.email) && validMobile(data.phone) && (validCPF(data.cpf) || keepCpf) && !busy;
   const continueLabel = buttonLabel.trim().toUpperCase() === "CONTINUAR" ? "Ir para entrega" : buttonLabel;
   return (
-    <form onSubmit={onSubmit} noValidate>
+    <form onSubmit={hideSubmit ? (e) => e.preventDefault() : onSubmit} noValidate>
       <div className="form-fields">
         <Field name="name" label="Nome completo" placeholder="Digite seu nome completo" value={data.name} onChange={onChange} opts={{ autoComplete: "name", autoCapitalize: "words", maxLength: 120, enterKeyHint: "next", ok: fullName(data.name) }} />
         <Field
           name="email"
           label="E-mail"
-          placeholder="voce@exemplo.com"
+          placeholder="Digite seu melhor e-mail"
           value={data.email}
           onChange={onChange}
           opts={{ type: "email", inputMode: "email", autoComplete: "email", autoCapitalize: "none", autoCorrect: "off", spellCheck: false, maxLength: 160, enterKeyHint: "next", ok: emailOk(data.email), onBlur: onContactBlur }}
@@ -67,12 +70,20 @@ export function StepDados({
             opts={{ type: "tel", autoComplete: "tel", inputMode: "tel", maxLength: 20, enterKeyHint: "done", ok: validMobile(data.phone), onBlur: onContactBlur }}
           />
         </div>
+        {/* Cada finalidade abaixo descreve o que o código faz (auditoria de 2026-10-11): o checkout não cria conta de
+            cliente; o e-mail recebe a confirmação e o rastreio; o celular fica no pedido para contato; o CPF vai ao
+            processador como identificação do pagador. Não citar nota fiscal: o sistema não emite. O texto é curto de
+            propósito: cabe em duas linhas na coluna do computador (uma a mais que a frase antiga). */}
         <p className="inline-help">
-          <LockKeyhole size={14} aria-hidden="true" /> Usaremos seus dados só para acompanhar esta compra.
+          <LockKeyhole size={14} aria-hidden="true" />
+          <span>
+            <strong>Compra rápida, sem precisar criar uma conta.</strong> E-mail: confirmação e rastreio do pedido. Celular: contato
+            sobre o pedido. CPF: identifica o pagador.
+          </span>
         </p>
       </div>
       {error}
-      <div className="ck-actions">
+      {hideSubmit ? null : <div className="ck-actions">
         {/* Sem `disabled` (2026-10-03): o botão apagado parecia morto e o toque nele não dava retorno. Ocupado = giro no
             próprio botão (`is-loading`) e `aria-busy`; o envio em dobro é barrado em `next` (Checkout). O mousedown sem
             ação padrão mantém o foco no campo: o 1º toque não fecha o teclado nem move a tela debaixo do dedo. */}
@@ -84,7 +95,7 @@ export function StepDados({
         >
           {continueLabel}
         </button>
-      </div>
+      </div>}
     </form>
   );
 }

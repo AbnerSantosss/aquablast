@@ -36,6 +36,8 @@ export interface OrderSummary {
   total: string;
   /** Frete nominal salvo na compra; ausente nos pedidos antigos sem snapshot. */
   shipping?: string | null;
+  /** Nome do frete pago ("Frete FULL"); sem ele a linha se chama só "Frete". */
+  shippingLabel?: string | null;
   address: string;
   email: string | null;
 }
@@ -156,7 +158,7 @@ export function OrderConfirmed({
               <dt>Pagamento</dt>
               <dd>{summary.payment}</dd>
             </div>
-            {summary.shipping ? <div><dt>Frete FULL</dt><dd>{summary.shipping}</dd></div> : null}
+            {summary.shipping ? <div><dt>{summary.shippingLabel ?? "Frete"}</dt><dd>{summary.shipping}</dd></div> : null}
             <div>
               <dt>Total</dt>
               <dd>
@@ -182,10 +184,12 @@ export function OrderConfirmed({
             <ArrowLeft size={20} aria-hidden="true" />
             Voltar para a loja
           </Link>
-          <a className="oc-support" href={support.href} {...(support.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
-            <Headset size={20} aria-hidden="true" />
-            Falar com o suporte
-          </a>
+          {support.href ? (
+            <a className="oc-support" href={support.href} {...(support.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+              <Headset size={20} aria-hidden="true" />
+              Falar com o suporte
+            </a>
+          ) : null}
         </div>
         <p className="oc-calm">
           <ShieldCheck size={20} aria-hidden="true" />
@@ -198,9 +202,11 @@ export function OrderConfirmed({
           <nav aria-label="Ajuda">
             <Link href="/rastrear">Rastrear pedido</Link>
             <Link href={RETURNS_PATH}>Trocas e devoluções</Link>
-            <a href={support.href} {...(support.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
-              Suporte
-            </a>
+            {support.href ? (
+              <a href={support.href} {...(support.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+                Suporte
+              </a>
+            ) : null}
           </nav>
           <p>{theme.footerText}</p>
           <small>

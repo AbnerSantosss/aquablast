@@ -1,7 +1,8 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { errorMessage, log } from "@/lib/log";
-import { getSettings } from "@/lib/settings";
-import type { ChargeInput, ChargeResult, Gateway, GatewayStatus, StatusResult } from "./types";
+import { getCompanySettings } from "@/lib/settings";
+import { companyOf, itemsForGateway } from "./items";
+import type { ChargeInput, ChargeResult, Gateway, GatewayContext, GatewayStatus, StatusResult } from "./types";
 
 /**
  * Mercado Pago — Checkout Transparente (API de pagamentos v1). Contrato em `01 - Site Pronto/PLANO-GATEWAY-MERCADOPAGO.md`.
@@ -40,8 +41,9 @@ const GENERIC_REFUSAL = "Pagamento não autorizado. Confira os dados do cartão,
 const digits = (v: string | undefined) => (v ?? "").replace(/\D/g, "");
 const toReais = (cents: number) => Math.round(cents) / 100;
 
-async function creds() {
-  return getSettings(["gateway.mercadopago.accessToken", "gateway.mercadopago.publicKey", "gateway.mercadopago.webhookSecret"] as const);
+/** Credenciais da empresa (multiempresa): outra empresa sem credencial própria fica vazia, nunca usa a do AquaBlast. */
+async function creds(ctx?: GatewayContext) {
+  return getCompanySettings(companyOf(ctx), ["gateway.mercadopago.accessToken", "gateway.mercadopago.publicKey", "gateway.mercadopago.webhookSecret"] as const);
 }
 
 type MpResponse = { status: number; ok: boolean; body: Record<string, unknown> | null; timedOut: boolean };
@@ -141,25 +143,39 @@ function payer(input: ChargeInput): Record<string, unknown> {
   };
 }
 
+/**
+ * `additional_info.items` (campo documentado do /v1/payments) só no modo multiempresa: com vários itens ou
+ * itens do catálogo. No legado (um item consolidado) o corpo fica idêntico ao de antes.
+ */
+function additionalInfo(input: ChargeInput): Record<string, unknown> {
+  const lines = itemsForGateway(input);
+  if (lines.length <= 1 && !lines.some((l) => l.productId)) return {};
+  return {
+    additional_info: {
+      items: lines.map((l) => ({ id: (l.productId ?? l.sku).slice(0, 64), title: l.title.slice(0, 250), quantity: l.quantity, unit_price: toReais(l.unitCents) })),
+    },
+  };
+}
+
 export const mercadopagoGateway: Gateway = {
   name: "mercadopago",
   label: "Mercado Pago",
   supports: { pix: true, card: true },
   tokenizesCard: true,
 
-  async configured() {
-    const c = await creds();
+  async configured(ctx) {
+    const c = await creds(ctx);
     // webhookSecret é exigido: sem ele o postback do MP não pode ser validado e o Pix pago só apareceria por consulta.
     return !!(c["gateway.mercadopago.accessToken"] && c["gateway.mercadopago.publicKey"] && c["gateway.mercadopago.webhookSecret"]);
   },
 
-  async publicConfig(): Promise<Record<string, string>> {
-    const c = await creds();
+  async publicConfig(ctx): Promise<Record<string, string>> {
+    const c = await creds(ctx);
     return c["gateway.mercadopago.publicKey"] ? { publicKey: c["gateway.mercadopago.publicKey"] } : {};
   },
 
   async charge(input: ChargeInput): Promise<ChargeResult> {
-    const c = await creds();
+    const c = await creds({ companyId: input.companyId });
     const accessToken = c["gateway.mercadopago.accessToken"];
     if (!accessToken) return { ok: false, status: "error", transactionId: null, message: "Pagamento indisponível no momento.", reason: "mercadopago sem access token" };
     if (input.card) {
@@ -178,6 +194,7 @@ export const mercadopagoGateway: Gateway = {
         description,
         payment_method_id: "pix",
         payer: payer(input),
+        ...additionalInfo(input),
         ...(notify ? { notification_url: notify } : {}),
         // date_of_expiration fica de fora: o MP exige no mínimo 30 min e usa 24 h por padrão.
         // O cronômetro de pixTtlSeconds é só da tela (mesma regra da IronPay, D10).
@@ -195,6 +212,7 @@ export const mercadopagoGateway: Gateway = {
         payment_method_id: input.cardPaymentMethodId,
         ...(issuer !== undefined ? { issuer_id: issuer } : {}),
         payer: payer(input),
+        ...additionalInfo(input),
         ...(notify ? { notification_url: notify } : {}),
       };
     }
@@ -242,8 +260,8 @@ export const mercadopagoGateway: Gateway = {
     };
   },
 
-  async fetchStatus(transactionId): Promise<StatusResult> {
-    const { "gateway.mercadopago.accessToken": accessToken } = await creds();
+  async fetchStatus(transactionId, ctx): Promise<StatusResult> {
+    const { "gateway.mercadopago.accessToken": accessToken } = await creds(ctx);
     if (!accessToken) return { status: "error", reason: "mercadopago sem access token" };
     if (!/^\d+$/.test(transactionId)) return { status: "error", reason: "id de pagamento inválido" };
     const res = await call(`/v1/payments/${transactionId}`, { method: "GET" }, accessToken);
@@ -254,8 +272,8 @@ export const mercadopagoGateway: Gateway = {
     return { status, paidAt: null, reason: [typeof res.body.status === "string" ? res.body.status : "", detail].filter(Boolean).join(" ") || undefined };
   },
 
-  async refund(transactionId, amountCents) {
-    const { "gateway.mercadopago.accessToken": accessToken } = await creds();
+  async refund(transactionId, amountCents, ctx) {
+    const { "gateway.mercadopago.accessToken": accessToken } = await creds(ctx);
     if (!accessToken) return { ok: false, message: "Mercado Pago sem access token configurado." };
     if (!/^\d+$/.test(transactionId)) return { ok: false, message: "Id de pagamento do Mercado Pago inválido." };
     if (!Number.isInteger(amountCents) || amountCents <= 0) return { ok: false, message: "Valor de estorno inválido." };
@@ -282,8 +300,8 @@ export const mercadopagoGateway: Gateway = {
     return { transactionId: id && /^\d+$/.test(id) ? id : null };
   },
 
-  async verifyWebhook({ headers, url }) {
-    const { "gateway.mercadopago.webhookSecret": secret } = await creds();
+  async verifyWebhook({ headers, url }, ctx) {
+    const { "gateway.mercadopago.webhookSecret": secret } = await creds(ctx);
     if (!secret) return false;
     const sig = headers.get("x-signature") ?? "";
     let ts = "";

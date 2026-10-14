@@ -1,5 +1,4 @@
-import { money } from "@/lib/checkout/own/masks";
-import { FULL_SHIPPING_CENTS, FULL_SHIPPING_LABEL } from "@/lib/checkout/own/shipping";
+import { PRAZO_RESUMO } from "@/lib/checkout/own/prazo-texto";
 import type { SitePrices } from "@/lib/site/prices";
 import type { FaqItem } from "@/lib/site/types";
 
@@ -11,11 +10,11 @@ function paymentAnswer(p: SitePrices): string {
       ? `Pix ou cartão de crédito em até ${n}x sem juros. No cartão, a unidade sai por ${n}x de ${p.unit.installment} (total ${p.unit.card}).`
       : `Pix ou cartão de crédito. No cartão, a unidade sai por ${p.unit.card}.`;
   const discount = p.unit.pixDiscount ? `, com ${p.unit.pixDiscount} de desconto` : "";
-  return `${card} No Pix à vista você paga ${p.unit.pix} pela unidade${discount}. O ${FULL_SHIPPING_LABEL} de ${money(FULL_SHIPPING_CENTS)} é somado ao valor da unidade no checkout. O kit com duas custa ${p.kit.pix} no Pix ou ${p.kit.card} no cartão e tem frete grátis.`;
+  return `${card} No Pix à vista você paga ${p.unit.pix} pela unidade${discount}. O kit com duas custa ${p.kit.pix} no Pix ou ${p.kit.card} no cartão. O frete é grátis para todo o Brasil.`;
 }
 
 // Fonte única do FAQ visível, do JSON-LD e do /llms.txt. Os preços vêm de quem chama (getSitePrices).
-// Campanha de verão: somente atributos confirmados; não estimar prazo, alcance ou bateria.
+// Campanha de verão: somente atributos confirmados; não estimar alcance ou bateria. Prazos: informados pelo dono em 2026-10-14.
 export const buildFaq = (prices: SitePrices): FaqItem[] => [
   {
     question: "O que é o AquaBlast?",
@@ -61,7 +60,7 @@ export const buildFaq = (prices: SitePrices): FaqItem[] => [
   {
     question: "Quanto tempo leva para chegar?",
     answer:
-      `O prazo depende da sua região. O ${FULL_SHIPPING_LABEL} custa ${money(FULL_SHIPPING_CENTS)} para uma unidade, para todo o Brasil. Consulte as informações de entrega e, se precisar receber até uma data específica, fale com o atendimento antes de comprar. Depois do envio, acompanhe o pedido em Rastrear pedido, aqui no site.`,
+      `${PRAZO_RESUMO} Se precisar receber até uma data específica, fale com o atendimento antes de comprar. Depois do envio, acompanhe o pedido em Rastrear pedido, aqui no site.`,
   },
   {
     question: "Como acompanhar meu pedido ou falar com o suporte?",

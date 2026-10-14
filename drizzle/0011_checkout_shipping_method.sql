@@ -1,0 +1,1 @@
+ALTER TABLE "checkout_carts" ADD COLUMN "shipping_method" text DEFAULT 'free' NOT NULL;

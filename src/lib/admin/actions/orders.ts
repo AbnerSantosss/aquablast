@@ -17,6 +17,7 @@ import { isOrderStatus, isPaymentStatus } from "@/lib/admin/queries";
 import { fail, ok, type ActionResult } from "@/lib/admin/types";
 import { getCartById } from "@/lib/checkout/own/cart";
 import { errorMessage, log } from "@/lib/log";
+import { notifyCompanyWebhook } from "@/lib/companies/webhooks";
 import { trackServerEvent, trackServerEventDetailed } from "@/lib/tracking-ads/dispatch";
 
 async function loadOrder(formData: FormData) {
@@ -170,6 +171,7 @@ export async function updatePayment(_prev: ActionResult, formData: FormData): Pr
   // a reserva em conversion_events barra o 2º envio. Depois da resposta, para o painel não esperar a Meta.
   if (ps === "paid" && order.paymentStatus !== "paid") {
     const orderId = order.id;
+    void notifyCompanyWebhook(orderId, "order.paid");
     after(async () => {
       try {
         const paid = await getOrderById(orderId);

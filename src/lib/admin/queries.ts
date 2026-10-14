@@ -15,6 +15,7 @@ export const isPaymentStatus = (v: string): v is PaymentStatus => (PAYMENT_STATU
 export interface OrderFilters {
   status?: string;
   paymentStatus?: string;
+  companyId?: string;
   q?: string;
   from?: string;
   to?: string;
@@ -29,6 +30,7 @@ export async function listOrders(f: OrderFilters): Promise<{ rows: Order[]; tota
   const where: SQL[] = [];
   if (f.status && isOrderStatus(f.status)) where.push(eq(orders.status, f.status));
   if (f.paymentStatus && isPaymentStatus(f.paymentStatus)) where.push(eq(orders.paymentStatus, f.paymentStatus));
+  if (f.companyId && /^[0-9a-f-]{36}$/i.test(f.companyId)) where.push(eq(orders.companyId, f.companyId));
   const q = (f.q ?? "").trim().slice(0, 100);
   if (q) {
     const like = `%${escapeLike(q)}%`;

@@ -37,6 +37,7 @@ const ROUTES = [
   "/admin/gateways#credenciais",
   "/admin/gateways#postback",
   "/admin/checkout",
+  "/admin/checkout/comentarios",
   "/admin/webhooks",
   { from: "/admin/webhooks", link: /^\/admin\/webhooks\/[^/?#]+$/, name: "/admin/webhooks/[id]" },
   "/admin/configuracoes",

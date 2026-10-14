@@ -6,21 +6,24 @@ import { checkoutCarts, paymentAttempts, type CheckoutCart, type Order } from "@
 import { ensureBootstrap } from "@/lib/bootstrap";
 import { getCartByToken } from "@/lib/checkout/own/cart";
 import { selectionFromCart, skuOf, titleOf } from "@/lib/checkout/own/catalog";
+import { isItemsCart, ItemsCartError, itemsTitle, quoteItems, type ItemsQuote } from "@/lib/checkout/own/items-cart";
 import { cardBrandOf, cardLast4, onlyDigits, validCardExpiry, validCPF, validLuhn } from "@/lib/checkout/own/masks";
 import { createOrderFromCart, effectiveSelection, orderContactFromCart } from "@/lib/checkout/own/order";
+import { orderItemsFromItemsQuote } from "@/lib/checkout/own/order-pricing";
 import { quote, type Quote } from "@/lib/checkout/own/pricing";
+import { shippingMethodOf } from "@/lib/checkout/own/shipping";
 import { describeInputError, paySchema, type PayInput } from "@/lib/checkout/own/schemas";
 import { decryptText } from "@/lib/crypto";
 import { notifyCheckoutEvent, type CheckoutAlert } from "@/lib/email/checkout-alerts";
 import { sendOrderEmail } from "@/lib/email/send";
 import { isProd } from "@/lib/env";
-import { gatewayFor, type ChargeInput, type ChargeResult, type Gateway } from "@/lib/gateways";
+import { gatewayFor, legacyChargeItems, type ChargeInput, type ChargeItem, type ChargeResult, type Gateway } from "@/lib/gateways";
 import { errorMessage, log } from "@/lib/log";
 import { applyPaymentStatus } from "@/lib/orders/payment";
 import { addOrderEvent, getOrderById, updateOrderFields } from "@/lib/orders/service";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { pixQrForScreen } from "@/lib/pix/qr";
-import { getSettings } from "@/lib/settings";
+import { getCompanySetting, getSettings } from "@/lib/settings";
 import { appUrl, fail, json, originAllowed, readJson, tooMany } from "../_lib/http";
 import { onOrderPaid, postbackUrlFor } from "../_lib/sync";
 
@@ -38,6 +41,9 @@ import { onOrderPaid, postbackUrlFor } from "../_lib/sync";
  * - O valor vem sempre de quote() no servidor. Cartão recusado NÃO cancela o pedido.
  * - Avisos à equipe por e-mail (checkout-alerts, depois da resposta): Pix gerado, cada tentativa no cartão
  *   (aprovada, em análise, recusada) e "falha" quando o gateway não cobrou ou a forma de pagamento está fora.
+ * - Carrinho de itens (/c/[slug], multiempresa 2026-10-13): cota com quoteItems (preços atuais da tabela products),
+ *   sem bump nem cupom; o pedido e o ChargeInput levam todos os itens (+ frete separado). Pix TTL da empresa.
+ *   Os avisos à equipe ficam desligados nesse modo (o texto deles é do AquaBlast).
  */
 export const dynamic = "force-dynamic";
 
@@ -84,8 +90,9 @@ function checkCard(input: PayInput, gw: Gateway): CardCheck {
   return { ok: true, brand: cardBrandOf(number), last4: cardLast4(number) };
 }
 
-/** Aviso à equipe depois da resposta; notifyCheckoutEvent nunca lança. */
+/** Aviso à equipe depois da resposta; notifyCheckoutEvent nunca lança. Carrinho de itens: sem aviso por ora. */
 function alertTeam(a: CheckoutAlert): void {
+  if (isItemsCart(a.cart)) return;
   after(() => notifyCheckoutEvent(a));
 }
 
@@ -105,15 +112,22 @@ function hasCustomerAndAddress(cart: CheckoutCart): boolean {
 }
 
 /** Pix ainda válido do mesmo pedido/valor/gateway: devolve o mesmo código em vez de cobrar de novo. */
-async function reusablePix(cart: CheckoutCart, q: Quote, gw: Gateway): Promise<Order | null> {
+async function reusablePix(cart: CheckoutCart, q: Quote, gw: Gateway, itemsQ: ItemsQuote | null): Promise<Order | null> {
   if (!cart.orderId) return null;
   const order = await getOrderById(cart.orderId);
   if (!order || order.paymentStatus !== "pending" || order.status === "cancelled") return null;
   if (order.paymentMethod !== "pix" || !order.pixCode || !order.pixExpiresAt) return null;
   if (order.pixExpiresAt.getTime() - Date.now() < 60_000) return null;
   if (order.amountTotal !== (q.amountCents / 100).toFixed(2)) return null;
-  const expectedSku = skuOf(effectiveSelection(cart, q));
-  if (!order.items.some((i) => i.sku === expectedSku)) return null;
+  if (itemsQ) {
+    // Mesma lista de produtos/quantidades do Pix já gerado (o pedido guarda sku/quantidade por linha).
+    const want = itemsQ.lines.map((l) => `${l.sku ?? l.name}:${l.quantity}`).sort().join("|");
+    const have = order.items.map((i) => `${i.sku ?? i.name}:${i.quantity}`).sort().join("|");
+    if (want !== have) return null;
+  } else {
+    const expectedSku = skuOf(effectiveSelection(cart, q));
+    if (!order.items.some((i) => i.sku === expectedSku)) return null;
+  }
   const attempt = await db.query.paymentAttempts.findFirst({
     where: and(eq(paymentAttempts.orderId, order.id), eq(paymentAttempts.method, "pix"), eq(paymentAttempts.provider, gw.name), eq(paymentAttempts.status, "pending")),
     orderBy: desc(paymentAttempts.createdAt),
@@ -149,16 +163,21 @@ export async function POST(request: Request): Promise<Response> {
   if (cart.status === "converted" || cart.status === "recovered") return fail(409, "Este pedido já foi pago.");
   if (!hasCustomerAndAddress(cart)) return fail(409, "Complete seus dados e o endereço antes de pagar.");
 
-  const gw = await gatewayFor(input.method);
+  // Multiempresa: escolha e credenciais do gateway são da empresa do carrinho (AquaBlast = settings globais, como antes).
+  const companyId = cart.companyId;
+  const gw = await gatewayFor(input.method, companyId);
   if (!gw) {
     alertTeam({ event: "falha", cart, attempt: { method: input.method, status: "error" }, problem: `Nenhum gateway ativo e configurado para ${input.method === "pix" ? "Pix" : "cartão"} (confira /admin/gateways).` });
+    // Carrinho de itens (/c/[slug]): credencial nunca é herdada do AquaBlast; sem gateway próprio a loja não cobra.
+    if (isItemsCart(cart)) return fail(503, `Esta loja ainda não tem ${input.method === "pix" ? "Pix" : "cartão"} configurado para receber pagamentos. Fale com a loja.`, { code: "no_gateway" });
     return fail(503, "Esta forma de pagamento está indisponível. Escolha outra.");
   }
 
   const card = checkCard(input, gw);
   if (!card.ok) return card.response;
 
-  const bump = s["checkout.bumpEnabled"] && input.bump;
+  const itemsMode = isItemsCart(cart) && !!cart.items;
+  const bump = !itemsMode && s["checkout.bumpEnabled"] && input.bump;
   const sel = selectionFromCart(cart);
   if (bump && sel.pack === "unit") {
     // A 2ª unidade tem cor própria (não repete a da 1ª). Sem cor não cobra: a tela bloqueia antes, isto é a trava do servidor.
@@ -169,7 +188,18 @@ export async function POST(request: Request): Promise<Response> {
       cart.colors = colors; // SKU, itens do pedido e reusablePix leem colors[1]
     }
   }
-  const q = await quote(sel.pack, input.method, bump, input.installments, input.coupon);
+  // O frete vem do carrinho (gravado ao sair da etapa de entrega), nunca do corpo do pagamento.
+  let itemsQ: ItemsQuote | null = null;
+  if (itemsMode && cart.items) {
+    try {
+      itemsQ = await quoteItems(companyId, cart.items, input.method, input.installments, shippingMethodOf(cart.shippingMethod));
+    } catch (err) {
+      if (err instanceof ItemsCartError) return fail(409, "Um produto do carrinho ficou indisponível. Recarregue a página.");
+      throw err;
+    }
+  }
+  const q: Quote = itemsQ ?? (await quote(sel.pack, input.method, bump, input.installments, input.coupon, shippingMethodOf(cart.shippingMethod)));
+  const pixTtlSeconds = itemsMode ? await getCompanySetting(companyId, "checkout.pixTtlSeconds") : s["checkout.pixTtlSeconds"];
   if (input.method === "card" && input.installments > q.installments) return fail(400, "Número de parcelas indisponível.", { field: "installments" });
 
   const postbackUrl = await postbackUrlFor(gw.name);
@@ -180,7 +210,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   if (input.method === "pix") {
-    const existing = await reusablePix(cart, q, gw);
+    const existing = await reusablePix(cart, q, gw, itemsQ);
     if (existing?.pixCode && existing.pixExpiresAt) {
       // O cliente pode ter corrigido seus dados sem alterar valor ou produto.
       // Atualiza a entrega, preservando o código e a tentativa de Pix ainda válida.
@@ -206,7 +236,7 @@ export async function POST(request: Request): Promise<Response> {
 
   let order: Order;
   try {
-    ({ order } = await createOrderFromCart(cart, q));
+    ({ order } = await createOrderFromCart(cart, q, itemsQ ? orderItemsFromItemsQuote(itemsQ) : undefined));
   } catch (err) {
     log.error("checkout pay: falha ao criar pedido", { cartId: cart.id, error: errorMessage(err) });
     alertTeam({ event: "falha", cart, attempt: { method: input.method, status: "error", amountCents: q.amountCents, gateway: gw.name }, problem: "Não foi possível criar o pedido (erro interno; veja os logs)." });
@@ -217,6 +247,7 @@ export async function POST(request: Request): Promise<Response> {
   await db.insert(paymentAttempts).values({
     id: attemptId,
     orderId: order.id,
+    companyId: order.companyId,
     cartId: cart.id,
     provider: gw.name,
     method: input.method,
@@ -228,15 +259,25 @@ export async function POST(request: Request): Promise<Response> {
   });
 
   const effective = effectiveSelection(cart, q);
+  const title = itemsQ ? itemsTitle(itemsQ.lines) : titleOf(effective);
+  const sku = itemsQ ? (itemsQ.lines.length === 1 && itemsQ.lines[0].sku ? itemsQ.lines[0].sku : `ITENS-${itemsQ.lines.length}`) : skuOf(effective);
+  // Carrinho de itens: uma linha por produto com o preço unitário do método; o frete vai em shippingCents.
+  const chargeItems: ChargeItem[] = itemsQ
+    ? itemsQ.lines.map((l) => ({ title: l.name, sku: l.sku ?? l.slug, quantity: l.quantity, unitCents: l.unitCents, productId: l.productId }))
+    : legacyChargeItems(title, sku, q.amountCents);
   const chargeInput: ChargeInput = {
+    companyId: order.companyId,
     orderId: order.id,
     orderNumber: order.orderNumber,
     amountCents: q.amountCents,
     method: input.method,
     installments: q.installments,
     pack: q.pack,
-    title: titleOf(effective),
-    sku: skuOf(effective),
+    title,
+    sku,
+    // Legado: um item com o total (payload igual ao de antes do multiempresa). Itens: uma linha por produto.
+    items: chargeItems,
+    ...(itemsQ ? { shippingCents: itemsQ.shippingCents } : {}),
     customer: {
       name: cart.customerName!,
       email: cart.customerEmail!,
@@ -253,7 +294,7 @@ export async function POST(request: Request): Promise<Response> {
       },
     },
     idempotencyKey: attemptId,
-    pixTtlSeconds: s["checkout.pixTtlSeconds"],
+    pixTtlSeconds,
     postbackUrl,
     clientIp: ip !== "unknown" ? ip : undefined,
     card: input.method === "card" && !gw.tokenizesCard ? input.card : undefined,
@@ -315,7 +356,7 @@ export async function POST(request: Request): Promise<Response> {
       alertTeam({ event: "falha", cart, order, attempt, problem: "O gateway aceitou o Pix mas não devolveu o código copia-e-cola." });
       return payResponse(502, { ok: false, status: "error", ...base, pix: null, message: GENERIC_ERROR });
     }
-    const expiresAt = result.pix.expiresAt instanceof Date && !Number.isNaN(result.pix.expiresAt.getTime()) ? result.pix.expiresAt : new Date(Date.now() + s["checkout.pixTtlSeconds"] * 1000);
+    const expiresAt = result.pix.expiresAt instanceof Date && !Number.isNaN(result.pix.expiresAt.getTime()) ? result.pix.expiresAt : new Date(Date.now() + pixTtlSeconds * 1000);
     await updateOrderFields(order.id, {
       pixCode: result.pix.code,
       pixQrUrl: result.pix.qrUrl ?? null,

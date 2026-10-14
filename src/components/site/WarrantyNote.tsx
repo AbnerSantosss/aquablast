@@ -5,7 +5,7 @@ export function WarrantyNote() {
   return (
     <a className="summer-guarantee" href="/trocas-e-devolucoes">
       <ShieldCheck size={20} aria-hidden="true" />
-      <span>Garantia de 7 dias para devolver após o recebimento.</span>
+      <span><strong>Garantia Brincadeira Sem Risco:</strong> 7 dias para devolver após o recebimento, com o frete de volta por nossa conta.</span>
     </a>
   );
 }

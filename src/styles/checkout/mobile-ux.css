@@ -114,3 +114,14 @@
   .ck-summary-toggle-total { font-size: 16px; }
   .ck-conversion .trust-seals small { display: none; }
 }
+
+/* Primeira dobra no celular (2026-10-11, auditoria de conversão): em 390x844 o campo "Nome completo" precisa
+   aparecer sem rolar (meta: y <= 360). Aqui só sai o espaço entre topo, progresso, resumo e etapa; o que cada bloco
+   mostra está no CSS Module dele. `.ck-root` entra no seletor para vencer reference-checkout.css, que carrega depois
+   deste arquivo. Só vale no checkout não pago (o pago não tem `.ck-reference`). */
+@media (max-width: 767px) {
+  .ck.ck-root.ck-reference .ck-main { padding-top: 6px; }
+  .ck.ck-root.ck-reference .ck-grid { margin-top: 4px; }
+  .ck.ck-root.ck-reference .order-summary { margin-bottom: 12px; }
+  .ck.ck-root.ck-reference .ship-bar { font-size: 12px; }
+}

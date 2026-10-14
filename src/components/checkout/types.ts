@@ -44,6 +44,8 @@ export interface CheckoutInitial {
   cpfMasked: string | null;
   address: AddressData;
   bump: boolean;
+  /** Frete gravado no carrinho retomado. */
+  shipping?: "free" | "full";
   /** Cor da 2ª unidade do bump (colors[1] do carrinho). null = bump sem cor ainda: a tela pede de novo. */
   bumpColor?: Color | null;
 }

@@ -51,8 +51,8 @@
 .ck.ck-reference .inline-help { margin: 0; gap: 7px; font-size: 11px; line-height: 1.45; color: var(--c-muted); }
 .ck.ck-reference .inline-help svg { flex: 0 0 14px; }
 .ck.ck-reference .ck-actions { margin-top: 17px; }
-.ck.ck-reference .ck-actions .primary-button { color: #fff; background: var(--c-ok); }
-.ck.ck-reference .ck-actions .primary-button:hover:not(:disabled) { background: var(--c-primary); }
+.ck.ck-reference .ck-actions .primary-button { color: #fff; background: var(--c-button); }
+.ck.ck-reference .ck-actions .primary-button:hover:not(:disabled) { background: var(--c-button-hover); }
 .ck.ck-reference .ck-actions .primary-button, .ck.ck-reference .ck-pay-btn { width: 100%; min-height: 46px; padding: 12px 16px; border-radius: 6px; font-size: 15px; text-transform: none; letter-spacing: 0; box-shadow: 0 3px 8px color-mix(in srgb, var(--c-button) 15%, transparent); }
 .ck.ck-reference .ck-done { margin-top: 12px; padding: 0; gap: 12px; background: transparent; }
 .ck.ck-reference .ck-done-title { font-size: 13px; }

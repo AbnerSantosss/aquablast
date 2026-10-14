@@ -73,11 +73,8 @@
 .form .submit:focus-visible { outline: 3px solid var(--c-accent); outline-offset: 3px; }
 @media (hover: hover) { :global(.ck) .form .submit:hover:not(:disabled) { background: var(--c-primary); box-shadow: 0 5px 14px #0637601a; } }
 
-.form .seals :global(.ck-payseals) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin: 0; padding: 0; width: 100%; }
-.form .seals :global(.ck-payseals li) { display: flex; align-items: flex-start; justify-content: flex-start; gap: 6px; min-width: 0; margin: 0; padding: 0; text-align: left; }
-.form .seals :global(.ck-payseals svg) { flex: 0 0 16px; width: 16px; height: 18px; color: var(--c-muted); }
-.form .seals :global(.ck-payseals li > span) { min-width: 0; font-size: 10px; line-height: 1.4; text-transform: none; color: var(--c-muted); }
-.form .seals :global(.ck-payseals b) { display: block; font-size: 10px; font-weight: 600; }
-.form .seals :global(.ck-payseals li.ck-payseals-brand) { display: none; }
+/* Bloco de confiança (`PayTrust`, estilo em payment-ux.css): sempre depois do botão de pagar. Na casca do computador o
+   formulário reordena a oferta (order 1) e o botão (order 2); sem este `order` o bloco subiria para antes dos dois. */
+.form .seals { order: 3; min-width: 0; }
 @media (max-width: 359px) { .form .total { grid-template-columns: minmax(0, 1fr); } .form .total > strong { font-size: 24px; } }
 @media (prefers-reduced-motion: reduce) { :global(.ck) .form .field input, :global(.ck) .form .field select { transition: none; } }

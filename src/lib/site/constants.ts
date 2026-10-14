@@ -62,7 +62,7 @@ export const BRAND_NAME = "AquaBlast";
 
 // E-mail publico de contato da loja, confirmado pelo dono em 2026-09-26
 // (substitui o endereco antigo, que era de outro dominio).
-export const CONTACT_EMAIL = "contato.aquablastbr@gmail.com";
+export const CONTACT_EMAIL = "atendimento@aquablastbrasil.com.br";
 
 // Pagina da politica de trocas e devolucoes (src/app/(site)/trocas-e-devolucoes).
 export const RETURNS_PATH = "/trocas-e-devolucoes";

@@ -1,16 +1,17 @@
 import { Truck } from "lucide-react";
 import type { Theme } from "@/lib/checkout/own/theme";
 import { money } from "@/lib/checkout/own/masks";
+import { FREE_SHIPPING_LABEL } from "@/lib/checkout/own/shipping";
 
 /**
- * O valor vem da cotação ou do pedido pago. Pedidos antigos sem snapshot mostram só o rastreamento.
+ * Antes do pagamento a faixa só anuncia o frete grátis; o preço do Frete FULL aparece apenas na escolha da entrega.
+ * No pedido pago o valor vem do snapshot do pedido. Pedidos antigos sem snapshot mostram só o rastreamento.
  * A condição atual de frete nunca é aplicada retroativamente a um pedido pago.
  * A faixa fica oculta quando `shipBarEnabled` está desligado no tema.
  */
-export function ShipBar({ theme, shippingCents, paid = false }: { theme: Theme; shippingCents: number | null; paid?: boolean }) {
+export function ShipBar({ theme, shippingCents = null, paid = false }: { theme: Theme; shippingCents?: number | null; paid?: boolean }) {
   if (!theme.shipBarEnabled) return null;
-  const label = paid ? "Frete" : "Frete FULL";
-  const lead = shippingCents === null ? "Entrega com rastreamento" : shippingCents === 0 ? `${label} grátis` : `${label} por ${money(shippingCents)}`;
+  const lead = !paid ? FREE_SHIPPING_LABEL : shippingCents === null ? "Entrega com rastreamento" : shippingCents === 0 ? FREE_SHIPPING_LABEL : `Frete por ${money(shippingCents)}`;
   const note = paid ? "" : theme.shipBarNote;
   return (
     <div className="ship-bar">

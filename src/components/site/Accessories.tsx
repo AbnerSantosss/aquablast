@@ -11,7 +11,7 @@ export function Accessories() {
     <section className="section summer-features" aria-labelledby="accessories-title" id="diferenciais">
       <div className="container">
         <div className="section-heading">
-          <div><span className="eyebrow">CONHEÇA SEU AQUABLAST</span><h2 id="accessories-title">Cada detalhe <em>faz a brincadeira.</em></h2></div>
+          <div><span className="eyebrow">CONHEÇA SEU AQUABLAST</span><h2 id="accessories-title">Tudo o que <em>vem na caixa.</em></h2></div>
           <p>Veja o que acompanha o brinquedo e como funciona.</p>
         </div>
         <div className="summer-features-grid summer-details-grid">

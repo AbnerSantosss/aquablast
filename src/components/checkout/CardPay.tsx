@@ -6,7 +6,6 @@ import { gatewayTokenizes, tokenizeCard } from "@/lib/gateways/browser";
 import type { GatewayName } from "@/lib/gateways/types";
 import { cardBrandOf, cardLast4, maskCPF, money, onlyDigits, validCardExpiry, validCPF, validLuhn } from "@/lib/checkout/own/masks";
 import { isApiFail, postPay } from "./api";
-import { PaySeals } from "./PaySeals";
 import type { CardFormData } from "./types";
 import styles from "./CardPay.module.css";
 
@@ -43,12 +42,14 @@ export function CardPay({
   gateway,
   publicConfig,
   testMode,
-  storeName,
   beforeSubmit,
+  afterSubmit,
   onPending,
   onPaid,
+  prepare,
 }: {
-  cartToken: string;
+  /** Ausente no checkout em uma página enquanto o carrinho ainda não foi gravado: `prepare` valida, grava e devolve o token. */
+  cartToken?: string;
   bump: boolean;
   /** Cor da 2ª unidade; vai junto no POST quando há bump. */
   bumpColor?: string | null;
@@ -59,10 +60,16 @@ export function CardPay({
   gateway: string | null;
   publicConfig: Record<string, string>;
   testMode: boolean;
-  storeName: string;
   beforeSubmit?: ReactNode;
+  /** Bloco de confiança (`PayTrust`), logo abaixo do botão de pagar. */
+  afterSubmit?: ReactNode;
   onPending: (publicToken: string) => void;
   onPaid: (publicToken: string) => void;
+  /**
+   * Checkout em uma página (2026-10-14): roda antes de olhar o cartão, valida dados e entrega, grava o carrinho e devolve o
+   * token dele (ou null se algo faltou: o Checkout já mostrou o aviso e nada é cobrado). Sem ela, usa o `cartToken` recebido.
+   */
+  prepare?: () => Promise<string | null>;
 }) {
   const max = Math.max(1, maxInstallments);
   const [f, setF] = useState(EMPTY);
@@ -115,6 +122,21 @@ export function CardPay({
       onBlocked?.();
       return;
     }
+    // Uma página: dados e entrega são conferidos (e o carrinho gravado) antes do cartão, na ordem em que aparecem na tela.
+    // O `busy` volta a false no mesmo tick das validações abaixo (o React junta as duas mudanças), então não pisca.
+    let token = cartToken;
+    if (prepare) {
+      setBusy(true);
+      const prepared = await prepare().catch(() => null);
+      setBusy(false);
+      if (!prepared) return;
+      token = prepared;
+    }
+    if (!token) {
+      setError("Não foi possível preparar o pedido. Tente de novo.");
+      return;
+    }
+    const payToken: string = token;
     const exp = parseExp(f.exp);
     if (!validLuhn(digits)) return fail("Número do cartão inválido. Confira os dígitos.", "number");
     if (!exp || !validCardExpiry(exp.month, exp.year)) return fail("Validade inválida ou vencida. Use o formato MM/AA.", "exp");
@@ -133,7 +155,7 @@ export function CardPay({
         tokenizes && gateway
           ? await tokenizeCard(gateway as GatewayName, publicConfig, card, amountCents).then((t) =>
               postPay({
-                cartToken,
+                cartToken: payToken,
                 method: "card",
                 installments,
                 bump,
@@ -145,7 +167,7 @@ export function CardPay({
                 cardLast4: cardLast4(digits),
               }),
             )
-          : await postPay({ cartToken, method: "card", installments, bump, ...extra, card });
+          : await postPay({ cartToken: payToken, method: "card", installments, bump, ...extra, card });
       if (isApiFail(result)) {
         if (result.status === "refused" || result.status === "error") setF((p) => ({ ...p, number: "", cvv: "" }));
         setError(result.message ?? result.error);
@@ -251,7 +273,7 @@ export function CardPay({
           <><LockKeyhole size={17} aria-hidden="true" />Pagar {money(amountCents)}</>
         )}
       </button>
-      <div className={styles.seals}><PaySeals storeName={storeName} /></div>
+      {afterSubmit ? <div className={styles.seals}>{afterSubmit}</div> : null}
     </form>
   );
 }

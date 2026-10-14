@@ -212,7 +212,7 @@ async function fillEntrega(page, { manual = false, extra, recipient } = {}) {
 }
 
 async function submitEntrega(page) {
-  await waitText(page.locator(".ship-opt"), /Frete FULL.*Entrega com rastreamento/);
+  await waitText(page.locator(".ship-opt.is-selected"), /Frete grátis.*Entrega com rastreamento/);
   await submitCurrentForm(page);
   await page.locator(".pay-acc").waitFor({ timeout: 10000 });
 }

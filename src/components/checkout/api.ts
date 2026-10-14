@@ -37,9 +37,15 @@ export interface CartTrackingInput {
 
 export interface CartPayload {
   token?: string;
-  selection: CartSelectionInput;
+  /** Modo legado (/checkout): pack + cores. Ausente no modo itens. */
+  selection?: CartSelectionInput;
+  /** Modo itens (/c/[slug], multiempresa): slug da empresa + produtos. O preço sai do servidor. */
+  company?: string;
+  items?: { productSlug: string; quantity: number }[];
   step: CartStep;
   bump: boolean;
+  /** Frete escolhido na etapa de entrega. */
+  shipping?: "free" | "full";
   /** Cor da 2ª unidade (só com bump). Pode faltar enquanto o cliente escolhe; o pagamento exige. */
   bumpColor?: string;
   /** `cpf` fica de fora no carrinho retomado (plano 8.8) enquanto a pessoa não digitar um novo: o servidor mantém o gravado. */

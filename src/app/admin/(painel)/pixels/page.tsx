@@ -47,7 +47,10 @@ function userDataOf(payload: Record<string, unknown> | null): Record<string, unk
   return ud && typeof ud === "object" ? (ud as Record<string, unknown>) : null;
 }
 
-/** "Ver payload": o que foi enviado à Meta. Resumo de user_data (tem/não tem) e o JSON inteiro, sem token. */
+/**
+ * "Ver payload": o que foi enviado à Meta. Resumo de user_data (tem/não tem) e o JSON inteiro, sem token.
+ * Também serve o AddShippingInfo do GA4 (2026-10-11): sem user_data, mostra só o JSON.
+ */
 function PayloadView({ payload }: { payload: Record<string, unknown> | null }) {
   if (!payload) return null;
   const ud = userDataOf(payload);
@@ -251,6 +254,11 @@ export default async function PixelsPage() {
                 <input type="checkbox" name="ads.ga4.enabled" defaultChecked={s["ads.ga4.enabled"]} />
                 <span>Enviar eventos para o GA4</span>
               </label>
+              <p className="hint">
+                Além de begin_checkout, add_payment_info e purchase, o GA4 recebe add_shipping_info (AddShippingInfo na lista de
+                últimos eventos) quando o comprador conclui a etapa de entrega, com o frete escolhido no parâmetro shipping_tier.
+                Esse evento não vai para a Meta.
+              </p>
               <label className="field">
                 <span>ID de medição (G-XXXXXXX)</span>
                 <input name="ads.ga4.measurementId" defaultValue={s["ads.ga4.measurementId"]} maxLength={40} placeholder="G-XXXXXXX" {...PLAIN_INPUT} />
@@ -311,7 +319,8 @@ export default async function PixelsPage() {
             <p className="muted small">
               Em cada evento da Meta, &quot;Ver payload enviado&quot; mostra o corpo exato que foi para a API de Conversões (o token
               não vai no corpo). E-mail, telefone e nome saem com hash SHA-256; fbc, fbp, IP e navegador saem como estão, que é o
-              que a Meta pede. Eventos enviados antes de 30/09/2026 não têm payload gravado.
+              que a Meta pede. Eventos enviados antes de 30/09/2026 não têm payload gravado. No GA4, só o AddShippingInfo guarda o
+              corpo (sem dado pessoal); os outros eventos do GA4 mostram apenas o status.
             </p>
             <EventTable events={events} empty="Nenhum evento do checkout registrado ainda." />
           </section>

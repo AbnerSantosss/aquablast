@@ -28,7 +28,7 @@ export async function checkoutStatus(request: Request, token: string | null): Pr
     const gate = await rateLimit(`ck:fetch:${pending.id}`, 1, 10);
     if (gate.allowed) {
       try {
-        const st = await getGateway(pending.provider).fetchStatus(pending.providerTransactionId);
+        const st = await getGateway(pending.provider).fetchStatus(pending.providerTransactionId, { companyId: pending.companyId });
         const out = await syncAttempt(pending, st, "system");
         if (out.order) order = out.order;
         last = await latestAttempt(order.id);

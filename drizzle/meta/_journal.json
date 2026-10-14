@@ -71,6 +71,41 @@
       "when": 1791070800000,
       "tag": "0009_access_code_enc",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791750794063,
+      "tag": "0010_checkout_reviews",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791759292520,
+      "tag": "0011_checkout_shipping_method",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791772245216,
+      "tag": "0012_checkout_banners",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791913951478,
+      "tag": "0013_multiempresa",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791915631229,
+      "tag": "0014_company_webhook_deliveries",
+      "breakpoints": true
     }
   ]
 }

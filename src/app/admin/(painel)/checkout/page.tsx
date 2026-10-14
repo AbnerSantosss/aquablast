@@ -1,16 +1,32 @@
 import "@/app/admin/checkout-admin.css";
+import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/session";
 import { ActionForm } from "@/components/admin/ActionForm";
+import { CheckoutBanners } from "@/components/admin/checkout-banners/CheckoutBanners";
 import { saveRecoverySettings, saveThemeSettings } from "@/lib/admin/actions/checkout";
 import { getSetting, getSettings } from "@/lib/settings";
-import { contrastRatio, isoToLocalInput, themeSchema, themeVars } from "@/lib/checkout/own/theme";
+import type { AdminBannerMap } from "@/lib/checkout/own/banners";
+import { getAdminCheckoutBanners } from "@/lib/checkout/own/banners-server";
+import { contrastRatio, isoToLocalInput, themeFieldLabels, themeSchema, themeVars } from "@/lib/checkout/own/theme";
+import { errorMessage, log } from "@/lib/log";
 
 export const metadata = { title: "Personalizar checkout | Painel AquaBlast" };
 
 const MIN_CONTRAST = 4.5;
 
+/** Artes de banner por produto. Se a leitura falhar, o bloco avisa e o resto da tela (aparência, recuperação) segue funcionando. */
+async function loadBanners(): Promise<AdminBannerMap | null> {
+  try {
+    return await getAdminCheckoutBanners();
+  } catch (err) {
+    log.error("admin: leitura das artes de banner falhou", { error: errorMessage(err) });
+    return null;
+  }
+}
+
 export default async function PersonalizarCheckoutPage() {
   await requireAdmin();
+  const banners = await loadBanners();
   const storedTheme = await getSetting("checkout.theme");
   const parsed = themeSchema.safeParse(storedTheme);
   const theme = parsed.success ? parsed.data : themeSchema.parse({});
@@ -30,6 +46,11 @@ export default async function PersonalizarCheckoutPage() {
         <div>
           <h1>Personalizar checkout</h1>
           <p className="sub">Aparência, textos e recuperação de carrinho abandonado da tela /checkout.</p>
+        </div>
+        <div className="actions">
+          <Link href="/admin/checkout/comentarios" className="btn btn-ghost">
+            Comentários do checkout
+          </Link>
         </div>
       </div>
 
@@ -128,6 +149,9 @@ export default async function PersonalizarCheckoutPage() {
               <h3 className="small" style={{ marginTop: "0.75rem" }}>
                 Banner
               </h3>
+              <p className="muted small">
+                Os campos abaixo são do banner de texto. A arte por produto (imagem pronta) é enviada no bloco &quot;Banner por produto&quot;, depois deste formulário.
+              </p>
               <label className="check">
                 <input type="checkbox" name="bannerEnabled" defaultChecked={theme.bannerEnabled} />
                 <span>Mostrar banner</span>
@@ -191,12 +215,52 @@ export default async function PersonalizarCheckoutPage() {
                 </label>
               </div>
 
+              <h3 className="small" style={{ marginTop: "0.75rem" }}>
+                Pix
+              </h3>
+              <p className="muted small">
+                No app do banco, o recebedor do Pix costuma aparecer com o nome do processador do pagamento, e não com o da loja.
+                Informe aqui o nome exatamente como o cliente vê: a tela do Pix passa a avisar &quot;No app do seu banco, o recebedor
+                aparece como…&quot;. Em branco, o aviso não aparece.
+              </p>
+              <div className="grid-2">
+                <label className="field span-2">
+                  <span>{themeFieldLabels.pixReceiverName}</span>
+                  <input name="pixReceiverName" defaultValue={theme.pixReceiverName} maxLength={80} autoComplete="off" />
+                </label>
+              </div>
+
               <div className="actions">
                 <button type="submit" className="btn btn-primary">
                   Salvar aparência
                 </button>
               </div>
             </ActionForm>
+          </section>
+
+          {/* Fora do formulário da aparência de propósito: um campo de arquivo dentro dele entraria na
+              Server Action (teto de 1 MB no corpo) e quebraria o "Salvar aparência". Aqui cada envio vai
+              direto para /api/admin/checkout-banners e é gravado na hora. */}
+          <section className="card" id="banner-por-produto" aria-labelledby="banner-por-produto-titulo">
+            <div className="card-head">
+              <h2 id="banner-por-produto-titulo">Banner por produto</h2>
+              <p className="muted small">
+                Envie uma arte pronta para cada produto, em versão de computador e de celular. Com arte, o banner do checkout é só a imagem do produto que o cliente
+                escolheu. Cada envio é gravado na hora, sem passar pelo botão &quot;Salvar aparência&quot;.
+              </p>
+            </div>
+            <div className="cb-body">
+              {theme.bannerEnabled ? null : (
+                <p className="callout warn">
+                  O banner está desligado em &quot;Mostrar banner&quot;, no formulário acima. Enquanto estiver desligado, o checkout não mostra as artes daqui nem o banner de texto.
+                </p>
+              )}
+              {banners ? (
+                <CheckoutBanners banners={banners} />
+              ) : (
+                <p className="callout warn">Não deu para carregar as artes de banner agora. Recarregue a página em instantes.</p>
+              )}
+            </div>
           </section>
 
           <section className="card">

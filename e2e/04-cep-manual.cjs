@@ -30,7 +30,7 @@ async function run(variant) {
     assert.match(await L.field(page, "state").getAttribute("aria-describedby"), /ck-state-error/, "erro deveria estar associado ao estado");
     await L.shot(page, `c4-${variant.tag}-cep-manual-erro-estado`);
     await page.locator(".state-select").selectOption("RS");
-    await L.waitText(page.locator(".ship-opt"), /Frete FULL.*Entrega com rastreamento/);
+    await L.waitText(page.locator(".ship-opt.is-selected"), /Frete grátis.*Entrega com rastreamento/);
     await L.submitEntrega(page);
     await L.waitText(page.locator(".ck-step[aria-current=step]"), "Pagamento");
     const done1 = page.locator(".ck-done").nth(1);

@@ -121,3 +121,12 @@
     gap: .25rem;
   }
 }
+
+.lead {
+  margin: -.75rem auto 1.5rem;
+  max-width: 44ch;
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.5;
+  text-align: center;
+}

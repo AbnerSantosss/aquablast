@@ -1,0 +1,15 @@
+/* Checkout por itens (/c/[slug]): controles de quantidade e lista "adicionar". Base visual em OrderSummary.module.css. */
+:global(.ck-reference) .icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; flex: 0 0 40px; color: var(--c-primary); background: #f4f8fa; border: 1px solid #e2ecf2; border-radius: 7px; }
+:global(.ck-reference) .qty { display: inline-flex; align-items: center; flex-shrink: 0; border: 1px solid #dce8ef; border-radius: 6px; background: #fff; }
+:global(.ck-reference) .qty button { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; color: var(--c-primary); background: transparent; border: 0; cursor: pointer; }
+:global(.ck-reference) .qty button:disabled { opacity: .35; cursor: default; }
+:global(.ck-reference) .qty output { min-width: 22px; text-align: center; font-size: 13px; font-weight: 700; color: var(--c-primary); }
+:global(.ck-reference) .add { margin-top: 8px; padding-top: 8px; border-top: 1px solid #dce8ef; }
+:global(.ck-reference) .add > p { margin: 0 0 4px; color: var(--c-muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+:global(.ck-reference) .add ul { list-style: none; margin: 0; padding: 0; }
+:global(.ck-reference) .add li { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 6px 0; }
+:global(.ck-reference) .add li > img { width: 40px; height: 40px; flex: 0 0 40px; padding: 2px; object-fit: contain; background: #f4f8fa; border: 1px solid #e2ecf2; border-radius: 7px; }
+:global(.ck-reference) .add li > span:not(.icon) { min-width: 0; flex: 1; }
+:global(.ck-reference) .add strong { display: block; color: var(--c-primary); font-size: 13px; font-weight: 700; line-height: 1.4; overflow-wrap: anywhere; }
+:global(.ck-reference) .add small { display: block; color: var(--c-muted); font-size: 11px; }
+:global(.ck-reference) .add li button { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; min-height: 32px; padding: 0 10px; color: var(--c-primary); font-size: 12px; font-weight: 700; background: #fff; border: 1px solid #dce8ef; border-radius: 6px; cursor: pointer; }

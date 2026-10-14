@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 // Cenarios 8 a 15 da fase 14.4 (checkout proprio + banco de desenvolvimento local):
 //  8  kit com 2 cores diferentes -> resumo e SKU AQB-KIT-VERMELHO-PRETO no pedido;
-//  9  preco muda entre Pix (159,89) e cartao (189,89, com frete 9,99) e volta;
+//  9  preco muda entre Pix (149,71) e cartao (179,71; frete gratis nos dois) e volta;
 //  10 POST /api/checkout/pay com campo extra ("amount") -> 400 (paySchema estrito; valor so do servidor);
 //  11 pedido pago via Pix simulado -> payment_status paid, checkout_provider proprio, carrinho convertido,
 //     e InitiateCheckout/AddPaymentInfo/Purchase em conversion_events sem nenhuma chamada a Meta;
@@ -74,18 +74,18 @@ async function c09() {
     // Desde o 7d1aafa o Pix abre selecionado (destaque = total a vista); escolhendo o cartao, a parcela vira o destaque.
     // Resumo novo (49f7d26): recolhido no celular; os totais são as linhas "Total no Pix" / "Total no cartão".
     const toggleTotal = page.locator(".ck-summary-toggle");
-    await L.waitText(toggleTotal, "R$ 159,89");
+    await L.waitText(toggleTotal, "R$ 149,71");
     await L.revealSummary(page);
-    await L.waitText(L.summaryTotal(page, "pix"), /^R\$ 159,89$/);
-    await L.waitText(L.summaryNote(page, /sem juros no cartão/), /^ou 12x de R\$ 15,82 sem juros no cartão$/);
+    await L.waitText(L.summaryTotal(page, "pix"), /^R\$ 149,71$/);
+    await L.waitText(L.summaryNote(page, /sem juros no cartão/), /^ou 12x de R\$ 14,98 sem juros no cartão$/);
     await L.payHead(page, "card").click();
-    await L.waitText(L.summaryTotal(page, "card"), /^R\$ 189,89$/);
-    await L.waitText(L.summaryNote(page, /12x de/), /^12x de R\$ 15,82 sem juros$/);
-    await L.waitText(L.summaryNote(page, /à vista no Pix/), /^ou R\$ 159,89 à vista no Pix/);
-    await L.waitText(toggleTotal, "R$ 189,89");
+    await L.waitText(L.summaryTotal(page, "card"), /^R\$ 179,71$/);
+    await L.waitText(L.summaryNote(page, /12x de/), /^12x de R\$ 14,98 sem juros$/);
+    await L.waitText(L.summaryNote(page, /à vista no Pix/), /^ou R\$ 149,71 à vista no Pix/);
+    await L.waitText(toggleTotal, "R$ 179,71");
     await L.choosePix(page);
-    await L.waitText(L.summaryTotal(page, "pix"), /^R\$ 159,89$/);
-    await L.waitText(toggleTotal, "R$ 159,89");
+    await L.waitText(L.summaryTotal(page, "pix"), /^R\$ 149,71$/);
+    await L.waitText(toggleTotal, "R$ 149,71");
     assert.deepEqual(pageErrors, []);
   } finally {
     await browser.close();
@@ -269,7 +269,7 @@ if (require.main === module) {
   (async () => {
     const list = [
       ["08", "Kit 2 cores (vermelho+preto) -> SKU no pedido", c08],
-      ["09", "Preco Pix 159,89 <-> cartao 189,89", c09],
+      ["09", "Preco Pix 149,71 <-> cartao 179,71", c09],
       ["10", "POST /pay com campo extra amount -> 400", c10],
       ["11", "Pedido pago via Pix simulado + eventos de conversao", c11],
       ["12", "Carrinho abandonado na entrega (banco)", c12],

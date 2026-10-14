@@ -1,6 +1,6 @@
 import { errorMessage } from "@/lib/log";
 import { getSettings } from "@/lib/settings";
-import type { AdEventName, AdTestSample } from "./types";
+import type { AdEventName, AdTestSample, Ga4OnlyEventName } from "./types";
 
 /**
  * GA4 Measurement Protocol (plano 9.5). SÓ SERVIDOR.
@@ -16,20 +16,24 @@ import type { AdEventName, AdTestSample } from "./types";
 
 const TIMEOUT_MS = 10_000;
 
-export const GA4_EVENT_NAMES: Record<AdEventName, string> = {
+export const GA4_EVENT_NAMES: Record<AdEventName | Ga4OnlyEventName, string> = {
   PageView: "page_view",
   ViewContent: "view_item",
   InitiateCheckout: "begin_checkout",
   AddPaymentInfo: "add_payment_info",
   Purchase: "purchase",
+  // Só GA4 (2026-10-11): etapa de entrega completa. Leva shipping_tier com o frete escolhido.
+  AddShippingInfo: "add_shipping_info",
 };
 
 export interface Ga4EventInput {
-  eventName: AdEventName;
+  eventName: AdEventName | Ga4OnlyEventName;
   eventId: string;
   clientId: string;
   sessionId?: string;
   transactionId?: string;
+  /** Só no add_shipping_info: nome do frete escolhido ("Frete grátis" | "Frete FULL"). Vira o parâmetro shipping_tier. */
+  shippingTier?: string;
   valueCents?: number;
   items?: { itemId: string; itemName: string; quantity: number; priceCents: number; itemVariant?: string }[];
   /** Hora do evento (padrão: agora). O GA4 aceita até 72 h para trás. */
@@ -50,6 +54,7 @@ export function buildGa4Body(input: Ga4EventInput): Record<string, unknown> {
   if (typeof input.valueCents === "number") params.value = reais(input.valueCents);
   if (input.transactionId) params.transaction_id = input.transactionId;
   if (input.sessionId?.trim()) params.session_id = input.sessionId.trim();
+  if (input.shippingTier?.trim()) params.shipping_tier = input.shippingTier.trim();
   if (input.items?.length) {
     params.items = input.items.map((i) => {
       const item: Record<string, unknown> = { item_id: i.itemId, item_name: i.itemName, price: reais(i.priceCents), quantity: i.quantity };
@@ -106,19 +111,26 @@ function networkDetail(err: unknown, secret: string): string {
   return scrubSecret(timeout ? `GA4: sem resposta em ${TIMEOUT_MS / 1000} s` : `GA4: falha de rede (${errorMessage(err)})`, secret);
 }
 
-/** Envia um evento para o GA4. Nunca lança. Sem client_id → { ok: false } sem chamar a rede. */
-export async function sendGa4Event(input: Ga4EventInput): Promise<{ ok: boolean; detail?: string }> {
+/**
+ * Envia um evento para o GA4. Nunca lança. Sem client_id → { ok: false } sem chamar a rede.
+ * `payload` é o corpo montado (sem segredo: o api_secret vai na URL, nunca no corpo). Volta também quando o envio
+ * não saiu por falta de ID de medição ou segredo: aí é o que SERIA enviado. Quem chama decide se grava
+ * (dispatch.ts grava só no add_shipping_info; as linhas GA4 dos três eventos antigos seguem sem payload).
+ */
+export async function sendGa4Event(input: Ga4EventInput): Promise<{ ok: boolean; detail?: string; payload?: Record<string, unknown> }> {
   if (!input.clientId?.trim()) return { ok: false, detail: "GA4: sem client_id (cookie _ga ausente ou sem consentimento)" };
   let cfg: Ga4Config = { measurementId: "", apiSecret: "" };
+  let payload: Record<string, unknown> | undefined;
   try {
     cfg = await ga4Config();
+    payload = buildGa4Body(input);
     const problem = configProblem(cfg);
-    if (problem) return { ok: false, detail: problem };
-    const { status, text } = await post(cfg, buildGa4Body(input), false);
-    if (status >= 200 && status < 300) return { ok: true, detail: `GA4 HTTP ${status}` };
-    return { ok: false, detail: scrubSecret(`GA4 HTTP ${status}: ${text.slice(0, 200)}`, cfg.apiSecret) };
+    if (problem) return { ok: false, detail: problem, payload };
+    const { status, text } = await post(cfg, payload, false);
+    if (status >= 200 && status < 300) return { ok: true, detail: `GA4 HTTP ${status}`, payload };
+    return { ok: false, detail: scrubSecret(`GA4 HTTP ${status}: ${text.slice(0, 200)}`, cfg.apiSecret), payload };
   } catch (err) {
-    return { ok: false, detail: networkDetail(err, cfg.apiSecret) };
+    return { ok: false, detail: networkDetail(err, cfg.apiSecret), payload };
   }
 }
 

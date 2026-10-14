@@ -171,7 +171,7 @@ export const DEFAULTS: SettingsMap = {
   "email.provider": "smtp",
   "email.from.name": "AquaBlast",
   "email.from.address": "",
-  "email.replyTo": "",
+  "email.replyTo": "atendimento@aquablastbrasil.com.br",
   "email.smtp.host": "smtp.gmail.com",
   "email.smtp.port": 465,
   "email.smtp.secure": true,
@@ -191,7 +191,7 @@ export const DEFAULTS: SettingsMap = {
   "checkout.signatureHeader": "",
   "store.name": "AquaBlast",
   "store.supportWhatsapp": "5581996584578",
-  "store.supportEmail": "contato@aquablast.com.br",
+  "store.supportEmail": "atendimento@aquablastbrasil.com.br",
   "store.trackingPageUrl": "/rastrear",
   "accessCode.validityDays": 180,
   "orders.slaDays": 3,
@@ -204,7 +204,7 @@ export const DEFAULTS: SettingsMap = {
   "checkout.mode": "zedy",
   // Literais de proposito (scripts/verify-checkout-ux.cjs le estes valores pela AST e confere que a reserva
   // do site, FALLBACK_PRICE_CENTS em lib/site/prices.ts, e igual).
-  "checkout.prices": { unit: { pix: 14990, card: 17990 }, kit: { pix: 23990, card: 26990 } },
+  "checkout.prices": { unit: { pix: 14971, card: 17971 }, kit: { pix: 23990, card: 26990 } },
   "checkout.maxInstallments": 12,
   "checkout.bumpEnabled": true,
   "checkout.pixTtlSeconds": 600,
@@ -241,8 +241,18 @@ export const DEFAULTS: SettingsMap = {
 };
 
 export async function getSetting<K extends SettingKey>(key: K): Promise<SettingsMap[K]> {
-  const row = await db.query.settings.findFirst({ where: eq(settings.key, key) });
-  if (!row || row.value === null || row.value === undefined) return DEFAULTS[key];
+  const v = await readSettingRow(key, key);
+  return v === undefined ? DEFAULTS[key] : v;
+}
+
+/**
+ * Lê uma linha de `settings` pela chave de armazenamento (global = a própria chave; por empresa =
+ * `company:<id>:<chave>`) e devolve o valor já decifrado e normalizado contra o DEFAULT de `key`.
+ * `undefined` = linha ausente ou vazia (quem chama decide o fallback).
+ */
+async function readSettingRow<K extends SettingKey>(storageKey: string, key: K): Promise<SettingsMap[K] | undefined> {
+  const row = await db.query.settings.findFirst({ where: eq(settings.key, storageKey) });
+  if (!row || row.value === null || row.value === undefined) return undefined;
   if (row.encrypted) {
     try {
       return decryptText(row.value as string) as SettingsMap[K];
@@ -298,6 +308,100 @@ export async function setSetting<K extends SettingKey>(key: K, value: SettingsMa
     });
 }
 
+/* ------------------------------------------------------------------------------------------------
+ * Settings por empresa (multiempresa, 2026-10-12)
+ * Mesma tabela `settings`, chave `company:<companyId>:<chave>`. A empresa padrão (AquaBlast) lê e grava
+ * direto o global, sem prefixo: nada muda para ela. As outras caem no valor global quando a chave da
+ * empresa não existe, EXCETO credenciais de gateway (COMPANY_NO_FALLBACK): outra empresa nunca cobra
+ * na conta do AquaBlast por falta de configuração.
+ * ---------------------------------------------------------------------------------------------- */
+
+/** Mesmo valor de DEFAULT_COMPANY_ID em db/schema.ts (repetido aqui para não importar o schema no tipo). */
+const DEFAULT_COMPANY = "00000000-0000-4000-8000-000000000001";
+
+/** Prefixos/chaves que fazem sentido por empresa (o resto é da instalação inteira). */
+export const COMPANY_SCOPED_PREFIXES: readonly string[] = [
+  "checkout.theme",
+  "checkout.maxInstallments",
+  "checkout.pixTtlSeconds",
+  "checkout.cardComingSoon",
+  "gateway.",
+  "store.",
+];
+
+export function isCompanyScopedKey(key: SettingKey): boolean {
+  return COMPANY_SCOPED_PREFIXES.some((p) => (p.endsWith(".") ? key.startsWith(p) : key === p));
+}
+
+/** Credenciais e identificadores de conta do gateway: sem fallback no global para outras empresas. */
+const COMPANY_NO_FALLBACK: ReadonlySet<SettingKey> = new Set<SettingKey>([
+  "gateway.ironpay.apiToken",
+  "gateway.ironpay.offerHashUnit",
+  "gateway.ironpay.offerHashKit",
+  "gateway.ironpay.productHashUnit",
+  "gateway.ironpay.productHashKit",
+  "gateway.mercadopago.accessToken",
+  "gateway.mercadopago.publicKey",
+  "gateway.mercadopago.webhookSecret",
+  "gateway.fastpay.apiKey",
+]);
+
+export function companySettingKey(companyId: string, key: SettingKey): string {
+  return `company:${companyId}:${key}`;
+}
+
+const isDefaultCompany = (companyId: string | null | undefined) => !companyId || companyId === DEFAULT_COMPANY;
+
+/**
+ * Valor de uma chave para uma empresa. AquaBlast (ou companyId vazio) = getSetting global.
+ * Outra empresa: valor próprio; sem valor próprio, o global (credencial de gateway sem valor próprio = vazio).
+ */
+export async function getCompanySetting<K extends SettingKey>(companyId: string | null | undefined, key: K): Promise<SettingsMap[K]> {
+  if (isDefaultCompany(companyId)) return getSetting(key);
+  const own = await readSettingRow(companySettingKey(companyId as string, key), key);
+  if (own !== undefined) return own;
+  if (COMPANY_NO_FALLBACK.has(key)) return DEFAULTS[key];
+  return getSetting(key);
+}
+
+/** Só o valor gravado pela própria empresa (sem cair no global). AquaBlast lê o global. */
+export async function getOwnCompanySetting<K extends SettingKey>(companyId: string | null | undefined, key: K): Promise<SettingsMap[K] | undefined> {
+  if (isDefaultCompany(companyId)) return getSetting(key);
+  return readSettingRow(companySettingKey(companyId as string, key), key);
+}
+
+export async function getCompanySettings<K extends SettingKey>(companyId: string | null | undefined, keys: readonly K[]): Promise<Pick<SettingsMap, K>> {
+  const out: Partial<SettingsMap> = {};
+  for (const k of keys) out[k] = await getCompanySetting(companyId, k);
+  return out as Pick<SettingsMap, K>;
+}
+
+/** Grava para uma empresa. AquaBlast grava no global. Segredos são cifrados como no global. */
+export async function setCompanySetting<K extends SettingKey>(
+  companyId: string | null | undefined,
+  key: K,
+  value: SettingsMap[K],
+  updatedBy = "system",
+): Promise<void> {
+  if (isDefaultCompany(companyId)) return setSetting(key, value, updatedBy);
+  const storageKey = companySettingKey(companyId as string, key);
+  const secret = isSecretKey(key);
+  const stored = secret ? encryptText(String(value)) : value;
+  await db
+    .insert(settings)
+    .values({ key: storageKey, value: stored as unknown as object, encrypted: secret, updatedAt: new Date(), updatedBy })
+    .onConflictDoUpdate({
+      target: settings.key,
+      set: { value: stored as unknown as object, encrypted: secret, updatedAt: new Date(), updatedBy },
+    });
+}
+
+/** Apaga o valor próprio da empresa (volta a valer o global, ou vazio para credencial). Não vale para o AquaBlast. */
+export async function clearCompanySetting(companyId: string, key: SettingKey): Promise<void> {
+  if (isDefaultCompany(companyId)) return;
+  await db.delete(settings).where(eq(settings.key, companySettingKey(companyId, key)));
+}
+
 /** Descrição de um segredo para a UI. Nunca contém o valor inteiro. */
 export type SecretDescription = { configured: boolean; hint: string; masked: string };
 
@@ -316,7 +420,15 @@ export function maskSecret(v: string): string {
 
 /** Para a UI: nunca devolve o segredo, só se está configurado, um sufixo (`hint`) e a máscara (`masked`). */
 export async function describeSecret(key: SettingKey): Promise<SecretDescription> {
-  const v = String((await getSetting(key)) ?? "");
+  return describeSecretValue(String((await getSetting(key)) ?? ""));
+}
+
+/** describeSecret para uma empresa (sem fallback de credencial no global, ver getCompanySetting). */
+export async function describeCompanySecret(companyId: string | null | undefined, key: SettingKey): Promise<SecretDescription> {
+  return describeSecretValue(String((await getCompanySetting(companyId, key)) ?? ""));
+}
+
+function describeSecretValue(v: string): SecretDescription {
   if (!v) return { configured: false, hint: "", masked: "" };
   return { configured: true, hint: v.length > 4 ? "••••" + v.slice(-4) : "••••", masked: maskSecret(v) };
 }

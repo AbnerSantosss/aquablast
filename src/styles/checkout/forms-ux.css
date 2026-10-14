@@ -151,10 +151,31 @@
 }
 
 .ck .ship-options-included .ship-opt {
-  cursor: default;
+  cursor: pointer;
+}
+
+/* Nota da etapa 1 (para que servem e-mail, celular e CPF): passou a ter mais de uma linha, então o cadeado alinha
+   pelo topo e o texto sobe de 11 px para 12 px. O seletor repete `.form-fields` para vencer reference-checkout.css. */
+.ck.ck-reference .form-fields .inline-help {
+  align-items: flex-start;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ck.ck-reference .form-fields .inline-help > svg {
+  margin-top: 2px;
+}
+
+.ck.ck-reference .form-fields .inline-help strong {
+  color: var(--c-text);
+  font-weight: 650;
 }
 
 @media (max-width: 760px) {
+  .ck.ck-reference .form-fields .inline-help {
+    font-size: 13px;
+  }
+
   .ck .delivery-number-row .field,
   .ck .delivery-address-fields > *,
   .ck .delivery-address-fields .field-row > * {

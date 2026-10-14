@@ -3,6 +3,7 @@ import Image from "next/image";
 import { useState, useSyncExternalStore, type ReactNode } from "react";
 import type { Quote } from "@/lib/checkout/own/pricing";
 import { money } from "@/lib/checkout/own/masks";
+import { FULL_SHIPPING_LABEL } from "@/lib/checkout/own/shipping";
 import type { Selection } from "@/lib/checkout/own/catalog";
 import { COLOR_LABELS } from "@/lib/site/constants";
 import type { Color } from "@/lib/site/types";
@@ -52,6 +53,7 @@ export function OrderSummary({
   bump,
   bumpColor = null,
   quotes,
+  shippingChosen = false,
   payView,
   cardEnabled,
   pixEnabled,
@@ -67,6 +69,8 @@ export function OrderSummary({
   /** Cor da 2ª unidade do bump; null enquanto o cliente não escolheu. */
   bumpColor?: Color | null;
   quotes: { pix: Quote; card: Quote };
+  /** A linha do frete só entra na conta depois da etapa de entrega (ou quando o FULL já foi escolhido). */
+  shippingChosen?: boolean;
   /** Forma em destaque: a paga, a escolhida na etapa 3 ou "preview" antes dela. */
   payView: PayView;
   /** Cartão/Pix ligados no painel. Com nenhum ligado, mostra os preços mesmo assim (o preço existe; só o pagamento não). */
@@ -106,12 +110,35 @@ export function OrderSummary({
     // The breakdown uses only server quotes, separating the Pix and coupon reductions.
     const productsTotal = view === "pix" && showCard ? Math.max(q.productSubtotalCents, card.productSubtotalCents) : q.productSubtotalCents;
     const pixDiscount = view === "pix" ? productsTotal - q.productSubtotalCents : 0;
+    // Barra recolhida do celular e do tablet (2026-10-11): o cliente vê o que está comprando e o total a pagar sem
+    // abrir o resumo. No computador o resumo nasce aberto; recolhido por escolha, mantém o cabeçalho "RESUMO".
+    const compact = !expanded && summaryMobile;
+    const units = isKit || hasBump ? 2 : 1;
+    const colorsLabel = selected.colors.length > 1 ? selected.colors.map((color) => COLOR_LABELS[color]).join(" + ") : `Cor: ${COLOR_LABELS[c1]}`;
 
     return (
-      <aside className={`${styles.summary} ck-card order-summary`} aria-label="Resumo do pedido" data-expanded={expanded}>
-        <button type="button" className={`${styles.toggle} ck-summary-toggle`} aria-expanded={expanded} aria-controls="checkout-summary-details" aria-label={expanded ? "Resumo do pedido: recolher" : "Ver resumo do pedido"} onClick={() => setExpanded(!expanded)}>
-          <span className={styles.heading}><span>RESUMO<small>Informações da sua compra</small></span></span>
-          <span className={styles.headingTotal}>{money(total)}<ChevronDown size={17} aria-hidden="true" /></span>
+      <aside className={`${styles.summary} ck-card order-summary`} aria-label="Resumo do pedido" data-expanded={expanded} data-compact={compact}>
+        <button type="button" className={`${styles.toggle} ck-summary-toggle`} aria-expanded={expanded} aria-controls="checkout-summary-details" aria-label={compact ? undefined : expanded ? "Resumo do pedido: recolher" : "Ver resumo do pedido"} onClick={() => setExpanded(!expanded)}>
+          {compact ? (
+            <>
+              <Image className={styles.barThumb} src={thumbOf(c1)} width={52} height={52} alt="" />
+              <span className={styles.barText}>
+                <span className={styles.barRow}>
+                  <span className={styles.barProduct}><strong>AquaBlast</strong>{" "}<span>Qtd. {units}</span></span>{" "}
+                  <span className={styles.headingTotal}>{money(total)}</span>
+                </span>{" "}
+                <span className={styles.barRow}>
+                  <span className={styles.barColor}>{colorsLabel}</span>{" "}
+                  <span className={styles.barAction}>Ver resumo e valores<ChevronDown size={16} aria-hidden="true" /></span>
+                </span>
+              </span>
+            </>
+          ) : (
+            <>
+              <span className={styles.heading}><span>RESUMO<small>Informações da sua compra</small></span></span>
+              <span className={styles.headingTotal}>{money(total)}<ChevronDown size={17} aria-hidden="true" /></span>
+            </>
+          )}
         </button>
         <div className={`${styles.details} ck-summary-details`} id="checkout-summary-details" hidden={!expanded}>
           {showPix && onCouponApply ? <CouponField coupon={coupon} applied={!!coupon && pix.couponDiscountCents > 0} busy={couponBusy} onApply={onCouponApply} /> : null}
@@ -119,7 +146,7 @@ export function OrderSummary({
             <div><dt>Produtos</dt><dd>{money(productsTotal)}</dd></div>
             {pixDiscount > 0 ? <div><dt>Desconto no Pix</dt><dd className={styles.saving}>− {money(pixDiscount)}</dd></div> : null}
             {couponOff > 0 ? <div><dt>Desconto do cupom no Pix</dt><dd className={styles.saving}>− {money(couponOff)}</dd></div> : null}
-            <div><dt>Frete FULL</dt><dd className={q.shippingCents === 0 ? styles.saving : undefined}>{q.shippingCents === 0 ? "Grátis" : money(q.shippingCents)}</dd></div>
+            {shippingChosen || q.shippingCents > 0 ? <div><dt>{q.shippingCents === 0 ? "Frete" : FULL_SHIPPING_LABEL}</dt><dd className={q.shippingCents === 0 ? styles.saving : undefined}>{q.shippingCents === 0 ? "Grátis" : money(q.shippingCents)}</dd></div> : null}
             <div className={styles.finalTotal}><dt>{view === "card" ? "Total no cartão" : "Total no Pix"}</dt><dd>{money(total)}</dd></div>
           </dl>
           {view === "card" ? (
@@ -149,7 +176,7 @@ export function OrderSummary({
           {deliveryPromise ? <p className="ck-delivery-promise">{deliveryPromise}</p> : null}
         </div>
         <div className={styles.benefit} data-summary-benefit="shipping" role="note" aria-label="Benefício do pedido">
-          <span><Truck size={17} aria-hidden="true" /><span>{q.shippingCents === 0 ? <>Seu pedido tem <strong>frete FULL grátis</strong></> : <>Frete FULL por <strong>{money(q.shippingCents)}</strong></>}</span><Check size={15} aria-hidden="true" /></span>
+          <span><Truck size={17} aria-hidden="true" /><span>{q.shippingCents === 0 ? <>Seu pedido tem <strong>frete grátis</strong></> : <>Entrega por <strong>{FULL_SHIPPING_LABEL}</strong></>}</span><Check size={15} aria-hidden="true" /></span>
           <i aria-hidden="true" />
         </div>
       </aside>

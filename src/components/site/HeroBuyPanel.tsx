@@ -24,8 +24,9 @@ export function HeroBuyPanel({ onSelectionChange }: HeroBuyPanelProps) {
 
   return (
     <div className="summer-buy desktop-product-panel mobile-top-buy">
-      <span className="summer-eyebrow">AQUABLAST · OFERTA DE VERÃO</span>
+      <span className="summer-eyebrow">PARA PAIS, AVÓS E PADRINHOS · OFERTA DE VERÃO</span>
       <h1 id="hero-title">Lançador de água elétrico. Diversão a cada disparo.</h1>
+      <p className="summer-sub">Elétrico, recarrega no USB e acende a luz a cada jato. Sem bombear e sem pilha: encheu o tambor, a brincadeira começa.</p>
       <a className="summer-rating" href="#avaliacoes">
         <span aria-hidden="true">★★★★★</span>
         <strong data-hero-review-average>{summary.averageText}</strong>
@@ -40,7 +41,7 @@ export function HeroBuyPanel({ onSelectionChange }: HeroBuyPanelProps) {
       </div>
       <UnitColorGuide openRequest={unitGuideRequest} onSelectionChange={onSelectionChange} />
       <button id="hero-unit-guide-trigger" type="button" className="button button-green summer-buy-button" aria-haspopup="dialog" onClick={openUnitGuide}>
-        Quero o meu
+        Quero meu AquaBlast
       </button>
       <ul className="summer-bullets" aria-label="O que seu AquaBlast oferece">
         <li><Droplet size={15} aria-hidden="true" /><span><strong>Elétrico e automático:</strong> sem bombear.</span></li>

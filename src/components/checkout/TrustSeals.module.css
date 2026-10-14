@@ -1,6 +1,8 @@
+/* Fatos da compra em texto (auditoria de 2026-10-11). Os seletores levam `.panel:global(.trust-seals)` para vencer as
+   regras antigas de `.trust-seals ul/li/svg` das folhas globais, escritas para os medalhões de imagem. */
 .panel:global(.trust-seals) {
   min-width: 0;
-  padding: 20px 16px 14px;
+  padding: 14px 16px;
   border: 1px solid #d4e6ee;
   border-radius: 18px;
   background: linear-gradient(180deg, #fff 0%, #f3f9fc 100%);
@@ -9,99 +11,76 @@
 
 .panel:global(.trust-seals) .list {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: 12px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.panel:global(.trust-seals) .seal,
-.panel:global(.trust-seals) .seal:last-child:nth-child(odd) {
+.panel:global(.trust-seals) .fact,
+.panel:global(.trust-seals) .fact:last-child:nth-child(odd) {
   display: flex;
   grid-column: auto;
-  flex-direction: column;
-  align-items: center;
+  flex-direction: row;
+  align-items: flex-start;
   min-width: 0;
-  gap: 10px;
-  text-align: center;
+  gap: 9px;
+  text-align: left;
 }
 
-.panel:global(.trust-seals) .medallion {
-  display: block;
-  width: 84px;
-  max-width: 100%;
-  aspect-ratio: 1;
-  padding: 3px;
-  border: 1px solid #b9dce9;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 4px 10px #06376012;
+.panel:global(.trust-seals) .fact > svg {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  color: var(--c-primary);
+  stroke-width: 2;
 }
 
-.panel:global(.trust-seals) .image {
-  display: block;
-  width: 100%;
-  height: auto;
-  aspect-ratio: 1;
-  object-fit: contain;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.panel:global(.trust-seals) .caption {
-  display: block;
+.panel:global(.trust-seals) .fact > p {
   min-width: 0;
-  max-width: 100%;
+  margin: 0;
+  color: var(--c-muted);
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
-.panel:global(.trust-seals) .caption strong {
-  display: block;
-  color: var(--c-primary, #063760);
-  font-size: 12px;
-  font-weight: 800;
-  line-height: 1.3;
-  text-wrap: balance;
-  overflow-wrap: normal;
-}
-
-.panel:global(.trust-seals) .caption small {
-  display: block;
-  margin-top: 4px;
-  color: #526c80;
-  font-size: 11px;
-  line-height: 1.35;
-  text-wrap: balance;
-  overflow-wrap: normal;
-}
+/* A cor e a área de toque dos links vêm de `.ck-fact-link` (payment-ux.css), a mesma classe do bloco junto do botão de pagar. */
 
 .panel:global(.trust-seals) .payments {
-  justify-content: center;
-  gap: 10px 20px;
-  margin-top: 16px;
-  padding-top: 12px;
+  justify-content: flex-start;
+  gap: 8px 20px;
+  margin-top: 12px;
+  padding-top: 10px;
   border-top-color: #d4e6ee;
+}
+
+/* Tela de toque: a linha que tem link ocupa 44 px, que é a área de toque do link (`.ck-fact-link`); assim dois links
+   vizinhos não se sobrepõem. */
+@media (max-width: 760px), (pointer: coarse) {
+  .panel:global(.trust-seals) .list {
+    gap: 3px;
+  }
+
+  .panel:global(.trust-seals) .fact {
+    align-items: center;
+    min-height: 30px;
+  }
+
+  .panel:global(.trust-seals) .withLink {
+    min-height: 44px;
+  }
+
+  .panel:global(.trust-seals) .fact > svg {
+    margin-top: 0;
+  }
 }
 
 @media (max-width: 400px) {
   .panel:global(.trust-seals) {
-    padding: 16px 10px 12px;
-  }
-
-  .panel:global(.trust-seals) .list {
-    gap: 8px;
-  }
-
-  .panel:global(.trust-seals) .medallion {
-    width: 70px;
-  }
-
-  .panel:global(.trust-seals) .caption strong {
-    font-size: 11px;
-  }
-
-  .panel:global(.trust-seals) .caption small {
-    font-size: 10px;
+    padding: 12px;
   }
 }

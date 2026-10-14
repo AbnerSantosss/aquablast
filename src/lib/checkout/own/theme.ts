@@ -5,8 +5,7 @@
 // adaptados de zod 3 para zod 4 (z.strictObject, { error }) e com as imagens em /checkout/... em vez de /images/...
 import type { CSSProperties } from "react";
 import { z } from "zod";
-import { money } from "./masks";
-import { FULL_SHIPPING_CENTS, FULL_SHIPPING_LABEL } from "./shipping";
+import { FREE_SHIPPING_LABEL } from "./shipping";
 
 /** Cada campo tem padrão próprio, então registros antigos (ou vazios) continuam válidos. */
 export const themeDefaults = {
@@ -21,7 +20,7 @@ export const themeDefaults = {
   timerLabel: "Oferta de Verão",
   timerEnd: "2026-10-12T23:59:59-03:00",
   shipBarEnabled: true,
-  shipBarText: `${FULL_SHIPPING_LABEL} por ${money(FULL_SHIPPING_CENTS)}`,
+  shipBarText: FREE_SHIPPING_LABEL,
   shipBarNote: "Rastreio pelo site",
   bannerEnabled: true,
   bannerEyebrow: "OFERTA DE VERÃO",
@@ -29,13 +28,16 @@ export const themeDefaults = {
   bannerSubtitle: "Diversão para o verão inteiro.",
   bannerImage: "/checkout/banner-immersive.webp",
   buttonLabel: "CONTINUAR",
-  badgeText: "FRETE FULL",
+  badgeText: "FRETE GRÁTIS",
   footerText: "Momentos que viram boas lembranças.",
   // Identificação da empresa no rodapé (Decreto 7.962/2013). Informados pelo dono em 2026-09-30; a razão social
   // ainda não foi informada, então fica vazia e o rodapé usa o nome da loja.
   companyName: "",
   companyCnpj: "55.212.611/0001-95",
   companyAddress: "Rua Trajano, nº 199, andares 02 e 03, Centro, Florianópolis/SC, CEP 88010-010",
+  // Nome que o app do banco mostra como recebedor do Pix (costuma ser o do processador, não o da loja). Vazio de
+  // propósito: só o dono sabe o nome que aparece, e a tela do Pix não mostra a frase enquanto ele não informar.
+  pixReceiverName: "",
 };
 
 const hexColor = z.string().trim().regex(/^#[0-9a-fA-F]{6}$/, { error: "use uma cor no formato #RRGGBB (ex.: #06a64a)." });
@@ -115,6 +117,7 @@ export const themeSchema = z.strictObject({
     .refine((v) => v === "" || /^\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}$/.test(v), { error: "use o formato 00.000.000/0000-00 (ou deixe vazio)." })
     .default(themeDefaults.companyCnpj),
   companyAddress: text(160).default(themeDefaults.companyAddress),
+  pixReceiverName: text(80).default(themeDefaults.pixReceiverName),
 });
 
 export type Theme = z.infer<typeof themeSchema>;
@@ -145,6 +148,7 @@ export const themeFieldLabels: Record<keyof Theme, string> = {
   companyName: "Razão social",
   companyCnpj: "CNPJ",
   companyAddress: "Endereço da empresa",
+  pixReceiverName: "Nome do recebedor do Pix (como aparece no app do banco)",
 };
 
 /** Converte o primeiro erro do zod numa mensagem em pt-BR que diz qual campo do tema está inválido. */

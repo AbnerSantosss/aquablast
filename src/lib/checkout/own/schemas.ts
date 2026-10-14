@@ -63,22 +63,38 @@ export const addressSchema = z.object({
   recipient: z.string().trim().min(3).max(120),
 });
 
-export const cartSchema = z.strictObject({
-  token: z.string().max(80).optional(),
-  selection: selectionSchema,
-  step: z.enum(["dados", "entrega", "pagamento"]),
-  bump: z.boolean().default(false),
-  /** Cor da 2ª unidade do bump (só com pack "unit"). Vai para colors[1] do carrinho; pode faltar enquanto o cliente escolhe. */
-  bumpColor: colorSchema.optional(),
-  customer: customerSchema.optional(),
-  lead: leadSchema.optional(),
-  address: addressSchema.optional(),
-  tracking: trackingSchema.optional(),
-  /** Cupom de teste (`?cupom=` da URL). O servidor decide se vale; o navegador nunca manda valor. */
-  coupon: z.string().trim().max(40).optional(),
-  /** Id da visita ao checkout (sessionStorage, o mesmo de /api/checkout/opened): InitiateCheckout usa `ic-<visit>`. */
-  visit: z.string().regex(/^[A-Za-z0-9-]{8,64}$/).optional(),
+export const shippingSchema = z.enum(["free", "full"]);
+
+/** Linha do carrinho de itens (/c/[slug]): só slug e quantidade; o preço sai da tabela products. */
+export const cartItemInputSchema = z.strictObject({
+  productSlug: z.string().trim().regex(/^[a-z0-9][a-z0-9-]{0,79}$/),
+  quantity: z.number().int().min(1).max(20),
 });
+
+export const cartSchema = z
+  .strictObject({
+    token: z.string().max(80).optional(),
+    /** Modo legado (/checkout?pack=): pack + cores. Ausente no modo itens. */
+    selection: selectionSchema.optional(),
+    /** Modo itens (/c/[slug], multiempresa): slug da empresa + lista de produtos. */
+    company: z.string().trim().regex(/^[a-z0-9][a-z0-9-]{0,62}$/).optional(),
+    items: z.array(cartItemInputSchema).min(1).max(20).optional(),
+    step: z.enum(["dados", "entrega", "pagamento"]),
+    bump: z.boolean().default(false),
+    /** Cor da 2ª unidade do bump (só com pack "unit"). Vai para colors[1] do carrinho; pode faltar enquanto o cliente escolhe. */
+    bumpColor: colorSchema.optional(),
+    /** Frete escolhido na etapa de entrega. Ausente = mantém o que o carrinho já tem (grátis num carrinho novo). */
+    shipping: shippingSchema.optional(),
+    customer: customerSchema.optional(),
+    lead: leadSchema.optional(),
+    address: addressSchema.optional(),
+    tracking: trackingSchema.optional(),
+    /** Cupom de teste (`?cupom=` da URL). O servidor decide se vale; o navegador nunca manda valor. */
+    coupon: z.string().trim().max(40).optional(),
+    /** Id da visita ao checkout (sessionStorage, o mesmo de /api/checkout/opened): InitiateCheckout usa `ic-<visit>`. */
+    visit: z.string().regex(/^[A-Za-z0-9-]{8,64}$/).optional(),
+  })
+  .refine((c) => (c.selection ? !c.items && !c.company : !!c.items && !!c.company), { error: "Carrinho inválido" });
 
 /** Dados do cartão em claro. Só existem na memória da requisição POST /api/checkout/pay. NUNCA gravar nem logar. */
 export const cardSchema = z.object({
