@@ -1138,3 +1138,15 @@
     overflow: visible;
   }
 }
+
+/*
+ * Fundo leve em cada seção (2026-10-15, pedido do dono: "cada etapa deve ter um leve background").
+ * Seguem tons já existentes: o azul claro (--c-accent) misturado a 5% no branco, sem HEX novo. Vale nas três seções
+ * (dados, entrega e pagamento) no celular e no computador; os campos e cartões de dentro continuam brancos.
+ */
+.ck-root.ck.ck-reference .ck-grid .ck-step,
+.ck-root.ck.ck-reference .ck-grid .ck-step.is-current,
+.ck-root.ck.ck-reference .ck-grid .ck-step.is-todo,
+.ck-root.ck.ck-reference .ck-grid .ck-step.is-done {
+  background: color-mix(in srgb, var(--c-accent) 5%, #fff);
+}
