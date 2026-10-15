@@ -60,7 +60,7 @@ async function run(variant) {
     await L.waitText(L.summaryNote(page, /12x de/), /^12x de R\$ 22,49 sem juros$/);
     const pagar = page.locator('.ck-cardform button[type="submit"]');
     await L.waitText(pagar, "Pagar R$ 269,90");
-    await L.waitText(page.locator(".ck-card-payment-total"), /Total no cartão\s*R\$ 269,90\s*12x de R\$ 22,49 sem juros/);
+    await L.waitText(page.locator(".ck-card-payment-total"), /Total no cartão\s*R\$ 269,90\s*5x de R\$ 53,98 sem juros/);
 
     // Luhn invalido: mascara, bandeira e foco no numero.
     await cartao(page, L.CARD_BAD_LUHN);
@@ -83,14 +83,14 @@ async function run(variant) {
     await pagar.click();
     await erroDoCampo(page, "cc-cpf", "Confira o CPF do titular do cartão.");
 
-    // Parcelas: 12x por padrao; da para trocar.
+    // Parcelas: 5x por padrao; da para trocar.
     const inst = L.field(page, "cc-installments");
     const selText = () => inst.evaluate((s) => s.options[s.selectedIndex].text.replace(/\s+/g, " ").trim());
-    assert.match(await selText(), /^12x de R\$\s22,49 sem juros$/);
+    assert.match(await selText(), /^5x de R\$\s53,98 sem juros$/);
     await inst.selectOption("3");
     assert.match(await selText(), /^3x de R\$\s89,97 sem juros$/);
     await L.waitText(page.locator(".ck-card-payment-total"), /Total no cartão\s*R\$ 269,90\s*3x de R\$ 89,97 sem juros/);
-    await inst.selectOption("12");
+    await inst.selectOption("5");
 
     // Recusado pelo simulado: mensagem do gateway, numero e CVV limpos.
     await cartao(page, L.CARD_REFUSED);

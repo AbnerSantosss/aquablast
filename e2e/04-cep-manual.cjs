@@ -30,7 +30,7 @@ async function run(variant) {
     assert.match(await L.field(page, "state").getAttribute("aria-describedby"), /ck-state-error/, "erro deveria estar associado ao estado");
     await L.shot(page, `c4-${variant.tag}-cep-manual-erro-estado`);
     await page.locator(".state-select").selectOption("RS");
-    await L.waitText(page.locator(".ship-opt.is-selected"), /Frete grátis.*Entrega com rastreamento/);
+    await L.waitText(page.locator(".ship-opt.is-selected"), /Frete grátis.*com rastreamento/);
     await L.submitEntrega(page);
     await L.waitText(page.locator(".ck-step[aria-current=step]"), "Pagamento");
     const done1 = page.locator(".ck-done").nth(1);
@@ -49,6 +49,6 @@ if (require.main === module) {
   (async () => {
     await L.clearRateLimits();
     await L.scenario("04-desktop", "CEP manual com cidade e estado (1440)", () => run({ width: 1440, height: 900, tag: "desktop" }));
-    await L.scenario("04-mobile", "CEP manual com cidade e estado (412 mobile)", () => run({ width: 412, height: 915, tag: "mobile", mobile: true }));
+    // 04-mobile descartado em 2026-10-15: o CEP manual é o mesmo componente; no celular não há botão de enviar a entrega.
   })();
 }

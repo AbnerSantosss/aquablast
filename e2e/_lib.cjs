@@ -114,19 +114,25 @@ async function fillDados(page, c = cliente) {
   await field(page, "email").fill(c.email);
   await field(page, "email").blur();
   await field(page, "phone").fill(c.phone);
-  await field(page, "cpf").fill(c.cpf);
+  // Desktop (3 etapas): CPF não é pedido nos dados, entra no pagamento (fillCpfNoPagamento). Celular (página única) tem o campo.
+  if (await field(page, "cpf").count()) await field(page, "cpf").fill(c.cpf);
   assert.equal(await field(page, "phone").inputValue(), "(11) 98765-4321");
-  assert.equal(await field(page, "cpf").inputValue(), "529.982.247-25");
+}
+
+/** Celular (<1100 px) é página única desde 2026-10-14: não há "Ir para entrega", a entrega já está na tela. */
+async function isOnePage(page) {
+  return page.evaluate(() => window.matchMedia("(max-width: 1099.98px)").matches);
 }
 
 async function submitDados(page) {
-  await submitCurrentForm(page);
+  if (!(await isOnePage(page))) await submitCurrentForm(page);
   await field(page, "cep").waitFor({ timeout: 10000 });
 }
 
 /** A ação principal da etapa, sem depender do texto personalizado no painel. */
 async function submitCurrentForm(page) {
-  const submit = page.locator('.ck-step[aria-current="step"] form button[type="submit"]');
+  const current = page.locator('.ck-step[aria-current="step"] form button[type="submit"]');
+  const submit = (await current.count()) ? current : page.locator('form button[type="submit"]:visible');
   assert.equal(await submit.count(), 1, "deveria haver uma ação de envio no formulário atual");
   await submit.click();
 }
@@ -205,14 +211,19 @@ async function fillEntrega(page, { manual = false, extra, recipient } = {}) {
   const rec = field(page, "recipient");
   if (recipient !== undefined) await (await revealEntregaField(page, "recipient")).fill(recipient);
   else {
-    // O destinatário vem preenchido com o nome informado na etapa 1 (antes aparecia em .delivery-recipient-summary).
-    await rec.waitFor({ state: "visible", timeout: 5000 });
-    assert.equal(await rec.inputValue(), cliente.name, "destinatário deveria vir dos dados do cliente");
+    // O destinatário nasce com o nome ao enviar a etapa (desktop: etapa 1; celular: página única, no envio da entrega).
+    // Antes disso o campo pode estar vazio; se já tiver valor, tem de ser o nome do cliente.
+    const atual = await (await revealEntregaField(page, "recipient")).inputValue();
+    assert.ok(atual === "" || atual === cliente.name, "destinatário, se preenchido, deveria ser o nome do cliente");
   }
 }
 
 async function submitEntrega(page) {
-  await waitText(page.locator(".ship-opt.is-selected"), /Frete grátis.*Entrega com rastreamento/);
+  await waitText(page.locator(".ship-opt.is-selected"), /Frete grátis.*com rastreamento/);
+  if (await isOnePage(page)) {
+    await page.locator(".pay-head, .pay-acc").first().waitFor({ timeout: 10000 });
+    return;
+  }
   await submitCurrentForm(page);
   await page.locator(".pay-acc").waitFor({ timeout: 10000 });
 }
@@ -240,6 +251,13 @@ const payHead = (page, method) => page.locator(".pay-head").filter({ has: page.l
 async function choosePix(page) {
   await payHead(page, "pix").click();
   await page.locator('.pay-item.is-open input[value="pix"]').waitFor({ timeout: 10000 });
+  await fillCpfNoPagamento(page);
+}
+
+/** CPF do pagador: pedido só na forma de pagamento (Pix: name="cpf"). Sem campo visível, não faz nada. */
+async function fillCpfNoPagamento(page, cpf = cliente.cpf) {
+  const campo = field(page, "cpf");
+  if ((await campo.count()) && (await campo.first().isVisible())) await campo.first().fill(cpf);
 }
 
 // Mesma chave de TOKEN_KEY em src/components/checkout/Checkout.tsx (trocada para -unit-149 em 2026-10-08, para
@@ -258,6 +276,9 @@ async function scenario(id, title, fn) {
   } catch (e) {
     status = "falhou";
     detail = String(e && e.message ? e.message : e).split("\n")[0].slice(0, 400);
+    // Onde falhou: primeira linha da pilha que aponta para um arquivo de teste (e2e/*.cjs), para não precisar de rodada extra.
+    const onde = [...String((e && e.stack) || "").matchAll(/[\\/]e2e[\\/]([\w.-]+\.cjs):(\d+)/g)].map((m) => `${m[1]}:${m[2]}`);
+    if (onde.length) detail += ` [em ${[...new Set(onde)].slice(0, 3).join(" <- ")}]`;
   }
   const file = path.join(OUT, "results.json");
   let all = {};
@@ -271,7 +292,7 @@ async function scenario(id, title, fn) {
 module.exports = {
   BASE, OUT, cliente, endereco, CARD_OK, CARD_REFUSED, CARD_BAD_LUHN, assert, withDb,
   open, checkNetwork, noHorizontalScroll, shot, field, btn, waitText,
-  fillDados, submitDados, fillEntrega, submitEntrega, submitCurrentForm, revealEntregaField, revealSummary, goCheckout, toPayment, cartTokenOf, payHead, choosePix,
+  fillDados, submitDados, fillEntrega, submitEntrega, submitCurrentForm, revealEntregaField, revealSummary, goCheckout, toPayment, cartTokenOf, payHead, choosePix, fillCpfNoPagamento, isOnePage,
   summary, summaryRow, summaryTotal, summaryNote, summaryUnit, summaryBump, expectSummaryUnit, editStep, progressEdit, pixCountdown, pixCopy,
   clearRateLimits, setSetting, deleteSetting, scenario,
 };

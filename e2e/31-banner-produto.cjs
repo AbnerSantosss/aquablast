@@ -614,7 +614,8 @@ async function restore() {
     const azulDesk = await expectArt(desk.page, arts.azul.desktop, "unit-azul", "1440 px, ?cor=azul");
     assert.ok(Math.abs(azulDesk.box[2] / azulDesk.box[3] - ratio.desktop) < 0.01, `1440 px: caixa na proporção recomendada do computador: ${azulDesk.box}`);
     assert.deepEqual(await artRequests(desk, from), [arts.azul.desktop.url], "computador pede só a arte de computador do produto");
-    assert.deepEqual(await textPhotoRequests(desk, from), [], "computador com arte não baixa a foto do banner de texto");
+    // Checa a foto do banner de texto (.campaign-photo), não qualquer miniatura de 610 px: a da 2ª unidade no pagamento usa o mesmo arquivo.
+    assert.equal(await desk.page.locator(".campaign-photo img").count(), 0, "computador com arte não mostra a foto do banner de texto");
     await desk.page.screenshot({ path: path.join(OUT, "31-checkout-banner-1440.png") }).catch(() => {});
     pass(`checkout a 1440 px, ?cor=azul: só a arte de computador (${arts.azul.desktop.width} x ${arts.azul.desktop.height}) na caixa de ${azulDesk.box[2]} x ${azulDesk.box[3]} px, inteira, sem texto do banner antigo; a arte de celular não é pedida`);
 
@@ -700,7 +701,7 @@ async function restore() {
     const pretoPhone = await bannerState(handset.page);
     assert.equal(pretoPhone.shown, false, "390 px sem arte: nenhum banner");
     assert.deepEqual(await artRequests(handset, from), [], "celular sem arte não pede arte nenhuma");
-    assert.deepEqual(await textPhotoRequests(handset, from), [], "celular sem arte não baixa a foto do banner de texto, que não aparece");
+    assert.equal(await handset.page.locator(".campaign-photo img").count(), 0, "celular sem arte não mostra a foto do banner de texto, que não aparece");
     pass(`checkout a 390 px: a arte de celular em ${azulPhone.box[2]} x ${azulPhone.box[3]} px, na largura inteira (a de computador não é pedida); kit com a arte do kit; sem arte, nenhum banner e nenhuma imagem dele baixada`);
 
     assert.deepEqual(pageErrors, [], "sem erro de JavaScript no painel nem no checkout");
