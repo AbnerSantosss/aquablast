@@ -51,6 +51,12 @@ export const PLACEHOLDERS = [
   "{{mensagem}}",
   "{{contato}}",
   "{{frase}}",
+  "{{bloco_produto}}",
+  "{{botao_whatsapp}}",
+  "{{link_whatsapp}}",
+  "{{bloco_vantagens}}",
+  "{{bloco_oferta}}",
+  "{{link_duvidas}}",
 ] as const;
 
 // ---------- Visual dos e-mails (refeito em 2026-10-02, pedido do dono: "mais bonito e mais profissional") ----------
@@ -61,6 +67,11 @@ export const PLACEHOLDERS = [
 // altura de <div> e nem sempre herda a fonte da tabela de fora. Por isso: tabela "fantasma" de largura fixa dentro
 // de <!--[if mso]>, mso-padding-alt no botão, fonte repetida em cada célula e nada de <div> com tamanho.
 // Cantos arredondados o Outlook não desenha (fica quadrado); é o esperado.
+// 2026-10-15 (remarketing): os e-mails de carrinho ganharam a foto do produto (JPG em public/email/, gerado por
+// scripts/gen-email-imagens.mjs; WebP não abre no Outlook desktop) com `alt` e célula com cor de fundo para quando o
+// cliente bloqueia imagem, botão de WhatsApp (azul-marinho, secundário ao laranja) e caixa de oferta. Vantagens e oferta
+// só usam valores do painel (preços, parcelas, Pix) calculados na hora; nada de prazo, garantia ou urgência inventada.
+// Os blocos vêm de lib/email/recovery-blocks.ts; se o WhatsApp do painel não for válido, o botão some.
 
 export const EMAIL_FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 const FONT = EMAIL_FONT;
@@ -224,6 +235,7 @@ export const DEFAULT_TEMPLATES: Record<TemplateKey, { name: string; description:
       ${p("Pague com o Pix copia e cola:")}
       ${code("Pix copia e cola", "{{pix_copia_cola}}")}
       ${btn("{{link_pagamento}}", "Finalizar meu pedido")}
+      {{botao_whatsapp}}
       ${small("Se você já pagou, ignore este e-mail: a confirmação chega em instantes.")}
     `,
     ),
@@ -332,33 +344,37 @@ export const DEFAULT_TEMPLATES: Record<TemplateKey, { name: string; description:
   },
   cart_abandoned_1: {
     name: "Carrinho abandonado 1 (lembrete)",
-    description: "1º e-mail para quem começou a compra e não terminou. Tempo definido em Configurações → Checkout.",
-    subject: "{{primeiro_nome}}, seu AquaBlast ficou esperando 💧",
+    description:
+      "1º e-mail para quem começou a compra e não terminou: mostra o produto escolhido, as vantagens reais da compra (frete grátis, desconto no Pix, parcelas) e o WhatsApp para dúvidas. Tempo definido em Configurações → Checkout.",
+    subject: "Seu AquaBlast está guardado, continue de onde parou",
     enabled: true,
     bodyHtml: wrap(
       "Guardamos o que você já preencheu. É só continuar.",
       `
-      ${h1("Faltou pouco, {{primeiro_nome}}!")}
-      ${p("Você começou a compra do seu AquaBlast e parou antes de concluir. Guardamos o que você já preencheu.")}
-      ${summary(true)}
+      ${h1("Seu AquaBlast está guardado")}
+      ${p("Você começou a sua compra e parou na etapa <strong>{{etapa}}</strong>. Guardamos o que já foi preenchido: é só continuar de onde parou.")}
+      {{bloco_produto}}
       ${btn("{{link_carrinho}}", "Continuar minha compra")}
-      ${small("O pagamento pode ser por Pix ou cartão. Se já finalizou a compra, ignore este e-mail.")}
+      {{bloco_vantagens}}
+      {{botao_whatsapp}}
+      ${small("Se você já finalizou a compra, ignore este e-mail.")}
       ${unsubscribe}
     `,
     ),
   },
   cart_abandoned_2: {
     name: "Carrinho abandonado 2 (dúvidas)",
-    description: "2º e-mail. Oferece ajuda pelo WhatsApp e pelo e-mail de suporte.",
-    subject: "Ficou com alguma dúvida sobre o AquaBlast?",
+    description: "2º e-mail, 24 h depois por padrão. Convida a tirar dúvidas pelo WhatsApp (botão com mensagem pronta) ou nas dúvidas mais comuns do site, e mostra o pedido guardado.",
+    subject: "Ficou alguma dúvida sobre o AquaBlast?",
     enabled: true,
     bodyHtml: wrap(
-      "Ficou alguma dúvida? Estamos por aqui.",
+      "Tire suas dúvidas pelo WhatsApp ou veja as respostas mais comuns.",
       `
-      ${h1("Podemos ajudar, {{primeiro_nome}}?")}
-      ${p("Vimos que a sua compra não foi concluída. Se ficou alguma dúvida sobre o produto, o pagamento ou a entrega, fale com a gente {{contato}}.")}
-      ${p("Seu pedido continua salvo:")}
-      ${summary(true)}
+      ${h1("Ficou alguma dúvida?")}
+      ${p("A sua compra do AquaBlast ainda não foi concluída. Se alguma coisa ficou no ar sobre o produto, o pagamento ou a entrega, é só perguntar: a gente responde.")}
+      {{botao_whatsapp}}
+      ${p('Prefere ler primeiro? <a href="{{link_duvidas}}" style="color:#0b6fa4;font-weight:700;">Veja as dúvidas mais comuns</a>.')}
+      {{bloco_produto}}
       ${btn("{{link_carrinho}}", "Voltar para a compra")}
       ${unsubscribe}
     `,
@@ -366,16 +382,20 @@ export const DEFAULT_TEMPLATES: Record<TemplateKey, { name: string; description:
   },
   cart_abandoned_3: {
     name: "Carrinho abandonado 3 (último aviso)",
-    description: "3º e último e-mail. Depois dele o carrinho não recebe mais lembretes.",
+    description:
+      "3º e último e-mail, 72 h depois por padrão. Mostra a oferta que vale para o carrinho (segunda unidade ou economia do kit, e desconto do Pix, sempre com os valores do painel). Depois dele o carrinho não recebe mais lembretes.",
     subject: "Último lembrete: sua compra do AquaBlast",
     enabled: true,
     bodyHtml: wrap(
-      "Este é o nosso último lembrete sobre esta compra.",
+      "Este é o último e-mail sobre esta compra.",
       `
-      ${h1("Este é o nosso último lembrete")}
-      ${p("{{primeiro_nome}}, não vamos mais escrever sobre esta compra. Se ainda quiser o seu AquaBlast, o link abaixo leva direto para onde você parou.")}
-      ${summary(true)}
+      ${h1("Último lembrete sobre a sua compra")}
+      ${p("O seu pedido do AquaBlast continua guardado. Veja como ficou:")}
+      {{bloco_oferta}}
+      {{bloco_produto}}
       ${btn("{{link_carrinho}}", "Finalizar minha compra")}
+      {{botao_whatsapp}}
+      ${small("Este é o último lembrete que enviamos sobre esta compra. Se você já finalizou, ignore este e-mail.")}
       ${unsubscribe}
     `,
     ),
@@ -392,6 +412,7 @@ export const DEFAULT_TEMPLATES: Record<TemplateKey, { name: string; description:
       ${p("{{primeiro_nome}}, o pagamento do pedido <strong>{{pedido}}</strong> não foi aprovado pela operadora do cartão. Nenhum valor foi cobrado.")}
       ${p("Você pode tentar outro cartão ou pagar por Pix:")}
       ${btn("{{link_pagamento}}", "Tentar de novo")}
+      {{botao_whatsapp}}
     `,
     ),
   },
@@ -406,6 +427,7 @@ export const DEFAULT_TEMPLATES: Record<TemplateKey, { name: string; description:
       ${h1("Seu código Pix venceu")}
       ${p("{{primeiro_nome}}, o código Pix do pedido <strong>{{pedido}}</strong> venceu antes do pagamento. É só gerar um novo:")}
       ${btn("{{link_pagamento}}", "Gerar novo código Pix")}
+      {{botao_whatsapp}}
       ${small("Se você já pagou, ignore este e-mail: a confirmação chega em instantes.")}
     `,
     ),
@@ -427,7 +449,7 @@ export const DEFAULT_TEMPLATES: Record<TemplateKey, { name: string; description:
 };
 
 /**
- * md5 dos corpos padrão anteriores de cada modelo (todas as versões até 2026-10-07, ajuste para o Outlook desktop). Quando o padrão muda, a
+ * md5 dos corpos padrão anteriores de cada modelo (todas as versões até 2026-10-15, remarketing com foto e WhatsApp). Quando o padrão muda, a
  * linha do banco que ainda está com um corpo antigo (ninguém editou) recebe o novo; se o dono editou o modelo,
  * a versão dele fica intacta. Guardar o md5 evita carregar no código o HTML inteiro de cada versão antiga.
  * Ao mudar um corpo padrão de novo: acrescente aqui o md5 do corpo que está saindo.
@@ -435,19 +457,19 @@ export const DEFAULT_TEMPLATES: Record<TemplateKey, { name: string; description:
 const LEGACY_BODY_MD5: Partial<Record<TemplateKey, string[]>> = {
   order_confirmed: ["0bdd6d29c6eab3b05ec55eb753a2d985", "1848547bb8a53fd86698c8df88fb8d77", "cd7d8ae611911d7512a27a981365c805"],
   pix_pending: ["4b3038f1e1b0c77854b8e45ec84d4f1f", "5a8081ca9af2c3342dd9b6e7cc93dd05"],
-  pix_reminder: ["bb9b27e596d69e4e63e46b58da07031f", "877af0b157ef99d9b69fb3db9fb9851e"],
+  pix_reminder: ["bb9b27e596d69e4e63e46b58da07031f", "877af0b157ef99d9b69fb3db9fb9851e", "c97ea9d289707953a552cabe0c6be566"],
   shipped: ["538372bfd8e203132534593482b76098", "5ce9ae83020a8d7875e01e171e5da126", "214bda98475a0979119fc6f1fcc3de1d", "ffdc4dce8f2f030cda12371bf68d4186"],
   in_transit: ["374c4dc3bea9f848922e92b729f03cd5", "20bf281973be49b4790445faf9779d18"],
   out_for_delivery: ["3a31e54f307806e221b1f3459be072c0", "acad352622514414448ce0ea2969b39f", "73afa4796e11e2f09dc64c0ce6029bb7"],
   delivered: ["8b24ebe04a08c4fb7cb1538a10caa2d5", "7144e3bc62e08e61bf4a137ee74199b7", "066654870ca128edaf74aefe73f9e227"],
   exception: ["5ef65eef2c5042e3e0571bd916de9a80", "638391b3f94c9635b04e28907da6d66b"],
   access_code: ["0d21364bdd8a1f1964b162b36e67db86", "1127c08521c1c6666fe8ffa32086aedd", "f1a638900e3e66546220b9fddece0062"],
-  cart_abandoned_1: ["470c33cec62a7012b9a9a164736a0c93", "239c24c306f3c8334b73925939ab5d91"],
-  cart_abandoned_2: ["b2b3f78c8e5ab5a90a626341bed39b93", "56f8fe77a947d8c290918e3006daff75"],
-  cart_abandoned_3: ["273e61e090d52f17d60e3d1f7957fcd3", "f7be8e7d0d87b2e27adfa0c336e23c61"],
-  payment_refused: ["53b1ae53d3d6ec4be384f14f194f2f55", "5491644629ae513b32852756d1342eeb"],
+  cart_abandoned_1: ["470c33cec62a7012b9a9a164736a0c93", "239c24c306f3c8334b73925939ab5d91", "64df15795d821d2973b541500bbdf88e"],
+  cart_abandoned_2: ["b2b3f78c8e5ab5a90a626341bed39b93", "56f8fe77a947d8c290918e3006daff75", "3e5800bfe93fcf769c7a0e87ffd5c672"],
+  cart_abandoned_3: ["273e61e090d52f17d60e3d1f7957fcd3", "f7be8e7d0d87b2e27adfa0c336e23c61", "76228d1717a79703ed733945477457c0"],
+  payment_refused: ["53b1ae53d3d6ec4be384f14f194f2f55", "5491644629ae513b32852756d1342eeb", "c3cfcc27a603fb5da732ceaf2840a43f"],
   admin_sla_atrasado: ["f6325e1d5c9a27f4c75c0818b3f75adc"],
-  pix_expired: ["48e11455f7a1baacc77acca51d43296d", "8414b68c5f34c2f018aa44fd2f206ff1"],
+  pix_expired: ["48e11455f7a1baacc77acca51d43296d", "8414b68c5f34c2f018aa44fd2f206ff1", "bf22e0edd0ba0885e62c25850f58ca48"],
 };
 
 export async function ensureDefaultTemplates(): Promise<void> {

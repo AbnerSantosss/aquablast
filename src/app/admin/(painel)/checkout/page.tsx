@@ -263,7 +263,7 @@ export default async function PersonalizarCheckoutPage() {
             </div>
           </section>
 
-          <section className="card">
+          <section className="card" id="recuperacao">
             <div className="card-head">
               <h2>Recuperação de carrinho abandonado</h2>
             </div>

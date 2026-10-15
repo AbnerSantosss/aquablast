@@ -720,3 +720,77 @@
 .cb-status:empty {
   margin-top: -0.45rem;
 }
+
+/* ---------- Carrinhos: funil de recuperação e régua atual ---------- */
+.rec-funnel .kpis {
+  margin-bottom: 0;
+}
+
+.rec-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.rec-steps li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed var(--line);
+}
+
+.rec-steps li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.rec-steps strong {
+  min-width: 9.5rem;
+}
+
+.rec-link {
+  margin-left: auto;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 640px) {
+  .rec-steps strong {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+  .rec-link {
+    margin-left: 0;
+  }
+}
+
+/* O selo Ligada/Desligada esticava na altura do botão "Mudar tempos". */
+.rec-rule .btn-row {
+  align-items: center;
+}
+
+/* Cartão do carrinho no celular: mesma ordem em toda linha (cliente e valor, situação, data e e-mails,
+   próximo passo, ações). Sem isto o flex-wrap encaixava as 7 células conforme o tamanho do texto. */
+@media (max-width: 640px) {
+  .rec-cards td.rec-client {
+    flex: 1 1 0;
+  }
+  .rec-cards td.rec-status {
+    order: -1;
+    flex-basis: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.5rem;
+  }
+  .rec-cards td.rec-status .cell-sub {
+    margin: 0;
+  }
+  .rec-cards td.rec-next {
+    flex-basis: 100%;
+  }
+}

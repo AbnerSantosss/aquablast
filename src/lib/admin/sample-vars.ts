@@ -1,5 +1,6 @@
 import { env } from "@/lib/env";
 import { brandVars } from "@/lib/email/brand-vars";
+import { orderWhatsappVars, recoveryVars } from "@/lib/email/recovery-blocks";
 import { accessBlockHtml, messageBlockHtml, progressHtml } from "@/lib/email/status-blocks";
 import { PUBLIC_CARRIER_LABEL } from "@/lib/tracking/public";
 import { getSettings } from "@/lib/settings";
@@ -9,7 +10,7 @@ const SAMPLE_CODE = "BR0000000000000";
 
 /** Variáveis de exemplo para pré-visualizar e testar templates de e-mail. */
 export async function sampleVars(): Promise<Record<string, string>> {
-  const s = await getSettings(["store.name", "store.supportWhatsapp", "store.supportEmail", "store.trackingPageUrl"] as const);
+  const s = await getSettings(["store.name", "store.supportWhatsapp", "store.supportEmail", "store.trackingPageUrl", "checkout.prices", "checkout.maxInstallments", "checkout.bumpEnabled"] as const);
   const base = env().APP_URL.replace(/\/$/, "");
   const trackingPath = s["store.trackingPageUrl"].startsWith("http") ? s["store.trackingPageUrl"] : base + s["store.trackingPageUrl"];
   return {
@@ -32,6 +33,23 @@ export async function sampleVars(): Promise<Record<string, string>> {
     valor: "R$ 129,90",
     itens: "1× AquaBlast (Azul)",
     ...brandVars({ name: s["store.name"], whatsapp: String(s["store.supportWhatsapp"] ?? ""), email: s["store.supportEmail"] }),
+    // Modelos de carrinho: link, etapa e descadastro de exemplo; os blocos usam 1 unidade azul e os preços reais do painel.
+    link_carrinho: `${base}/checkout/pedido/exemplo?utm_source=email&utm_medium=recuperacao&utm_campaign=previa`,
+    etapa: "Pagamento",
+    link_descadastro: `${base}/checkout/descadastrar/exemplo`,
+    ...recoveryVars({
+      baseUrl: base,
+      campaign: "previa",
+      selection: { pack: "unit", colors: ["azul"] },
+      firstName: "Maria",
+      totalCents: s["checkout.prices"].unit.pix,
+      prices: s["checkout.prices"],
+      maxInstallments: s["checkout.maxInstallments"],
+      bumpEnabled: s["checkout.bumpEnabled"],
+      freeShipping: true,
+      whatsappRaw: String(s["store.supportWhatsapp"] ?? ""),
+    }),
+    ...orderWhatsappVars(String(s["store.supportWhatsapp"] ?? ""), "AQB-260922-X1Z"),
     status: "Em trânsito",
     progresso: progressHtml({
       status: "in_transit",

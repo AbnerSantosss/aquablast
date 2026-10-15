@@ -312,6 +312,98 @@ export async function listAbandonedCarts(f: CartFilters): Promise<{ rows: Checko
   return { rows, total, page, pages };
 }
 
+// ---------- Funil de recuperação e régua (remarketing) ----------
+
+export interface RecoveryFunnel {
+  /** Limites aplicados em `createdAt` ([from, to)); `null` = sem limite naquele lado. */
+  from: Date | null;
+  to: Date | null;
+  /** Sem filtro de datas no painel: usou os últimos 30 dias. */
+  isDefaultPeriod: boolean;
+  comContato: number;
+  comEmail: number;
+  soTelefone: number;
+  receberam1: number;
+  receberam2: number;
+  receberam3: number;
+  recuperados: number;
+  valorRecuperadoCents: number;
+  compraramDireto: number;
+  descadastrados: number;
+  /** recuperados / quem recebeu ao menos 1 e-mail. `null` quando a base é 0. */
+  taxaRecuperacao: number | null;
+}
+
+/**
+ * Funil de recuperação dos carrinhos criados no período, em uma única consulta agregada.
+ * `from`/`to` vêm do filtro de datas da página (yyyy-mm-dd, dia de São Paulo); sem nenhum dos dois,
+ * usa os últimos 30 dias (hoje incluído).
+ */
+export async function recoveryFunnel(f: { from?: string; to?: string }): Promise<RecoveryFunnel> {
+  const fromB = f.from ? dayBounds(f.from) : null;
+  const toB = f.to ? dayBounds(f.to) : null;
+  const isDefaultPeriod = !fromB && !toB;
+  const from = isDefaultPeriod ? new Date(startOfDaySP().getTime() - 29 * 86_400_000) : (fromB?.start ?? null);
+  const to = toB?.end ?? null;
+
+  const where: SQL[] = [];
+  if (from) where.push(gte(checkoutCarts.createdAt, from));
+  if (to) where.push(lt(checkoutCarts.createdAt, to));
+
+  const email = sql`(${checkoutCarts.customerEmail} is not null and btrim(${checkoutCarts.customerEmail}) <> '')`;
+  const phone = sql`(${checkoutCarts.customerPhone} is not null and btrim(${checkoutCarts.customerPhone}) <> '')`;
+  const recovered = eq(checkoutCarts.status, "recovered");
+
+  const [r] = await db
+    .select({
+      comContato: sql<number>`count(*) filter (where ${email} or ${phone})`.mapWith(Number),
+      comEmail: sql<number>`count(*) filter (where ${email})`.mapWith(Number),
+      soTelefone: sql<number>`count(*) filter (where ${phone} and not ${email})`.mapWith(Number),
+      receberam1: sql<number>`count(*) filter (where ${checkoutCarts.recoveryEmailCount} >= 1)`.mapWith(Number),
+      receberam2: sql<number>`count(*) filter (where ${checkoutCarts.recoveryEmailCount} >= 2)`.mapWith(Number),
+      receberam3: sql<number>`count(*) filter (where ${checkoutCarts.recoveryEmailCount} >= 3)`.mapWith(Number),
+      recuperados: sql<number>`count(*) filter (where ${recovered})`.mapWith(Number),
+      valorRecuperadoCents: sql<number>`coalesce(sum(${checkoutCarts.amountCents}) filter (where ${recovered}), 0)`.mapWith(Number),
+      compraramDireto: sql<number>`count(*) filter (where ${eq(checkoutCarts.status, "converted")})`.mapWith(Number),
+      descadastrados: sql<number>`count(*) filter (where ${isNotNull(checkoutCarts.unsubscribedAt)})`.mapWith(Number),
+    })
+    .from(checkoutCarts)
+    .where(where.length ? and(...where) : undefined);
+
+  return { from, to, isDefaultPeriod, ...r, taxaRecuperacao: r.receberam1 > 0 ? r.recuperados / r.receberam1 : null };
+}
+
+export interface RecoveryPlan {
+  enabled: boolean;
+  /** Minutos após a última atividade para o 1º, 2º e 3º e-mail (0 = etapa desligada). */
+  minutes: [number, number, number];
+  pixAfterMinutes: number;
+  pixMaxCount: number;
+}
+
+/** Régua como está configurada agora (mesmas chaves e mesma regra de "desligada" de `runAbandonedCarts`). */
+export async function getRecoveryPlan(): Promise<RecoveryPlan> {
+  const s = await getSettings([
+    "checkout.recovery.enabled",
+    "checkout.recovery.firstAfterMinutes",
+    "checkout.recovery.secondAfterMinutes",
+    "checkout.recovery.thirdAfterMinutes",
+    "email.pixReminder.afterMinutes",
+    "email.pixReminder.maxCount",
+  ] as const);
+  const minutes: [number, number, number] = [
+    Number(s["checkout.recovery.firstAfterMinutes"]) || 0,
+    Number(s["checkout.recovery.secondAfterMinutes"]) || 0,
+    Number(s["checkout.recovery.thirdAfterMinutes"]) || 0,
+  ];
+  return {
+    enabled: !!s["checkout.recovery.enabled"] && minutes.some((m) => m > 0),
+    minutes,
+    pixAfterMinutes: Number(s["email.pixReminder.afterMinutes"]) || 0,
+    pixMaxCount: Number(s["email.pixReminder.maxCount"]) || 0,
+  };
+}
+
 // ---------- Clientes (11.6) ----------
 
 export interface CustomerRow {

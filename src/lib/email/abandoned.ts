@@ -5,11 +5,13 @@ import { checkoutCarts, emailLog, orders, paymentAttempts, type CheckoutCart } f
 import { selectionFromCart, titleOf, variantOf } from "@/lib/checkout/own/catalog";
 import { money } from "@/lib/checkout/own/masks";
 import { OWN_PROVIDER } from "@/lib/checkout/own/order";
+import { shippingMethodOf } from "@/lib/checkout/own/shipping";
 import { env } from "@/lib/env";
 import { errorMessage, log } from "@/lib/log";
 import { getSettings } from "@/lib/settings";
 import { brandVars } from "./brand-vars";
 import { getEmailProvider } from "./provider";
+import { effectiveSelection, recoveryVars } from "./recovery-blocks";
 import { sendOrderEmail, type SendResult } from "./send";
 import { escapeHtml, getTemplate, htmlToText, renderTemplate } from "./templates";
 
@@ -36,15 +38,18 @@ function etapaLabel(step: CheckoutCart["step"]): string {
 }
 
 async function buildCartVars(cart: CheckoutCart, templateKey: CartTemplateKey): Promise<Record<string, string>> {
-  const s = await getSettings(["store.name", "store.supportWhatsapp", "store.supportEmail"] as const);
+  const s = await getSettings(["store.name", "store.supportWhatsapp", "store.supportEmail", "checkout.prices", "checkout.maxInstallments", "checkout.bumpEnabled"] as const);
   const base = env().APP_URL.replace(/\/$/, "");
-  const sel = selectionFromCart(cart);
+  // Unidade com a segunda unidade aceita vale kit (o que o checkout cobra); carrinho multiempresa (null) segue sem blocos de produto.
+  const effective = effectiveSelection(cart);
+  const sel = effective ?? selectionFromCart(cart);
   const name = cart.customerName ?? "";
+  const firstName = name.split(/\s+/)[0] ?? "";
   const linkCarrinho = `${base}/checkout/pedido/${cart.token}?utm_source=email&utm_medium=recuperacao&utm_campaign=${templateKey}`;
   const linkDescadastro = `${base}/checkout/descadastrar/${cart.token}`;
   return {
     nome: escapeHtml(name),
-    primeiro_nome: escapeHtml(name.split(/\s+/)[0] ?? ""),
+    primeiro_nome: escapeHtml(firstName),
     pedido: "",
     codigo_acesso: "",
     link_rastreio: "",
@@ -58,6 +63,18 @@ async function buildCartVars(cart: CheckoutCart, templateKey: CartTemplateKey): 
     link_carrinho: linkCarrinho,
     etapa: escapeHtml(etapaLabel(cart.step)),
     link_descadastro: linkDescadastro,
+    ...recoveryVars({
+      baseUrl: base,
+      campaign: templateKey,
+      selection: effective,
+      firstName,
+      totalCents: cart.amountCents,
+      prices: s["checkout.prices"],
+      maxInstallments: s["checkout.maxInstallments"],
+      bumpEnabled: s["checkout.bumpEnabled"],
+      freeShipping: shippingMethodOf(cart.shippingMethod) === "free",
+      whatsappRaw: String(s["store.supportWhatsapp"] ?? ""),
+    }),
   };
 }
 

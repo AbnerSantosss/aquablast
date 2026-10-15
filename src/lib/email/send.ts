@@ -7,6 +7,7 @@ import { getEmailProvider } from "./provider";
 import { STATUS_LABEL } from "@/lib/orders/status";
 import { PUBLIC_CARRIER_LABEL } from "@/lib/tracking/public";
 import { brandVars } from "./brand-vars";
+import { orderWhatsappVars } from "./recovery-blocks";
 import { accessBlockHtml, messageBlockHtml, progressHtml } from "./status-blocks";
 import { escapeHtml, getTemplate, htmlToText, internalButton, internalFrame, renderTemplate, type TemplateKey } from "./templates";
 
@@ -49,6 +50,8 @@ export async function buildVars(order: Order, extra: { accessCode?: string; mess
     valor: formatBRL(order.amountTotal),
     itens: items,
     ...brandVars({ name: s["store.name"], whatsapp: String(s["store.supportWhatsapp"] ?? ""), email: s["store.supportEmail"] }),
+    // Botão e link de WhatsApp com a pergunta já escrita (vazios se o número do painel não é válido).
+    ...orderWhatsappVars(String(s["store.supportWhatsapp"] ?? ""), order.orderNumber),
     status: escapeHtml(STATUS_LABEL[order.status]),
     progresso: progressHtml(order),
     bloco_rastreio: "",
