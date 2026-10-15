@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, CreditCard, LockKeyhole, Mail, MapPin, Phone } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import type { Selection } from "@/lib/checkout/own/catalog";
 import type { BannerMap } from "@/lib/checkout/own/banners";
@@ -40,6 +40,19 @@ import type { CepState, CheckoutInitial, FieldKey, FormData, PaidInfo, PayMethod
 
 /** Checkout em uma página (2026-10-14, referência Luna Checkout). false volta ao fluxo por etapas. */
 const ONE_PAGE = true;
+/**
+ * A página única vale só no celular/tablet (abaixo de 1100 px, o mesmo corte da casca de app do desktop-shell.css).
+ * No computador o checkout segue em 3 etapas, uma por vez (pedido do dono, 2026-10-14: "volte para o checkout em sequência no desktop").
+ * O servidor e a hidratação assumem celular (a maior parte do tráfego): o celular não pisca; o desktop troca para as etapas logo após hidratar.
+ */
+const MOBILE_QUERY = "(max-width: 1099.98px)";
+function subscribeMobile(onChange: () => void): () => void {
+  const mq = window.matchMedia(MOBILE_QUERY);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+}
+const getMobile = () => window.matchMedia(MOBILE_QUERY).matches;
+const getMobileServer = () => true;
 const TOKEN_KEY = "ck-cart-token-unit-149";
 const STEP_NAMES = ["Seus dados", "Entrega", "Pagamento"] as const;
 const STEP_OF: Record<StepName, number> = { dados: 1, entrega: 2, pagamento: 3 };
@@ -190,7 +203,21 @@ export function Checkout({
   const canBump = !itemsMode && bumpEnabled && selection.pack === "unit";
   const hasBump = canBump && bump;
   /** Checkout em uma página ativo: não vale na tela de pedido pago, que segue igual. */
-  const one = ONE_PAGE && !paid;
+  const isMobile = useSyncExternalStore(subscribeMobile, getMobile, getMobileServer);
+  const one = ONE_PAGE && !paid && isMobile;
+  // Da página única para as etapas (janela alargada, tablet girado): os dados são o mesmo estado, só muda a tela.
+  // Abre no passo mais alto já cumprido (dados válidos → entrega; endereço já confirmado e salvo → pagamento), nunca abaixo do atual.
+  const [wasOne, setWasOne] = useState(one);
+  if (wasOne !== one) {
+    setWasOne(one);
+    if (wasOne && !paid) {
+      let top = 1;
+      if (!dadosProblem(data)) top = 2;
+      if (top === 2 && addrOk && cartToken && !addressProblem(data)) top = 3;
+      setStep((s) => Math.max(s, top));
+      setError("");
+    }
+  }
 
   // Leva o cliente ao primeiro campo da etapa; no celular só a partir da etapa 2, para não abrir o teclado ao carregar. Na etapa 3 o foco vai para o título.
   // Uma página: sem autofoco ao carregar (o cliente vê as três seções e começa por onde quiser).
@@ -300,9 +327,10 @@ export function Checkout({
         };
     if (opts.lead) payload.lead = opts.lead;
     if (opts.customer && (d.name || d.email || d.phone || d.cpf)) {
-      // Carrinho retomado com CPF vazio: não reenvia o campo — o servidor mantém o CPF cifrado gravado.
+      // CPF vazio não vai: desde 2026-10-14 ele só é pedido no Pix ou no cartão (chega por `prepare`), e o schema recusa
+      // cpf "" com 400. Sem o campo, o servidor mantém o CPF cifrado já gravado (carrinho retomado).
       const base = { name: d.name.trim(), email: d.email.trim(), phone: d.phone };
-      payload.customer = cpfMasked && d.cpf === "" ? base : { ...base, cpf: d.cpf };
+      payload.customer = d.cpf === "" ? base : { ...base, cpf: d.cpf };
     }
     if (opts.address && (d.street || d.cep)) {
       payload.address = {
@@ -790,7 +818,7 @@ export function Checkout({
         paymentSync={paymentSync}
         onRetrySync={() => void syncPaymentCart(bump, bumpColor)}
         cartToken={cartToken}
-        prepare={one ? prepare : undefined}
+        prepare={prepare}
         cpfMasked={cpfMasked}
         color={c1}
         canBump={canBump}

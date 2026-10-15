@@ -49,6 +49,14 @@ export function StepDados({
           onChange={onChange}
           opts={{ type: "email", inputMode: "email", autoComplete: "email", autoCapitalize: "none", autoCorrect: "off", spellCheck: false, maxLength: 160, enterKeyHint: "next", ok: emailOk(data.email), onBlur: onContactBlur }}
         />
+        <Field
+          name="phone"
+          label="Celular com DDD"
+          placeholder="(00) 00000-0000"
+          value={data.phone}
+          onChange={onChange}
+          opts={{ type: "tel", autoComplete: "tel", inputMode: "tel", maxLength: 20, enterKeyHint: "done", ok: validMobile(data.phone), onBlur: onContactBlur }}
+        />
         {/* Cada finalidade abaixo descreve o que o código faz (auditoria de 2026-10-11): o checkout não cria conta de
             cliente; o e-mail recebe a confirmação e o rastreio; o celular fica no pedido para contato. Não citar nota fiscal: o sistema não emite. O texto é curto de
             propósito: cabe em duas linhas na coluna do computador (uma a mais que a frase antiga). */}
