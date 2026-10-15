@@ -64,7 +64,6 @@ if (require.main === module) {
     await L.scenario("06-desktop", "Sem cronometro de oferta, antes e depois do fim antigo (1440)", () => cronometro({ width: 1440, height: 900, tag: "desktop" }));
     await L.scenario("06-mobile", "Sem cronometro de oferta, antes e depois do fim antigo (412 mobile)", () => cronometro({ width: 412, height: 915, tag: "mobile", mobile: true }));
     await L.scenario("07-desktop", "Pix expira em 10 min e gera de novo (1440)", () => pixExpira({ width: 1440, height: 900, tag: "desktop" }));
-    await L.clearRateLimits();
-    await L.scenario("07-mobile", "Pix expira em 10 min e gera de novo (412 mobile)", () => pixExpira({ width: 412, height: 915, tag: "mobile", mobile: true }));
+    // 07-mobile descartado em 2026-10-15: a expiração do Pix é o mesmo componente (PixPay) já testado no computador.
   })();
 }

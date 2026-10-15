@@ -150,7 +150,9 @@ async function c11() {
 const abandoned = { email: `carrinho.${STAMP}@teste.test`, token: null };
 
 async function c12() {
-  const { browser, page } = await L.open({ width: 412, height: 915, mobile: true });
+  // Computador: "Ir para entrega" grava o carrinho na etapa entrega. No celular (página única) a gravação é silenciosa,
+  // ao sair do endereço completo; a regra do servidor é a mesma.
+  const { browser, page } = await L.open({ width: 1440, height: 900 });
   try {
     await L.goCheckout(page);
     await L.fillDados(page, { ...L.cliente, email: abandoned.email });
@@ -166,8 +168,9 @@ async function c12() {
   assert.equal(cart.customer_email, abandoned.email);
   assert.equal(cart.order_id, null);
   assert.equal(cart.consent, false);
-  assert.ok(cart.customer_document_enc && !cart.customer_document_enc.includes("52998224725"), "CPF deveria estar cifrado");
-  return `status open, step entrega, CPF cifrado`;
+  // Desde que o CPF passou para o pagamento, o carrinho abandonado nos dados não tem CPF; se tiver, nunca em texto puro.
+  assert.ok(!cart.customer_document_enc || !cart.customer_document_enc.includes("52998224725"), "CPF nunca em texto puro");
+  return `status open, step entrega, ${cart.customer_document_enc ? "CPF cifrado" : "sem CPF (pedido só no pagamento)"}`;
 }
 
 async function c13() {
@@ -181,8 +184,8 @@ async function c13() {
     const html = await page.content();
     assert.ok(!html.includes("52998224725") && !html.includes("529.982.247-25"), "CPF inteiro no HTML");
     await L.editStep(page, "Editar seus dados").click(); // o da etapa; a barra de progresso tem outro com o mesmo nome
-    assert.equal(await L.field(page, "cpf").inputValue(), "");
-    assert.equal(await L.field(page, "cpf").getAttribute("placeholder"), "***.***.247-25");
+    // O CPF saiu dos dados (vem no pagamento); retomar mantém o contato preenchido.
+    assert.equal(await L.field(page, "email").inputValue(), abandoned.email);
     await L.shot(page, "c13-retomar-carrinho");
     const nf = await page.goto(`${L.BASE}/checkout/pedido/token-que-nao-existe-${STAMP}`);
     assert.equal(nf.status(), 404);

@@ -33,7 +33,7 @@ async function run(variant) {
     assert.ok(await L.field(page, "number").evaluate((e) => e === document.activeElement), "foco deveria ir ao número");
     await L.waitText(atual, "Entrega");
     await L.field(page, "number").fill("1001");
-    await L.waitText(page.locator(".ship-opt.is-selected"), /Frete grátis.*Entrega com rastreamento/);
+    await L.waitText(page.locator(".ship-opt.is-selected"), /Frete grátis.*com rastreamento/);
     assert.ok(await L.btn(page, "Ir para pagamento").isVisible(), "deveria haver uma ação direta de avanço");
     await L.shot(page, `c3-${variant.tag}-editar-entrega`);
     await L.submitEntrega(page);
@@ -57,6 +57,6 @@ if (require.main === module) {
   (async () => {
     await L.clearRateLimits();
     await L.scenario("03-desktop", "EDITAR mantem os dados (1440)", () => run({ width: 1440, height: 900, tag: "desktop" }));
-    await L.scenario("03-mobile", "EDITAR mantem os dados (412 mobile)", () => run({ width: 412, height: 915, tag: "mobile", mobile: true }));
+    // 03-mobile descartado em 2026-10-15: a página única do celular não tem botões "Editar" (tudo fica na tela).
   })();
 }

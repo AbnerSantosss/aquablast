@@ -37,6 +37,8 @@ async function run(variant) {
     }
     await page.locator('input[name="bump-color"][value="vermelho"]').check();
     await L.btn(page, "Selecionar segunda unidade com desconto").click();
+    // O order bump refaz o carrinho e limpa o CPF já digitado: preenche de novo antes de gerar.
+    await L.fillCpfNoPagamento(page);
     const gerarPix = page.locator(".pix-payment-start .pix-primary");
     await alturaMin(gerarPix, "gerar Pix");
     await gerarPix.click();
@@ -53,9 +55,7 @@ async function run(variant) {
     await L.payHead(page, "card").click();
     await L.field(page, "cc-number").waitFor();
     await L.noHorizontalScroll(page);
-    for (const nome of ["Editar seus dados", "Editar entrega"]) await alturaMin(L.editStep(page, nome), nome);
-    // A barra de progresso (49f7d26) ganhou botões com o mesmo nome: também são alvo de toque.
-    for (const nome of ["Editar seus dados", "Editar entrega"]) await alturaMin(L.progressEdit(page, nome), `${nome} (barra de progresso)`);
+    // Página única do celular (2026-10-14): não há botões "Editar seus dados/entrega"; os alvos de toque são os de pagamento abaixo.
     await alturaMin(page.locator('.ck-cardform button[type="submit"]'), "pagar com cartão");
     for (const head of await page.locator(".pay-head").all()) await alturaMin(head, ".pay-head");
     await L.shot(page, `c5-360-cartao`);

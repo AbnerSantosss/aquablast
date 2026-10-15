@@ -12,7 +12,8 @@ async function run(variant = { width: 1440, height: 900, tag: "desktop" }) {
     await L.waitText(page.locator(".ship-bar"), /frete/i);
     // Cabeçalho novo (49f7d26): o selo passou de "Checkout AquaBlast" para "Ambiente protegido"; o nome da loja fica na marca.
     await L.waitText(page.locator(".ck-season-badge"), "Ambiente protegido");
-    await L.waitText(page.locator(".ck-checkout-intro"), /Finalize seu pedido\s*Etapa 1 de 3 · Seus dados/);
+    // Celular é página única (2026-10-14): sem a barra "Etapa 1 de 3".
+    if (!variant.mobile) await L.waitText(page.locator(".ck-checkout-intro"), /Finalize seu pedido\s*Etapa 1 de 3 · Seus dados/);
     assert.equal(await page.locator(".ck-timer").count(), 0, "checkout de verão não deveria mostrar contagem regressiva");
     assert.equal(await page.locator(".ck-steps > li").count(), 3);
     if (variant.mobile) {
@@ -32,8 +33,10 @@ async function run(variant = { width: 1440, height: 900, tag: "desktop" }) {
     await L.waitText(L.summaryNote(page, /sem juros no cartão/), /^ou 12x de R\$ 14,98 sem juros no cartão$/);
     assert.ok(await L.field(page, "name").isVisible());
 
-    // Validacao de conforto: celular incompleto nao passa.
+    // Validacao de conforto: celular incompleto nao passa. Só no computador: na página única não há botão de enviar os dados
+    // (a validação roda ao gerar o Pix, com o mesmo código), então no celular o teste segue direto para a entrega.
     await L.fillDados(page);
+    if (!variant.mobile) {
     await L.field(page, "phone").fill("119876");
     await L.submitCurrentForm(page);
     // Popup explicito (2026-10-02): diz quantos digitos faltam; fechar leva o foco ao campo. A mesma frase fica na caixa da etapa.
@@ -45,29 +48,30 @@ async function run(variant = { width: 1440, height: 900, tag: "desktop" }) {
     await L.waitText(page.locator("#ck-phone-error"), "O celular está incompleto");
     assert.match(await L.field(page, "phone").getAttribute("aria-describedby"), /ck-phone-error/, "erro deveria estar associado ao celular");
     await L.field(page, "phone").fill(L.cliente.phone);
+    }
     await L.shot(page, `c1-${variant.tag}-1-dados`);
     await L.submitDados(page);
 
-    const done0 = page.locator(".ck-done").nth(0);
-    await L.waitText(done0, L.cliente.name);
-    await L.waitText(done0, L.cliente.email);
+    if (!variant.mobile) {
+      const done0 = page.locator(".ck-done").nth(0);
+      await L.waitText(done0, L.cliente.name);
+      await L.waitText(done0, L.cliente.email);
+    }
     await L.shot(page, `c1-${variant.tag}-2a-entrega-vazia`);
     await L.fillEntrega(page);
-    await L.waitText(page.locator(".ship-opt.is-selected"), /Frete grátis.*Entrega com rastreamento/);
+    await L.waitText(page.locator(".ship-opt.is-selected"), /Frete grátis.*com rastreamento/);
     await L.shot(page, `c1-${variant.tag}-2-entrega`);
     await L.submitEntrega(page);
 
-    await L.waitText(page.locator(".ck-done").nth(1), `${L.endereco.street}, ${L.endereco.number}`);
+    if (!variant.mobile) await L.waitText(page.locator(".ck-done").nth(1), `${L.endereco.street}, ${L.endereco.number}`);
     await L.waitText(page.locator(".ck-testmode").first(), "Modo de teste");
     assert.ok(await L.payHead(page, "pix").locator('input[value="pix"]').isChecked(), "Pix deveria abrir selecionado");
     assert.equal(await page.locator('.pay-item.is-open input[value="pix"]').count(), 1, "Pix deveria abrir aberto");
-    // Desde 2026-10-07 (pedido checkout-prints) o cartão vem antes do Pix na lista e o Pix segue como padrão.
-    // Medido pela posição na tela, não pela ordem no HTML. A divergência fica anotada e reprova o cenário no fim,
-    // para o resto do fluxo ser exercitado mesmo assim.
+    // Pix é a prioridade: aparece antes do cartão na etapa 3 e segue como padrão. Medido pela posição na tela, não pela ordem no HTML.
     const pixHead = await L.payHead(page, "pix").boundingBox();
     const cardHead = await L.payHead(page, "card").boundingBox();
-    if (!(pixHead && cardHead && cardHead.y < pixHead.y))
-      pendencias.push(`Cartão deveria aparecer antes do Pix na etapa 3: Pix em y=${pixHead ? Math.round(pixHead.y) : "?"}, cartão em y=${cardHead ? Math.round(cardHead.y) : "?"}`);
+    if (!(pixHead && cardHead && pixHead.y < cardHead.y))
+      pendencias.push(`Pix deveria aparecer antes do cartão na etapa 3: Pix em y=${pixHead ? Math.round(pixHead.y) : "?"}, cartão em y=${cardHead ? Math.round(cardHead.y) : "?"}`);
     assert.equal(await page.getByText(/boleto/i).count(), 0, "boleto nao deveria aparecer");
     // Desde o 7d1aafa o Pix abre selecionado; escolhendo o cartao, a parcela vira o destaque (unidade no cartao 179,71, frete gratis).
     await L.payHead(page, "card").click();
@@ -102,6 +106,8 @@ async function run(variant = { width: 1440, height: 900, tag: "desktop" }) {
     await L.noHorizontalScroll(page);
 
     // A geração informa o total real; depois mantém validade e cópia visíveis.
+    // O order bump refaz o carrinho e limpa o CPF já digitado: preenche de novo antes de gerar.
+    await L.fillCpfNoPagamento(page);
     await L.btn(page, "Gerar Pix de R$ 239,90").click();
     const code = L.field(page, "pix-code");
     await code.waitFor({ state: "attached", timeout: 15000 });

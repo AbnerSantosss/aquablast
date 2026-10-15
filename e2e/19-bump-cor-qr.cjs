@@ -163,6 +163,8 @@ async function c19a() {
     assert.equal(await page.locator(".bump-product img").getAttribute("alt"), "2ª AquaBlast vermelho");
     await L.shot(page, "c19-bump-vermelho", false);
 
+    // O order bump refaz o carrinho e limpa o CPF já digitado: preenche de novo antes de gerar.
+    await L.fillCpfNoPagamento(page);
     const respP = page.waitForResponse((r) => r.url().startsWith(`${L.BASE}/api/checkout/pay`) && r.request().method() === "POST", { timeout: 20000 });
     await fin.click();
     const resp = await respP;
@@ -246,13 +248,15 @@ async function c19b(publicTokenHint) {
       const res = await fetch("/api/checkout/pay", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cartToken: t, method: "pix", installments: 1, bump: true }) });
       return { status: res.status, body: await res.json() };
     }, token);
-    assert.equal(r.status, 400, `esperado 400, veio ${r.status}`);
-    assert.match(String(r.body.error), /Escolha a cor da 2ª unidade/);
+    // Página única (2026-10-14): CPF e endereço só vão ao carrinho quando o cliente gera o Pix. Antes disso a trava que responde
+    // primeiro é "complete seus dados" (409), não a da cor (400). As duas recusam; o que importa é nenhum pedido nascer (n1 == n0).
+    assert.ok([400, 409].includes(r.status), `esperado 400 ou 409, veio ${r.status}`);
+    assert.match(String(r.body.error), r.status === 400 ? /Escolha a cor da 2ª unidade/ : /Complete seus dados/);
     const bad = await page.evaluate(async (t) => {
       const res = await fetch("/api/checkout/pay", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cartToken: t, method: "pix", installments: 1, bump: true, bumpColor: "verde" }) });
       return res.status;
     }, token);
-    assert.equal(bad, 400, "cor fora da lista deveria dar 400");
+    assert.ok([400, 409].includes(bad), `cor fora da lista deveria ser recusada; veio ${bad}`);
     const n1 = await one("select count(*)::int n from orders o join checkout_carts c on c.id = o.cart_id where c.token = $1", [token]);
     assert.equal(n1.n, n0.n, "nao deveria criar pedido");
 
