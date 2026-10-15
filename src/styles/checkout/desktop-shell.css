@@ -1150,3 +1150,23 @@
 .ck-root.ck.ck-reference .ck-grid .ck-step.is-done {
   background: color-mix(in srgb, var(--c-accent) 5%, #fff);
 }
+
+
+/*
+ * Oferta da segunda unidade e CPF (2026-10-15, pedido do dono: o bump estava colado no CPF e o cliente nem via o campo).
+ * A oferta ganha borda tracejada de cupom no azul do tema e um fundo leve. No celular, a oferta, o CPF e o botão de pagar
+ * passam a ter respiro entre si; no computador o espaçamento não muda, para não alterar a altura do layout.
+ * Só borda e espaçamento: textos, preços e HEX da paleta continuam como estavam.
+ */
+.ck-root.ck.ck-reference .ck-step .order-bump.order-bump:not(.added) {
+  border: 2px dashed var(--c-accent);
+  background: color-mix(in srgb, var(--c-accent) 5%, #fff);
+}
+@media (max-width: 1099px) {
+  .ck-root.ck.ck-reference .ck-step .order-bump.order-bump {
+    margin-bottom: 22px;
+  }
+  .ck-root.ck.ck-reference .ck-step .pix-payment-start > .field {
+    margin-bottom: 16px;
+  }
+}
