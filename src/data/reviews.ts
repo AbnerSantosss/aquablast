@@ -1769,5 +1769,473 @@ export const reviews: Review[] = [
       }
     ],
     "comment": "Comprei de presente e foi uma escolha muito boa. meu filho abriu, ficou super animado e já chamou os primos pra brincar junto. eles se divertiram demais."
-  }
+  },
+  // Avaliacoes com midia do anuncio da Shopee (loja 534124084, item 22295184292), coletadas em 2026-10-17.
+  // Texto, nota, data e fotos copiados como estao; ficaram de fora so fotos de caixa com termo vedado e de etiquetas de envio.
+    {
+      "id": "review-shopee-rayssa",
+      "score": 5,
+      "datePending": false,
+      "avatar": "R",
+      "author": "rayssachrystine728",
+      "meta": {
+        "datetime": "2026-09-24T11:03:00",
+        "label": "2026-09-24 11:03",
+        "variation": "Vermelho"
+      },
+      "detailsLong": false,
+      "details": [
+        {
+          "label": "Parecido com anúncio:",
+          "value": "sim"
+        },
+        {
+          "label": "Segurança:",
+          "value": "sim"
+        },
+        {
+          "label": "Custo-benefício:",
+          "value": "otimo"
+        }
+      ],
+      "media": {
+        "label": "Foto enviada por rayssachrystine728",
+        "items": [
+          {
+            "kind": "image",
+            "href": "/reviews/rayssa-1.webp",
+            "ariaLabel": "Ampliar foto 1 de rayssachrystine728",
+            "image": {
+              "src": "/reviews/thumbs/rayssa-1-200.webp",
+              "alt": "Lançador de água vermelho transparente recebido por rayssachrystine728, segurado na mão",
+              "width": 608,
+              "height": 1080
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "review-shopee-adribehl",
+      "score": 5,
+      "datePending": false,
+      "avatar": "A",
+      "author": "adribehl",
+      "meta": {
+        "datetime": "2026-09-23T15:10:00",
+        "label": "2026-09-23 15:10",
+        "variation": "COR SORTIDA"
+      },
+      "detailsLong": false,
+      "details": [],
+      "comment": "Entrega rápida bem embalado Testei e funciona"
+    },
+    {
+      "id": "review-shopee-io",
+      "score": 5,
+      "datePending": false,
+      "avatar": "I",
+      "author": "i*****o",
+      "meta": {
+        "datetime": "2026-09-22T20:01:00",
+        "label": "2026-09-22 20:01",
+        "variation": "COR SORTIDA"
+      },
+      "detailsLong": false,
+      "details": [
+        {
+          "label": "Parecido com anúncio:",
+          "value": "sim"
+        }
+      ],
+      "comment": "Muito linda, meu filho amou",
+      "media": {
+        "label": "Foto enviada por i*****o",
+        "items": [
+          {
+            "kind": "image",
+            "href": "/reviews/io-1.webp",
+            "ariaLabel": "Ampliar foto 1 de i*****o",
+            "image": {
+              "src": "/reviews/thumbs/io-1-200.webp",
+              "alt": "Carregador e bateria do lançador, foto enviada por i*****o",
+              "width": 608,
+              "height": 1080
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "review-shopee-valent",
+      "score": 5,
+      "datePending": false,
+      "avatar": "V",
+      "author": "valentstore03",
+      "meta": {
+        "datetime": "2026-10-09T20:56:00",
+        "label": "2026-10-09 20:56",
+        "variation": "Azul, Preto"
+      },
+      "detailsLong": false,
+      "details": [],
+      "comment": "Muito legal, diversão garantida aqui em casa."
+    },
+    {
+      "id": "review-shopee-wa2bv",
+      "score": 5,
+      "datePending": false,
+      "avatar": "W",
+      "author": "wa2bv0ifzb",
+      "meta": {
+        "datetime": "2026-09-23T12:21:00",
+        "label": "2026-09-23 12:21",
+        "variation": "COR SORTIDA"
+      },
+      "detailsLong": false,
+      "details": [],
+      "media": {
+        "label": "Foto enviada por wa2bv0ifzb",
+        "items": [
+          {
+            "kind": "image",
+            "href": "/reviews/wa2bv-1.webp",
+            "ariaLabel": "Ampliar foto 1 de wa2bv0ifzb",
+            "image": {
+              "src": "/reviews/thumbs/wa2bv-1-200.webp",
+              "alt": "Lançador de água azul recebido por wa2bv0ifzb, segurado em frente a plantas",
+              "width": 608,
+              "height": 1080
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "review-shopee-eime",
+      "score": 5,
+      "datePending": false,
+      "avatar": "E",
+      "author": "eimedossantos",
+      "meta": {
+        "datetime": "2026-10-16T16:52:00",
+        "label": "2026-10-16 16:52",
+        "variation": "Preto"
+      },
+      "detailsLong": true,
+      "details": [
+        {
+          "label": "Segurança:",
+          "value": "chegou bem, na embalagem inteira"
+        },
+        {
+          "label": "Parecido com anúncio:",
+          "value": "muito parecido com anúncio, ainda bem q o barulho não é tão alto, muito boa pras crianças se divertir"
+        }
+      ]
+    },
+    {
+      "id": "review-shopee-karol",
+      "score": 5,
+      "datePending": false,
+      "avatar": "K",
+      "author": "karol_nascimento0718",
+      "meta": {
+        "datetime": "2026-10-15T22:11:00",
+        "label": "2026-10-15 22:11",
+        "variation": "Preto"
+      },
+      "detailsLong": false,
+      "details": [
+        {
+          "label": "Parecido com anúncio:",
+          "value": "sim parecido com o anúncio"
+        }
+      ],
+      "comment": "Parece ser bom, eu testei.. a caixa veio bem rasurada mas tudo estava na embalagem correto"
+    },
+    {
+      "id": "review-shopee-cleidiane",
+      "score": 5,
+      "datePending": false,
+      "avatar": "C",
+      "author": "cleidianesilva643",
+      "meta": {
+        "datetime": "2026-10-16T19:40:00",
+        "label": "2026-10-16 19:40",
+        "variation": "COR SORTIDA"
+      },
+      "detailsLong": false,
+      "details": [
+        {
+          "label": "Parecido com anúncio:",
+          "value": "sim"
+        },
+        {
+          "label": "Custo-benefício:",
+          "value": "vale a pena"
+        }
+      ],
+      "comment": "Meu filho amou o brinquedo, super compensa e é bem forte",
+      "media": {
+        "label": "Fotos enviadas por cleidianesilva643",
+        "items": [
+          {
+            "kind": "image",
+            "href": "/reviews/cleidiane-1.webp",
+            "ariaLabel": "Ampliar foto 1 de cleidianesilva643",
+            "image": {
+              "src": "/reviews/thumbs/cleidiane-1-200.webp",
+              "alt": "Lançador de água azul com reservatório transparente, segurado por cleidianesilva643",
+              "width": 608,
+              "height": 1080
+            }
+          },
+          {
+            "kind": "image",
+            "href": "/reviews/cleidiane-2.webp",
+            "ariaLabel": "Ampliar foto 2 de cleidianesilva643",
+            "image": {
+              "src": "/reviews/thumbs/cleidiane-2-200.webp",
+              "alt": "Lançador de água azul visto de cima, foto de cleidianesilva643",
+              "width": 608,
+              "height": 1080
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "review-shopee-alberto",
+      "score": 5,
+      "datePending": false,
+      "avatar": "A",
+      "author": "albertoroufail",
+      "meta": {
+        "datetime": "2026-10-14T18:54:00",
+        "label": "2026-10-14 18:54",
+        "variation": "Azul"
+      },
+      "detailsLong": false,
+      "details": [
+        {
+          "label": "Custo-benefício:",
+          "value": "atendeu a felicidade do neto"
+        },
+        {
+          "label": "Parecido com anúncio:",
+          "value": "idêntico ao mostrado"
+        },
+        {
+          "label": "Segurança:",
+          "value": "fácil de brincar"
+        }
+      ],
+      "comment": "Recomendo a loja e o produto Entrega rápida",
+      "media": {
+        "label": "Foto enviada por albertoroufail",
+        "items": [
+          {
+            "kind": "image",
+            "href": "/reviews/alberto-1.webp",
+            "ariaLabel": "Ampliar foto 1 de albertoroufail",
+            "image": {
+              "src": "/reviews/thumbs/alberto-1-200.webp",
+              "alt": "Pacote do lançador recebido por albertoroufail, ainda fechado sobre a mesa",
+              "width": 810,
+              "height": 1080
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "review-shopee-r1",
+      "score": 5,
+      "datePending": false,
+      "avatar": "R",
+      "author": "r*****1",
+      "meta": {
+        "datetime": "2026-10-13T11:10:00",
+        "label": "2026-10-13 11:10",
+        "variation": "COR SORTIDA"
+      },
+      "detailsLong": false,
+      "details": [
+        {
+          "label": "Segurança:",
+          "value": "Muito bom!"
+        },
+        {
+          "label": "Custo-benefício:",
+          "value": "bom"
+        },
+        {
+          "label": "Parecido com anúncio:",
+          "value": "sim"
+        }
+      ],
+      "comment": "Gostei muito do brinquedo, achei bem prático!!",
+      "media": {
+        "label": "Fotos enviadas por r*****1",
+        "items": [
+          {
+            "kind": "image",
+            "href": "/reviews/r1-1.webp",
+            "ariaLabel": "Ampliar foto 1 de r*****1",
+            "image": {
+              "src": "/reviews/thumbs/r1-1-200.webp",
+              "alt": "Lançador de água preto transparente segurado por r*****1, visto de lado",
+              "width": 608,
+              "height": 1080
+            }
+          },
+          {
+            "kind": "image",
+            "href": "/reviews/r1-2.webp",
+            "ariaLabel": "Ampliar foto 2 de r*****1",
+            "image": {
+              "src": "/reviews/thumbs/r1-2-200.webp",
+              "alt": "Lançador de água preto visto de frente, foto de r*****1",
+              "width": 608,
+              "height": 1080
+            }
+          },
+          {
+            "kind": "image",
+            "href": "/reviews/r1-3.webp",
+            "ariaLabel": "Ampliar foto 3 de r*****1",
+            "image": {
+              "src": "/reviews/thumbs/r1-3-200.webp",
+              "alt": "Detalhe do bocal laranja do lançador preto, foto de r*****1",
+              "width": 608,
+              "height": 1080
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "review-shopee-kaio",
+      "score": 5,
+      "datePending": false,
+      "avatar": "K",
+      "author": "kaioman965",
+      "meta": {
+        "datetime": "2026-10-14T13:15:00",
+        "label": "2026-10-14 13:15",
+        "variation": "COR SORTIDA"
+      },
+      "detailsLong": false,
+      "details": [
+        {
+          "label": "Parecido com anúncio:",
+          "value": "sim"
+        },
+        {
+          "label": "Custo-benefício:",
+          "value": "bom"
+        },
+        {
+          "label": "Segurança:",
+          "value": "segurança boa pras crianças"
+        }
+      ],
+      "media": {
+        "label": "Foto enviada por kaioman965",
+        "items": [
+          {
+            "kind": "image",
+            "href": "/reviews/kaio-1.webp",
+            "ariaLabel": "Ampliar foto 1 de kaioman965",
+            "image": {
+              "src": "/reviews/thumbs/kaio-1-200.webp",
+              "alt": "Lançador de água azul ainda no plástico-bolha, com bateria e cabo, foto de kaioman965",
+              "width": 608,
+              "height": 1080
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "review-shopee-nildo",
+      "score": 5,
+      "datePending": false,
+      "avatar": "N",
+      "author": "nildoasantos100",
+      "meta": {
+        "datetime": "2026-10-13T22:13:00",
+        "label": "2026-10-13 22:13",
+        "variation": "COR SORTIDA"
+      },
+      "detailsLong": true,
+      "details": [
+        {
+          "label": "Parecido com anúncio:",
+          "value": "sim , veio em perfeitas condições!!! já testamos e aprovamos !!!! muito obrigado"
+        }
+      ]
+    },
+    {
+      "id": "review-shopee-bethania",
+      "score": 5,
+      "datePending": false,
+      "avatar": "B",
+      "author": "bethaniacmartins",
+      "meta": {
+        "datetime": "2026-10-13T22:37:00",
+        "label": "2026-10-13 22:37",
+        "variation": "COR SORTIDA"
+      },
+      "detailsLong": false,
+      "details": [],
+      "comment": "Produto bom ! Meu filho adorou!",
+      "media": {
+        "label": "Foto enviada por bethaniacmartins",
+        "items": [
+          {
+            "kind": "image",
+            "href": "/reviews/bethania-1.webp",
+            "ariaLabel": "Ampliar foto 1 de bethaniacmartins",
+            "image": {
+              "src": "/reviews/thumbs/bethania-1-200.webp",
+              "alt": "Lançador de água azul transparente segurado por bethaniacmartins",
+              "width": 608,
+              "height": 1080
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "review-shopee-bdv",
+      "score": 5,
+      "datePending": false,
+      "avatar": "2",
+      "author": "2bdv2zy3mt",
+      "meta": {
+        "datetime": "2026-10-12T08:46:00",
+        "label": "2026-10-12 08:46",
+        "variation": "COR SORTIDA"
+      },
+      "detailsLong": false,
+      "details": [],
+      "media": {
+        "label": "Foto enviada por 2bdv2zy3mt",
+        "items": [
+          {
+            "kind": "image",
+            "href": "/reviews/bdv-1.webp",
+            "ariaLabel": "Ampliar foto 1 de 2bdv2zy3mt",
+            "image": {
+              "src": "/reviews/thumbs/bdv-1-200.webp",
+              "alt": "Lançador de água azul transparente segurado por 2bdv2zy3mt",
+              "width": 606,
+              "height": 1080
+            }
+          }
+        ]
+      }
+    }
 ];
