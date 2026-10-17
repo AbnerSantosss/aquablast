@@ -14,7 +14,6 @@ import { useReviewViewer } from "./ReviewViewerProvider";
 const summary = reviewSummary(reviews);
 const STARS = "★★★★★";
 
-// Como no reviews.js: no desktop, fotos e vídeos dos clientes ficam juntos na primeira página.
 // Prioriza relatos reais sobre diversão e o disparo, sem mudar textos, notas ou excluir avaliações.
 const featuredIds = ["review-juliana", "review-carlos", "review-elcio"];
 const summerReviews = [...reviews].sort((a, b) => {
@@ -24,10 +23,20 @@ const summerReviews = [...reviews].sort((a, b) => {
 // Os originais sao preservados; estes dois videos exibem termo proibido na embalagem.
 const excludedVideoPaths = new Set(["/reviews/igor-1.mp4", "/reviews/igor-2.mp4"]);
 const reviewMedia = (review: Review) => (review.media?.items ?? []).filter((item) => !excludedVideoPaths.has(item.href));
+// Pedido do dono (2026-10-17): as primeiras páginas só com avaliações que têm foto ou vídeo; as só de texto vêm depois.
+// Com 24 avaliações com mídia, o desktop (6 por página) fecha 4 páginas de mídia e o celular (4 por página) fecha 6.
+// Vídeos e fotos alternam para cada página ter os dois tipos.
 const mediaReviews = summerReviews.filter((review) => reviewMedia(review).length > 0);
 const textReviews = summerReviews.filter((review) => !reviewMedia(review).length);
-const desktopReviews = [...mediaReviews, ...textReviews];
-const desktopPageSize = Math.max(4, mediaReviews.length);
+const videoReviews = mediaReviews.filter((review) => reviewMedia(review).some((item) => item.kind === "video"));
+const photoReviews = mediaReviews.filter((review) => !videoReviews.includes(review));
+const interleaved: Review[] = [];
+for (let index = 0; index < Math.max(videoReviews.length, photoReviews.length); index += 1) {
+  if (videoReviews[index]) interleaved.push(videoReviews[index]);
+  if (photoReviews[index]) interleaved.push(photoReviews[index]);
+}
+const orderedReviews = [...interleaved, ...textReviews];
+const DESKTOP_PAGE_SIZE = 6;
 const MOBILE_PAGE_SIZE = 4;
 
 function ReviewMediaLink({ review, item, index }: { review: Review; item: ReviewMediaItem; index: number }) {
@@ -128,8 +137,8 @@ export function Reviews() {
   // Ao trocar de layout a página volta para 1 (listener "change" do original).
   const requestedPage = paging.mobile === mobile ? paging.page : 1;
 
-  const filtered = mobile ? summerReviews : desktopReviews;
-  const state = getReviewPage(filtered.length, requestedPage, mobile ? MOBILE_PAGE_SIZE : desktopPageSize);
+  const filtered = orderedReviews;
+  const state = getReviewPage(filtered.length, requestedPage, mobile ? MOBILE_PAGE_SIZE : DESKTOP_PAGE_SIZE);
   const visible = new Set(filtered.slice(state.start, state.end));
   const pageSummary = filtered.length
     ? `${state.start + 1}–${state.end} de ${countText(filtered.length)} · Página ${state.page} de ${state.pageCount}`
@@ -172,7 +181,7 @@ export function Reviews() {
           {pageSummary}
         </p>
         <div className="reviews-list">
-          {summerReviews.map((review) => (
+          {orderedReviews.map((review) => (
             <ReviewArticle key={review.id} review={review} hidden={!visible.has(review)} />
           ))}
         </div>

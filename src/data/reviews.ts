@@ -2237,5 +2237,644 @@ export const reviews: Review[] = [
           }
         ]
       }
+    },
+  // Avaliacoes com fotos e videos do anuncio irmao do mesmo produto na Shopee (loja 487387531, item 52315630447), coletadas em 2026-10-17.
+  // Texto, nota, data, fotos e videos copiados como estao; ficaram de fora midias de caixa ou rotulo com termo vedado, etiqueta de envio e fotos sem o produto.
+    {
+      "id": "review-shopee2-pacheco",
+      "score": 5,
+      "datePending": false,
+      "avatar": "P",
+      "author": "pachecocarvalho120530._",
+      "meta": {
+        "datetime": "2026-09-29T14:55:00",
+        "label": "2026-09-29 14:55",
+        "variation": "Cor Sortido"
+      },
+      "detailsLong": false,
+      "details": [
+        {
+          "label": "Custo-benefício:",
+          "value": "otimo"
+        },
+        {
+          "label": "Parecido com anúncio:",
+          "value": "sim"
+        },
+        {
+          "label": "Segurança:",
+          "value": "otima"
+        }
+      ],
+      "comment": "Muito bonita Custo ótimo Amamos Chegou muito rápido"
+    },
+    {
+      "id": "review-shopee2-rosilene",
+      "score": 5,
+      "datePending": false,
+      "avatar": "R",
+      "author": "rosilenesoares248",
+      "meta": {
+        "datetime": "2026-09-27T10:18:00",
+        "label": "2026-09-27 10:18",
+        "variation": "Preto"
+      },
+      "detailsLong": false,
+      "details": [
+        {
+          "label": "Custo-benefício:",
+          "value": "ótimo"
+        },
+        {
+          "label": "Parecido com anúncio:",
+          "value": "sim"
+        },
+        {
+          "label": "Segurança:",
+          "value": "perfeito"
+        }
+      ],
+      "comment": "Chegou rápido, meu filho amou fácil de montar.",
+      "media": {
+        "label": "Vídeo e foto enviados por rosilenesoares248",
+        "items": [
+          {
+            "kind": "video",
+            "href": "/reviews/rosilene.mp4",
+            "poster": "/reviews/rosilene-poster.webp",
+            "ariaLabel": "Reproduzir vídeo de rosilenesoares248, 5 segundos",
+            "image": {
+              "src": "/reviews/rosilene-poster.webp",
+              "alt": "Lançador de água preto na janela, no vídeo enviado por rosilenesoares248",
+              "width": 360,
+              "height": 640
+            },
+            "duration": "0:05"
+          },
+          {
+            "kind": "image",
+            "href": "/reviews/rosilene-1.webp",
+            "ariaLabel": "Ampliar foto 1 de rosilenesoares248",
+            "image": {
+              "src": "/reviews/thumbs/rosilene-1-200.webp",
+              "alt": "Criança segurando o lançador de água na porta de casa, foto de rosilenesoares248",
+              "width": 608,
+              "height": 1080
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "review-shopee2-g6",
+      "score": 5,
+      "datePending": false,
+      "avatar": "G",
+      "author": "g*****6",
+      "meta": {
+        "datetime": "2026-09-02T11:26:00",
+        "label": "2026-09-02 11:26",
+        "variation": "Cor Sortido"
+      },
+      "detailsLong": false,
+      "details": [],
+      "comment": "Parecido com anúncio, vai a uma distância de uns 4 metros chegou rápido demais a encomenda  parabéns. a única coisa é que venho sem Manual e meu sobrinho acabou desmontando tudo sem presizaão para por a bateria  que( fica na tala da empunhada e ele não sabia pois não tinha manual ) e acabou quebrando pois esqueceu um parafuso e forçou.  Colei pra ele e resolveu. Mas ficarem atento pra mandar o manual conforme descrição. No mais funciona bem.",
+      "media": {
+        "label": "Vídeo e fotos enviados por g*****6",
+        "items": [
+          {
+            "kind": "video",
+            "href": "/reviews/g6.mp4",
+            "poster": "/reviews/g6-poster.webp",
+            "ariaLabel": "Reproduzir vídeo de g*****6, 13 segundos",
+            "image": {
+              "src": "/reviews/g6-poster.webp",
+              "alt": "Lançador de água azul disparando no gramado, no vídeo enviado por g*****6",
+              "width": 360,
+              "height": 640
+            },
+            "duration": "0:13"
+          },
+          {
+            "kind": "image",
+            "href": "/reviews/g6-2.webp",
+            "ariaLabel": "Ampliar foto 1 de g*****6",
+            "image": {
+              "src": "/reviews/thumbs/g6-2-200.webp",
+              "alt": "Lançador de água azul transparente segurado por g*****6, visto de cima",
+              "width": 608,
+              "height": 1080
+            }
+          },
+          {
+            "kind": "image",
+            "href": "/reviews/g6-3.webp",
+            "ariaLabel": "Ampliar foto 2 de g*****6",
+            "image": {
+              "src": "/reviews/thumbs/g6-3-200.webp",
+              "alt": "Lançador de água azul transparente visto de frente, foto de g*****6",
+              "width": 608,
+              "height": 1080
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "review-shopee2-jana",
+      "score": 5,
+      "datePending": false,
+      "avatar": "J",
+      "author": "jana0212",
+      "meta": {
+        "datetime": "2026-09-28T01:12:00",
+        "label": "2026-09-28 01:12",
+        "variation": "Azul"
+      },
+      "detailsLong": false,
+      "details": [
+        {
+          "label": "Segurança:",
+          "value": "é segura"
+        },
+        {
+          "label": "Parecido com anúncio:",
+          "value": "sim"
+        },
+        {
+          "label": "Custo-benefício:",
+          "value": "vale a pena"
+        }
+      ],
+      "comment": "Ah ela é muito fácil de usar,dura bastante a bateria, saí bastante jato de água e vale super a pena as crianças se divertiram muito"
+    },
+    {
+      "id": "review-shopee2-vn1",
+      "score": 5,
+      "datePending": false,
+      "avatar": "V",
+      "author": "vn1sanches",
+      "meta": {
+        "datetime": "2026-10-08T21:39:00",
+        "label": "2026-10-08 21:39",
+        "variation": "Azul"
+      },
+      "detailsLong": false,
+      "details": [
+        {
+          "label": "Funcionamento automático:",
+          "value": "muito top"
+        },
+        {
+          "label": "Alcance do jato de água:",
+          "value": "longo"
+        },
+        {
+          "label": "Bateria recarregável:",
+          "value": "nao testado ainda"
+        }
+      ],
+      "media": {
+        "label": "Vídeo enviado por vn1sanches",
+        "items": [
+          {
+            "kind": "video",
+            "href": "/reviews/vn1.mp4",
+            "poster": "/reviews/vn1-poster.webp",
+            "ariaLabel": "Reproduzir vídeo de vn1sanches, 11 segundos",
+            "image": {
+              "src": "/reviews/vn1-poster.webp",
+              "alt": "Lançador de água azul no banheiro, no vídeo enviado por vn1sanches",
+              "width": 360,
+              "height": 640
+            },
+            "duration": "0:11"
+          }
+        ]
+      }
+    },
+    {
+      "id": "review-shopee2-luana",
+      "score": 5,
+      "datePending": false,
+      "avatar": "L",
+      "author": "luanazambommiranda",
+      "meta": {
+        "datetime": "2026-09-26T15:02:00",
+        "label": "2026-09-26 15:02",
+        "variation": "Preto"
+      },
+      "detailsLong": false,
+      "details": [
+        {
+          "label": "Segurança:",
+          "value": "ótimo"
+        }
+      ],
+      "media": {
+        "label": "Vídeo enviado por luanazambommiranda",
+        "items": [
+          {
+            "kind": "video",
+            "href": "/reviews/luana.mp4",
+            "poster": "/reviews/luana-poster.webp",
+            "ariaLabel": "Reproduzir vídeo de luanazambommiranda, 12 segundos",
+            "image": {
+              "src": "/reviews/luana-poster.webp",
+              "alt": "Lançador de água preto na cozinha, no vídeo enviado por luanazambommiranda",
+              "width": 360,
+              "height": 640
+            },
+            "duration": "0:12"
+          }
+        ]
+      }
+    },
+    {
+      "id": "review-shopee2-cvgod",
+      "score": 4,
+      "datePending": false,
+      "avatar": "C",
+      "author": "cvgod75",
+      "meta": {
+        "datetime": "2026-10-04T23:55:00",
+        "label": "2026-10-04 23:55",
+        "variation": "Vermelho"
+      },
+      "detailsLong": false,
+      "details": [
+        {
+          "label": "Funcionamento automático:",
+          "value": "o brinquedo funcionou bem"
+        },
+        {
+          "label": "Alcance do jato de água:",
+          "value": "alcance da água muito bom"
+        },
+        {
+          "label": "Bateria recarregável:",
+          "value": "A bateria até que carregou bem"
+        }
+      ],
+      "comment": "Só não pode deixar passar do tempo porque vicia a bateria e não dura muito tempo. Não sei se foi meu filho, mas a bateria já não está mais funcionando.",
+      "media": {
+        "label": "Vídeo enviado por cvgod75",
+        "items": [
+          {
+            "kind": "video",
+            "href": "/reviews/cvgod.mp4",
+            "poster": "/reviews/cvgod-poster.webp",
+            "ariaLabel": "Reproduzir vídeo de cvgod75, 12 segundos",
+            "image": {
+              "src": "/reviews/cvgod-poster.webp",
+              "alt": "Lançador de água vermelho no vídeo enviado por cvgod75",
+              "width": 360,
+              "height": 640
+            },
+            "duration": "0:12"
+          }
+        ]
+      }
+    },
+    {
+      "id": "review-shopee2-vjd7",
+      "score": 5,
+      "datePending": false,
+      "avatar": "7",
+      "author": "7o_vjd7fmv",
+      "meta": {
+        "datetime": "2026-09-06T12:03:00",
+        "label": "2026-09-06 12:03",
+        "variation": "Cor Sortido"
+      },
+      "detailsLong": false,
+      "details": [],
+      "media": {
+        "label": "Vídeo enviado por 7o_vjd7fmv",
+        "items": [
+          {
+            "kind": "video",
+            "href": "/reviews/vjd7.mp4",
+            "poster": "/reviews/vjd7-poster.webp",
+            "ariaLabel": "Reproduzir vídeo de 7o_vjd7fmv, 14 segundos",
+            "image": {
+              "src": "/reviews/vjd7-poster.webp",
+              "alt": "Lançador de água azul e peças sobre a mesa, no vídeo enviado por 7o_vjd7fmv",
+              "width": 360,
+              "height": 640
+            },
+            "duration": "0:14"
+          }
+        ]
+      }
+    },
+    {
+      "id": "review-shopee2-ruth",
+      "score": 5,
+      "datePending": false,
+      "avatar": "R",
+      "author": "ruthherculanodeoliveira",
+      "meta": {
+        "datetime": "2026-10-16T14:47:00",
+        "label": "2026-10-16 14:47",
+        "variation": "Preto, Azul"
+      },
+      "detailsLong": false,
+      "details": [
+        {
+          "label": "Parecido com anúncio:",
+          "value": "bom"
+        },
+        {
+          "label": "Segurança:",
+          "value": "bom"
+        },
+        {
+          "label": "Custo-benefício:",
+          "value": "bombas"
+        }
+      ],
+      "comment": "O produto é muito bom Meu filho amou Recomendo",
+      "media": {
+        "label": "Vídeo e fotos enviados por ruthherculanodeoliveira",
+        "items": [
+          {
+            "kind": "video",
+            "href": "/reviews/ruth.mp4",
+            "poster": "/reviews/ruth-poster.webp",
+            "ariaLabel": "Reproduzir vídeo de ruthherculanodeoliveira, 7 segundos",
+            "image": {
+              "src": "/reviews/ruth-poster.webp",
+              "alt": "Lançador de água azul com a luz do bocal acesa, no vídeo enviado por ruthherculanodeoliveira",
+              "width": 360,
+              "height": 640
+            },
+            "duration": "0:07"
+          },
+          {
+            "kind": "image",
+            "href": "/reviews/ruth-1.webp",
+            "ariaLabel": "Ampliar foto 1 de ruthherculanodeoliveira",
+            "image": {
+              "src": "/reviews/thumbs/ruth-1-200.webp",
+              "alt": "Dois lançadores de água, azul e preto, sobre o sofá, foto de ruthherculanodeoliveira",
+              "width": 608,
+              "height": 1080
+            }
+          },
+          {
+            "kind": "image",
+            "href": "/reviews/ruth-2.webp",
+            "ariaLabel": "Ampliar foto 2 de ruthherculanodeoliveira",
+            "image": {
+              "src": "/reviews/thumbs/ruth-2-200.webp",
+              "alt": "Lançadores azul e preto lado a lado, foto de ruthherculanodeoliveira",
+              "width": 608,
+              "height": 1080
+            }
+          },
+          {
+            "kind": "image",
+            "href": "/reviews/ruth-3.webp",
+            "ariaLabel": "Ampliar foto 3 de ruthherculanodeoliveira",
+            "image": {
+              "src": "/reviews/thumbs/ruth-3-200.webp",
+              "alt": "Lançadores azul e preto vistos de perto, foto de ruthherculanodeoliveira",
+              "width": 608,
+              "height": 1080
+            }
+          },
+          {
+            "kind": "image",
+            "href": "/reviews/ruth-4.webp",
+            "ariaLabel": "Ampliar foto 4 de ruthherculanodeoliveira",
+            "image": {
+              "src": "/reviews/thumbs/ruth-4-200.webp",
+              "alt": "Lançador de água azul segurado na mão, foto de ruthherculanodeoliveira",
+              "width": 608,
+              "height": 1080
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "review-shopee2-s20t",
+      "score": 5,
+      "datePending": false,
+      "avatar": "S",
+      "author": "s20tfr_60k",
+      "meta": {
+        "datetime": "2026-10-11T11:01:00",
+        "label": "2026-10-11 11:01",
+        "variation": "Preto"
+      },
+      "detailsLong": false,
+      "details": [
+        {
+          "label": "Segurança:",
+          "value": "sim"
+        },
+        {
+          "label": "Parecido com anúncio:",
+          "value": "sim"
+        },
+        {
+          "label": "Custo-benefício:",
+          "value": "bom"
+        }
+      ],
+      "comment": "Veio muito bem embalada e muito rápido meu filho amou muito obrigado ao vendedor",
+      "media": {
+        "label": "Fotos enviadas por s20tfr_60k",
+        "items": [
+          {
+            "kind": "image",
+            "href": "/reviews/s20t-1.webp",
+            "ariaLabel": "Ampliar foto 1 de s20tfr_60k",
+            "image": {
+              "src": "/reviews/thumbs/s20t-1-200.webp",
+              "alt": "Lançador de água preto transparente sobre a mesa, foto de s20tfr_60k",
+              "width": 608,
+              "height": 1080
+            }
+          },
+          {
+            "kind": "image",
+            "href": "/reviews/s20t-2.webp",
+            "ariaLabel": "Ampliar foto 2 de s20tfr_60k",
+            "image": {
+              "src": "/reviews/thumbs/s20t-2-200.webp",
+              "alt": "Lançador de água preto visto de cima sobre a toalha de mesa, foto de s20tfr_60k",
+              "width": 608,
+              "height": 1080
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "review-shopee2-anderson",
+      "score": 5,
+      "datePending": false,
+      "avatar": "A",
+      "author": "andersonmedrado07",
+      "meta": {
+        "datetime": "2026-10-13T19:50:00",
+        "label": "2026-10-13 19:50",
+        "variation": "Cor Sortido"
+      },
+      "detailsLong": false,
+      "details": [
+        {
+          "label": "Parecido com anúncio:",
+          "value": "sim"
+        },
+        {
+          "label": "Custo-benefício:",
+          "value": "muito bom"
+        },
+        {
+          "label": "Segurança:",
+          "value": "sempre"
+        }
+      ],
+      "media": {
+        "label": "Vídeo enviado por andersonmedrado07",
+        "items": [
+          {
+            "kind": "video",
+            "href": "/reviews/anderson.mp4",
+            "poster": "/reviews/anderson-poster.webp",
+            "ariaLabel": "Reproduzir vídeo de andersonmedrado07, 7 segundos",
+            "image": {
+              "src": "/reviews/anderson-poster.webp",
+              "alt": "Lançador de água preto com a luz acesa, no vídeo enviado por andersonmedrado07",
+              "width": 360,
+              "height": 640
+            },
+            "duration": "0:07"
+          }
+        ]
+      }
+    },
+    {
+      "id": "review-shopee2-jeferson",
+      "score": 5,
+      "datePending": false,
+      "avatar": "J",
+      "author": "jefersoncarlosmouraferre108",
+      "meta": {
+        "datetime": "2026-10-16T21:50:00",
+        "label": "2026-10-16 21:50",
+        "variation": "Cor Sortido"
+      },
+      "detailsLong": false,
+      "details": [],
+      "comment": "Arma da hora as crianças amaram",
+      "media": {
+        "label": "Vídeo e fotos enviados por jefersoncarlosmouraferre108",
+        "items": [
+          {
+            "kind": "video",
+            "href": "/reviews/jeferson.mp4",
+            "poster": "/reviews/jeferson-poster.webp",
+            "ariaLabel": "Reproduzir vídeo de jefersoncarlosmouraferre108, 9 segundos",
+            "image": {
+              "src": "/reviews/jeferson-poster.webp",
+              "alt": "Lançador de água preto no jardim, no vídeo enviado por jefersoncarlosmouraferre108",
+              "width": 296,
+              "height": 640
+            },
+            "duration": "0:09"
+          },
+          {
+            "kind": "image",
+            "href": "/reviews/jeferson-1.webp",
+            "ariaLabel": "Ampliar foto 1 de jefersoncarlosmouraferre108",
+            "image": {
+              "src": "/reviews/thumbs/jeferson-1-200.webp",
+              "alt": "Lançador de água preto segurado no quintal molhado, foto de jefersoncarlosmouraferre108",
+              "width": 498,
+              "height": 1080
+            }
+          },
+          {
+            "kind": "image",
+            "href": "/reviews/jeferson-2.webp",
+            "ariaLabel": "Ampliar foto 2 de jefersoncarlosmouraferre108",
+            "image": {
+              "src": "/reviews/thumbs/jeferson-2-200.webp",
+              "alt": "Lançador de água preto em uso no quintal, foto de jefersoncarlosmouraferre108",
+              "width": 498,
+              "height": 1080
+            }
+          },
+          {
+            "kind": "image",
+            "href": "/reviews/jeferson-3.webp",
+            "ariaLabel": "Ampliar foto 3 de jefersoncarlosmouraferre108",
+            "image": {
+              "src": "/reviews/thumbs/jeferson-3-200.webp",
+              "alt": "Lançador de água preto visto de lado, foto de jefersoncarlosmouraferre108",
+              "width": 498,
+              "height": 1080
+            }
+          },
+          {
+            "kind": "image",
+            "href": "/reviews/jeferson-4.webp",
+            "ariaLabel": "Ampliar foto 4 de jefersoncarlosmouraferre108",
+            "image": {
+              "src": "/reviews/thumbs/jeferson-4-200.webp",
+              "alt": "Lançador de água preto com a luz do bocal acesa, foto de jefersoncarlosmouraferre108",
+              "width": 498,
+              "height": 1080
+            }
+          },
+          {
+            "kind": "image",
+            "href": "/reviews/jeferson-5.webp",
+            "ariaLabel": "Ampliar foto 5 de jefersoncarlosmouraferre108",
+            "image": {
+              "src": "/reviews/thumbs/jeferson-5-200.webp",
+              "alt": "Lançador de água preto sobre a bancada, foto de jefersoncarlosmouraferre108",
+              "width": 498,
+              "height": 1080
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "review-shopee2-everton",
+      "score": 5,
+      "datePending": false,
+      "avatar": "E",
+      "author": "everton897",
+      "meta": {
+        "datetime": "2026-10-16T15:03:00",
+        "label": "2026-10-16 15:03",
+        "variation": "Cor Sortido"
+      },
+      "detailsLong": false,
+      "details": [],
+      "comment": "Funciona perfeitamente",
+      "media": {
+        "label": "Foto enviada por everton897",
+        "items": [
+          {
+            "kind": "image",
+            "href": "/reviews/everton-1.webp",
+            "ariaLabel": "Ampliar foto 1 de everton897",
+            "image": {
+              "src": "/reviews/thumbs/everton-1-200.webp",
+              "alt": "Lançador de água preto transparente segurado por everton897",
+              "width": 608,
+              "height": 1080
+            }
+          }
+        ]
+      }
     }
 ];
