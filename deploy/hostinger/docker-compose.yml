@@ -1,0 +1,116 @@
+# AquaBlast na VPS Hostinger (srv2103675, 187.41.100.76). Pasta no servidor: /opt/aquablast.
+#
+# Diferenças para o docker-compose.yml da raiz (stack antiga do Portainer, no Proxmox):
+#   - sem cloudflared: quem publica é o Caddy da VPS (container hive-caddy), pela rede externa `web`;
+#     o bloco do domínio fica no Caddyfile do repositório AbnerSantosss/hive-site (deploy/Caddyfile);
+#   - o serviço da app se chama `aquablast` (e não `app`): na rede `web` o nome do serviço vira alias
+#     e o MorfoLab já usa `app` lá. O banco fica só na rede interna (o alias `db` não vai para a `web`);
+#   - nenhuma porta publicada (o Docker passa por cima do UFW).
+#
+# Variáveis: /opt/aquablast/.env (chmod 600, fora do git), mesmos nomes do .env.example, sem
+# CLOUDFLARE_TUNNEL_TOKEN. APP_IMAGE_TAG fixa a versão (sha do commit); vazio = latest.
+# APP_ENCRYPTION_KEY tem que ser a MESMA da produção antiga: segredos do painel e CPFs são cifrados com ela.
+#
+# Publicar versão nova (depois do build verde no GitHub Actions):
+#   cd /opt/aquablast && sed -n 's/^APP_IMAGE_TAG=//p' .env    # versão atual, para voltar se precisar
+#   (troque APP_IMAGE_TAG no .env) && docker compose pull aquablast && docker compose up -d aquablast
+#
+# Ensaio com cópia do banco de produção: suba só `db aquablast`. O scheduler manda e-mail de Pix e de
+# carrinho abandonado para cliente real; com duas cópias no ar, o cliente recebe em dobro.
+
+name: aquablast
+
+# Logs com teto, para não encher o disco.
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: aquablast-db
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      POSTGRES_DB: aquablast
+      POSTGRES_USER: aquablast
+      # Só letras e números: entra na DATABASE_URL abaixo sem escape.
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aquablast -d aquablast"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks: [default]
+
+  aquablast:
+    # APP_URL do build (canonical, og:image, sitemap) vem da variável do repositório no GitHub.
+    # O domínio não muda na migração, então a mesma imagem serve.
+    image: ghcr.io/abnersantosss/aquablast:${APP_IMAGE_TAG:-latest}
+    container_name: aquablast
+    restart: unless-stopped
+    logging: *logging
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+      DATABASE_URL: "postgres://aquablast:${POSTGRES_PASSWORD}@db:5432/aquablast"
+      APP_URL: "${APP_URL:?defina APP_URL}"
+      SESSION_SECRET: "${SESSION_SECRET:?defina SESSION_SECRET}"
+      APP_ENCRYPTION_KEY: "${APP_ENCRYPTION_KEY:?defina APP_ENCRYPTION_KEY}"
+      CHECKOUT_WEBHOOK_TOKEN: "${CHECKOUT_WEBHOOK_TOKEN:?defina CHECKOUT_WEBHOOK_TOKEN}"
+      CRON_SECRET: "${CRON_SECRET:?defina CRON_SECRET}"
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: "${SMTP_PORT:-465}"
+      SMTP_SECURE: "${SMTP_SECURE:-true}"
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-AquaBlast}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
+      TRACKING_17TRACK_API_KEY: ${TRACKING_17TRACK_API_KEY:-}
+    networks: [default, web]
+
+  # Dispara os crons da app a cada SCHEDULER_INTERVAL_SECONDS (padrão 900 = 15 min).
+  # A cadência real é decidida pela app (tracking.syncIntervalMinutes e email.pixReminder.*).
+  scheduler:
+    image: curlimages/curl:latest
+    container_name: aquablast-scheduler
+    restart: unless-stopped
+    logging: *logging
+    depends_on:
+      aquablast:
+        condition: service_started
+    environment:
+      CRON_SECRET: "${CRON_SECRET:?defina CRON_SECRET}"
+      SCHEDULER_INTERVAL_SECONDS: "${SCHEDULER_INTERVAL_SECONDS:-900}"
+      APP_INTERNAL_URL: http://aquablast:3000
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "scheduler: intervalo de $${SCHEDULER_INTERVAL_SECONDS}s"
+        sleep 30
+        while true; do
+          for ep in tracking-sync reminders abandoned-carts; do
+            code=$$(curl -sS -m 120 -o /dev/null -w '%{http_code}' \
+              -H "Authorization: Bearer $${CRON_SECRET}" \
+              "$${APP_INTERNAL_URL}/api/cron/$${ep}" || echo "000")
+            echo "$$(date -u +%FT%TZ) cron $${ep} -> HTTP $${code}"
+          done
+          sleep "$${SCHEDULER_INTERVAL_SECONDS}"
+        done
+    networks: [default]
+
+volumes:
+  db-data:
+
+networks:
+  web:
+    external: true
